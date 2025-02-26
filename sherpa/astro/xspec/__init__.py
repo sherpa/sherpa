@@ -20,7 +20,7 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.14.0, 12.13.1, 12.13.0, 12.12.1, and
+Sherpa supports versions 12.14.1, 12.14.0, 12.13.1, 12.13.0, 12.12.1, and
 12.12.0 of XSPEC [1]_, and can be built against the model library or
 the full application.  There is no guarantee of support for older or
 newer versions of XSPEC.
@@ -31,7 +31,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.14.0b'
+   '12.14.1d'
 
 Initializing XSPEC
 ------------------
@@ -2073,7 +2073,7 @@ class XSagauss(XSAdditiveModel):
 
     See Also
     --------
-    XSgaussian, XSzagauss, XSzgauss
+    XSgaussian, XSvagauss, XSzagauss, XSzgauss, XSzvagauss
 
     References
     ----------
@@ -2642,6 +2642,10 @@ class XSbcph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.17.1
+       The default Redshift parameter has been changed from 0 to 0.1 to
+       match version 12.14.1 of XSPEC.
+
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
@@ -2680,7 +2684,7 @@ class XSbcph(XSAdditiveModel):
     def __init__(self, name='bcph'):
         self.peakT = XSParameter(name, 'peakT', 2.2, min=0.1, max=100.0, hard_min=0.1, hard_max=100.0, units='keV')
         self.Abund = XSParameter(name, 'Abund', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
-        self.Redshift = mkRedshift(name, minval=0, maxval=50)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0, maxval=50)
         self.Velocity = mkVelocity(name)
         self.switch = mkswitch(name)
 
@@ -4079,6 +4083,10 @@ class XSbvcph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.17.1
+       The default Redshift parameter has been changed from 0 to 0.1 to
+       match version 12.14.1 of XSPEC.
+
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
@@ -4130,7 +4138,7 @@ class XSbvcph(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=0.0, max=50.0, hard_min=0.0, hard_max=50.0, frozen=True)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0, maxval=50)
         self.Velocity = mkVelocity(name)
         self.switch = mkswitch(name)
 
@@ -7177,6 +7185,10 @@ class XScph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.17.1
+       The default Redshift parameter has gone back to 0.1 to match
+       version 12.14.1 of XSPEC.
+
     .. versionchanged:: 4.16.1
        The switch parameter default has changed from 1 to 2 to match
        XSPEC 12.14.0 and the maximum value is now 3.
@@ -7220,7 +7232,7 @@ class XScph(XSAdditiveModel):
                                  units='keV')
         self.Abund = XSParameter(name, 'Abund', 1, 0, 1000, 0, 1000,
                                  frozen=True)
-        self.Redshift = mkRedshift(name, minval=0, maxval=50)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0, maxval=50)
         self.switch = mkswitch(name)
 
         pars = (self.peakT, self.Abund, self.Redshift, self.switch)
@@ -8161,7 +8173,7 @@ class XSgaussian(XSAdditiveModel):
 
     See Also
     --------
-    XSagauss, XSlorentz, XSvoigt, XSzagauss, XSzgauss
+    XSagauss, XSlorentz, XSvgaussian, XSvoigt, XSzagauss, XSzgauss
 
     References
     ----------
@@ -11076,6 +11088,125 @@ class XSssa(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.te, self.y))
 
 
+@version_at_least("12.14.1")
+class XSsssed(XSAdditiveModel):
+    """The XSPEC sssed model: Shakura & Sunyaev spectral energy distribution
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Attributes
+    ----------
+    mass
+       The black hole mass in solar units.
+    dist
+       The comoving (proper) distance in kpc.
+    logmdot
+       The accretion rate, in eddington units.
+    Rin
+       The inner most radius of the accretion flow in r_g.
+    cosi
+       The inclination angle of the disc.
+    kTe_th
+       The electron temparatire the the thermal corona in keV. If
+       negative then it represents the innre hot Comptonisation
+       component.
+    kTe_nt
+       The apparent electron temperature for non-thermal corona (keV),
+       recommended to be fixed at 300 to mimic non-thermal electron
+       distribution. If negative then the model gives the
+       Comptonisation component in the passive disc corona region.
+    Gamma_th
+       The photon index of the inner hot corona. If negative then only
+       the inner Compton component is used.
+    Gamma_nt
+       The photon index of the disk-corona. If negative then the model
+       gives the outer disk.
+    frac_th
+       The fraction of the hot Comptonising component to the total
+       Comptonisation.
+    Rcor
+       The outer radius of the disc-corona region in r_g.
+    logrout
+       The outer radius if the accretion disc. If this parameter is -1
+       then the self-gravity radius, as calculated by Laor & Netzer
+       (1989) is used.
+    redshift
+       The redshift. This must be fixed.
+    color_cor
+       The switching parameter for colour correction: 0 no correction,
+       1 means use the approach as XSoptxagnf.
+    norm
+       This must be fixed to 1.
+
+    See Also
+    --------
+    XSoptxagnf
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSssed.html
+
+    """
+
+    __function__ = "sssed"
+
+    def __init__(self, name='sssed'):
+        self.mass = XSParameter(name, 'mass', 10.0, min=1.0,
+                                max=10000000000.0, hard_min=1.0,
+                                hard_max=10000000000.0, frozen=True,
+                                units='solar')
+        self.dist = XSParameter(name, 'dist', 10.0, min=0.1,
+                                max=1000000000.0, hard_min=0.1,
+                                hard_max=1000000000.0, frozen=True,
+                                units='kpc')
+        self.logmdot = XSParameter(name, 'logmdot', 0.1, min=-3.0,
+                                   max=3.0, hard_min=-3.0,
+                                   hard_max=3.0, units='real')
+        self.Rin = XSParameter(name, 'Rin', 6.0, min=1.0, max=500.0,
+                               hard_min=1.0, hard_max=500.0, units='Rg')
+        self.cosi = XSParameter(name, 'cosi', 0.5, min=0.0, max=0.95,
+                                hard_min=0.0, hard_max=0.95, frozen=True)
+        self.kTe_th = XSParameter(name, 'kTe_th', 10.0, min=4.0,
+                                  max=300.0, hard_min=4.0,
+                                  hard_max=300.0, units='keV(-th)')
+        self.kTe_nt = XSParameter(name, 'kTe_nt', 300.0, min=10.0,
+                                  max=300.0, hard_min=10.0,
+                                  hard_max=300.0, frozen=True,
+                                  units='keV(-nt)')
+        self.Gamma_th = XSParameter(name, 'Gamma_th', 1.7, min=1.4,
+                                    max=4.0, hard_min=1.4,
+                                    hard_max=4.0)
+        self.Gamma_nt = XSParameter(name, 'Gamma_nt', 2.2, min=1.9,
+                                    max=4.0, hard_min=1.9,
+                                    hard_max=4.0, units='(-disk)')
+        # Over-ride the settings from 12.14.1 as they do not make sense
+        self.frac_th = XSParameter(name, 'frac_th', 0.2, min=0.0,
+                                   max=1.0, hard_min=0.0,
+                                   hard_max=1.0)
+        self.Rcor = XSParameter(name, 'Rcor', 10.0, min=1.0,
+                                max=5000.0, hard_min=1.0,
+                                hard_max=5000.0, units='Rg')
+        self.logrout = XSParameter(name, 'logrout', -1.0, min=-1.0,
+                                   max=7.0, hard_min=-1.0,
+                                   hard_max=7.0, frozen=True,
+                                   units='(-selfg)')
+        self.redshift = mkRedshift(name, minval=0, maxval=1, lc=True)
+        self.color_cor = XSParameter(name, 'color_cor', 1.0, min=0.0,
+                                     max=1.0, hard_min=0.0,
+                                     hard_max=1.0, frozen=True,
+                                     units='0off/1on')
+
+        pars = (self.mass, self.dist, self.logmdot, self.Rin,
+                self.cosi, self.kTe_th, self.kTe_nt, self.Gamma_th,
+                self.Gamma_nt, self.frac_th, self.Rcor, self.logrout,
+                self.redshift, self.color_cor)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSstep(XSAdditiveModel):
     """The XSPEC step model: step function convolved with gaussian.
 
@@ -11165,6 +11296,49 @@ class XStapec(XSAdditiveModel):
         self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kTi, self.Abundanc, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.1")
+class XSvagauss(XSAdditiveModel):
+    """The XSPEC vagauss model: gaussian line profile in wavelength space with sigma in velocity
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line wavelength in Angstrom.
+    Sigma
+       The line width in km/s
+    norm
+       The total photon/cm^2/s in the line.
+
+    See Also
+    --------
+    XSagauss, XSzagauss, XSzvagauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVagauss.html
+
+    """
+
+    __function__ = "C_vagauss"
+
+    def __init__(self, name='vagauss'):
+        self.LineE = XSParameter(name, 'LineE', 10.0, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='A')
+        self.Sigma = XSParameter(name, 'Sigma', 100.0, min=0.0,
+                                 max=300000.0, hard_min=0.0,
+                                 hard_max=300000.0, units='km/s')
+
+        pars = (self.LineE, self.Sigma)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -11544,6 +11718,10 @@ class XSvcph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.17.1
+       The default Redshift parameter has gone back to 0.1 to match
+       version 12.14.1 of XSPEC.
+
     .. versionchanged:: 4.16.1
        The switch parameter default has changed from 1 to 2 to match
        XSPEC 12.14.0 and the maximum value is now 3.
@@ -11614,7 +11792,7 @@ class XSvcph(XSAdditiveModel):
                               frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000.0,
                               frozen=True)
-        self.Redshift = mkRedshift(name, minval=0, maxval=50)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0, maxval=50)
         self.switch = mkswitch(name)
 
         pars = (self.peakT, self.He, self.C, self.N, self.O, self.Ne,
@@ -11822,6 +12000,49 @@ class XSvgadem(XSAdditiveModel):
                 self.N, self.O, self.Ne, self.Na, self.Mg, self.Al,
                 self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
                 self.Redshift, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.1")
+class XSvgaussian(XSAdditiveModel):
+    """The XSPEC vgaussian model: gaussian line profile with sigma in velocity
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Attributes
+    ----------
+    LineE
+       The line energy, in keV.
+    Sigma
+       The line width, in km/s.
+    norm
+       The total flux in the line (photon/cm^2/s).
+
+    See Also
+    --------
+    XSgaussian, XSzvgaussian
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVgauss.html
+
+    """
+
+    __function__ = "C_vgaussianLine"
+
+    def __init__(self, name='vgaussian'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 100.0, min=0.0,
+                                 max=300000.0, hard_min=0.0,
+                                 hard_max=300000.0, units='km/s')
+
+        pars = (self.LineE, self.Sigma)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -13675,7 +13896,7 @@ class XSzagauss(XSAdditiveModel):
 
     See Also
     --------
-    XSagauss, XSgaussian, XSzgauss
+    XSagauss, XSgaussian, XSvagauss, XSzgauss, XSzvagauss
 
     References
     ----------
@@ -14053,6 +14274,97 @@ class XSzpowerlw(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.Redshift))
 
 
+@version_at_least("12.14.1")
+class XSzvagauss(XSAdditiveModel):
+    """The XSPEC zvagauss model: gaussian line profile in wavelength space with sigma in velocity
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line wavelength in Angstrom.
+    Sigma
+       The line width in km/s
+    Redshift
+    norm
+       The total photon/cm^2/s in the line.
+
+    See Also
+    --------
+    XSagauss, XSzagauss, XSzagauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVagauss.html
+
+    """
+
+    __function__ = "C_zvagauss"
+
+    def __init__(self, name='zvagauss'):
+        self.LineE = XSParameter(name, 'LineE', 10.0, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='A')
+        self.Sigma = XSParameter(name, 'Sigma', 100.0, min=0.0,
+                                 max=300000.0, hard_min=0.0,
+                                 hard_max=300000.0, units='km/s')
+        self.Reshift = mkRedshift(name)
+
+        pars = (self.LineE, self.Sigma, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.1")
+class XSzvgaussian(XSAdditiveModel):
+    """The XSPEC zvgaussian model: gaussian line profile with sigma in velocity
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Attributes
+    ----------
+    LineE
+       The line energy, in keV.
+    Sigma
+       The line width, in km/s.
+    Redshift
+       The source redshift.
+    norm
+       The total flux in the line (photon/cm^2/s).
+
+    See Also
+    --------
+    XSvgaussian, XSzgauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVgauss.html
+
+    """
+
+    __function__ = "C_zvgaussianLine"
+
+    def __init__(self, name='zvgaussian'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 100.0, min=0.0,
+                                 max=300000.0, hard_min=0.0,
+                                 hard_max=300000.0, units='km/s')
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.LineE, self.Sigma, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSabsori(XSMultiplicativeModel):
     """The XSPEC absori model: ionized absorber.
 
@@ -14359,7 +14671,11 @@ class XSgabs(XSMultiplicativeModel):
         The line width (sigma), in keV.
     Strength
         The line depth, in keV. The optical depth at the line center is
-        Strength / (sqrt(2 pi) * Sigma).
+        Strength / Sigma / sqrt(2 pi).
+
+    See Also
+    --------
+    XSvgabs, XSzgabs
 
     References
     ----------
@@ -15702,6 +16018,53 @@ class XSvarabs(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.H, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni))
 
 
+@version_at_least("12.14.1")
+class XSvgabs(XSMultiplicativeModel):
+    """The XSPEC vgabs model: gaussian absorption line with sigma in km/s
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Sigma
+       The line width in km/s.
+    Strength
+       The line depth in keV. The optical depth at the line center is
+       Strength / (Sigma / c) / sqrt(2 * pi).
+
+    See Also
+    --------
+    XSzvgabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVgabs.html
+
+    """
+
+    __function__ = "C_vgaussianAbsorptionLine"
+
+    def __init__(self, name='vgabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 100.0, min=0.0,
+                                 max=300000.0, hard_min=0.0,
+                                 hard_max=300000.0, units='km/s')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0,
+                                    max=1000000.0, hard_min=0.0,
+                                    hard_max=1000000.0, units='keV')
+
+        pars = (self.LineE, self.Sigma, self.Strength)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
 class XSvphabs(XSMultiplicativeModel):
     """The XSPEC vphabs model: photoelectric absorption.
 
@@ -16039,6 +16402,106 @@ class XSzedge(XSMultiplicativeModel):
         self.Redshift = mkRedshift(name)
 
         pars = (self.edgeE, self.MaxTau, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.1")
+class XSzgabs(XSMultiplicativeModel):
+    """The XSPEC zgabs model: gaussian absorption line.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Sigma
+       The line width in keV.
+    Strength
+       The line depth in keV. The optical depth at the line center is
+       Strength / Sigma / sqrt(2 * pi).
+    Redshift
+       The redshift of the source.
+
+    See Also
+    --------
+    XSgabs, XSzvgabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGabs.html
+
+    """
+
+    __function__ = "C_zgaussianAbsorptionLine"
+
+    def __init__(self, name='zgabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 0.01, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=20.0, units='keV')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0,
+                                    max=1000000.0, hard_min=0.0,
+                                    hard_max=1000000.0, units='keV')
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.LineE, self.Sigma, self.Strength, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.1")
+class XSzvgabs(XSMultiplicativeModel):
+    """The XSPEC zvgabs model: gaussian absorption line with sigma in km/s
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Sigma
+       The line width in km/s.
+    Strength
+       The line depth in keV. The optical depth at the line center is
+       Strength / (Sigma / c) / sqrt(2 * pi).
+    Redshift
+       The redshift of the source.
+
+    See Also
+    --------
+    XSvgabs, XSzgabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVgabs.html
+
+    """
+
+    __function__ = "C_zvgaussianAbsorptionLine"
+
+    def __init__(self, name='zvgabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 100.0, min=0.0,
+                                 max=300000.0, hard_min=0.0,
+                                 hard_max=300000.0, units='km/s')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0,
+                                    max=1000000.0, hard_min=0.0,
+                                    hard_max=1000000.0, units='keV')
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.LineE, self.Sigma, self.Strength, self.Redshift)
         XSMultiplicativeModel.__init__(self, name, pars)
 
 

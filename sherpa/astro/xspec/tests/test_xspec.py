@@ -37,7 +37,7 @@ from sherpa.utils.err import ParameterErr
 #    '(XSConvolutionKernel)'
 # in `xspec/__init__.py`
 #
-XSPEC_MODELS_COUNT = 281
+XSPEC_MODELS_COUNT = 289
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh
@@ -126,6 +126,11 @@ def get_xspec_models():
                    "12.14.0f", "12.14.0g", "12.14.0h"]:
         remove_item(model_names, 'XSbvvnei')
 
+    # Has been reported to XSPEC team.
+    #
+    if version == "12.14.1":
+        remove_item(model_names, 'XSismabs')
+
     models = [getattr(xs, model_name) for model_name in model_names]
     models = list(filter(lambda mod: mod.version_enabled, models))
 
@@ -204,15 +209,6 @@ def assert_is_finite(vals, modelcls, label):
 
     emsg = f"model {modelcls} is finite [{label}]"
     assert numpy.isfinite(vals).all(), emsg
-
-    # Some models seem to return 0's, so skip them for now:
-    # these models have a default redshift parameter of 0 but
-    # the code complains if z <= 0 and returns 0's.
-    #
-    if modelcls in [xs.XSbcph, xs.XSbvcph, xs.XScph, xs.XSvcph]:
-        assert (vals == 0.0).all(), \
-            f'Expected {modelcls} to evaluate to all zeros [{label}]'
-        return
 
     emsg = f"Expected model {modelcls} to have a value > 0 [{label}]"
     assert (vals > 0.0).any(), emsg
@@ -775,6 +771,17 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     write (due to numerical tolerances), as bins at the
     edges may not match well.
     """
+
+    # Release 12.14.1 adds the zagauss, zvagauss models, but the
+    # emission is very localized (1.235 to 1.245 keV) for the
+    # default parameters, and this falls within one of the ranges
+    # excluded in this test. So these two models only ever return
+    # all 0's, triggering the test to fail. We could tweak the
+    # test, but it doesn't seem worth it, so we just skip the
+    # model here.
+    #
+    if modelcls.__name__ in ['XSvagauss', 'XSzvagauss']:
+        return
 
     from sherpa.astro import xspec
 
