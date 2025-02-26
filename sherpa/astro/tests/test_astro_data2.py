@@ -6507,7 +6507,6 @@ def make_problem_rmf(filename: Path,
 
 
 @requires_fits
-@pytest.mark.xfail(is_crates_io, reason="tests known to fail with crates")
 @pytest.mark.parametrize("offset", [0, 1, 5])
 def test_problem_pha(tmp_path, offset):
     """Check we can read in the 'problem' FITS file"""

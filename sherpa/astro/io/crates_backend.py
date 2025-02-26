@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019 - 2024
+#  Copyright (C) 2011, 2015, 2016, 2019 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -675,8 +675,15 @@ def copycol(cr: TABLECrate,
     Historically Sherpa has converted RMF columns to double-precision
     values, even though the standard has them as single-precision.
     Using the on-disk type (e.g. float rather than double) has some
-    annoynig consequences on the test suite, so for now we retain this
+    annoying consequences on the test suite, so for now we retain this
     behaviour.
+
+    NICER has created QUALITY columns with TFORM=B which crates reads
+    in as a 2D array, but of shape (ncols, 1). So special case this,
+    as we assume there are not many csaes where we are reading in this
+    data (unfortunately it's not easy to check for exactly this
+    condition as crates does not provide direct access to the TFORMn
+    header value).
 
     """
 
@@ -688,6 +695,15 @@ def copycol(cr: TABLECrate,
     vals = col.values
     if dtype is not None:
         vals = vals.astype(dtype)
+    elif vals.dtype == np.uint8 and vals.ndim == 2 and \
+         vals.shape[1] == 1:
+        # Convert boolean (nrows, 1) 2D array, created by the CIAO
+        # data model in CIAO 3.17, to 1D. Fortunately there is no
+        # native FITS TFORM that maps to np.uint8 other than
+        # boolean/bit values, so this should be a relatively safe
+        # expansion.
+        #
+        vals = vals.reshape(vals.size)
 
     # do not expand out variable-length arrays for now.
     #
