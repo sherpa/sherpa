@@ -287,7 +287,7 @@ def validate_replacement_warning(ws, rtype, label):
 
     assert len(ws) == 1
     w = ws[0]
-    assert w.category == UserWarning
+    assert w.category is UserWarning
 
     emsg = f"The minimum ENERG_LO in the {rtype} '{label}' " + \
            f"was 0 and has been replaced by {EMIN}"

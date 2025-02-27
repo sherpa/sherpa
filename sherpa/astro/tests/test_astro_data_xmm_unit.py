@@ -33,7 +33,6 @@ import pytest
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.astro import io
 from sherpa.astro import ui
-from sherpa.utils.err import IOErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
@@ -372,7 +371,7 @@ def check_rmf_grating(rmf):
 
 def check_warning(ftype, fname, w):
 
-    assert w.category == UserWarning
+    assert w.category is UserWarning
 
     # Can use startswith/endswith but if there is an error then it is
     # harder to see the difference.

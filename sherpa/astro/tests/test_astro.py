@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015 - 2021, 2023, 2024
+#  Copyright (C) 2007, 2015 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -137,7 +137,7 @@ def test_pha_intro(parallel, run_thread, fix_xspec):
 @requires_fits
 def test_pha_read(run_thread):
     run_thread('pha_read')
-    assert type(ui.get_data()) == DataPHA
+    assert isinstance(ui.get_data(), DataPHA)
 
 
 @requires_data
@@ -619,7 +619,7 @@ def test_xmm2(run_thread, fix_xspec):
     # changed. We filter this out as it's not at all clear what is going
     # on and we have filters in conftest to remove similar warnings
     #
-    ws = [w for w in ws if not (w.category == RuntimeWarning and
+    ws = [w for w in ws if not (w.category is RuntimeWarning and
                                 str(w.message).startswith('numpy.ndarray size changed, may indicate binary incompatibility.'))]
     assert len(ws) == 2
     cats = set([w.category for w in ws])
