@@ -18,6 +18,9 @@
 '''Make sure we tests the test fixtures.'''
 import pytest
 
+# for some reason these tests are failing with meson so just skip them for now
+
+
 def test_check_str_fails(check_str):
     '''The tests that use check_str make sure that it passes,
     but what if it were to pass everything?
