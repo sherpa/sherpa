@@ -14,12 +14,12 @@ if [ "`uname -s`" == "Darwin" ] ; then
     compilers="clang_osx-${sys} clangxx_osx-${sys} gfortran_osx-${sys}"
 
     #Download the macOS 11.0 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
-    mkdir -p ${GITHUB_WORKSPACE}/11.0SDK
+    mkdir -p ${GITHUB_WORKSPACE}/../11.0SDK
     wget https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.0.sdk.tar.xz -O MacOSX11.0.sdk.tar.xz
     if [[ $? -ne 0 ]]; then
       echo "macOS 11.0 SDK download failed"
     fi
-    tar -C ${GITHUB_WORKSPACE}/11.0SDK -xf MacOSX11.0.sdk.tar.xz
+    tar -C ${GITHUB_WORKSPACE}/../11.0SDK -xf MacOSX11.0.sdk.tar.xz
 
 else
     compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
