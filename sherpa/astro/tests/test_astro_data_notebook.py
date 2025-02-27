@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020 - 2024
+# Copyright (C) 2020 - 2025
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -29,7 +29,6 @@ import numpy as np
 import pytest
 
 from sherpa.astro import data
-from sherpa import plot
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_region, requires_wcs
@@ -204,7 +203,7 @@ def test_rmf_real_bad_energy(make_data_path, all_plot_backends):
 
     expected = f"The minimum ENERG_LO in the RMF '{infile}' was 0 and has been replaced by 1e-10"
     assert len(ws) == 1
-    assert ws[0].category == UserWarning
+    assert ws[0].category is UserWarning
     assert str(ws[0].message) == expected
 
     d.name = 'test.rmf'

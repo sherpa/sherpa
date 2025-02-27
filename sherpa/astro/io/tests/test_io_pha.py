@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020 - 2024
+#  Copyright (C) 2020 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -38,7 +38,7 @@ import pytest
 
 from sherpa.astro.data import DataPHA
 from sherpa.astro import io
-from sherpa.utils.err import DataErr, IOErr
+from sherpa.utils.err import DataErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -984,7 +984,7 @@ def test_chandra_phaII_roundtrip(make_data_path, tmp_path):
         if roundtrip:
             assert hdr["SYS_ERR"] == 0
         else:
-            assert not "SYS_ERR" in hdr
+            assert "SYS_ERR" not in hdr
 
         assert hdr["QUALITY"] == 0
         assert hdr["GROUPING"] == 0

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2021, 2023, 2024
+#  Copyright (C) 2017, 2018, 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -287,7 +287,7 @@ def validate_replacement_warning(ws, rtype, label):
 
     assert len(ws) == 1
     w = ws[0]
-    assert w.category == UserWarning
+    assert w.category is UserWarning
 
     emsg = f"The minimum ENERG_LO in the {rtype} '{label}' " + \
            f"was 0 and has been replaced by {EMIN}"
@@ -603,7 +603,7 @@ def test_1209_response(mode, make_data_path):
     #
     if "arf" in mode:
         infile = make_data_path(ARFFILE)
-        with warnings.catch_warnings(record=True) as ws:
+        with warnings.catch_warnings(record=True):
             warnings.simplefilter("ignore")
             arf = io.read_arf(infile)
 
@@ -611,7 +611,7 @@ def test_1209_response(mode, make_data_path):
 
     if "rmf" in mode:
         infile = make_data_path(RMFFILE)
-        with warnings.catch_warnings(record=True) as ws:
+        with warnings.catch_warnings(record=True):
             warnings.simplefilter("ignore")
             rmf = io.read_rmf(infile)
 

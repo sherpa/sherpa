@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2024
+#  Copyright (C) 2024 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,8 +30,9 @@ to FITS-like data structures.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -55,7 +56,7 @@ __all__ = ("KeyType", "HeaderItem", "Header", "Column", "Block",
 # NumPy types - e.g. np.bool_, np.integer, np.floating - in some of
 # these types.
 #
-KeyType = Union[str, bool, int, float]
+KeyType = str | bool | int | float
 NamesType = Sequence[str]
 HdrTypeArg = Mapping[str, KeyType]
 HdrType = dict[str, KeyType]
@@ -63,7 +64,7 @@ HdrType = dict[str, KeyType]
 # Note that ColumnsTypeArg allows more for the values than does
 # ColumnsType.
 #
-ColumnsTypeArg = Mapping[str, Union[np.ndarray, list, tuple]]
+ColumnsTypeArg = Mapping[str, np.ndarray | list | tuple]
 ColumnsType = dict[str, np.ndarray]
 
 # It's hard to type the arguments to the Data constructors
@@ -87,10 +88,10 @@ class HeaderItem:
     value: KeyType
     """The keyword value"""
 
-    desc: Optional[str] = None
+    desc: str | None = None
     """The description for the keyword"""
 
-    unit: Optional[str] = None
+    unit: str | None = None
     """The units of the value"""
 
     def __post_init__(self) -> None:
@@ -121,7 +122,7 @@ class Header:
         """Add the item (not checking for duplicates)."""
         self.values.append(item)
 
-    def get(self, name: str) -> Optional[HeaderItem]:
+    def get(self, name: str) -> HeaderItem | None:
         """Return the first occurrence of the key (case insensitive)."""
 
         uname = name.upper()
@@ -131,7 +132,7 @@ class Header:
 
         return None
 
-    def delete(self, name: str) -> Optional[HeaderItem]:
+    def delete(self, name: str) -> HeaderItem | None:
         """Remove the first occurrence of the key, if it exists (case insensitive)."""
 
         store = []
@@ -166,16 +167,16 @@ class Column:
     type.
     """
 
-    desc: Optional[str] = None
+    desc: str | None = None
     """The column description"""
 
-    unit: Optional[str] = None
+    unit: str | None = None
     """The units of the column"""
 
-    minval: Optional[Union[int, float]] = None
+    minval: int | float | None = None
     """The minimum value (corresponds to FITS TLMIN setting)."""
 
-    maxval: Optional[Union[int, float]] = None
+    maxval: int | float | None = None
     """The maximum value (corresponds to FITS TLMAX setting)."""
 
     def __post_init__(self) -> None:
@@ -236,7 +237,7 @@ class TableBlock(Block):
             if not isinstance(col, Column):
                 raise ValueError(f"Column {idx} is not a Column object in {self.name}")
 
-    def get(self, colname: str) -> Optional[Column]:
+    def get(self, colname: str) -> Column | None:
         """Return the column (case insensitive) if it exists."""
 
         uname = colname.upper()
@@ -361,14 +362,14 @@ class ImageBlock(Block):
     image: np.ndarray
     """The image data."""
 
-    sky: Optional[WCS] = None
+    sky: WCS | None = None
     """The WCS for the physical/sky coordinate system."""
 
-    eqpos: Optional[WCS] = None
+    eqpos: WCS | None = None
     """The WCS for the WCS coordinate system."""
 
 
-BlockType = Union[TableBlock, ImageBlock]
+BlockType = TableBlock | ImageBlock
 
 
 @dataclass
@@ -383,7 +384,7 @@ class BlockList:
     blocks: list[BlockType]
     """The data for the blocks."""
 
-    header: Optional[Header] = None
+    header: Header | None = None
     """An optional header.
 
     If set this is used to create the first block with no data.

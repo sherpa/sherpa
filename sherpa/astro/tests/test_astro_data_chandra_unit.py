@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2024
+#  Copyright (C) 2024, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,8 +30,6 @@ import pytest
 
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.astro import io
-from sherpa.astro import ui
-from sherpa.utils.err import IOErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits
 

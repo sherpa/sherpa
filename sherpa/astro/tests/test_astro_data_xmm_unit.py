@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2024
+#  Copyright (C) 2024, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -33,7 +33,6 @@ import pytest
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.astro import io
 from sherpa.astro import ui
-from sherpa.utils.err import IOErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
@@ -372,7 +371,7 @@ def check_rmf_grating(rmf):
 
 def check_warning(ftype, fname, w):
 
-    assert w.category == UserWarning
+    assert w.category is UserWarning
 
     # Can use startswith/endswith but if there is an error then it is
     # harder to see the difference.
@@ -525,6 +524,7 @@ def test_roundtrip_rmf(make_data_path, tmp_path):
     with warnings.catch_warnings(record=True) as ws:
         rmf1 = io.read_rmf(infile)
 
+    # Check we get the message about ENERG_LO=0 being replaced.
     assert len(ws) == 1
 
     outpath = tmp_path / "test.rmf"
@@ -536,7 +536,8 @@ def test_roundtrip_rmf(make_data_path, tmp_path):
 
     check_rmf(rmf2)
 
-    assert len(ws2) == 1
+    # Check there's no message, since ENERG_LO > 0 now.
+    assert len(ws2) == 0
 
 
 @requires_data
@@ -600,7 +601,7 @@ def test_read_rmf_grating(make_data_path):
 
 @requires_data
 @requires_fits
-def test_roundtrip_rmf(make_data_path, tmp_path):
+def test_roundtrip_rmf_grating(make_data_path, tmp_path):
     """Can we write out a XMM grating RMF file and then read it back in?"""
 
     infile = make_data_path(RMFFILE_GRATING)

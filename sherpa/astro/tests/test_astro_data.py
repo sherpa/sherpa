@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018, 2020 - 2024
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -4213,8 +4213,8 @@ def test_get_ylabel_img(make_data_path, coord, axis):
 @requires_fits
 @pytest.mark.parametrize("coord", ["logical", "physical", "world"])
 @pytest.mark.parametrize("label", ["not a label", "", "Energy (keV)"])
-def test_set_xlabel_img(make_data_path, coord, label):
-    """get_xlabel for DataIMG"""
+def test_set_ylabel_img(make_data_path, coord, label):
+    """get_ylabel for DataIMG"""
 
     import sherpa.astro.io
     infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")

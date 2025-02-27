@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015 - 2024
+#  Copyright (C) 2008, 2015 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -120,10 +120,10 @@ this range to have at least 20 counts per group:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 import logging
 import os
-from typing import Any, Callable, Literal, Mapping, Optional, Sequence, \
-    Union, cast, overload
+from typing import Any, Callable, Literal, Mapping, cast, overload
 import warnings
 
 import numpy as np
@@ -177,8 +177,8 @@ RateType = Literal["counts", "rate"]
 # can arf/rmf be sent ARF1D/RMF1D too?
 #
 def _notice_resp(chans: np.ndarray,
-                 arf: Optional[DataARF],
-                 rmf: Optional[DataRMF]
+                 arf: DataARF | None,
+                 rmf: DataRMF | None
                  ) -> None:
     """Notice the channel range for the associated responses
 
@@ -1557,18 +1557,18 @@ class DataPHA(Data1D):
 
     def __init__(self,
                  name: str,
-                 channel: Optional[ArrayType],
-                 counts: Optional[ArrayType],
-                 staterror: Optional[ArrayType] = None,
-                 syserror: Optional[ArrayType] = None,
-                 bin_lo: Optional[ArrayType] = None,
-                 bin_hi: Optional[ArrayType] = None,
-                 grouping: Optional[ArrayType] = None,
-                 quality: Optional[ArrayType] = None,
+                 channel: ArrayType | None,
+                 counts: ArrayType | None,
+                 staterror: ArrayType | None = None,
+                 syserror: ArrayType | None = None,
+                 bin_lo: ArrayType | None = None,
+                 bin_hi: ArrayType | None = None,
+                 grouping: ArrayType | None = None,
+                 quality: ArrayType | None = None,
                  exposure=None,
                  backscal=None,
                  areascal=None,
-                 header: Optional[Mapping[str, Any]] = None
+                 header: Mapping[str, Any] | None = None
                  ) -> None:
 
         # Set the size of the object as soon as we know (it makes it
@@ -1585,11 +1585,11 @@ class DataPHA(Data1D):
 
         # Assert types: is there a better way to do this?
         #
-        self._bin_lo: Optional[np.ndarray]
-        self._bin_hi: Optional[np.ndarray]
-        self._grouping: Optional[np.ndarray]
-        self._quality: Optional[np.ndarray]
-        self._quality_filter: Optional[np.ndarray]
+        self._bin_lo: np.ndarray | None
+        self._bin_hi: np.ndarray | None
+        self._grouping: np.ndarray | None
+        self._quality: np.ndarray | None
+        self._quality_filter: np.ndarray | None
 
         self.bin_lo = _check(bin_lo)
         self.bin_hi = _check(bin_hi)
@@ -1624,8 +1624,8 @@ class DataPHA(Data1D):
         # is the correct typing, and avoids playing around with
         # self-referential type imports for now.
         #
-        self._responses: dict[IdType, tuple[Optional[DataARF],
-                                            Optional[DataRMF]]] = {}
+        self._responses: dict[IdType, tuple[DataARF | None,
+                                            DataRMF | None]] = {}
 
         self._backgrounds: dict[IdType, DataPHA] = {}
         self._rate = True
@@ -1807,7 +1807,7 @@ will be removed. The identifiers can be integers or strings.
     @overload
     def _set_related(self,
                      attr: str,
-                     val: Optional[ArrayType],
+                     val: ArrayType | None,
                      check_mask: bool = True,
                      allow_scalar: object = Literal[False],
                      **kwargs
@@ -1854,7 +1854,7 @@ will be removed. The identifiers can be integers or strings.
     # Set up the aliases for channel and counts
     #
     @property
-    def channel(self) -> Optional[np.ndarray]:
+    def channel(self) -> np.ndarray | None:
         """The channel array.
 
         This is the first, and only, element of the indep attribute.
@@ -1862,7 +1862,7 @@ will be removed. The identifiers can be integers or strings.
         return self.indep[0]
 
     @channel.setter
-    def channel(self, val: Optional[ArrayType]) -> None:
+    def channel(self, val: ArrayType | None) -> None:
         # This case is handled by _check but type checkers may not
         # recognize it, so handle separately.
         #
@@ -1873,7 +1873,7 @@ will be removed. The identifiers can be integers or strings.
         self.indep = (_check(val), )
 
     @property
-    def counts(self) -> Optional[np.ndarray]:
+    def counts(self) -> np.ndarray | None:
         """The counts array.
 
         This is an alias for the y attribute.
@@ -1881,14 +1881,14 @@ will be removed. The identifiers can be integers or strings.
         return self.y
 
     @counts.setter
-    def counts(self, val: Optional[np.ndarray]):
+    def counts(self, val: np.ndarray | None):
         self.y = val
 
     # Override the mask handling because the mask matches the grouped
     # data length, not the independent axis.
     #
     @Data1D.mask.setter
-    def mask(self, val: Union[ArrayType, bool]) -> None:
+    def mask(self, val: ArrayType | bool) -> None:
 
         # We only need to over-ride the behavior if the data is
         # grouped and val is a sequence (so we test with isscalar
@@ -1909,7 +1909,7 @@ will be removed. The identifiers can be integers or strings.
     # Set up the properties for the related fields
     #
     @property
-    def bin_lo(self) -> Optional[np.ndarray]:
+    def bin_lo(self) -> np.ndarray | None:
         """The lower edge of each channel, in Angstroms, or None.
 
         The values are expected to be in descending order. This is
@@ -1918,11 +1918,11 @@ will be removed. The identifiers can be integers or strings.
         return self._bin_lo
 
     @bin_lo.setter
-    def bin_lo(self, val: Optional[ArrayType]) -> None:
+    def bin_lo(self, val: ArrayType | None) -> None:
         self._set_related("bin_lo", val)
 
     @property
-    def bin_hi(self) -> Optional[np.ndarray]:
+    def bin_hi(self) -> np.ndarray | None:
         """The upper edge of each channel, in Angstroms, or None.
 
         The values are expected to be in descending order, with the
@@ -1932,11 +1932,11 @@ will be removed. The identifiers can be integers or strings.
         return self._bin_hi
 
     @bin_hi.setter
-    def bin_hi(self, val: Optional[ArrayType]) -> None:
+    def bin_hi(self, val: ArrayType | None) -> None:
         self._set_related("bin_hi", val)
 
     @property
-    def grouping(self) -> Optional[np.ndarray]:
+    def grouping(self) -> np.ndarray | None:
         """The grouping data.
 
         A group is indicated by a sequence of flag values starting
@@ -1963,7 +1963,7 @@ will be removed. The identifiers can be integers or strings.
         return self._grouping
 
     @grouping.setter
-    def grouping(self, val: Optional[ArrayType]) -> None:
+    def grouping(self, val: ArrayType | None) -> None:
         # _set_related checks if it's a scalar value, so we just need
         # to check it's convertible to ndarray.
         #
@@ -2005,7 +2005,7 @@ will be removed. The identifiers can be integers or strings.
                 self.notice(*vals)
 
     @property
-    def quality(self) -> Optional[np.ndarray]:
+    def quality(self) -> np.ndarray | None:
         """The quality data.
 
         A quality value of 0 indicates a good channel, otherwise
@@ -2026,7 +2026,7 @@ will be removed. The identifiers can be integers or strings.
         return self._quality
 
     @quality.setter
-    def quality(self, val: Optional[ArrayType]) -> None:
+    def quality(self, val: ArrayType | None) -> None:
         # _set_related checks if it's a scalar value, so we just need
         # to check it's convertible to ndarray.
         #
@@ -2048,7 +2048,7 @@ will be removed. The identifiers can be integers or strings.
     # some semantics.
     #
     @property
-    def quality_filter(self) -> Optional[np.ndarray]:
+    def quality_filter(self) -> np.ndarray | None:
         """The applied quality filter.
 
         If set, this indicates which channels are currently selected
@@ -2070,7 +2070,7 @@ will be removed. The identifiers can be integers or strings.
     # internally with ignore_bad?
     #
     @quality_filter.setter
-    def quality_filter(self, val: Optional[ArrayType]) -> None:
+    def quality_filter(self, val: ArrayType | None) -> None:
         if val is None:
             qfilt = None
         else:
@@ -2217,14 +2217,14 @@ will be removed. The identifiers can be integers or strings.
         """
         return self.units
 
-    def _fix_response_id(self, id: Optional[IdType]) -> IdType:
+    def _fix_response_id(self, id: IdType | None) -> IdType:
         if id is not None:
             return id
 
         return self.primary_response_id
 
-    def get_response(self, id: Optional[IdType] = None
-                     ) -> tuple[Optional[DataARF], Optional[DataRMF]]:
+    def get_response(self, id: IdType | None = None
+                     ) -> tuple[DataARF | None, DataRMF | None]:
         """Return the response component.
 
         Parameters
@@ -2248,9 +2248,9 @@ will be removed. The identifiers can be integers or strings.
         return self._responses.get(id, (None, None))
 
     def set_response(self,
-                     arf: Optional[DataARF] = None,
-                     rmf: Optional[DataRMF] = None,
-                     id: Optional[IdType] = None
+                     arf: DataARF | None = None,
+                     rmf: DataRMF | None = None,
+                     id: IdType | None = None
                      ) -> None:
         """Add or replace a response component.
 
@@ -2319,7 +2319,7 @@ will be removed. The identifiers can be integers or strings.
         set_key("INSTRUME")
         set_key("FILTER")
 
-    def delete_response(self, id: Optional[IdType] = None) -> None:
+    def delete_response(self, id: IdType | None = None) -> None:
         """Remove the response component.
 
         If the response component does not exist then the method
@@ -2340,7 +2340,7 @@ will be removed. The identifiers can be integers or strings.
         self._responses.pop(resp_id, None)
         self.response_ids.remove(resp_id)
 
-    def get_arf(self, id: Optional[IdType] = None) -> Optional[DataARF]:
+    def get_arf(self, id: IdType | None = None) -> DataARF | None:
         """Return the ARF from the response.
 
         Parameters
@@ -2361,7 +2361,7 @@ will be removed. The identifiers can be integers or strings.
         """
         return self.get_response(id)[0]
 
-    def get_rmf(self, id: Optional[IdType] = None) -> Optional[DataRMF]:
+    def get_rmf(self, id: IdType | None = None) -> DataRMF | None:
         """Return the RMF from the response.
 
         Parameters
@@ -2384,7 +2384,7 @@ will be removed. The identifiers can be integers or strings.
 
     def set_arf(self,
                 arf: DataARF,
-                id: Optional[IdType] = None) -> None:
+                id: IdType | None = None) -> None:
         """Add or replace the ARF in a response component.
 
         This replaces the existing ARF of the response, keeping the
@@ -2408,7 +2408,7 @@ will be removed. The identifiers can be integers or strings.
 
     def set_rmf(self,
                 rmf: DataRMF,
-                id: Optional[IdType] = None) -> None:
+                id: IdType | None = None) -> None:
         """Add or replace the RMF in a response component.
 
         This replaces the existing RMF of the response, keeping the
@@ -2432,7 +2432,7 @@ will be removed. The identifiers can be integers or strings.
 
     def get_specresp(self,
                      filter: bool = False
-                     ) -> Optional[np.ndarray]:
+                     ) -> np.ndarray | None:
         """Return the effective area values for the data set.
 
         Parameters
@@ -2519,7 +2519,7 @@ will be removed. The identifiers can be integers or strings.
         return instrument.Response1D(self)
 
     def _get_ebins(self,
-                   response_id: Optional[IdType] = None,
+                   response_id: IdType | None = None,
                    group: bool = True
                    ) -> tuple[np.ndarray, np.ndarray]:
         """Return the low and high edges of the independent axis.
@@ -2640,8 +2640,7 @@ will be removed. The identifiers can be integers or strings.
 
     def get_indep(self,
                   filter: bool = True
-                  ) -> Union[tuple[np.ndarray, ...],
-                             tuple[None, ...]]:
+                  ) -> tuple[np.ndarray, ...] | tuple[None, ...]:
 
         # short-cut if no data
         if self.size is None:
@@ -2771,7 +2770,7 @@ will be removed. The identifiers can be integers or strings.
 It is an integer or string.
 """
 
-    def _fix_background_id(self, id: Optional[IdType]) -> IdType:
+    def _fix_background_id(self, id: IdType | None) -> IdType:
         """Identify the background identifier.
 
         Parameters
@@ -2792,8 +2791,8 @@ It is an integer or string.
         return self.default_background_id
 
     def get_background(self,
-                       id: Optional[IdType] = None
-                       ) -> Optional[DataPHA]:
+                       id: IdType | None = None
+                       ) -> DataPHA | None:
         """Return the background component.
 
         Parameters
@@ -2818,7 +2817,7 @@ It is an integer or string.
 
     def set_background(self,
                        bkg: DataPHA,
-                       id: Optional[IdType] = None) -> None:
+                       id: IdType | None = None) -> None:
         """Add or replace a background component.
 
         If the background has no grouping of quality arrays then they
@@ -2920,7 +2919,7 @@ It is an integer or string.
         set_key("FILTER")
 
     def delete_background(self,
-                          id: Optional[IdType] = None
+                          id: IdType | None = None
                           ) -> None:
         """Remove the background component.
 
@@ -3508,7 +3507,7 @@ It is an integer or string.
         self.quality_filter = qual_flags
 
     def _dynamic_group(self,
-                       group_func: Union[Callable, str],
+                       group_func: Callable | str,
                        *args, **kwargs) -> None:
         """Group the data using the given function and arguments.
 
@@ -4049,7 +4048,7 @@ It is an integer or string.
 
     def get_dep(self,
                 filter: bool = False
-                ) -> Optional[np.ndarray]:
+                ) -> np.ndarray | None:
         # FIXME: Aneta says we need to group *before* subtracting, but that
         # won't work (I think) when backscal is an array
         # if not self.subtracted:
@@ -4099,8 +4098,8 @@ It is an integer or string.
 
     def get_staterror(self,
                       filter: bool = False,
-                      staterrfunc: Optional[StatErrFunc] = None
-                      ) -> Optional[np.ndarray]:
+                      staterrfunc: StatErrFunc | None = None
+                      ) -> np.ndarray | None:
         """Return the statistical error.
 
         The staterror column is used if defined, otherwise the
@@ -4299,7 +4298,7 @@ It is an integer or string.
 
     def get_syserror(self,
                      filter: bool = False
-                     ) -> Optional[np.ndarray]:
+                     ) -> np.ndarray | None:
         """Return any systematic error.
 
         Parameters
@@ -4327,8 +4326,8 @@ It is an integer or string.
 
     def get_x(self,
               filter: bool = False,
-              response_id: Optional[IdType] = None
-              ) -> Optional[np.ndarray]:
+              response_id: IdType | None = None
+              ) -> np.ndarray | None:
         if self.channel is None:
             return None
 
@@ -4397,7 +4396,7 @@ It is an integer or string.
     def _fix_y_units(self,
                      val: None,
                      filter: bool = False,
-                     response_id: Optional[IdType] = None
+                     response_id: IdType | None = None
                      ) -> None:
         ...
 
@@ -4405,7 +4404,7 @@ It is an integer or string.
     def _fix_y_units(self,
                      val: ArrayType,
                      filter: bool = False,
-                     response_id: Optional[IdType] = None
+                     response_id: IdType | None = None
                      ) -> np.ndarray:
         ...
 
@@ -4486,7 +4485,7 @@ It is an integer or string.
     def get_y(self,
               filter: bool,
               yfunc: None,
-              response_id: Optional[IdType] = None,
+              response_id: IdType | None = None,
               use_evaluation_space: bool = False
               ) -> np.ndarray:
         ...
@@ -4495,7 +4494,7 @@ It is an integer or string.
     def get_y(self,
               filter: bool,
               yfunc: ModelFunc,
-              response_id: Optional[IdType] = None,
+              response_id: IdType | None = None,
               use_evaluation_space: bool = False
               ) -> tuple[np.ndarray, np.ndarray]:
         ...
@@ -4525,17 +4524,17 @@ It is an integer or string.
 
     def get_yerr(self,
                  filter: bool = False,
-                 staterrfunc: Optional[Callable] = None,
-                 response_id: Optional[IdType] = None
-                 ) -> Optional[np.ndarray]:
+                 staterrfunc: Callable | None = None,
+                 response_id: IdType | None = None
+                 ) -> np.ndarray | None:
         filter = bool_cast(filter)
         err = self.get_error(filter, staterrfunc)
         return self._fix_y_units(err, filter, response_id)
 
     def get_xerr(self,
                  filter: bool = False,
-                 response_id: Optional[IdType] = None
-                 ) -> Optional[np.ndarray]:
+                 response_id: IdType | None = None
+                 ) -> np.ndarray | None:
         """Returns an X "error".
 
         The error value for the independent axis is not well defined
@@ -4686,7 +4685,7 @@ It is an integer or string.
 
         return chans[mask]
 
-    def get_mask(self) -> Optional[np.ndarray]:
+    def get_mask(self) -> np.ndarray | None:
         """Returns the (ungrouped) mask.
 
         .. versionchanged:: 4.17.0
@@ -4914,7 +4913,7 @@ It is an integer or string.
 
     def notice_response(self,
                         notice_resp: bool = True,
-                        noticed_chans: Optional[np.ndarray] = None
+                        noticed_chans: np.ndarray | None = None
                         ) -> None:
         notice_resp = bool_cast(notice_resp)
 
@@ -4926,10 +4925,10 @@ It is an integer or string.
             _notice_resp(noticed_chans, arf, rmf)
 
     def notice(self,
-               lo: Optional[float] = None,
-               hi: Optional[float] = None,
+               lo: float | None = None,
+               hi: float | None = None,
                ignore: bool = False,
-               bkg_id: Optional[Union[IdType, Sequence[IdType]]] = None
+               bkg_id: IdType | Sequence[IdType] | None = None
                ) -> None:
         """Notice or ignore the given range.
 

@@ -667,39 +667,6 @@ def test_abund_change_file_subset(tmp_path):
 
 
 @requires_xspec
-def test_abund_change_file_subset(tmp_path):
-    """What happens if send in too-few elements?"""
-
-    from sherpa.astro import xspec
-
-    elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)
-             if i < 10}
-
-    tmpname = tmp_path / "abunds.xspec"
-    with open(tmpname, "w") as tfh:
-        for v in elems.values():
-            tfh.write(f"{v}\n")
-
-    oval = xspec.get_xsabund()
-    try:
-        xspec.set_xsabund(str(tmpname))
-
-        abund = xspec.get_xsabund()
-        out = {n: xspec.get_xsabund(n)
-               for n in ELEMENT_NAMES}
-
-    finally:
-        xspec.set_xsabund(oval)
-
-    assert abund == 'file'
-    for i, n in enumerate(ELEMENT_NAMES):
-        if i < 10:
-            assert out[n] == pytest.approx(elems[n])
-        else:
-            assert out[n] == pytest.approx(0)
-
-
-@requires_xspec
 def test_xset_change():
     """Can we change the xset setting.
     """

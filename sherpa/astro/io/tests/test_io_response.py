@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023, 2024
+#  Copyright (C) 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -31,9 +31,8 @@ import pytest
 
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.astro.instrument import RMF1D, create_arf, create_delta_rmf
-from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro import io
-from sherpa.astro.io.types import HeaderItem, Header, Column, TableBlock, BlockList
+from sherpa.astro.io.types import HeaderItem, Header, BlockList
 from sherpa.data import Data1DInt
 from sherpa.models.basic import Gauss1D
 from sherpa.utils.err import ArgumentErr, IOErr
@@ -1177,7 +1176,7 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     for idx, fchan in enumerate([2, 4, 6, 8, 10]):
         blurry_matrix[idx, fchan - 1:fchan + 3] = blur
 
-    expected_blurry = mdl(e4lo, e4hi) @ blurry_matrix
+    # expected_blurry = mdl(e4lo, e4hi) @ blurry_matrix
 
     assert y == pytest.approx(expected_perfect)
 
