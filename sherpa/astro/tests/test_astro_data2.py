@@ -62,7 +62,7 @@ def test_can_not_group_ungrouped():
         pha.grouped = True
 
 
-def test_pha_get_indep_when_all_filtered():
+def test_pha_get_indep_when_all_filtered_ignore():
     """Regression test."""
 
     pha = DataPHA("pha", [1, 2, 3], [9, 7, 8])
@@ -75,7 +75,7 @@ def test_pha_get_indep_when_all_filtered():
     assert indep[0] == pytest.approx([])
 
 
-def test_pha_get_indep_when_all_filtered():
+def test_pha_get_indep_when_all_filtered_manual():
     """Regression test."""
 
     pha = DataPHA("pha", [1, 2, 3], [9, 7, 8])
@@ -3010,26 +3010,8 @@ def test_361():
     assert pha.get_noticed_channels() == pytest.approx([3, 4, 7, 8])
 
 
-def test_grouped_pha_get_dep(make_grouped_pha):
-    """Quality filtering and grouping is applied: get_dep
-
-    As noted in issue #1438 it's not obvious what get_y is meant to
-    return. It is not the same as get_dep as there's post-processing.
-    So just test the current behavior.
-
-    """
-    pha = make_grouped_pha
-
-    # grouped counts are [3, 3, 12]
-    # channel widths are [3, 1, 1]
-    # which gives [1, 3, 12]
-    # but the last group is marked bad by quality,
-    # so we expect [1, 3]
-    #
-    assert pha.get_dep() == pytest.approx([1, 3])
-
-
-def test_grouped_pha_get_y(make_grouped_pha):
+@pytest.mark.parametrize("filter", [False, True])
+def test_grouped_pha_get_y(filter, make_grouped_pha):
     """Quality filtering and grouping is applied: get_y
 
     As noted in issue #1438 it's not obvious what get_y is meant to
@@ -3045,7 +3027,7 @@ def test_grouped_pha_get_y(make_grouped_pha):
     # but the last group is marked bad by quality,
     # so we expect [1, 3]
     #
-    assert pha.get_y() == pytest.approx([1, 3])
+    assert pha.get_y(filter=filter) == pytest.approx([1, 3])
 
 
 def test_quality_pha_get_dep(make_quality_pha):
@@ -5872,7 +5854,7 @@ def test_pha_delete_unknown_background(bkg_id):
     b2 = DataPHA("b2", [1, 2, 3], [1, 1, 1])
 
     pha.set_background(b1, id="up")
-    pha.set_background(b1, id="down")
+    pha.set_background(b2, id="down")
 
     # This is treated as a no-op
     pha.delete_background(bkg_id)

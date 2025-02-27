@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2024
+#  Copyright (C) 2024, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -525,6 +525,7 @@ def test_roundtrip_rmf(make_data_path, tmp_path):
     with warnings.catch_warnings(record=True) as ws:
         rmf1 = io.read_rmf(infile)
 
+    # Check we get the message about ENERG_LO=0 being replaced.
     assert len(ws) == 1
 
     outpath = tmp_path / "test.rmf"
@@ -536,7 +537,8 @@ def test_roundtrip_rmf(make_data_path, tmp_path):
 
     check_rmf(rmf2)
 
-    assert len(ws2) == 1
+    # Check there's no message, since ENERG_LO > 0 now.
+    assert len(ws2) == 0
 
 
 @requires_data
@@ -600,7 +602,7 @@ def test_read_rmf_grating(make_data_path):
 
 @requires_data
 @requires_fits
-def test_roundtrip_rmf(make_data_path, tmp_path):
+def test_roundtrip_rmf_grating(make_data_path, tmp_path):
     """Can we write out a XMM grating RMF file and then read it back in?"""
 
     infile = make_data_path(RMFFILE_GRATING)
