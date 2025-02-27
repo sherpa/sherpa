@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020 - 2024
+#  Copyright (C) 2020 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -275,6 +275,7 @@ def test_pha_channel_empty_remains_empty():
     assert empty.channel is None
 
 
+@requires_group
 @pytest.mark.parametrize("chans", [None, [1, 2, 3]])
 def test_pha_group_when_empty(chans):
     """A regression test."""
@@ -2472,6 +2473,7 @@ def test_pha_change_quality_values(caplog):
     assert pha.get_filter() == '1:7'
 
 
+@requires_group
 def test_pha_group_adapt_check():
     """Regression test.
 
@@ -2540,6 +2542,7 @@ def test_pha_group_ignore_bad_then_filter(caplog):
     assert pha.get_dep(filter=True) == pytest.approx([6, 6])
 
 
+@requires_group
 def test_pha_group_ignore_bad_then_group(caplog):
     """Regression test."""
 
@@ -2585,6 +2588,7 @@ def test_pha_group_ignore_bad_then_group(caplog):
     assert pha.get_dep(filter=True) == pytest.approx([4, 3, 6, 6, 7])
 
 
+@requires_group
 def test_pha_filter_ignore_bad_filter(caplog):
     """A regression test.
 
