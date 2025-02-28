@@ -159,11 +159,13 @@ if HAS_PYTEST:
 
     def requires_group(test_function):
         """Decorator for test functions requiring group library"""
-        return requires_package("group library required", 'group')(test_function)
+        packages = ("sherpa.group", "group")
+        return requires_package("group library required", *packages)(test_function)
 
     def requires_stk(test_function):
         """Decorator for test functions requiring stk library"""
-        return requires_package("stk library required", 'stk')(test_function)
+        packages = ("sherpa.stk", "stk")
+        return requires_package("stk library required", *packages)(test_function)
 
     def requires_region(test_function):
         """Decorator for test functions requiring 2D region support"""
