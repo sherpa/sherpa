@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from typing import Callable, Sequence, SupportsFloat
+
 import numpy as np
 
 from sherpa.utils.parallel import ncpus
@@ -33,8 +35,11 @@ EPSILON = np.float64(np.finfo(np.float32).eps)
 
 class MyNelderMead(Opt):
 
-    def __init__(self, fcn, xmin, xmax):
-        Opt.__init__(self, fcn, xmin, xmax)
+    def __init__(self,
+                 func: Callable[..., SupportsFloat],
+                 xmin: Sequence[SupportsFloat],
+                 xmax: Sequence[SupportsFloat]) -> None:
+        super().__init__(func, xmin, xmax)
         self.expansion_coef = 2.0          # chi
         self.contraction_coef = 0.5          # gamma
         self.reflection_coef = 1.0          # rho
