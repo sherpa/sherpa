@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2016, 2020, 2021, 2022
+//  Copyright (C) 2009, 2016, 2020-2022, 2025
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -379,6 +379,18 @@ PyInit__region(void)
     Py_DECREF(&pyRegion_Type);
     Py_DECREF(m);
   }
+
+  // Add a symbol to indicate whether the module was built with the
+  // USE_CXCDM_PARSER macro set.
+  //
+  PyModule_AddIntConstant(m, "USE_CXCDM_PARSER",
+#ifdef USE_CXCDM_PARSER
+			  1
+#else
+			  0
+#endif
+			  );
+
   return m;
 
 }
