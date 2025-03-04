@@ -86,7 +86,7 @@ documentation, and should be read if the following is not sufficient.
 It is strongly recommended that some form of *virtual environment* is
 used with Sherpa.
 
-Sherpa is tested against Python versions 3.10 and 3.11 with experimental support for Python 3.12.
+Sherpa is tested against Python versions 3.10, 3.11, and 3.12.
 
 The last version of Sherpa which supported Python 2.7 is
 [Sherpa 4.11.1](https://doi.org/10.5281/zenodo.3358134).
