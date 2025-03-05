@@ -246,6 +246,10 @@ class InfinitePotential:
     expect rather than inf, to avoid causing problems to the
     optimizer).
 
+    See Also
+    --------
+    sherpa.optmethods.opt.InfinitePotential
+
     Notes
     -----
 
