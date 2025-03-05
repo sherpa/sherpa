@@ -114,7 +114,7 @@ const1d
 
 from collections.abc import Callable, Mapping, Sequence
 import logging
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import numpy as np
 
@@ -129,6 +129,30 @@ warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('GridSearch', 'OptMethod', 'LevMar', 'MonCar', 'NelderMead')
+
+
+T = TypeVar('T')
+
+
+class Callback(Generic[T]):
+    """Allow a function to be called with pre-set arguments.
+
+    .. versionadded:: 4.17.1
+
+    """
+
+    __slots__ = ("func", "args", "kwargs")
+
+    def __init__(self,
+                 func: Callable[..., T],
+                 args,
+                 kwargs) -> None:
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, args) -> T:
+        return self.func(args, *self.args, **self.kwargs)
 
 
 class OptMethod(NoNewAttributesAfterInit):
@@ -287,8 +311,7 @@ class OptMethod(NoNewAttributesAfterInit):
         if statkwargs is None:
             statkwargs = {}
 
-        def cb(pars):
-            return statfunc(pars, *statargs, **statkwargs)
+        cb = Callback(statfunc, statargs, statkwargs)
 
         output = self._optfunc(cb, pars, parmins, parmaxes, **self.config)
         (success, pars, fval, msg, imsg) = output
