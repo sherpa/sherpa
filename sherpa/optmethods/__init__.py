@@ -339,7 +339,7 @@ class GridSearch(OptMethod):
 
     """
 
-    def __init__(self, name='gridsearch') -> None:
+    def __init__(self, name: str = 'gridsearch') -> None:
         super().__init__(name=name, optfunc=grid_search)
 
 
@@ -593,7 +593,7 @@ class LevMar(OptMethod):
            Springer-Verlag: Berlin, 1978, pp.105-116.
 
         """
-    def __init__(self, name='levmar') -> None:
+    def __init__(self, name: str = 'levmar') -> None:
         super().__init__(name=name, optfunc=lmdif)
 
 
@@ -658,7 +658,7 @@ class MonCar(OptMethod):
 
     """
 
-    def __init__(self, name='moncar') -> None:
+    def __init__(self, name: str = 'moncar') -> None:
         super().__init__(name=name, optfunc=montecarlo)
 
 
@@ -862,5 +862,5 @@ class NelderMead(OptMethod):
            http://citeseer.ist.psu.edu/155516.html
 
     """
-    def __init__(self, name='simplex') -> None:
+    def __init__(self, name: str = 'simplex') -> None:
         super().__init__(name=name, optfunc=neldermead)

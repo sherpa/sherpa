@@ -182,6 +182,18 @@ def _par_at_boundary(low: np.ndarray,
     return False
 
 
+def _update_reported_nfev(result: OptReturn,
+                          nfev: int
+                          ) -> None:
+    """Add the extra function evaluations into the dictionary.
+
+    Although the OptReturn tuple is fixed, the dictionary in it
+    can be changed.
+    """
+
+    result[4]['nfev'] += nfev
+
+
 def _outside_limits(x: np.ndarray,
                     xmin: np.ndarray,
                     xmax: np.ndarray
@@ -482,17 +494,15 @@ def grid_search(fcn: StatFunc,
         # re.search( '^[Nn]elder[Mm]ead', method ):
         nm_result = neldermead(fcn, x, xmin, xmax, ftol=ftol, maxfev=maxfev,
                                verbose=verbose)
-        (status, x, fval, msg, imap) = nm_result
-        imap['nfev'] += nfev
-        return (status, x, fval, msg, imap)
+        _update_reported_nfev(nm_result, nfev)
+        return nm_result
 
     if method in ['LevMar', 'levmar', 'Levmar', 'levMar']:
         # re.search( '^[Ll]ev[Mm]ar', method ):
         levmar_result = lmdif(fcn, x, xmin, xmax, ftol=ftol, xtol=ftol,
                               gtol=ftol, maxfev=maxfev, verbose=verbose)
-        (status, x, fval, msg, imap) = levmar_result
-        imap['nfev'] += nfev
-        return (status, x, fval, msg, imap)
+        _update_reported_nfev(levmar_result, nfev)
+        return levmar_result
 
     fval = answer[0]
     ierr = 0
@@ -683,7 +693,7 @@ def montecarlo(fcn: StatFunc,
                                 ftol=ftol, finalsimplex=9, step=mystep)
             x = np.asarray(result[1], np.float64)
             nfval = result[2]
-            nfev = result[4].get('nfev')
+            nfev = result[4]['nfev']
         else:
             ncores_nm = ncoresNelderMead()
             nfev, nfval, x = \
@@ -700,7 +710,7 @@ def montecarlo(fcn: StatFunc,
         if 1 == numcores:
             result = difevo_nm(myfcn, x, xmin, xmax, ftol, mymaxfev, verbose,
                                seed, pop, xprob, weight)
-            nfev += result[4].get('nfev')
+            nfev += result[4]['nfev']
             x = np.asarray(result[1], np.float64)
             nfval = result[2]
         else:
@@ -732,12 +742,12 @@ def montecarlo(fcn: StatFunc,
                 # TODO: should this update the seed somehow?
                 result = difevo_nm(myfcn, y, xmin, xmax, ftol, mymaxfev,
                                    verbose, seed, pop, xprob, weight)
-                nfev += result[4].get('nfev')
+                nfev += result[4]['nfev']
                 if result[2] < nfval:
                     nfval = result[2]
                     x = np.asarray(result[1], np.float64)
                 if verbose:
-                    print(f'f_de_nm{x}={result[2]:.14e} in {result[4].get("nfev")} nfev')
+                    print(f'f_de_nm{x}={result[2]:.14e} in {result[4]["nfev"]} nfev')
 
             ############################ nmDifEvo #############################
 
@@ -766,7 +776,7 @@ def montecarlo(fcn: StatFunc,
 
             x = np.asarray(result[1], np.float64)
             fval = result[2]
-            nfev += result[4].get('nfev')
+            nfev += result[4]['nfev']
         else:
             ncores_nm = ncoresNelderMead()
             tmp_nfev, tmp_fmin, tmp_par = \
@@ -1087,7 +1097,7 @@ def neldermead(fcn: StatFunc,
                        maxfev=maxfev - nfev - 12, iquad=1,
                        reflect=reflect)
         nelmea_x = np.asarray(nelmea[1], np.float64)
-        nelmea_nfev = nelmea[4].get('nfev')
+        nelmea_nfev = nelmea[4]['nfev']
         covarerr = nelmea[4].get('covarerr')
         nfev += nelmea_nfev
         minim_fval = nelmea[2]
