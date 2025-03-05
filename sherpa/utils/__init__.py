@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018 - 2024
+#  Copyright (C) 2007, 2015, 2016, 2018 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -2643,7 +2643,7 @@ def is_in(arg, seq):
     return False
 
 
-def is_iterable(arg):
+def is_iterable(arg) -> bool:
     return isinstance(arg, (list, tuple, np.ndarray)) or np.iterable(arg)
 
 
@@ -2654,11 +2654,11 @@ def is_iterable_not_str(arg: Any) -> bool:
     return not isinstance(arg, str) and isinstance(arg, Iterable)
 
 
-def is_sequence(start, mid, end):
+def is_sequence(start, mid, end) -> bool:
     return start < mid < end
 
 
-def Knuth_close(x, y, tol, myop=operator.__or__):
+def Knuth_close(x, y, tol, myop=operator.__or__) -> bool:
     """Check whether two floating-point numbers are close together.
 
     See Also
