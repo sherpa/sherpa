@@ -33,6 +33,8 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
            'SimplexStep')
 
 
+FUNC_MAX = np.finfo(np.float64).max
+
 # import autograd.numpy as np
 # from autograd import hessian
 # from numpy.linalg.linalg import LinAlgError
@@ -83,8 +85,53 @@ class MyNcores:
         raise NotImplementedError("my_worker has not been implemented")
 
 
+class InfinitePotential:
+    """Ensure the parameter values stay within bounds.
+
+    The idea is that if sent a value outside the parameter limits we
+    return "infinity" (here defined to be the maximum value we'd
+    expect rather than inf, to avoid causing problems to the
+    optimizer).
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    sherpa.optmethods.optfcts.InfinitePotential
+
+    Notes
+    -----
+
+    The function used here returns SupportsFloat, and the bounds here
+    check that they lie within minval <= pars <= maxval. Another
+    difference to the optfcts version is that the function can be
+    called with 1 or more arguments, rather than only one argument.
+
+    """
+
+    __slots__ = ("func", "minval", "maxval")
+
+    def __init__(self,
+                 func: Callable[..., SupportsFloat],  # Can we simplify this to float?
+                 minval: np.ndarray,
+                 maxval: np.ndarray
+                 ) -> None:
+        self.func = func
+        self.minval = minval
+        self.maxval = maxval
+
+    def __call__(self, x, *args) -> SupportsFloat:
+        if np.any(x < self.minval) or np.any(x > self.maxval):
+            return FUNC_MAX
+
+        return self.func(x, *args)
+
+
 class Opt:
     """Base optimisation class.
+
+    .. versionchanged:: 4.17.1
+       The `func_bounds` field has been removed.
 
     .. versionchanged:: 4.17.0
        The class structure has been changed (e.g. `nfev` is now a
@@ -97,62 +144,26 @@ class Opt:
                  xmin: ArrayType,
                  xmax: ArrayType
                  ) -> None:
-        self.npar = len(xmin)
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
+        self.npar = len(self.xmin)
+        if self.npar != len(self.xmax):
+            raise ValueError("xmin and xmax must be the same size")
+
+        # The function count should only be done on "valid" ranges,
+        # hence the ordering here.
+        #
         self.func_count = FuncCounter(func)
-        self.func = self.func_bounds(self.func_count, self.npar, xmin, xmax)
+        self.func = InfinitePotential(self.func_count, self.xmin, self.xmax)
 
     @property
     def nfev(self) -> int:
+        """How many evaluations of the function have been made?
+
+        This does not count values which were outside the parameter
+        limits.
+        """
         return self.func_count.nfev
-
-    def _outside_limits(self,
-                        x: np.ndarray,
-                        xmin: np.ndarray,
-                        xmax: np.ndarray
-                        ) -> bool:
-        return bool(np.any(x < xmin) or np.any(x > xmax))
-
-    # We should be able to take these parameters from the class, or
-    # re-write this logic.
-    #
-    def func_bounds(self,
-                    func: Callable,
-                    npar: int,
-                    xmin: ArrayType | None = None,
-                    xmax: ArrayType | None = None
-                    ) -> Callable:
-        """In order to keep the current number of function evaluations:
-        func_counter should be called before func_bounds. For example,
-        the following code
-          x0 = [-1.2, 1.0]
-          xmin = [-10.0, -10.0]
-          xmax = [10.0, 10.0]
-          nfev, rosen = func_counter(Rosenbrock)
-          rosenbrock = func_bounds(rosen, xmin, xmax)
-          print rosenbrock([-15.0, 1.0]), nfev[0]
-        should output:
-        inf 0"""
-        if xmin is not None and xmax is not None:
-            xmin = np.asarray(xmin)
-            xmax = np.asarray(xmax)
-        elif xmin is not None:
-            xmin = np.asarray(xmin)
-            xmax = np.asarray([np.inf for ii in xmin])
-        elif xmax is not None:
-            xmax = np.asarray(xmax)
-            xmin = np.asarray([- np.inf for ii in xmax])
-        else:
-            xmin = np.asarray([- np.inf for ii in range(npar)])
-            xmax = np.asarray([np.inf for ii in range(npar)])
-
-        def func_bounds_wrapper(x, *args):
-            if self._outside_limits(x, xmin, xmax):
-                return np.finfo(np.float64).max
-            return func(x, *args)
-
-        return func_bounds_wrapper
 
 
 class SimplexBase:

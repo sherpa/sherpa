@@ -210,7 +210,14 @@ class InfinitePotential:
 
     See Also
     --------
-    Callback
+    Callback, sherpa.optmethods.opt.InfinitePotential
+
+    Notes
+    -----
+
+    The function used here returns tuple[float, np.ndarray], and the
+    bounds here include checking that the parameter values are finite
+    and lie within minval <= pars <= maxval.
 
     Notes
     -----
