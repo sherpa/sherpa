@@ -1,12 +1,13 @@
-name: WSL
+name: Weekly cron (WSL)
 
 on:
-  push:
-    branches:
-    - main
-    tags:
-    - '*'
+  schedule:
+    # when is a good time?
+    - cron: '0 23 * * THU'
   pull_request:
+    # We also want this workflow triggered if the 'CI wsl' label is added
+    # or present when PR is updated
+    types: [synchronize, labeled]
 
 #Reduces GH Action duplication:
 # Cancels the previous pipeline for this ref it is still running
@@ -21,8 +22,7 @@ jobs:
   build-pip:
     name: Build with Pip
     runs-on: windows-2025
-    
-    # if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI wsl')))
+    if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI wsl')))
 
     steps:
     # See
@@ -100,8 +100,7 @@ jobs:
   build-conda:
     name: Build with conda
     runs-on: windows-2025
-
-    # if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI wsl')))
+    if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI wsl')))
 
     steps:
     # See
