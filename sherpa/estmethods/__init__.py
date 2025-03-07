@@ -28,9 +28,10 @@ from typing import Protocol, SupportsFloat
 import numpy as np
 from numpy.linalg import LinAlgError
 
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, \
-    is_iterable, list_to_open_interval, quad_coef, \
-    demuller, zeroin, OutOfBoundErr, FuncCounter
+from sherpa.utils import NoNewAttributesAfterInit, \
+    FuncCounter, OutOfBoundErr, Knuth_close, \
+    print_fields, is_iterable, list_to_open_interval, quad_coef, \
+    demuller, zeroin
 from sherpa.utils.parallel import SupportsLock, SupportsProcess, \
     SupportsQueue, multi, ncpus, context, process_tasks
 from sherpa.utils.types import ArrayType, FitFunc, StatFunc
@@ -97,7 +98,7 @@ class EstMethod(NoNewAttributesAfterInit):
         # requires declaration in __init__()
         self.config = self.config.copy()
 
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def __getattr__(self, name):
         if name in self.__dict__.get('config', ()):
@@ -177,7 +178,7 @@ class Covariance(EstMethod):
     """The covariance method for estimating errors."""
 
     def __init__(self, name: str = 'covariance') -> None:
-        EstMethod.__init__(self, name, covariance)
+        super().__init__(name, estfunc=covariance)
 
 
 class Confidence(EstMethod):
@@ -195,7 +196,7 @@ class Confidence(EstMethod):
                      'openinterval': False}
 
     def __init__(self, name: str = 'confidence') -> None:
-        EstMethod.__init__(self, name, confidence)
+        super().__init__(name, estfunc=confidence)
 
         # Update EstMethod.config dict with Confidence specifics
         self.config.update(self._added_config)
@@ -273,7 +274,7 @@ class Projection(EstMethod):
                      'tol': 0.2}
 
     def __init__(self, name: str = 'projection') -> None:
-        EstMethod.__init__(self, name, projection)
+        super().__init__(name, estfunc=projection)
 
         # Update EstMethod.config dict with Projection specifics
         self.config.update(self._added_config)
@@ -776,7 +777,7 @@ class ConfRootBracket(ConfRootNone):
                  trial_points,
                  open_interval
                  ) -> None:
-        ConfRootNone.__init__(self, None)
+        super().__init__(root=None)
         self.fcn = fcn
         self.trial_points = trial_points
         self.open_interval = open_interval
