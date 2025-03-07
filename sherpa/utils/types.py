@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2024
+#  Copyright (C) 2024, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -26,7 +26,8 @@ in Python matures.
 
 """
 
-from typing import Any, Callable, Sequence, Union
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -38,12 +39,12 @@ import numpy as np
 
 # Represent identifiers; mainly used in the UI code.
 #
-IdType = Union[int, str]
+IdType = int | str
 
 # Try to be generic when using arrays as input or output. There is no
 # attempt to encode the data type or shape for ndarrays at this time.
 #
-ArrayType = Union[Sequence[float], np.ndarray]
+ArrayType = Sequence[float] | np.ndarray
 
 # Represent statistic evaluation.
 #

@@ -68,7 +68,8 @@ Best-fit value: 4.0
 
 """
 
-from typing import Sequence, SupportsFloat
+from collections.abc import Sequence
+from typing import SupportsFloat
 
 import numpy as np
 
@@ -359,7 +360,7 @@ def difevo_nm(fcn: StatFunc,
     ierr = de[3]
 
     if verbose:
-        print('difevo_nm: f{x}={fval:e} in {nfev} nfev')
+        print(f'difevo_nm: f{x}={fval:e} in {nfev} nfev')
 
     status, msg = _get_saofit_msg(maxfev, ierr)
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
