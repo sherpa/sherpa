@@ -202,4 +202,25 @@ else
   xspec_dep = disabler()
 endif
 
+# Summarize
+#
+message('-----------------------')
+message('Build summary:')
+
+deps = {
+  'region': region_dep,
+  'wcssubs': wcssubs_dep,
+  'fftw3': fftw3_dep,      # this is currently a requirement
+  'xspec': xspec_dep
+}
+
+foreach label, dep : deps
+  if dep.found()
+    message('  ', label, ':   true')
+  else
+    message('  ', label, ':   false')
+  endif
+endforeach
+message('-----------------------')
+
 subdir('sherpa')
