@@ -41,6 +41,7 @@ __all__ = ('EstNewMin', 'Covariance', 'Confidence',
            'est_hardmax', 'est_hardminmax', 'est_newmin', 'est_maxiter',
            'est_hitnan')
 
+
 est_success = 0
 est_failure = 1
 est_hardmin = 2
@@ -50,40 +51,6 @@ est_newmin = 5
 est_maxiter = 6
 est_hitnan = 7
 
-# For every method listed here, we have the same goal:  derive confidence
-# limits for thawed parameters.  Thawed parameters are allowed to vary
-# during a fit; when a model has been fit to data, then the current
-# parameter values are presumably the best-fit values.  Think of the
-# best-fit values as being at the lowest point in a valley in parameter
-# space--any step away, in any direction, means a worse fit (i.e., the
-# value of the fit statistic is greater).  Confidence limits tell you
-# how well constrained those best fit values are; i.e., are we in a deep,
-# narrow valley in parameter space?  If so, we can be confident the limits
-# are small.  But if the valley is shallow and broad, then the confidence
-# limits will also be very broad.
-#
-# Every method is passed the same information:
-#  the current values of all thawed parameters;
-#  the soft limits of all thawed parameters;
-#  the hard limits of all thawed parameters;
-#  the list of parameters for which we are actually want confidence
-#    limits (this can be a subset of all thawed parameters)
-#  a reference to the statistic function;
-#  a reference to the fitting function.
-
-
-# class EstMethodError(SherpaError):
-#    "Reached an error while computing parameter confidence limits"
-#    pass
-#
-# class EstHardMin(EstMethodError):
-#    "Reached a parameter hard minimum"
-#    pass
-#
-# class EstHardMax(EstMethodError):
-#    "Reached a parameter hard maximum"
-#    pass
-#
 
 # This class is used to send around the "new parameter values" in
 # sherpa.fit.Fit.est_errors.
@@ -91,14 +58,6 @@ est_hitnan = 7
 class EstNewMin(Exception):
     "Reached a new minimum fit statistic"
     pass
-#
-# class EstMaxIter(EstMethodError):
-#    "Reached maximum iterations in scaling function"
-#    pass
-#
-# class EstNaN(EstMethodError):
-#    "Reached a NaN during computation"
-#    pass
 
 
 class EstMethod(NoNewAttributesAfterInit):
@@ -532,7 +491,6 @@ class ConfBlog:
 
 
 class ConfBracket:
-
     """The class ConfBracket is responsible for bracketing the root within
     the interval (a,b) where f(a)*f(b) < 0.0"""
 
@@ -675,7 +633,6 @@ class ConfBracket:
 
 
 class ConfRootNone:
-
     """The base class for the root of the confidence interval"""
 
     def __init__(self, root=None):
@@ -694,7 +651,6 @@ class ConfRootNone:
 
 
 class ConfRootBracket(ConfRootNone):
-
     """The class contains the bracket where the confidence root has
     been bracketed, ie where f(a)*f(b) < 0"""
 
@@ -761,7 +717,6 @@ class ConfRootBracket(ConfRootNone):
 
 
 class ConfRootZero(ConfRootNone):
-
     """The class with the root/zero of the confidence interval"""
 
     def __str__(self):
