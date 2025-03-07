@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2018, 2019, 2021, 2022, 2023
+#  Copyright (C) 2018-2019, 2021-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -51,6 +51,11 @@ def test_ARFModelPHA(make_data_path, clean_astro_ui):
     ui.set_model(ui.xsphabs.abs1 * (ui.xsapec.bubble + ui.powlaw1d.p1))
     ui.set_xsabund('angr')
     ui.set_xsxsect('vern')
+
+    abs1 = ui.get_model_component("abs1")
+    bubble = ui.get_model_component("bubble")
+    p1 = ui.get_model_component("p1")
+
     abs1.nh = 0.163
     abs1.nh.freeze()
     p1.ampl = 0.017
@@ -221,6 +226,7 @@ def test_cache_copy(clean_astro_ui):
     ui.set_source(ui.const1d.mdl)
 
     # again not 1
+    mdl = ui.get_model_component("mdl")
     mdl.c0 = 8
 
     # Copy the values from the plot structures, since get_xxx_plot

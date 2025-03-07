@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021
+#  Copyright (C) 2017, 2018, 2020, 2021, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -48,13 +48,12 @@ import numpy as np
 
 import pytest
 
-from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import ARFModelPHA, RMFModelPHA, RSPModelPHA, \
     create_arf, create_delta_rmf
 from sherpa.astro import io
 from sherpa.models.basic import Const1D, StepHi1D
 from sherpa.stats import Chi2DataVar, CStat
-from sherpa.utils.err import ArgumentErr, DataErr
 
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 

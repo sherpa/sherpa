@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 - 2018, 2020 - 2021, 2023 - 2024
+#  Copyright (C) 2016 - 2018, 2020 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -49,7 +49,7 @@ def test_mod_fits(make_data_path, clean_astro_ui, caplog):
 
     msg = "Use load_xstable_model to load XSPEC table models"
     assert len(warn) == 1
-    assert warn[0].category == DeprecationWarning
+    assert warn[0].category is DeprecationWarning
     assert str(warn[0].message) == msg
 
     tmod = ui.get_model_component("tmod")

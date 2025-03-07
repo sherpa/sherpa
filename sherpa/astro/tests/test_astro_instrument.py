@@ -59,7 +59,7 @@ def validate_zero_replacement(ws, rtype, label, ethresh):
 
     assert len(ws) == 1
     w = ws[0]
-    assert w.category == UserWarning
+    assert w.category is UserWarning
 
     emsg = f"The minimum ENERG_LO in the {rtype} '{label}' " + \
            f"was 0 and has been replaced by {ethresh}"
@@ -1364,7 +1364,7 @@ def test_rsp_multi_1_label(arfexp, phaexp):
     #   - why is there "((flat))" and not "(flat)" for apply_arf?
     #   - there are not enough closing brackets
     #
-    expname = f'MultiResponseSumModel(apply_rmf(apply_arf((flat))'
+    expname = 'MultiResponseSumModel(apply_rmf(apply_arf((flat))'
     if phaexp:
         expname = f"220.9 * {expname}"
 
@@ -1458,7 +1458,7 @@ def test_rsp_multi_2_label(analysis, arfexp, phaexp):
     #   - see test_rsp_multi_1_label
     #   - multiple responses are not handled particularly well
     #
-    expname = f'MultiResponseSumModel(apply_rmf(apply_arf((flat),apply_rmf(apply_arf((flat))'
+    expname = 'MultiResponseSumModel(apply_rmf(apply_arf((flat),apply_rmf(apply_arf((flat))'
     if phaexp:
         expname = f"220.9 * {expname}"
 

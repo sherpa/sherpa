@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2023, 2024
+#  Copyright (C) 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -136,8 +136,6 @@ import time
 from typing import Optional, Sequence, Union
 
 import numpy as np
-
-import sherpa
 
 from .types import HeaderItem, Header, Column, TableBlock, BlockList
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015 - 2019, 2021 - 2024
+#  Copyright (C) 2007, 2015 - 2019, 2021 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -49,16 +49,15 @@ interface):
 
 """
 
+from collections.abc import Callable, Sequence, Mapping
 from configparser import ConfigParser
 from contextlib import suppress
 import importlib
 import importlib.metadata
 import logging
-import os
 from pathlib import Path
 import re
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
-    Sequence, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Type, TypeVar
 
 import numpy as np
 
@@ -72,22 +71,22 @@ from sherpa.utils import is_subclass
 from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils.numeric_types import SherpaFloat, SherpaUInt
 
-from .types import KeyType, NamesType, HdrTypeArg, HdrType, DataType, \
-    Header, HeaderItem, Column, Block, TableBlock, ImageBlock, \
+from .types import NamesType, HdrTypeArg, HdrType, DataType, \
+    Header, HeaderItem, Column, TableBlock, ImageBlock, \
     BlockList, BlockType, SpecrespBlock, MatrixBlock, EboundsBlock
 
 # Responses can often be send as the Data object or the instrument
 # version, so support it would be good to support this with types
 # like
 #
-#  RMFType = Union[DataRMF, RMF1D]
+#  RMFType = DataRMF | RMF1D
 #
 # but that is annoying thanks to circular dependencies.
 #
 if TYPE_CHECKING:
     from sherpa.astro.instrument import ARF1D, RMF1D
-    ARFType = Union[DataARF, ARF1D]
-    RMFType = Union[DataRMF, RMF1D]
+    ARFType = DataARF | ARF1D
+    RMFType = DataRMF | RMF1D
 
 else:
     ARFType = DataARF
@@ -103,7 +102,7 @@ io_opt = [o.strip().lower() + '_backend' for o in
 
 ogip_emin_str = config.get('ogip', 'minimum_energy', fallback='1.0e-10')
 
-ogip_emin : Optional[float]
+ogip_emin : float | None
 if ogip_emin_str.upper() == 'NONE':
     ogip_emin = None
 else:
@@ -207,7 +206,7 @@ def read_arrays(*args) -> Data:
 
 def read_table(arg,
                ncols: int = 2,
-               colkeys: Optional[NamesType] = None,
+               colkeys: NamesType | None = None,
                dstype: Type[Data1D] = Data1D) -> Data1D:
     """Create a dataset from a tabular file.
 
@@ -272,7 +271,7 @@ def read_table(arg,
 #
 def read_ascii(filename: str,
                ncols: int = 2,
-               colkeys: Optional[NamesType] = None,
+               colkeys: NamesType | None = None,
                dstype: Type[Data1D] = Data1D,
                **kwargs) -> Data1D:
     """Create a dataset from an ASCII tabular file.
@@ -558,6 +557,8 @@ def _extract_rmf(matrix: MatrixBlock,
     for ng, fc, nc, mxs in zip(ng_raw, fc_raw, nc_raw, mx_raw):
         # fc and nc may be scalars rather than an array (this is known
         # before the loop but for now we check for it each row).
+        # It is assumed that fc and nc have the same "size" (i.e.
+        # array or scalar).
         #
         try:
             f_chan_l.append(fc[:ng])
@@ -653,7 +654,7 @@ def _read_ancillary(header: Header,
                     label: str,
                     dpath: Path,
                     read_func: Callable[[str], T],
-                    output_once: bool) -> Optional[T]:
+                    output_once: bool) -> T | None:
     """Read in a file if the keyword is set.
 
     Parameters
@@ -734,7 +735,7 @@ def _process_pha_block(filename: str,
     exposure = None if expval is None else expval.value
 
     def get(name: str,
-            expand: bool = False) -> Optional[Union[np.ndarray, int, float, np.integer, np.floating]]:
+            expand: bool = False) -> np.ndarray | int | float | np.integer | np.floating | None:
         """Return the column values if they exist.
 
         This checks for columns and then the header. For the header
@@ -763,7 +764,7 @@ def _process_pha_block(filename: str,
 
         return val
 
-    def getcol(name: str) -> Optional[np.ndarray]:
+    def getcol(name: str) -> np.ndarray | None:
         """Return the column values if they exist.
 
         This does not check for a matching keyword to support the
@@ -913,8 +914,8 @@ def _process_pha_block(filename: str,
 
 
 def _process_pha_backfile(filename: str,
-                          arf: Optional[DataARF],
-                          rmf: Optional[DataRMF],
+                          arf: DataARF | None,
+                          rmf: DataRMF | None,
                           *,
                           output_once: bool,
                           use_errors: bool) -> list[DataPHA]:
@@ -939,7 +940,7 @@ def _process_pha_backfile(filename: str,
 def read_pha(arg,
              use_errors: bool = False,
              use_background: bool = False
-             ) -> Union[DataPHA, list[DataPHA]]:
+             ) -> DataPHA | list[DataPHA]:
     """Create a DataPHA object.
 
     .. versionchanged:: 4.17.0
@@ -2031,7 +2032,7 @@ def _pack_rmf(dataset: RMFType) -> BlockList:
 
 def write_arrays(filename: str,
                  args: Sequence[np.ndarray],
-                 fields: Optional[NamesType] = None,
+                 fields: NamesType | None = None,
                  ascii: bool = True,
                  clobber: bool = False) -> None:
     """Write out a collection of arrays.

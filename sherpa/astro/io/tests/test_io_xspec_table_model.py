@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2023
+#  Copyright (C) 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -226,7 +226,6 @@ def test_check_nxfp_match():
     """When NXFP is set we need more spectra"""
 
     p0 = xstable.Param("nop", 1, -1, 0, 1, values=[0, 1])
-    ap0 = xstable.BaseParam("bob", 1, -1, 0, 1)
     model1 = [1, 2, 3]
     model2 = [2, 5, 6]
     with pytest.raises(ValueError, match="^Expected 4 spectra, found 2$"):

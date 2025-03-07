@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018 - 2024
+#  Copyright (C) 2007, 2015, 2018 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,7 +30,7 @@ from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.plot import SourcePlot, ComponentSourcePlot, \
     DataPHAPlot, ModelPHAHistogram, ModelHistogram, OrderPlot, \
-    EnergyFluxHistogram, PhotonFluxHistogram, _check_hist_bins, \
+    _check_hist_bins, \
     BkgModelPHAHistogram, BkgModelHistogram, BkgDataPlot, \
     ComponentModelPlot, ARFPlot, RMFPlot
 from sherpa.astro import plot as aplot

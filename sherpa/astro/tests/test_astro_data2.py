@@ -21,7 +21,10 @@
 """Continued testing of sherpa.astro.data."""
 
 import logging
+from pathlib import Path
 import pickle
+import struct
+from typing import Any
 import re
 import warnings
 
@@ -42,6 +45,12 @@ from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_region, requires_wcs
 
+try:
+    from sherpa.astro.io import backend
+    is_crates_io = backend.name == "crates"
+except ImportError:
+    is_crates_io = False
+
 
 def test_can_not_group_ungrouped():
     """Does setting the grouping setting fail with no data?"""
@@ -53,7 +62,7 @@ def test_can_not_group_ungrouped():
         pha.grouped = True
 
 
-def test_pha_get_indep_when_all_filtered():
+def test_pha_get_indep_when_all_filtered_ignore():
     """Regression test."""
 
     pha = DataPHA("pha", [1, 2, 3], [9, 7, 8])
@@ -66,7 +75,7 @@ def test_pha_get_indep_when_all_filtered():
     assert indep[0] == pytest.approx([])
 
 
-def test_pha_get_indep_when_all_filtered():
+def test_pha_get_indep_when_all_filtered_manual():
     """Regression test."""
 
     pha = DataPHA("pha", [1, 2, 3], [9, 7, 8])
@@ -3001,26 +3010,8 @@ def test_361():
     assert pha.get_noticed_channels() == pytest.approx([3, 4, 7, 8])
 
 
-def test_grouped_pha_get_dep(make_grouped_pha):
-    """Quality filtering and grouping is applied: get_dep
-
-    As noted in issue #1438 it's not obvious what get_y is meant to
-    return. It is not the same as get_dep as there's post-processing.
-    So just test the current behavior.
-
-    """
-    pha = make_grouped_pha
-
-    # grouped counts are [3, 3, 12]
-    # channel widths are [3, 1, 1]
-    # which gives [1, 3, 12]
-    # but the last group is marked bad by quality,
-    # so we expect [1, 3]
-    #
-    assert pha.get_dep() == pytest.approx([1, 3])
-
-
-def test_grouped_pha_get_y(make_grouped_pha):
+@pytest.mark.parametrize("filter", [False, True])
+def test_grouped_pha_get_y(filter, make_grouped_pha):
     """Quality filtering and grouping is applied: get_y
 
     As noted in issue #1438 it's not obvious what get_y is meant to
@@ -3036,7 +3027,7 @@ def test_grouped_pha_get_y(make_grouped_pha):
     # but the last group is marked bad by quality,
     # so we expect [1, 3]
     #
-    assert pha.get_y() == pytest.approx([1, 3])
+    assert pha.get_y(filter=filter) == pytest.approx([1, 3])
 
 
 def test_quality_pha_get_dep(make_quality_pha):
@@ -5863,7 +5854,7 @@ def test_pha_delete_unknown_background(bkg_id):
     b2 = DataPHA("b2", [1, 2, 3], [1, 1, 1])
 
     pha.set_background(b1, id="up")
-    pha.set_background(b1, id="down")
+    pha.set_background(b2, id="down")
 
     # This is treated as a no-op
     pha.delete_background(bkg_id)
@@ -6158,3 +6149,410 @@ def test_rmf_get_dep_complex():
     #
     y = rmf.get_dep()
     assert y == pytest.approx([0, 0.4, 1.8, 2.8, 0])
+
+
+# Some problems are "ephemeral" as a tool that creates the file gets
+# updated. So it is hard to add problematic files to the sherpa test
+# data area. Instead we can create them on the fly, which is not ideal
+# (hard-code the FITS creation) but does at least mean we can test
+# specfic problems.
+#
+def add_spacer(fh, size: int, binary=True) -> None:
+    "Fill up the header with blank characters"
+
+    chunksize = 2880
+    rem = size % chunksize
+    if rem == 0:
+        return
+
+    spacer = chunksize - rem
+    if binary:
+        out = b"\x00" * spacer
+        fh.write(out)
+    else:
+        out = " " * spacer
+        fh.write(out.encode())
+
+
+def add_header(fh,
+               header: list[tuple[str, Any]]
+               ) -> None:
+    chars = 0
+    for key, val in header:
+        assert len(key) < 9
+        out = f"{key.upper():8s}= "
+        # This is incomplete (e.g. no time value encoding)
+        if isinstance(val, str):
+            out += f"'{val:8s}'"
+        elif isinstance(val, bool):
+            # check before integer
+            val = 'T' if val else 'F'
+            out += f"{val:>20s}"
+        elif isinstance(val, (int, np.integer)):
+            out += f"{val:20d}"
+        elif isinstance(val, (float, np.floating)):
+            out += f"{val:20.13E}"
+        else:
+            raise RuntimeError(f"missing support for {type(val)}")
+
+        # note: no support for CONTINUE lines
+        fh.write(f"{out:80s}".encode())
+        chars += 80
+
+    fh.write(f"{'END':80s}".encode())
+    chars += 80
+
+    add_spacer(fh, chars, binary=False)
+
+
+def make_problem_pha(filename: Path,
+                     minchan: int
+                     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Create a basic PHA file with issues.
+
+    - issue #2185, TLMIN/MAX are strings
+    - QUALITY is a bool column (CIAO helpdesk)
+
+    Unfortunately the TLMIN check for DataPHA doesn't quite match the
+    RMF case that caused #2185, since the current code does not
+    actually do anything with the PHA TLMIN values.
+
+    """
+
+    primary = [("SIMPLE", True),
+               ("BITPIX", 16),
+               ("NAXIS", 0),
+               ("EXTEND", True),
+               ("HDUNAME", "PRIMARY")]
+
+    nrows = 5
+
+    chans = np.arange(nrows, dtype=np.int16) + minchan
+    counts = np.arange(nrows, dtype=np.int16)
+    quals = np.zeros(nrows, dtype=bool)
+    quals[-1] = True
+
+    # Use big-endian for data.
+    spectrum_fmt = ">ii?"
+    spectrum_size = struct.calcsize(spectrum_fmt)
+
+    spectrum = [("XTENSION", "BINTABLE"),
+                ("BITPIX", 8),
+                ("NAXIS", 2),
+                ("NAXIS1", spectrum_size),
+                ("NAXIS2", nrows),
+                ("PCOUNT", 0),
+                ("GCOUNT", 1),
+                ("TFIELDS", 3),
+                ("EXTNAME", "SPECTRUM"),
+                ("CONTENT", "PHA"),
+                ("HDUCLASS", "OGIP"),
+                ("HDUCLAS1", "SPECTRUM"),
+                ("HDUCLAS2", "TOTAL"),
+                ("HDUCLAS3", "TYPE:1"),
+                ("HDUCLAS4", "COUNT"),
+                ("CHANTYPE", "PI"),
+                ("DETCHANS", nrows),
+                ("MISSION", "MADEUP"),
+                ("TELESCOP", "NOTHING"),
+                ("INSTRUME", "SPECIAL"),
+                ("FILTER", "NONE"),
+                ("OBJECT", "Simulated data"),
+                ("EXPOSURE", 1000.0),
+                ("AREASCAL", 1.0),
+                ("CORRSCAL", 1.0),
+                ("BACKSCAL", 1.2e-5),
+                ("TOTCTS", counts.sum()),
+                ("POISSERR", True),
+                ("STAT_ERR", 0),
+                ("BACKFILE", "none"),
+                ("CORRFILE", "none"),
+                ("ANCRFILE", "none"),
+                ("RESPFILE", "none"),
+                ("TTYPE1", "CHANNEL"),
+                ("TFORM1", "1J"),
+                ("TLMIN1", str(minchan)),
+                ("TLMAX1", str(minchan + nrows - 1)),
+                ("TTYPE2", "COUNTS"),
+                ("TFORM2", "1J"),
+                ("TLMIN2", counts.min()),
+                ("TLMAX2", counts.max()),
+                ("TUNIT2", "count"),
+                ("TTYPE3", "QUALITY"),
+                ("TFORM3", "1B")
+                ]
+
+    with open(filename, mode="w+b") as fh:
+        add_header(fh, primary)
+        add_header(fh, spectrum)
+
+        size = 0
+        for chan, count, qual in zip(chans, counts, quals):
+            fh.write(struct.pack(spectrum_fmt, chan, count, qual))
+            size += spectrum_size
+
+        add_spacer(fh, size)
+
+    return chans, counts, quals
+
+
+def make_problem_rmf(filename: Path,
+                     minchan: int
+                     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Create a basic RMF file with issues.
+
+    - issue #2185, TLMIN/MAX are strings
+      ideally with a VLF array since make_problem_pha tests
+      the case of a normal column
+
+    Using a VLF column (actually, three, since we need the TLMIN check
+    on F_CHAN but N_CHAN needs to match it and this means that the
+    MATRIX column is also a VLF) means understanding how the FITS heap
+    works (an area after the normal data that is referenced for each
+    VLF column to store the actual data).
+
+    """
+
+    primary = [("SIMPLE", True),
+               ("BITPIX", 16),
+               ("NAXIS", 0),
+               ("EXTEND", True)]
+
+    nrows = 4
+
+    chans = np.arange(nrows, dtype=np.int16) + minchan
+    energ = np.linspace(0.1, 1.5, nrows + 1)
+    energ_lo = energ[:-1]
+    energ_hi = energ[1:]
+
+    # What are the f_chan, n_chan, and matrix values?
+    #
+    # This is simplified by having N_CHAN=1 for each element, which
+    # means the MATRIX matches F_CHAN/N_CHAN.
+    #
+    f_chans = [ [chans[0]],
+                [chans[1], chans[1] + 2],
+                [chans[2]],
+                [chans[3]]
+              ]
+    n_chans = [ [1], [1, 1], [1], [1] ]
+    matrixs = [ [1], [0.7, 0.3], [1], [1] ]
+
+    n_grps = [ len(nc) for nc in n_chans ]
+
+    # Columns 4 to 6 are two int 32 elements each (pointers into the
+    # heap).
+    matrix_fmt = ">ffhiiiiii"
+    matrix_size = struct.calcsize(matrix_fmt)
+
+    # We have three rows the same and one row with double the amount
+    # of data.
+    #
+    matrix_heap_fmt1 = ">hhf"
+    matrix_heap_fmt2 = ">hhhhff"
+    matrix_heap_size1 = struct.calcsize(matrix_heap_fmt1)
+    matrix_heap_size2 = struct.calcsize(matrix_heap_fmt2)
+    matrix_heap_size = 3 * matrix_heap_size1 + matrix_heap_size2
+
+    matrix = [("XTENSION", "BINTABLE"),
+              ("BITPIX", 8),
+              ("NAXIS", 2),
+              ("NAXIS1", matrix_size),
+              ("NAXIS2", nrows),
+              ("PCOUNT", matrix_heap_size),
+              ("GCOUNT", 1),
+              ("TFIELDS", 6),
+              ("EXTNAME", "MATRIX"),
+              ("HDUNAME", "MATRIX"),
+              ("HDUCLASS", "OGIP"),
+              ("HDUCLAS1", "RESPONSE"),
+              ("HDUCLAS2", "RSP_MATRIX"),
+              ("HDUCLAS3", "REDIST"),
+              ("HDUVERS", "1.3.0"),
+              ("CHANTYPE", "PI"),
+              ("DETCHANS", nrows),
+              ("MISSION", "MADEUP"),
+              ("TELESCOP", "NOTHING"),
+              ("INSTRUME", "SPECIAL"),
+              ("FILTER", "NONE"),
+              ("TTYPE1", "ENERG_LO"),
+              ("TFORM1", "1E"),
+              ("TUNIT1", "keV"),
+              ("TTYPE2", "ENERG_HI"),
+              ("TFORM2", "1E"),
+              ("TUNIT2", "keV"),
+              ("TTYPE3", "N_GRP"),
+              ("TFORM3", "1I"),
+              ("TTYPE4", "F_CHAN"),
+              ("TFORM4", "1PI(2)"),  # important that it thinks there may be multiple
+              ("TLMIN4", str(minchan)),
+              ("TLMAX4", str(minchan + nrows - 1)),
+              ("TTYPE5", "N_CHAN"),
+              ("TFORM5", "1PI(2)"),  # match F_CHAN
+              ("TTYPE6", "MATRIX"),
+              ("TFORM6", "1PE(2)")
+              ]
+
+    ebounds_fmt = ">hff"
+    ebounds_size = struct.calcsize(ebounds_fmt)
+
+    ebounds = [("XTENSION", "BINTABLE"),
+               ("BITPIX", 8),
+               ("NAXIS", 2),
+               ("NAXIS1", ebounds_size),
+               ("NAXIS2", nrows),
+               ("PCOUNT", 0),
+               ("GCOUNT", 1),
+               ("TFIELDS", 3),
+               ("EXTNAME", "EBOUNDS"),
+               ("HDUNAME", "EBOUNDS"),
+               ("HDUCLASS", "OGIP"),
+               ("HDUCLAS1", "RESPONSE"),
+               ("HDUCLAS2", "EBOUNDS"),
+               ("HDUCLAS3", "REDIST"),
+               ("HDUVERS", "1.3.0"),
+               ("CHANTYPE", "PI"),
+               ("DETCHANS", nrows),
+               ("MISSION", "MADEUP"),
+               ("TELESCOP", "NOTHING"),
+               ("INSTRUME", "SPECIAL"),
+               ("FILTER", "NONE"),
+               ("TTYPE1", "CHANNEL"),
+               ("TUNIT1", "channel"),
+               ("TFORM1", "1I"),
+               ("TLMIN1", str(minchan)),
+               ("TLMAX1", str(minchan + nrows - 1)),
+               ("TTYPE2", "E_MIN"),
+               ("TFORM2", "1E"),
+               ("TUNIT2", "keV"),
+               ("TTYPE3", "E_MAX"),
+               ("TFORM3", "1E"),
+               ("TUNIT3", "keV"),
+              ]
+
+    with open(filename, mode="w+b") as fh:
+        add_header(fh, primary)
+        add_header(fh, matrix)
+
+        # The heap is organized as
+        # - f_chan[0], n_chan[0], matrix[0]
+        # - f_chan[1][0], f_chan[1][1], n_chan[1][0], n_chan[1][1],
+        #   matrix[1][0], matrix[1][1]
+        # - f_chan[2], n_chan[2], matrix[2]
+        # - f_chan[3], n_chan[3], matrix[3]
+        #
+        size = 0
+        heap_size = 0
+        heap_int = struct.calcsize(">h")
+        for elo, ehi, ngrp in zip(energ_lo, energ_hi, n_grps):
+            if ngrp == 1:
+                fh.write(struct.pack(matrix_fmt, elo, ehi, 1,
+                                     1, heap_size,
+                                     1, heap_size + heap_int,
+                                     1, heap_size + 2 * heap_int))
+                heap_size += matrix_heap_size1
+
+            elif ngrp == 2:
+                fh.write(struct.pack(matrix_fmt, elo, ehi, 2,
+                                     2, heap_size,
+                                     2, heap_size + 2 * heap_int,
+                                     2, heap_size + 4 * heap_int))
+                heap_size += matrix_heap_size2
+
+            else:
+                raise RuntimeError("internal error")
+
+            size += matrix_size
+
+        # Add in the heap.
+        #
+        for fc, nc, mz in zip(f_chans, n_chans, matrixs):
+            for v in fc:
+                fh.write(struct.pack(">h", v))
+            for v in nc:
+                fh.write(struct.pack(">h", v))
+            for v in mz:
+                fh.write(struct.pack(">f", v))
+
+        size += matrix_heap_size
+        add_spacer(fh, size)
+        add_header(fh, ebounds)
+
+        size = 0
+        for elo, ehi, chan in zip(energ_lo, energ_hi, chans):
+            fh.write(struct.pack(ebounds_fmt, chan, elo, ehi))
+            size += ebounds_size
+
+        add_spacer(fh, size)
+
+    return chans, energ_lo, energ_hi
+
+
+@requires_fits
+@pytest.mark.parametrize("offset", [0, 1, 5])
+def test_problem_pha(tmp_path, offset):
+    """Check we can read in the 'problem' FITS file"""
+
+    from sherpa.astro.io import read_pha
+
+    outpath = tmp_path / 'tmp.pha'
+    chans, counts, quals = make_problem_pha(outpath, offset)
+
+    pha = read_pha(str(outpath))
+    assert isinstance(pha, DataPHA)
+
+    assert pha.channel[0] == offset
+
+    assert pha.channel == pytest.approx(chans)
+    assert pha.counts == pytest.approx(counts)
+    # convert bools to integers to please pytest 8.3.4
+    assert pha.quality == pytest.approx(quals * 1)
+    assert pha.staterror is None
+    assert pha.syserror is None
+
+    # It is not entirely clear how the channel offset and DETCHANS
+    # values are meant to interact, so just use this as a test of the
+    # current behaviour.
+    #
+    assert pha.exposure == pytest.approx(1000.0)
+    assert pha.header["DETCHANS"] == 5
+
+
+@requires_fits
+# The test only passes with crates for offset=0 by "luck" (as the
+# string TLMIN value gets interpreted as 0 for whatever value is in
+# the string).  This really needs DM/Crates fixes and not something
+# that can be handled by Sherpa.
+@pytest.mark.parametrize("offset", [0,
+                                    pytest.param(1, marks=pytest.mark.xfail(is_crates_io, reason="test known to fail with crates")),
+                                    pytest.param(5, marks=pytest.mark.xfail(is_crates_io, reason="test known to fail with crates"))
+                                    ])
+def test_problem_rmf(tmp_path, offset):
+    """Check we can read in the 'problem' FITS file"""
+
+    from sherpa.astro.io import read_rmf
+
+    outpath = tmp_path / 'tmp.rmf'
+    chans, energ_lo, energ_hi = make_problem_rmf(outpath, offset)
+
+    rmf = read_rmf(str(outpath))
+    assert isinstance(rmf, DataRMF)
+
+    # Ensure that the data respects the offset.
+    assert rmf.offset == offset
+    assert rmf.f_chan[0] == offset
+
+    assert rmf.detchans == 4
+
+    assert rmf.energ_lo == pytest.approx(energ_lo)
+    assert rmf.energ_hi == pytest.approx(energ_hi)
+    assert rmf.e_min == pytest.approx(energ_lo)
+    assert rmf.e_max == pytest.approx(energ_hi)
+
+    assert rmf.n_grp == pytest.approx([1, 2, 1, 1])
+    assert rmf.f_chan == pytest.approx([chans[0],
+                                        chans[1], chans[1] + 2,
+                                        chans[2],
+                                        chans[3]])
+    assert rmf.n_chan == pytest.approx([1, 1, 1, 1, 1])
+    assert rmf.matrix == pytest.approx([1, 0.7, 0.3, 1, 1])
