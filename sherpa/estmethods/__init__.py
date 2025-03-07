@@ -133,7 +133,7 @@ class EstMethod(NoNewAttributesAfterInit):
         # requires declaration in __init__()
         self.config = self.config.copy()
 
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def __getattr__(self, name):
         if name in self.__dict__.get('config', ()):
@@ -213,7 +213,7 @@ class Covariance(EstMethod):
     """The covariance method for estimating errors."""
 
     def __init__(self, name: str = 'covariance') -> None:
-        EstMethod.__init__(self, name, covariance)
+        super().__init__(name, estfunc=covariance)
 
 
 class Confidence(EstMethod):
@@ -231,7 +231,7 @@ class Confidence(EstMethod):
                      'openinterval': False}
 
     def __init__(self, name: str = 'confidence') -> None:
-        EstMethod.__init__(self, name, confidence)
+        super().__init__(name, estfunc=confidence)
 
         # Update EstMethod.config dict with Confidence specifics
         self.config.update(self._added_config)
@@ -309,7 +309,7 @@ class Projection(EstMethod):
                      'tol': 0.2}
 
     def __init__(self, name: str = 'projection') -> None:
-        EstMethod.__init__(self, name, projection)
+        super().__init__(name, estfunc=projection)
 
         # Update EstMethod.config dict with Projection specifics
         self.config.update(self._added_config)
@@ -810,7 +810,7 @@ class ConfRootBracket(ConfRootNone):
                  trial_points,
                  open_interval
                  ) -> None:
-        ConfRootNone.__init__(self, None)
+        super().__init__(root=None)
         self.fcn = fcn
         self.trial_points = trial_points
         self.open_interval = open_interval
