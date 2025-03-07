@@ -680,8 +680,8 @@ def copycol(cr: TABLECrate,
     behaviour.
 
     NICER has created QUALITY columns with TFORM=B which crates reads
-    in as a 2D array, but of shape (ncols, 1). So special case this,
-    as we assume there are not many csaes where we are reading in this
+    in as a 2D array, with a shape of (ncols, 1). So special case this,
+    as we assume there are not many cases where we are reading in this
     data (unfortunately it's not easy to check for exactly this
     condition as crates does not provide direct access to the TFORMn
     header value).
@@ -699,7 +699,7 @@ def copycol(cr: TABLECrate,
     elif vals.dtype == np.uint8 and vals.ndim == 2 and \
          vals.shape[1] == 1:
         # Convert boolean (nrows, 1) 2D array, created by the CIAO
-        # data model in CIAO 3.17, to 1D. Fortunately there is no
+        # data model in CIAO 4.17 (and earlier), to 1D. Fortunately there is no
         # native FITS TFORM that maps to np.uint8 other than
         # boolean/bit values, so this should be a relatively safe
         # expansion.

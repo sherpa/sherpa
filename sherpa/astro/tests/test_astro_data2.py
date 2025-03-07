@@ -6505,7 +6505,7 @@ def test_problem_pha(tmp_path, offset):
 
     assert pha.channel == pytest.approx(chans)
     assert pha.counts == pytest.approx(counts)
-    # convert bools to nitegers to please pytest 8.3.4
+    # convert bools to integers to please pytest 8.3.4
     assert pha.quality == pytest.approx(quals * 1)
     assert pha.staterror is None
     assert pha.syserror is None
