@@ -22,7 +22,8 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 import logging
-from typing import Protocol, SupportsFloat
+from typing import Any, Protocol, SupportsFloat
+import warnings
 
 import numpy as np
 from numpy.linalg import LinAlgError
@@ -77,7 +78,13 @@ class EstNewMin(Exception):
 
 
 class EstMethod(NoNewAttributesAfterInit):
-    """Estimate errors on a set of parameters."""
+    """Estimate errors on a set of parameters.
+
+    .. versionchanged:: 4.17.1
+       The estfunc argument is now unused and will be removed in a
+       later release.
+
+    """
 
     # defined pre-instantiation for pickling
     config = {'sigma': 1,
@@ -87,10 +94,13 @@ class EstMethod(NoNewAttributesAfterInit):
 
     def __init__(self,
                  name: str,
-                 estfunc: Callable
+                 estfunc: Any = None
                  ) -> None:
-        self._estfunc = estfunc
         self.name = name
+
+        if estfunc is not None:
+            warnings.warn("EstMethod: the estfunc argument is deprecated",
+                          DeprecationWarning)
 
         # config should be defined pre-instantiation for pickling
         # however, for some unknown reason membership in self.__dict__
@@ -126,7 +136,7 @@ class EstMethod(NoNewAttributesAfterInit):
         self.__dict__.update(state)
 
         # obtain config values from object class
-        # TODO: pylint points out there's no name or estfunc set for
+        # TODO: pylint points out there's no name set for
         #       the initialization call
         self.__dict__['config'] = getattr(self.__class__(), 'config', {})
 
@@ -162,6 +172,47 @@ class EstMethod(NoNewAttributesAfterInit):
 
         """
 
+        # This does not use abc.abstractmethod as inheriting from
+        # NoNewAttributesAfterInit.
+        #
+        raise NotImplementedError()
+
+
+class Covariance(EstMethod):
+    """The covariance method for estimating errors."""
+
+    def __init__(self, name: str = 'covariance') -> None:
+        super().__init__(name)
+
+    def compute(self,
+                statfunc: StatFunc,
+                fitfunc: FitFunc,
+                *,
+                pars: np.ndarray,
+                parmins: np.ndarray,
+                parmaxes: np.ndarray,
+                parhardmins: np.ndarray,
+                parhardmaxes: np.ndarray,
+                limit_parnums: np.ndarray,
+                freeze_par: Callable,
+                thaw_par: Callable,
+                report_progress: Callable,
+                get_par_name: Callable,
+                statargs=(),
+                statkwargs={}
+                ) -> EstReturn:
+        """Estimate the error range.
+
+        .. versionchanged:: 4.17.1
+           All arguments other than statfunc and fitfunc are now
+           keyword-only.
+
+        Notes
+        -----
+        The statargs and statkwargs arguments are currently unused.
+
+        """
+
         def stat_cb(pars):
             return statfunc(pars)[0]
 
@@ -178,18 +229,21 @@ class EstMethod(NoNewAttributesAfterInit):
 
         remin = -1.0
         tol = -1.0
-        return self._estfunc(pars, parmins, parmaxes, parhardmins,
-                             parhardmaxes, self.sigma, self.eps,
-                             tol,
-                             self.maxiters, remin, limit_parnums,
-                             stat_cb, fit_cb, report_progress)
+        return covariance(pars,
+                          parmins=parmins,
+                          parmaxes=parmaxes,
+                          parhardmins=parhardmins,
+                          parhardmaxes=parhardmaxes,
+                          sigma=self.sigma,
+                          eps=self.eps,
+                          tol=tol,
+                          maxiters=self.maxiters,
+                          remin=remin,
+                          limit_parnums=limit_parnums,
+                          stat_cb=stat_cb,
+                          fit_cb=fit_cb,
+                          report_progress=report_progress)
 
-
-class Covariance(EstMethod):
-    """The covariance method for estimating errors."""
-
-    def __init__(self, name: str = 'covariance') -> None:
-        super().__init__(name, estfunc=covariance)
 
 
 class Confidence(EstMethod):
@@ -207,7 +261,7 @@ class Confidence(EstMethod):
                      'openinterval': False}
 
     def __init__(self, name: str = 'confidence') -> None:
-        super().__init__(name, estfunc=confidence)
+        super().__init__(name)
 
         # Update EstMethod.config dict with Confidence specifics
         self.config.update(self._added_config)
@@ -277,12 +331,26 @@ class Confidence(EstMethod):
         else:
             fitcb = fit_cb
 
-        return self._estfunc(pars, parmins, parmaxes, parhardmins,
-                             parhardmaxes, self.sigma, self.eps,
-                             self.tol, self.maxiters, self.remin,
-                             self.verbose, limit_parnums,
-                             statcb, fitcb, report_progress, get_par_name,
-                             self.parallel, self.numcores, self.openinterval)
+        return confidence(pars,
+                          parmins=parmins,
+                          parmaxes=parmaxes,
+                          parhardmins=parhardmins,
+                          parhardmaxes=parhardmaxes,
+                          sigma=self.sigma,
+                          eps=self.eps,
+                          tol=self.tol,
+                          maxiters=self.maxiters,
+                          remin=self.remin,
+                          verbose=self.verbose,
+                          limit_parnums=limit_parnums,
+                          stat_cb=statcb,
+                          fit_cb=fitcb,
+                          report_progress=report_progress,
+                          get_par_name=get_par_name,
+                          do_parallel=self.parallel,
+                          numcores=self.numcores,
+                          open_interval=self.openinterval)
+
 
 
 class Projection(EstMethod):
@@ -298,7 +366,7 @@ class Projection(EstMethod):
                      'tol': 0.2}
 
     def __init__(self, name: str = 'projection') -> None:
-        super().__init__(name, estfunc=projection)
+        super().__init__(name)
 
         # Update EstMethod.config dict with Projection specifics
         self.config.update(self._added_config)
@@ -355,12 +423,23 @@ class Projection(EstMethod):
             thaw_par(i)
             return stat
 
-        return self._estfunc(pars, parmins, parmaxes, parhardmins,
-                             parhardmaxes, self.sigma, self.eps,
-                             self.tol,
-                             self.maxiters, self.remin, limit_parnums,
-                             stat_cb, fit_cb, report_progress, get_par_name,
-                             self.parallel, self.numcores)
+        return projection(pars,
+                          parmins=parmins,
+                          parmaxes=parmaxes,
+                          parhardmins=parhardmins,
+                          parhardmaxes=parhardmaxes,
+                          sigma=self.sigma,
+                          eps=self.eps,
+                          tol=self.tol,
+                          maxiters=self.maxiters,
+                          remin=self.remin,
+                          limit_parnums=limit_parnums,
+                          stat_cb=stat_cb,
+                          fit_cb=fit_cb,
+                          report_progress=report_progress,
+                          get_par_name=get_par_name,
+                          do_parallel=self.parallel,
+                          numcores=self.numcores)
 
 
 def covariance(pars: np.ndarray,
