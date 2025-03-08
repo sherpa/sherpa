@@ -587,35 +587,44 @@ class ConfBlog:
         self.debug = debug
 
 
+class Limit:
+    """Represent a limit.
+
+    This should not be used directly: use `LowerLimit` or `UpperLimit`
+    instead.
+
+    """
+
+    def __init__(self, limit: SupportsFloat) -> None:
+        self.limit = limit
+
+
+class LowerLimit(Limit):
+    "A lower limit"
+
+    def __str__(self) -> str:
+        return f'LowerLimit: limit={self.limit:e}'
+
+    def is_beyond_limit(self, x) -> bool:
+        return x < self.limit
+
+
+class UpperLimit(Limit):
+    "An upper limit"
+
+    def __str__(self) -> str:
+        return f'UpperLimit: limit={self.limit:e}'
+
+    def is_beyond_limit(self, x: SupportsFloat) -> bool:
+        # The float calls are for typing checks.
+        return float(x) > float(self.limit)
+
+
 class ConfBracket:
     """The class ConfBracket is responsible for bracketing the root within
     the interval (a,b) where f(a)*f(b) < 0.0"""
 
     neg_pos = (-1, 1)
-
-    # Is there any benefit to making these local to ConfBracket?
-    class Limit:
-
-        def __init__(self, limit: SupportsFloat) -> None:
-            self.limit = limit
-
-    class LowerLimit(Limit):
-
-        def __str__(self) -> str:
-            return f'LowerLimit: limit={self.limit:e}'
-
-        def is_beyond_limit(self, x: SupportsFloat) -> bool:
-            # The float calls are for typing checks.
-            return float(x) < float(self.limit)
-
-    class UpperLimit(Limit):
-
-        def __str__(self) -> str:
-            return f'UpperLimit: limit={self.limit:e}'
-
-        def is_beyond_limit(self, x: SupportsFloat) -> bool:
-            # The float calls are for typing checks.
-            return float(x) > float(self.limit)
 
     def __init__(self, myargs, trial_points) -> None:
         self.myargs = myargs
@@ -657,10 +666,10 @@ class ConfBracket:
 
         assert self.fcn is not None, 'callback func has not been set'
 
-        hlimit = [ConfBracket.LowerLimit(self.myargs.get_hlimit(dir)),
-                  ConfBracket.UpperLimit(self.myargs.get_hlimit(dir))]
-        slimit = [ConfBracket.LowerLimit(self.myargs.get_slimit(dir)),
-                  ConfBracket.UpperLimit(self.myargs.get_slimit(dir))]
+        hlimit = [LowerLimit(self.myargs.get_hlimit(dir)),
+                  UpperLimit(self.myargs.get_hlimit(dir))]
+        slimit = [LowerLimit(self.myargs.get_slimit(dir)),
+                  UpperLimit(self.myargs.get_slimit(dir))]
 
         xxx = self.trial_points[0]
         fff = self.trial_points[1]
