@@ -21,7 +21,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from itertools import chain
 import logging
 from typing import Protocol, SupportsFloat
 
@@ -579,12 +578,11 @@ class ConfArgs:
 
 class ConfBlog:
 
-    def __init__(self, blogger, prefix, verbose, lock, debug=False) -> None:
+    def __init__(self, blogger, prefix, verbose, lock) -> None:
         self.blogger = blogger
         self.prefix = prefix
         self.verbose = verbose
         self.lock = lock
-        self.debug = debug
 
 
 class Limit:
@@ -648,9 +646,8 @@ class ConfBracket:
         # possible chance for a root (ConfRootNone), ie by trying points
         # upto/beyond the hard limit and no chance for a root has been found.
         #
-        find = trace_fcn(self.find, bloginfo)
-        return find(dir, iter, step_size, open_interval, maxiters, tol,
-                    bloginfo)
+        return self.find(dir, iter, step_size, open_interval,
+                         maxiters, tol, bloginfo)
 
     # TODO: rename the dir and iter arguments
     # TODO: the iter argument gets over-ridden below, so do we need it? (and rename it)
@@ -821,9 +818,8 @@ class ConfRootBracket(ConfRootNone):
             self.root = None
             return None
 
-        myzeroin = trace_fcn(zeroin, bloginfo)
-        answer = myzeroin(self.fcn, xxx[-2], xxx[-1], fa=fff[-2],
-                          fb=fff[-1], maxfev=32, tol=tol)
+        answer = zeroin(self.fcn, xxx[-2], xxx[-1], fa=fff[-2],
+                        fb=fff[-1], maxfev=32, tol=tol)
         if abs(answer[0][1]) > tol:
             xafa = answer[1][0]
             xa = xafa[0]
@@ -908,8 +904,7 @@ class ConfStep:
             return self.covar(dir, iter, step_size, base)
 
         try:
-            Halley = trace_fcn(self.Halley, bloginfo)
-            [xroot, froot] = Halley(coeffs, xroot, tol=1.0e-3)
+            [xroot, froot] = self.Halley(coeffs, xroot, tol=1.0e-3)
         except ZeroDivisionError:
             xroot = None
 
@@ -940,36 +935,6 @@ class ConfStep:
             return x
 
         return self.covar(dir, iter, step_size, base)
-
-
-def trace_fcn(fcn: Callable, bloginfo: ConfBlog) -> Callable:
-
-    if not bloginfo.debug:
-        return fcn
-
-    def echo(*args, **kwargs):
-        '''compact but more details then debugger'''
-        name = fcn.__name__
-        msg = '%s%s(%s)' % (bloginfo.prefix, name, ", ".join(
-            list(map(repr, chain(args, list(kwargs.values()))))))
-        bloginfo.blogger.info(msg)
-        return fcn(*args, **kwargs)
-
-    def debugger(*args, **kwargs):
-        msg = '%s%s( ' % (bloginfo.prefix, fcn.__name__)
-        if len(args) > 1:
-            msg += str(args[0])
-        for arg in args[1:]:
-            msg = '%s, %s' % (msg, arg)
-        for key in kwargs.keys():
-            value = kwargs[key]
-            msg = '%s, %s=%s' % (msg, key, value)
-        val = fcn(*args, **kwargs)
-        msg += ' )  %s ' % val
-        bloginfo.blogger.info(msg)
-        return val
-
-    return debugger
 
 
 def confidence(pars: np.ndarray,
@@ -1120,8 +1085,6 @@ def confidence(pars: np.ndarray,
     except:
         error_scales = np.full(len(pars), est_hardminmax)
 
-    debug = False                                 # for internal use only
-
     myargs = ConfArgs(pars, parmins, parmaxes, parhardmins, parhardmaxes,
                       target_stat)
 
@@ -1190,8 +1153,7 @@ def confidence(pars: np.ndarray,
             bracket.trial_points[0].append(pars[myargs.ith_par])
             bracket.trial_points[1].append(- delta_stat)
 
-            myblog = ConfBlog(sherpablog, prefix[dirn], verbose, lock,
-                              debug)
+            myblog = ConfBlog(sherpablog, prefix[dirn], verbose, lock)
 
             # have to set the callback func otherwise disaster.
             bracket.fcn = myfitcb[dirn]
