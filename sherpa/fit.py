@@ -1701,14 +1701,16 @@ class Fit(NoNewAttributesAfterInit):
         try:
             output = self.estmethod.compute(self._iterfit._get_callback(),
                                             self._iterfit.fit,
-                                            self.model.thawedpars,
-                                            startsoftmins,
-                                            startsoftmaxs,
-                                            starthardmins,
-                                            starthardmaxs,
-                                            parnums,
-                                            freeze_par, thaw_par,
-                                            report_progress, get_par_name)
+                                            pars=self.model.thawedpars,
+                                            parmins=startsoftmins,
+                                            parmaxes=startsoftmaxs,
+                                            parhardmins=starthardmins,
+                                            parhardmaxes=starthardmaxs,
+                                            limit_parnums=parnums,
+                                            freeze_par=freeze_par,
+                                            thaw_par=thaw_par,
+                                            report_progress=report_progress,
+                                            get_par_name=get_par_name)
         except EstNewMin as e:
             # If maximum number of refits has occurred, don't
             # try to reminimize again.
