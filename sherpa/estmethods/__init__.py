@@ -171,6 +171,7 @@ class EstMethod(NoNewAttributesAfterInit):
     def compute(self,
                 statfunc: StatFunc,
                 fitfunc: FitFunc,
+                *,
                 pars: np.ndarray,
                 parmins: np.ndarray,
                 parmaxes: np.ndarray,
@@ -184,6 +185,13 @@ class EstMethod(NoNewAttributesAfterInit):
                 statargs=(),
                 statkwargs={}
                 ) -> EstReturn:
+        """Estimate the error range.
+
+        .. versionchanged:: 4.17.1
+           All arguments other than statfunc and fitfunc are now
+           keyword-only.
+
+        """
 
         def stat_cb(pars):
             return statfunc(pars)[0]
@@ -238,6 +246,7 @@ class Confidence(EstMethod):
     def compute(self,
                 statfunc: StatFunc,
                 fitfunc: FitFunc,
+                *,
                 pars: np.ndarray,
                 parmins: np.ndarray,
                 parmaxes: np.ndarray,
@@ -251,6 +260,14 @@ class Confidence(EstMethod):
                 statargs=(),
                 statkwargs={}
                 ) -> EstReturn:
+
+        """Estimate the error range.
+
+        .. versionchanged:: 4.17.1
+           All arguments other than statfunc and fitfunc are now
+           keyword-only.
+
+        """
 
         def stat_cb(pars):
             return statfunc(pars)[0]
@@ -316,6 +333,7 @@ class Projection(EstMethod):
     def compute(self,
                 statfunc: StatFunc,
                 fitfunc: FitFunc,
+                *,
                 pars: np.ndarray,
                 parmins: np.ndarray,
                 parmaxes: np.ndarray,
@@ -329,6 +347,13 @@ class Projection(EstMethod):
                 statargs=(),
                 statkwargs={}
                 ) -> EstReturn:
+        """Estimate the error range.
+
+        .. versionchanged:: 4.17.1
+           All arguments other than statfunc and fitfunc are now
+           keyword-only.
+
+        """
 
         if fitfunc is None:
             raise TypeError("fitfunc should not be none")
