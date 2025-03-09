@@ -39,14 +39,19 @@ reflect      = True
 
 A model is fit by providing the ``fit`` method a callback, the starting
 point (parameter values), and parameter ranges. The callback should
-match::
+match the `StatFunc` type::
 
-    callback(pars, *statargs, **statkwargs)
+    callback(pars)
 
 and return the statistic value to minimise along with the per-bin
 statistic values (note that per-bin here refers to the independent
 axis of the data being fit, and not the number of parameters being
 fit).
+
+.. versionchanged:: 4.17.1
+   The callback is no-longer sent extra information (that is,
+   the statargs and statkwargs values) and is just sent an array
+   of parameter values.
 
 Notes
 -----
@@ -112,7 +117,6 @@ const1d
 
 """
 
-from collections.abc import Sequence
 import logging
 from typing import Any
 
@@ -166,9 +170,7 @@ class OptMethod(NoNewAttributesAfterInit):
     arrays.
 
     The function returns the statistic value and per-bin statistic
-    values for the given values - which are the first argument it is
-    sent, and then it can take other arguments which are set by the
-    statargs and statkwargs arguments sent to the `fit` call.
+    values for the given values.
 
     """
 
@@ -239,10 +241,13 @@ class OptMethod(NoNewAttributesAfterInit):
             pars: ArrayType,
             parmins: ArrayType,
             parmaxes: ArrayType,
-            statargs: Sequence[Any] = (),
-            statkwargs: dict[str, Any] | None = None
+            statargs: Any = None,
+            statkwargs: Any = None
             ) -> OptReturn:
         """Run the optimiser.
+
+        .. versionchanged:: 4.17.1
+           The statargs and statkwargs arguments are now ignored.
 
         .. versionchanged:: 4.16.0
            The statkwargs argument now defaults to None rather than {}.
@@ -263,9 +268,9 @@ class OptMethod(NoNewAttributesAfterInit):
            The maximum allowed values for each model parameter. This
            must match the length of `pars`.
         statargs : optional
-           Additional positional arguments to send to `statfunc`.
-        statkwargs : dict, optional
-           Additional keyword arguments to send to `statfunc`.
+           This is currently unused.
+        statkwargs : optional
+           This is currently unused.
 
         Returns
         -------
@@ -279,16 +284,11 @@ class OptMethod(NoNewAttributesAfterInit):
 
         """
 
-        # Mid 2024 we do not have any tests where either statargs or
-        # statkwargs are not empty.
-        #
-        if statkwargs is None:
-            statkwargs = {}
+        if statargs is not None and statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
 
-        def cb(pars):
-            return statfunc(pars, *statargs, **statkwargs)
-
-        output = self._optfunc(cb, pars, parmins, parmaxes, **self.config)
+        output = self._optfunc(statfunc, pars, parmins, parmaxes,
+                               **self.config)
         (success, pars, fval, msg, imsg) = output
         if not success:
             warning('fit failed: %s', msg)
