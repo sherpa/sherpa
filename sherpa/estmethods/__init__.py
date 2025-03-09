@@ -49,6 +49,9 @@ __all__ = ('EstNewMin', 'Covariance', 'Confidence',
            'est_hitnan')
 
 
+warning = logging.getLogger(__name__).warning
+
+
 # The return type for the estimation routines.
 #
 # It looks like the limits can be numbers or None.
@@ -157,8 +160,8 @@ class EstMethod(NoNewAttributesAfterInit):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
         """Estimate the error range.
 
@@ -198,8 +201,8 @@ class Covariance(EstMethod):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
         """Estimate the error range.
 
@@ -212,6 +215,9 @@ class Covariance(EstMethod):
         The statargs and statkwargs arguments are currently unused.
 
         """
+
+        if statargs is not None or statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
 
         def stat_cb(pars):
             return statfunc(pars)[0]
@@ -280,8 +286,8 @@ class Confidence(EstMethod):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
 
         """Estimate the error range.
@@ -295,6 +301,9 @@ class Confidence(EstMethod):
 
 
         """
+
+        if statargs is not None or statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
 
         def stat_cb(pars):
             return statfunc(pars)[0]
@@ -385,8 +394,8 @@ class Projection(EstMethod):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
         """Estimate the error range.
 
@@ -399,6 +408,9 @@ class Projection(EstMethod):
         The statargs and statkwargs arguments are currently unused.
 
         """
+
+        if statargs is not None or statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
 
         if fitfunc is None:
             raise TypeError("fitfunc should not be none")
