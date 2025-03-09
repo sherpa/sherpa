@@ -157,8 +157,8 @@ class EstMethod(NoNewAttributesAfterInit):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
         """Estimate the error range.
 
@@ -198,8 +198,8 @@ class Covariance(EstMethod):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
         """Estimate the error range.
 
@@ -280,8 +280,8 @@ class Confidence(EstMethod):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
 
         """Estimate the error range.
@@ -385,8 +385,8 @@ class Projection(EstMethod):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
         """Estimate the error range.
 
