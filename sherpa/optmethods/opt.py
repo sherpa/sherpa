@@ -20,7 +20,6 @@
 
 from collections.abc import Callable, Sequence
 import operator
-from typing import Concatenate, ParamSpec
 
 import numpy as np
 
@@ -37,13 +36,10 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
 
 FUNC_MAX = float(np.finfo(np.float64).max)
 
-P = ParamSpec("P")
-
-# The extra parameters can likely be removed from this.
 # Some code assumes the first argument is an ndarray, but is this always
 # the case? For now assume that the data is always sent as an ndarray.
 #
-OptimizerFunc = Callable[Concatenate[np.ndarray, P], float]
+OptimizerFunc = Callable[[np.ndarray], float]
 
 MyOptOutput = tuple[int, float, np.ndarray]
 WorkerFunc = Callable[[OptimizerFunc,
@@ -198,11 +194,11 @@ class Opt:
             xmin = np.asarray([- np.inf for ii in range(npar)])
             xmax = np.asarray([np.inf for ii in range(npar)])
 
-        def func_bounds_wrapper(x, *args):
+        def func_bounds_wrapper(x):
             if self._outside_limits(x, xmin, xmax):
                 return FUNC_MAX
 
-            return func(x, *args)
+            return func(x)
 
         return func_bounds_wrapper
 
