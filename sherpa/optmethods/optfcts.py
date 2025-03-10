@@ -74,6 +74,7 @@ from typing import SupportsFloat
 
 import numpy as np
 
+from sherpa.stats import StatCallback
 from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import FuncCounter, random
 from sherpa.utils.parallel import parallel_map
@@ -196,25 +197,6 @@ def _update_reported_nfev(result: OptReturn,
     result[4]['nfev'] += nfev
 
 
-class Callback:
-    """Handle the callback argument for the optimizers.
-
-    See Also
-    --------
-    InfinitePotential
-
-    """
-
-    __slots__ = ("func",)
-
-    def __init__(self,
-                 func: StatFunc) -> None:
-        self.func = func
-
-    def __call__(self, pars: np.ndarray) -> float:
-        return self.func(pars)[0]
-
-
 class InfinitePotential:
     """Ensure the parameter values stay within bounds.
 
@@ -222,10 +204,6 @@ class InfinitePotential:
     return "infinity" (here defined to be the maximum value we'd
     expect rather than inf, to avoid causing problems to the
     optimizer).
-
-    See Also
-    --------
-    Callback
 
     Notes
     -----
@@ -350,7 +328,7 @@ def difevo_nm(fcn: StatFunc,
               weighting_factor: float
               ) -> OptReturn:
 
-    stat_cb0 = Callback(fcn)
+    stat_cb0 = StatCallback(fcn)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -660,7 +638,7 @@ def montecarlo(fcn: StatFunc,
 
     """
 
-    stat_cb0 = Callback(fcn)
+    stat_cb0 = StatCallback(fcn)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
