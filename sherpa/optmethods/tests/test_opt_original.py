@@ -94,8 +94,8 @@ from sherpa.optmethods.ncoresde import ncoresDifEvo #, DifEvo, ncoresDifEvoNelde
 from sherpa.optmethods.ncoresnm import ncoresNelderMead, NelderMead0, NelderMead1, \
     NelderMead2, NelderMead3, NelderMead4, NelderMead5 #, NelderMead6, NelderMead7
 from sherpa.optmethods.opt import SimplexNoStep, SimplexStep, SimplexRandom
-from sherpa.optmethods.optfcts import Callback
 from sherpa.optmethods import _tstoptfct  # type: ignore
+from sherpa.stats import StatCallback
 
 
 def Ackley(x):
@@ -541,7 +541,7 @@ def tst_unc_opt(algorithms, npar):
 
     def tst_algo(opt, fcn, name, num):
         x0, xmin, xmax, fmin = _tstoptfct.init(name, num)
-        result = opt(Callback(fcn), x0, xmin, xmax)
+        result = opt(StatCallback(fcn), x0, xmin, xmax)
         opt_name = opt.__class__.__name__
         print(opt_name, result[2], '=', result[1], 'in', result[0], 'nfevs')
 
