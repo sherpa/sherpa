@@ -39,6 +39,8 @@ FUNC_MAX = float(np.finfo(np.float64).max)
 # Some code assumes the first argument is an ndarray, but is this always
 # the case? For now assume that the data is always sent as an ndarray.
 #
+# sherpa.stats.StatCallback converts a StatFunc into an OptimizerFunc.
+#
 OptimizerFunc = Callable[[np.ndarray], float]
 
 MyOptOutput = tuple[int, float, np.ndarray]
