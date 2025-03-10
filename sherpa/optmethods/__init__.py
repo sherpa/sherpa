@@ -112,7 +112,7 @@ const1d
 
 """
 
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 import logging
 from typing import Any
 
@@ -120,7 +120,7 @@ import numpy as np
 
 from sherpa.utils import NoNewAttributesAfterInit, \
     get_keyword_names, get_keyword_defaults, print_fields
-from sherpa.utils.types import ArrayType, OptReturn, StatFunc
+from sherpa.utils.types import ArrayType, OptFunc, OptReturn, StatFunc
 
 from .optfcts import grid_search, lmdif, montecarlo, neldermead
 
@@ -154,12 +154,10 @@ class OptMethod(NoNewAttributesAfterInit):
 
     The optfunc function must accept the positional arguments::
 
-        fcn:  Callable[[ArrayType, ...], tuple[float, np.ndarray]]
+        fcn:  OptFunc
         x0:   ArrayType
         xmin: ArrayType
         xmax: ArrayType
-
-        ArrayType = Sequence[float] | np.ndarray
 
     and the remaining arguments are sent in as keyword arguments, and
     so can be specific to the optimization function. The x0, xmin, and
@@ -176,7 +174,7 @@ class OptMethod(NoNewAttributesAfterInit):
 
     def __init__(self,
                  name: str,
-                 optfunc: Callable[..., OptReturn]
+                 optfunc: OptFunc
                  ) -> None:
         self.name = name
         self._optfunc = optfunc
