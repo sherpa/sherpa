@@ -1160,3 +1160,65 @@ class WStat(Likelihood):
         assert self._calc is not None  # for typing
         return self._calc(data_src, data_model, nelems, exp_src, exp_bkg,
                           data_bkg, backscales, truncation_value)
+
+
+# Optimisers and error estimators often need access to just one of the
+# return values from a StatFunc call (normally the statistic value,
+# but not always). The statistic functions could return a
+# more-structured result (e.g. a dict or a dataclass), but this would
+# not stop the need for some way to extract just the desired data.
+#
+# There are multiple ways of doing this - such as a class or a
+# decorator - and it's not obvious there's much of a difference.
+# Using a class currently (when supporting Python 3.10 and 3.11) has
+# advantages in expressing the type information.
+#
+# These classes currently do not support sending in extra arguments,
+# whether positional or named. This could be addressed if needed.
+#
+class StatCallback:
+    """Return the statistic value for a set of parameters.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    PerBinStatCallback
+
+    """
+
+    __slots__ = ("func", )
+
+    def __init__(self,
+                 func: StatFunc
+                 ) -> None:
+        self.func = func
+
+    def __call__(self,
+                 pars: np.ndarray
+                 ) -> float:
+        return self.func(pars)[0]
+
+
+class PerBinStatCallback:
+    """Return the per-bin statistic values for a set of parameters.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    StatCallback
+
+    """
+
+    __slots__ = ("func", )
+
+    def __init__(self,
+                 func: StatFunc
+                 ) -> None:
+        self.func = func
+
+    def __call__(self,
+                 pars: np.ndarray
+                 ) -> np.ndarray:
+        return self.func(pars)[1]
