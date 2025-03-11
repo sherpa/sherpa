@@ -43,7 +43,7 @@ from sherpa.utils import dataspace2d
 from sherpa.utils.err import DataErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_group, requires_region, requires_wcs
+    requires_group, requires_region, requires_wcs, requires_psf
 
 try:
     from sherpa.astro.io import backend
@@ -1016,6 +1016,7 @@ def test_img_get_img_model_filter_none1(make_test_image):
         img.get_img(image_callable)
 
 
+@requires_psf
 @requires_region
 def test_img_get_img_model_filter_none2(make_test_image):
     """See test_img_get_img_filter_none2. Issue #1447"""
@@ -1032,6 +1033,7 @@ def test_img_get_img_model_filter_none2(make_test_image):
     assert not np.any(np.isfinite(mval))
 
 
+@requires_psf
 @requires_region
 def test_img_get_img_model_filter_some(make_test_image):
     """get_img with a callable and having a filter"""
@@ -1066,6 +1068,7 @@ def test_img_get_img_model_filter_some(make_test_image):
     assert mval[good] == pytest.approx(expected2[good])
 
 
+@requires_psf
 @requires_region
 def test_img_get_img_model_filter_some2(make_test_image):
     """test_img_get_img_model_filter_some but with a non-rectangular filter
