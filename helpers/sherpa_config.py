@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014-2016, 2020, 2022, 2024-2025
+#  Copyright (C) 2014-2016, 2020, 2022, 2024-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -59,6 +59,7 @@ class sherpa_config(Command):
 
     def initialize_options(self):
         self.install_dir = os.path.join(os.getcwd(), 'build')
+        self.disable_fftw = False
         self.fftw = None
         self.fftw_include_dirs = None
         self.fftw_lib_dirs = None
@@ -145,8 +146,10 @@ class sherpa_config(Command):
             regext = build_ext(self, 'region', define_macros=region_macros)
             self.distribution.ext_modules.append(regext)
 
-        psfext = build_ext(self, 'psf', 'fftw')
-        self.distribution.ext_modules.append(psfext)
+        # Do not build the psf module if FFT support is disabled.
+        if not self.disable_fftw:
+            psfext = build_ext(self, 'psf', 'fftw')
+            self.distribution.ext_modules.append(psfext)
 
         if not self.disable_wcs:
             wcsext = build_ext(self, 'wcs')
@@ -159,8 +162,11 @@ class sherpa_config(Command):
             configure.append(f'GROUP_CFLAGS="{self.group_cflags}"')
         if self.configure != 'None':
             configure.extend(self.configure.split(' '))
-        if self.fftw != 'local':
+
+        # Is the FFTW library built?
+        if not self.disable_fftw and self.fftw != 'local':
             configure.append('--enable-fftw')
+
         if not self.disable_region and self.region != 'local':
             configure.append('--enable-region')
 
