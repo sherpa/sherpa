@@ -29,6 +29,7 @@ jobs:
             os: ubuntu-latest
             python-version: "3.11"
             numpy-pkg: 'numpy>=2'
+            disable-fftw: 'true'
             install-type: develop
             test-data: none
 
@@ -82,6 +83,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install FFTW
+      if: matrix.disable-fftw != 'true'
       run: |
         # Do not worry about specifying a version
         sudo apt install libfftw3-dev pkg-config
@@ -91,6 +93,16 @@ jobs:
         echo "# --libs:   $(pkg-config --libs-only-L fftw3)"
         echo "# --libs:   $(pkg-config --libs-only-l fftw3)"
         ./scripts/update_config
+        #
+        echo "* START setup.cfg"
+        git diff setup.cfg
+        echo "* END   setup.cfg"
+
+    - name: Disable FFTW
+      if: matrix.disable-fftw == 'true'
+      run: |
+        # This could be folded into update_config but leave separate for now
+        sed -i.orig "s|#disable_fftw=True|disable_fftw = True|" setup.cfg
         #
         echo "* START setup.cfg"
         git diff setup.cfg

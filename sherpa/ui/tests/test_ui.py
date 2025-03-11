@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015-2016, 2018-2023, 2025
+#  Copyright (C) 2012, 2015-2016, 2018-2023, 2025-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -35,6 +35,7 @@ from sherpa.models.parameter import hugeval
 from sherpa.stats import LeastSq
 from sherpa.utils.err import ArgumentErr, IdentifierErr, PSFErr, StatErr, SessionErr
 from sherpa.utils.logging import SherpaVerbosity
+from sherpa.utils.testing import requires_psf
 from sherpa import ui
 
 # As the user model is called UserModel, refer to the Sherpa version
@@ -252,18 +253,21 @@ def test_ui_add_model(clean_ui, setup_ui):
     ui.set_model('usermodel.user1')
 
 
+@requires_psf
 def test_ui_set_full_model(clean_ui, setup_ui):
     ui.load_psf('psf1', 'gauss1d.g1')
     ui.set_full_model('psf1(gauss1d.g2) + const1d.c1')
     ui.get_model()
 
 
+@requires_psf
 def test_ui_set_full_model_2d(clean_ui, setup_ui_2d):
     ui.load_psf('psf1', 'gauss2d.g1')
     ui.set_full_model('psf1(gauss2d.g2 ) +const2d.c1')
     ui.get_model()
 
 
+@requires_psf
 def test_ui_set_full_model_mismatch_2d(clean_ui, setup_ui):
     ui.load_psf('psf1', 'gauss2d.g1')
     ui.set_full_model('psf1(gauss2d.g2)+const2d.c1')
@@ -272,6 +276,7 @@ def test_ui_set_full_model_mismatch_2d(clean_ui, setup_ui):
         ui.get_model()
 
 
+@requires_psf
 def test_ui_set_full_model_2d_mismatch_1d(clean_ui, setup_ui_2d):
     ui.load_psf('psf1', 'gauss1d.g1')
     ui.set_full_model('psf1(gauss1d.g2 ) +const1d.c1')
@@ -280,6 +285,7 @@ def test_ui_set_full_model_2d_mismatch_1d(clean_ui, setup_ui_2d):
         ui.get_model()
 
 
+@requires_psf
 def test_ui_set_full_model_checks_dimensions_match(clean_ui, setup_ui_2d):
     ui.load_psf('psf1', 'gauss2d.g1')
     with pytest.raises(ArgumentErr,
@@ -331,6 +337,7 @@ def test_ui_source_methods_with_full_model(clean_ui, setup_ui_full, caplog):
         ui.get_source('not_full')
 
 
+@requires_psf
 @pytest.mark.parametrize('model', ['gauss1d', 'delta1d', 'normgauss1d'])
 def test_psf_model1d(model, clean_ui):
     ui.dataspace1d(1, 10)
@@ -340,6 +347,7 @@ def test_psf_model1d(model, clean_ui):
     assert mdl.get_center() == (4.0, )
 
 
+@requires_psf
 @pytest.mark.parametrize('model', ['gauss2d', 'delta2d', 'normgauss2d'])
 def test_psf_model2d(model):
     ui.dataspace2d([216, 261])
@@ -620,6 +628,7 @@ def test_list_psf_ids_empty(clean_ui):
     assert ui.list_psf_ids() == []
 
 
+@requires_psf
 @pytest.mark.parametrize("id", [None, 2, "2"])
 def test_list_psf_ids_single(id, clean_ui):
     ui.dataspace1d(1, 10, id=id)
@@ -632,6 +641,7 @@ def test_list_psf_ids_single(id, clean_ui):
     assert ui.list_psf_ids() == [id]
 
 
+@requires_psf
 def test_list_psf_ids_multi(clean_ui):
 
     ui.dataspace1d(1, 10)
@@ -644,6 +654,7 @@ def test_list_psf_ids_multi(clean_ui):
     assert ans == [1, "2"]
 
 
+@requires_psf
 def test_load_conv_from_file(tmp_path, clean_ui):
     """Check we can read in a convolution model from a file.
 
@@ -665,6 +676,7 @@ def test_load_conv_from_file(tmp_path, clean_ui):
     assert foo.kernel.y == pytest.approx([10, 5, 0, 1])
 
 
+@requires_psf
 def test_load_psf_from_file(tmp_path, clean_ui):
     """Check we can read in a PSF model from a file.
 

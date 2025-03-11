@@ -196,6 +196,8 @@ The Sherpa build is controlled by the ``setup.cfg`` file in the
 root of the Sherpa source tree. These configuration options
 include:
 
+.. _build-fftw:
+
 FFTW
 ^^^^
 
@@ -211,6 +213,11 @@ the ``fftw`` options in the ``sherpa_config`` section of the
 
 The ``fftw`` option must be set to ``local`` and then the remaining
 options changed to match the location of the local installation.
+
+The ``fftw`` library supports PSF convolution in Sherpa - both 1D and
+2D - so if this is not needed then it can be skipped by setting::
+
+    disable_fftw=True
 
 .. _build-xspec:
 
