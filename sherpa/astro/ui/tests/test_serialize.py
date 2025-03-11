@@ -41,7 +41,7 @@ from sherpa.utils.err import ArgumentErr, DataErr, \
     IdentifierErr, IOErr, StatErr
 from sherpa.utils.testing import get_datadir, requires_data, \
     requires_xspec, has_package_from_list, requires_fits, \
-    requires_group, requires_region, requires_wcs
+    requires_group, requires_region, requires_wcs, requires_psf
 
 
 has_xspec = has_package_from_list("sherpa.astro.xspec")
@@ -2917,6 +2917,7 @@ def test_restore_img_filter_model(make_data_path):
     assert cnew == pytest.approx(corig)
 
 
+@requires_psf
 @requires_data
 @requires_fits
 def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
