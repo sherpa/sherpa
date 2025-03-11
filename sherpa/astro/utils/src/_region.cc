@@ -383,13 +383,11 @@ PyInit__region(void)
   // Add a symbol to indicate whether the module was built with the
   // USE_CXCDM_PARSER macro set.
   //
-  PyModule_AddIntConstant(m, "USE_CXCDM_PARSER",
 #ifdef USE_CXCDM_PARSER
-			  1
+  PyModule_AddIntConstant(m, "USE_CXCDM_PARSER", 1);
 #else
-			  0
+  PyModule_AddIntConstant(m, "USE_CXCDM_PARSER", 0);
 #endif
-			  );
 
   return m;
 
