@@ -1,3 +1,4 @@
+
 #
 #  Copyright (C) 2016-2017, 2019-2025
 #  Smithsonian Astrophysical Observatory
@@ -45,7 +46,7 @@ from sherpa.utils import poisson_noise
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     IdentifierErr, IOErr, SessionErr
 from sherpa.utils.logging import SherpaVerbosity
-from sherpa.utils.testing import requires_xspec
+from sherpa.utils.testing import requires_xspec, requires_psf
 
 TEST = [1, 2, 3]
 TEST2 = [4, 5, 6]
@@ -1291,6 +1292,7 @@ def test_show_data_explicit_id():
     assert out.getvalue().startswith("Data Set: bob\nname      = \n")
 
 
+@requires_psf
 def test_show_kernel_explicit_id(tmp_path):
     """Check we can call show_kernel with an id"""
 
@@ -1342,6 +1344,7 @@ def test_show_kernel_explicit_id(tmp_path):
     assert len(toks) == 12
 
 
+@requires_psf
 def test_show_psf_explicit_id(tmp_path):
     """Check we can call show_psf with an id"""
 
@@ -1377,6 +1380,7 @@ def test_show_psf_explicit_id(tmp_path):
     assert len(toks) == 9
 
 
+@requires_psf
 def test_show_kernel_multiple(tmp_path):
     """Check we can call show_kernel with multiple datasets, not all with a PSF"""
 

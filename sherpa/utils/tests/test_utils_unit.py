@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018 - 2024
+#  Copyright (C) 2016, 2018 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,7 +30,7 @@ from sherpa.utils import _utils, is_binary_file, pad_bounding_box, \
     histogram1d, histogram2d, dataspace1d, dataspace2d, \
     interpolate, bool_cast, multinormal_pdf, multit_pdf
 from sherpa.utils.guess import get_fwhm
-from sherpa.utils.testing import requires_data
+from sherpa.utils.testing import requires_data, requires_psf
 
 
 def test_calc_ftest():
@@ -280,6 +280,7 @@ def test_is_binary_file(make_data_path):
     assert not is_binary_file(ascii)
 
 
+@requires_psf
 def test_pad_bounding_box_fail():
     """The mask size must be >= kernel."""
 
@@ -293,6 +294,7 @@ def test_pad_bounding_box_fail():
     assert str(excinfo.value) == emsg
 
 
+@requires_psf
 @pytest.mark.parametrize("mask, expected",
                          [([1, 1, 1, 1, 1], [1, 2, 3, 4, 5]),
                           ([1, 1, 1, 1, 0], [1, 2, 3, 4, 0]),
@@ -320,6 +322,7 @@ def test_pad_bounding_box(mask, expected):
     assert_array_equal(ans, exp)
 
 
+@requires_psf
 def test_pad_bounding_box_mask_too_large():
     """What happens when the mask has more valid elements
     than the kernel? At present the code will read out-of-bounds

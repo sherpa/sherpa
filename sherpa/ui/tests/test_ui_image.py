@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023
+#  Copyright (C) 2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -52,7 +52,7 @@ from sherpa.models import basic
 
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr
-from sherpa.utils.testing import requires_ds9
+from sherpa.utils.testing import requires_ds9, requires_psf
 
 
 def example_data():
@@ -196,6 +196,7 @@ def test_get_model_component_image(session):
     assert y[3, 3] == pytest.approx(100.0)
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_model_component_image_with_convolution(session):
     """What happens if there's a convolution component in play?"""
@@ -279,6 +280,7 @@ def test_get_source_component_image(session):
     assert y[3, 3] == pytest.approx(100.0)
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_source_component_image_with_convolution(session):
     """There is a difference thanks to the PSF"""
@@ -355,6 +357,7 @@ def test_get_ratio_image(session):
     assert y[3, 3] == pytest.approx(0.302958)
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_psf_image(session):
     from sherpa.image import PSFImage
@@ -379,6 +382,7 @@ def test_get_psf_image(session):
     assert obj.y == pytest.approx(y)
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_kernel_image(session):
     from sherpa.image import PSFKernelImage
@@ -489,6 +493,7 @@ def test_image_model_component(session):
     check_xpa_model_component(backend)
 
 
+@requires_psf
 @requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_image_model_component_with_convolution(session):
@@ -548,6 +553,7 @@ def test_image_source_component(session):
     check_xpa_model_component(backend)
 
 
+@requires_psf
 @requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_image_source_component_with_convolution(session):
@@ -636,6 +642,7 @@ def test_image_fit(session):
     check_xpa_resid(backend)
 
 
+@requires_psf
 @requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_image_psf(session):
@@ -659,6 +666,7 @@ def test_image_psf(session):
     check_xpa(backend, 'data image 4 5 4 4 yes', grid)
 
 
+@requires_psf
 @requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_image_kernel(session):

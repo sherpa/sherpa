@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 - 2024
+#  Copyright (C) 2017 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -38,6 +38,7 @@ from sherpa.astro import ui
 from sherpa.utils import linear_interp
 from sherpa.utils.err import DataErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.testing import requires_psf
 
 from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, \
     EvaluationSpace2D, PointAxis, IntegratedAxis
@@ -844,6 +845,7 @@ class ReNormalizerModel1DInt(CompositeModel, ArithmeticModel):
 
 # TODO: more tests when regridding the models
 
+@requires_psf
 def test_regrid1d_works_with_convolution_style():
     """This doesn't really test more than the previous
     model-evaluation tests.
