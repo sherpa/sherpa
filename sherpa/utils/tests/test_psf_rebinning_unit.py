@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2023
+#  Copyright (C) 2019 - 2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -60,6 +60,7 @@ from sherpa.astro.instrument import PSFModel
 from sherpa.instrument import PSFSpace2D
 from sherpa.models import SigmaGauss2D
 from sherpa.models.regrid import EvaluationSpace2D
+from sherpa.utils.testing import requires_psf
 
 
 DATA_PIXEL_SIZE = 2
@@ -156,6 +157,7 @@ def generate_rebinning_configurations():
             )
 
 
+@requires_psf
 @mark.parametrize("psf_fixture", generate_rebinning_configurations(), indirect=True)
 def test_psf_resolution_bug(psf_fixture):
     session, source, expected_sigma = psf_fixture
@@ -165,6 +167,7 @@ def test_psf_resolution_bug(psf_fixture):
     assert source.sigma_b.val == expected_sigma
 
 
+@requires_psf
 @mark.parametrize("configuration", generate_psf_space_configurations())
 def test_psf_space(configuration):
 
