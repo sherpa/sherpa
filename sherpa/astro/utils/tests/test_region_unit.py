@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2020, 2021, 2024
+#  Copyright (C) 2016, 2020, 2021, 2024, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,6 +22,9 @@ import numpy as np
 
 import pytest
 
+from sherpa.utils.testing import requires_data
+
+
 # Allow the tests to be skipped if region support is not present.
 #
 _region = pytest.importorskip("sherpa.astro.utils._region")
@@ -36,6 +39,8 @@ x = [1, 2, 3]
 y = [1, 2, 3]
 xm = [254, 275, 256]
 ym = [254, 255, 256]
+
+BINARY_REGION_FILE = "acisf08478_000N001_r0043_reg3.fits"
 
 
 def test_region_empty():
@@ -441,3 +446,34 @@ def test_complex_region_manual_implicit():
     # the second one.
     assert str(rmanual) == 'Circle(50,50,30)&!RotBox(30,30,10,5,45)|Ellipse(40,75,30,20,320)'
     check_complex_region_1245(rmanual)
+
+
+@requires_data
+def test_read_binary_region_file_as_string_fails(make_data_path):
+    """This should "obviously" fail."""
+
+    infile = make_data_path(BINARY_REGION_FILE)
+    with pytest.raises(ValueError,
+                       match=f"^unable to parse region string: '{infile}'$"):
+        Region(infile)
+
+
+@requires_data
+def test_read_binary_region_file(make_data_path):
+    """Can we read in a binary region file?
+
+    Support for this is specific to CIAO-like builds.
+    """
+
+    infile = make_data_path(BINARY_REGION_FILE)
+    if _region.USE_CXCDM_PARSER != 1:
+        with pytest.raises(ValueError,
+                           match=f"^unable to read region from: {infile}$"):
+            Region(infile, fileflag=True)
+
+        return
+
+    reg = Region(infile, fileflag=True)
+
+    # Hopefully there won't be any numerical differences when reading in this data
+    assert str(reg) == "Ellipse(3144.52,4518.81,25.2979,19.1119,42.9872)"
