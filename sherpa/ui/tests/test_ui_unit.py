@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020 - 2024
+#  Copyright (C) 2017, 2018, 2020 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -666,7 +666,7 @@ def test_show_all_basic(clean_ui):
     assert expected == got
 
 
-def test_show_conf_basic(clean_ui):
+def test_show_conf_basic(clean_ui, check_str):
     """Set up a very basic data/model/fit"""
 
     ui.load_arrays(1, [1, 2, 4], [3, 5, 5])
@@ -676,21 +676,21 @@ def test_show_conf_basic(clean_ui):
 
     out = StringIO()
     ui.show_conf(outfile=out)
-    got = out.getvalue().split('\n')
+    got = out.getvalue()
 
-    assert len(got) == 12
-    assert got[0] == "Confidence:Dataset               = 1"
-    assert got[1] == "Confidence Method     = confidence"
-    assert got[2] == "Iterative Fit Method  = None"
-    assert got[3] == "Fitting Method        = levmar"
-    assert got[4] == "Statistic             = chi2gehrels"
-    assert got[5] == "confidence 1-sigma (68.2689%) bounds:"
-    assert got[6] == "   Param            Best-Fit  Lower Bound  Upper Bound"
-    assert got[7] == "   -----            --------  -----------  -----------"
-    assert got[8] == "   mdl.c0            4.19798     -1.85955      1.85955"
-    assert got[9] == ""
-    assert got[10] == ""
-    assert got[11] == ""
+    check_str(got,
+              ["Confidence:Dataset               = 1",
+               "Confidence Method     = confidence",
+               "Fitting Method        = levmar",
+               "Statistic             = chi2gehrels",
+               "confidence 1-sigma (68.2689%) bounds:",
+               "   Param            Best-Fit  Lower Bound  Upper Bound",
+               "   -----            --------  -----------  -----------",
+               "   mdl.c0            4.19798     -1.85955      1.85955",
+               "",
+               "",
+               ""
+               ])
 
 
 @pytest.mark.parametrize("string", [True, False])
