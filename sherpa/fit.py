@@ -504,7 +504,7 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
         out.append(f'Confidence Method     = {self.methodname}')
 
-        if self.iterfitname is not None or self.iterfitname != 'none':
+        if self.iterfitname is not None and self.iterfitname != 'none':
             out.append(f'Iterative Fit Method  = {self.iterfitname.capitalize()}')
 
         out.extend([f'Fitting Method        = {self.fitname}',
