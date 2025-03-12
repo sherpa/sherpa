@@ -33,18 +33,6 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
            'SimplexStep')
 
 
-# import autograd.numpy as np
-# from autograd import hessian
-# from numpy.linalg.linalg import LinAlgError
-# def autograd_covar(func, par):
-#     try:
-#         hess = hessian(func)(par)
-#         result = 2.0 * np.linalg.inv(hess)
-#         return result
-#     except LinAlgError:
-#         return None
-
-
 class MyNcores:
 
     def __init__(self) -> None:
