@@ -69,14 +69,14 @@ Best-fit value: 4.0
 """
 
 from collections.abc import Sequence
+import logging
 from typing import SupportsFloat
 
 import numpy as np
 
 from sherpa.utils._utils import sao_fcmp  # type: ignore
-from sherpa.utils import FuncCounter
+from sherpa.utils import FuncCounter, random
 from sherpa.utils.parallel import parallel_map
-from sherpa.utils import random
 from sherpa.utils.types import ArrayType, OptReturn, StatFunc
 
 from . import _saoopt  # type: ignore
@@ -87,6 +87,8 @@ from .ncoresnm import ncoresNelderMead
 __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
            'minim', 'montecarlo', 'neldermead')
 
+
+warning = logging.getLogger(__name__).warning
 
 # Use FLT_EPSILON as default tolerance
 #
@@ -182,12 +184,16 @@ def _par_at_boundary(low: np.ndarray,
     return False
 
 
-def _outside_limits(x: np.ndarray,
-                    xmin: np.ndarray,
-                    xmax: np.ndarray
-                    ) -> bool:
-    """Are any x values outside the xmin/max range?"""
-    return bool(np.any(x < xmin) or np.any(x > xmax))
+def _update_reported_nfev(result: OptReturn,
+                          nfev: int
+                          ) -> None:
+    """Add the extra function evaluations into the dictionary.
+
+    Although the OptReturn tuple is fixed, the dictionary in it
+    can be changed.
+    """
+
+    result[4]['nfev'] += nfev
 
 
 class Callback:
@@ -221,6 +227,14 @@ class InfinitePotential:
     --------
     Callback
 
+    Notes
+    -----
+
+    The bounds checking is that the parameter values used to estimate
+    the statistic are not NaN and lie within the range
+
+        minval <= pars <= maxval
+
     """
 
     __slots__ = ("func", "minval", "maxval")
@@ -228,15 +242,15 @@ class InfinitePotential:
     def __init__(self,
                  func: StatFunc,
                  minval: np.ndarray,
-                 maxval: np.ndarray) -> None:
+                 maxval: np.ndarray
+                 ) -> None:
         self.func = func
         self.minval = minval
         self.maxval = maxval
 
     def __call__(self, pars: np.ndarray) -> SupportsFloat:
-        if np.isnan(pars).any() or _outside_limits(pars,
-                                                   self.minval,
-                                                   self.maxval):
+        if np.isnan(pars).any() or np.any(pars < self.minval) or \
+           np.any(pars > self.maxval):
             return FUNC_MAX
 
         return self.func(pars)[0]
@@ -366,6 +380,9 @@ def difevo_nm(fcn: StatFunc,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
+# Ideally method would send in the actual method, not the name,
+# but it's hard to specialize the arguments.
+#
 def grid_search(fcn: StatFunc,
                 x0: ArrayType,
                 xmin: ArrayType,
@@ -477,22 +494,26 @@ def grid_search(fcn: StatFunc,
     x = answer[1:]
     nfev = len(sequence_results) + 1
 
-    # TODO: should we just use case-insensitive comparison?
-    if method in ['NelderMead', 'neldermead', 'Neldermead', 'nelderMead']:
-        # re.search( '^[Nn]elder[Mm]ead', method ):
-        nm_result = neldermead(fcn, x, xmin, xmax, ftol=ftol, maxfev=maxfev,
-                               verbose=verbose)
-        (status, x, fval, msg, imap) = nm_result
-        imap['nfev'] += nfev
-        return (status, x, fval, msg, imap)
+    method_name = "none" if method is None else method.lower()
+    match method_name:
+        case "none":
+            pass
 
-    if method in ['LevMar', 'levmar', 'Levmar', 'levMar']:
-        # re.search( '^[Ll]ev[Mm]ar', method ):
-        levmar_result = lmdif(fcn, x, xmin, xmax, ftol=ftol, xtol=ftol,
-                              gtol=ftol, maxfev=maxfev, verbose=verbose)
-        (status, x, fval, msg, imap) = levmar_result
-        imap['nfev'] += nfev
-        return (status, x, fval, msg, imap)
+        case "neldermead":
+            nm_result = neldermead(fcn, x, xmin, xmax, ftol=ftol,
+                                   maxfev=maxfev, verbose=verbose)
+            _update_reported_nfev(nm_result, nfev)
+            return nm_result
+
+        case "levmar":
+            levmar_result = lmdif(fcn, x, xmin, xmax, ftol=ftol,
+                                  xtol=ftol, gtol=ftol, maxfev=maxfev,
+                                  verbose=verbose)
+            _update_reported_nfev(levmar_result, nfev)
+            return levmar_result
+
+        case _:
+            warning(f"Skipping unknown method '{method}'")
 
     fval = answer[0]
     ierr = 0
@@ -683,7 +704,7 @@ def montecarlo(fcn: StatFunc,
                                 ftol=ftol, finalsimplex=9, step=mystep)
             x = np.asarray(result[1], np.float64)
             nfval = result[2]
-            nfev = result[4].get('nfev')
+            nfev = result[4]['nfev']
         else:
             ncores_nm = ncoresNelderMead()
             nfev, nfval, x = \
@@ -700,7 +721,7 @@ def montecarlo(fcn: StatFunc,
         if 1 == numcores:
             result = difevo_nm(myfcn, x, xmin, xmax, ftol, mymaxfev, verbose,
                                seed, pop, xprob, weight)
-            nfev += result[4].get('nfev')
+            nfev += result[4]['nfev']
             x = np.asarray(result[1], np.float64)
             nfval = result[2]
         else:
@@ -732,12 +753,12 @@ def montecarlo(fcn: StatFunc,
                 # TODO: should this update the seed somehow?
                 result = difevo_nm(myfcn, y, xmin, xmax, ftol, mymaxfev,
                                    verbose, seed, pop, xprob, weight)
-                nfev += result[4].get('nfev')
+                nfev += result[4]['nfev']
                 if result[2] < nfval:
                     nfval = result[2]
                     x = np.asarray(result[1], np.float64)
                 if verbose:
-                    print(f'f_de_nm{x}={result[2]:.14e} in {result[4].get("nfev")} nfev')
+                    print(f'f_de_nm{x}={result[2]:.14e} in {result[4]["nfev"]} nfev')
 
             ############################ nmDifEvo #############################
 
@@ -766,7 +787,7 @@ def montecarlo(fcn: StatFunc,
 
             x = np.asarray(result[1], np.float64)
             fval = result[2]
-            nfev += result[4].get('nfev')
+            nfev += result[4]['nfev']
         else:
             ncores_nm = ncoresNelderMead()
             tmp_nfev, tmp_fmin, tmp_par = \
@@ -1087,7 +1108,7 @@ def neldermead(fcn: StatFunc,
                        maxfev=maxfev - nfev - 12, iquad=1,
                        reflect=reflect)
         nelmea_x = np.asarray(nelmea[1], np.float64)
-        nelmea_nfev = nelmea[4].get('nfev')
+        nelmea_nfev = nelmea[4]['nfev']
         covarerr = nelmea[4].get('covarerr')
         nfev += nelmea_nfev
         minim_fval = nelmea[2]

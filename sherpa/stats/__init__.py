@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015 - 2020, 2022, 2024
+#  Copyright (C) 2009, 2015 - 2020, 2022, 2024 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,8 +19,9 @@
 #
 
 
+from collections.abc import Callable
 from configparser import ConfigParser
-from typing import Callable, Literal, Optional, Union
+from typing import Literal, Protocol
 import warnings
 
 import numpy as np
@@ -68,7 +69,7 @@ class Stat(NoNewAttributesAfterInit):
     # the type checkers this fact without numerous asserts (which we
     # currently do).
     #
-    _calc: Optional[StatFunc] = None
+    _calc: StatFunc | None = None
 
     # Can the statistic calculate rstat and qvalue values?
     #
@@ -87,7 +88,7 @@ class Stat(NoNewAttributesAfterInit):
         return f"<{type(self).__name__} statistic instance '{self.name}'>"
 
     @staticmethod
-    def _bundle_inputs(data: Union[Data, DataSimulFit],
+    def _bundle_inputs(data: Data | DataSimulFit,
                        model: Model
                        ) -> tuple[DataSimulFit, SimulFitModel]:
         """Convert input into SimulFit instances.
@@ -186,7 +187,7 @@ class Stat(NoNewAttributesAfterInit):
                           'model expressions', nmdl)
 
     def _validate_inputs(self,
-                         data: Union[Data, DataSimulFit],
+                         data: Data | DataSimulFit,
                          model: Model
                          ) -> tuple[DataSimulFit, SimulFitModel]:
         """Ensure that the inputs are correct for the statistic.
@@ -228,9 +229,9 @@ class Stat(NoNewAttributesAfterInit):
         return data, model
 
     def _get_fit_model_data(self,
-                            data: Union[Data, DataSimulFit],
+                            data: Data | DataSimulFit,
                             model: Model
-                            ) -> tuple[tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
+                            ) -> tuple[tuple[np.ndarray, np.ndarray | None, np.ndarray | None],
                                        np.ndarray]:
         data, model = self._validate_inputs(data, model)
         fitdata = data.to_fit(staterrfunc=self.calc_staterror)
@@ -271,7 +272,7 @@ class Stat(NoNewAttributesAfterInit):
 
     # TODO: add *args, **kwargs?
     def calc_stat(self,
-                  data: Union[Data, DataSimulFit],
+                  data: Data | DataSimulFit,
                   model: Model
                   ) -> StatResults:
         """Return the statistic value for the data and model.
@@ -300,8 +301,7 @@ class Stat(NoNewAttributesAfterInit):
     def goodness_of_fit(self,
                         statval: float,
                         dof: int
-                        ) -> Union[tuple[Literal[None], Literal[None]],
-                                   tuple[float, float]]:
+                        ) -> tuple[Literal[None], Literal[None]] | tuple[float, float]:
         """Return the reduced statistic and q value.
 
         The reduced statisitc is conceptually simple, as it is just
@@ -379,7 +379,7 @@ class Likelihood(Stat):
                 raise FitErr('statnotforbackgsub', self.name)
 
     def _validate_inputs(self,
-                         data: Union[Data, DataSimulFit],
+                         data: Data | DataSimulFit,
                          model: Model
                          ) -> tuple[DataSimulFit, SimulFitModel]:
         data, model = super()._validate_inputs(data, model)
@@ -387,7 +387,7 @@ class Likelihood(Stat):
         return data, model
 
     def calc_stat(self,
-                  data: Union[Data, DataSimulFit],
+                  data: Data | DataSimulFit,
                   model: Model
                   ) -> StatResults:
         fitdata, modeldata = self._get_fit_model_data(data, model)
@@ -619,7 +619,7 @@ class Chi2(Stat):
         raise StatErr('chi2noerr')
 
     def calc_stat(self,
-                  data: Union[Data, DataSimulFit],
+                  data: Data | DataSimulFit,
                   model: Model
                   ) -> StatResults:
         fitdata, modeldata = self._get_fit_model_data(data, model)
@@ -631,7 +631,7 @@ class Chi2(Stat):
                           truncation_value)
 
     def calc_chisqr(self,
-                    data: Union[Data, DataSimulFit],
+                    data: Data | DataSimulFit,
                     model: Model
                     ) -> np.ndarray:
         """Return the chi-square value for each bin.
@@ -871,6 +871,22 @@ class Chi2XspecVar(Chi2):
         return _statfcts.calc_chi2xspecvar_errors(data)
 
 
+class UserStatFunc(Protocol):
+    """Represent the statfunc argument to `UserStat`."""
+
+    def __call__(self,
+                 data: np.ndarray,
+                 model: np.ndarray,
+                 staterror: np.ndarray | None = None,
+                 syserror: np.ndarray | None = None,
+                 weight: np.ndarray | None = None  # currently unused
+                 ) -> StatResults:
+        ...
+
+
+UserErrFunc = Callable[[np.ndarray], np.ndarray]
+
+
 class UserStat(Stat):
     """Support simple user-supplied statistic calculations.
 
@@ -885,9 +901,10 @@ class UserStat(Stat):
     """
 
     def __init__(self,
-                 statfunc: Optional[Callable[..., StatResults]] = None,
-                 errfunc: Optional[Callable[[np.ndarray], np.ndarray]] = None,
-                 name: str = 'userstat') -> None:
+                 statfunc: UserStatFunc | None = None,
+                 errfunc: UserErrFunc | None = None,
+                 name: str = 'userstat'
+                 ) -> None:
         self._statfuncset = False
         self._staterrfuncset = False
 
@@ -918,10 +935,14 @@ class UserStat(Stat):
         self.__dict__['errfunc'] = None
         self.__dict__.update(state)
 
-    def set_statfunc(self, func) -> None:
+    def set_statfunc(self,
+                     func: UserStatFunc | None
+                     ) -> None:
         self.statfunc = func
 
-    def set_errfunc(self, func) -> None:
+    def set_errfunc(self,
+                    func: UserErrFunc | None
+                    ) -> None:
         self.errfunc = func
 
     # This can not be @staticmethod, which means this is likely to be
@@ -934,7 +955,7 @@ class UserStat(Stat):
         return self.errfunc(data)
 
     def calc_stat(self,
-                  data: Union[Data, DataSimulFit],
+                  data: Data | DataSimulFit,
                   model: Model
                   ) -> StatResults:
 
@@ -942,7 +963,6 @@ class UserStat(Stat):
             raise StatErr('nostat', self.name, 'calc_stat()')
 
         fitdata, modeldata = self._get_fit_model_data(data, model)
-
         return self.statfunc(fitdata[0],
                              modeldata,
                              staterror=fitdata[1],
@@ -1019,7 +1039,7 @@ class WStat(Likelihood):
         super().__init__(name=name)
 
     def calc_stat(self,
-                  data: Union[Data, DataSimulFit],
+                  data: Data | DataSimulFit,
                   model: Model
                   ) -> StatResults:
 
@@ -1049,6 +1069,9 @@ class WStat(Likelihood):
         #
         for dset, mexpr in zip(data.datasets, model.parts):
 
+            # How best to indicate to the typing code that dset should
+            # be a DataPHA object (or the code will error out)?
+            #
             y = dset.to_fit(staterrfunc=None)[0]
             data_src.append(y)
             nelems.append(y.size)
