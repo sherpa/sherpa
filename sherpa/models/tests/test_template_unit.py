@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2022, 2023
+#  Copyright (C) 2016, 2018, 2022, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -220,16 +220,16 @@ def test_templatemodel_basic_returns_class(iname, cls):
 
 
 @pytest.mark.parametrize("iname", [None, "default"])
-def test_templatemodel_basic_show(iname):
+def test_templatemodel_basic_show(iname, check_str):
     """Check we can get a reasonable show value"""
 
     tmpl = setup_basic(iname)
-    out = str(tmpl).split("\n")
-    assert out[0] == "bob"
-    assert out[1].startswith("   Param  ")
-    assert out[2].startswith("   -----  ")
-    assert out[3].startswith("   bob.pa ")
-    assert len(out) == 4
+    check_str(str(tmpl),
+              ["bob",
+               "   Param        Type          Value          Min          Max      Units",
+               "   -----        ----          -----          ---          ---      -----",
+               "   bob.pa       thawed           10           10           30           "
+               ])
 
 
 @pytest.mark.parametrize("iname", [None, "default"])
@@ -525,3 +525,67 @@ def test_template_with_different_independent_axes(pa, expected):
     mdl.pa = pa
     got = mdl([14, 20, 28, 31, 40])
     assert got == pytest.approx(expected)
+
+
+@requires_data
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("method,nfev,statval",
+                         [("neldermead", 68, 2.940358057485021),
+                          ("NelderMead", 68, 2.940358057485021),
+                          ("levmar", 21, 2.940357183666877),
+                          ("LevMar", 21, 2.940357183666877),
+                          (None, 17, 2.9918847752039266),
+                          # An invalid method is the same as None
+                          ("NotAMethod", 17, 2.9918847752039266)
+                          ])
+def test_gridsearch_method(session, method, nfev, statval,
+                           make_data_path, skip_if_no_io, caplog):
+    """This is a regression following test_309 / template tests.
+
+    The aim is to check that setting method will change results.
+    This test is not to check whether the results are meaningfull.
+
+    nlog lists the number of "logging" messages we should see;
+    this is the number of "parameter hit min/max" bounds.
+    """
+
+    ynorm = 1e9
+
+    s = session()
+
+    dname = make_data_path('load_template_with_interpolation-bb_data.dat')
+
+    s.load_data(dname)
+    s.get_data().y *= ynorm
+
+    indexname = 'bb_index.dat'
+    datadir = make_data_path('')
+
+    # Need to load the data from the same directory as the index
+    basedir = os.getcwd()
+    os.chdir(datadir)
+    try:
+        s.load_template_model('bbtemp', indexname)
+    finally:
+        os.chdir(basedir)
+
+    bbtemp = s.get_model_component('bbtemp')
+    s.set_source(bbtemp * ynorm)
+
+    # Since the dummy parameter has the min/max range of 0 to 0, do
+    # not try to fit it. Hopefully this does not negate the grid
+    # search code.
+    #
+    s.freeze(bbtemp.dummy)
+
+    s.set_method('gridsearch')
+    s.set_method_opt('method', method)
+    s.fit()
+
+    r = s.get_fit_results()
+    assert r.succeeded
+    assert r.nfev == nfev
+    assert r.statval == pytest.approx(statval)
+
+    # Expect to see one log message from the fit call
+    assert len(caplog.records) == 1
