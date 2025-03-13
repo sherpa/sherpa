@@ -89,14 +89,27 @@ class Opt:
                  xmin: ArrayType,
                  xmax: ArrayType
                  ) -> None:
-        self.npar = len(xmin)
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
+        self.npar = len(self.xmin)
+        if len(self.xmax) != self.npar:
+            raise ValueError("xmin and xmax must be the same size")
+
+        # The function count should only be done on "valid" ranges,
+        # hence the ordering here.
+        #
         self.func_count = FuncCounter(func)
-        self.func = self.func_bounds(self.func_count, self.npar, xmin, xmax)
+        self.func = self.func_bounds(self.func_count, self.npar,
+                                     self.xmin, self.xmax)
 
     @property
     def nfev(self) -> int:
+        """How many evaluations of the function have been made?
+
+        This does not count proposed values which were outside the
+        parameter limits.
+
+        """
         return self.func_count.nfev
 
     def _outside_limits(self,
