@@ -75,9 +75,8 @@ from typing import SupportsFloat
 import numpy as np
 
 from sherpa.utils._utils import sao_fcmp  # type: ignore
-from sherpa.utils import FuncCounter
+from sherpa.utils import FuncCounter, random
 from sherpa.utils.parallel import parallel_map
-from sherpa.utils import random
 from sherpa.utils.types import ArrayType, OptReturn, StatFunc
 
 from . import _saoopt  # type: ignore
@@ -197,14 +196,6 @@ def _update_reported_nfev(result: OptReturn,
     result[4]['nfev'] += nfev
 
 
-def _outside_limits(x: np.ndarray,
-                    xmin: np.ndarray,
-                    xmax: np.ndarray
-                    ) -> bool:
-    """Are any x values outside the xmin/max range?"""
-    return bool(np.any(x < xmin) or np.any(x > xmax))
-
-
 class Callback:
     """Handle the callback argument for the optimizers.
 
@@ -236,6 +227,14 @@ class InfinitePotential:
     --------
     Callback
 
+    Notes
+    -----
+
+    The bounds checking is that the parameter values used to estimate
+    the statistic are not NaN and lie within the range
+
+        minval <= pars <= maxval
+
     """
 
     __slots__ = ("func", "minval", "maxval")
@@ -243,15 +242,15 @@ class InfinitePotential:
     def __init__(self,
                  func: StatFunc,
                  minval: np.ndarray,
-                 maxval: np.ndarray) -> None:
+                 maxval: np.ndarray
+                 ) -> None:
         self.func = func
         self.minval = minval
         self.maxval = maxval
 
     def __call__(self, pars: np.ndarray) -> SupportsFloat:
-        if np.isnan(pars).any() or _outside_limits(pars,
-                                                   self.minval,
-                                                   self.maxval):
+        if np.isnan(pars).any() or np.any(pars < self.minval) or \
+           np.any(pars > self.maxval):
             return FUNC_MAX
 
         return self.func(pars)[0]
