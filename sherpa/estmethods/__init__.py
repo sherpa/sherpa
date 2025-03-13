@@ -28,6 +28,7 @@ import warnings
 import numpy as np
 from numpy.linalg import LinAlgError
 
+from sherpa.stats import StatCallback
 from sherpa.utils import NoNewAttributesAfterInit, \
     FuncCounter, OutOfBoundErr, Knuth_close, \
     print_fields, is_iterable, list_to_open_interval, quad_coef, \
@@ -219,8 +220,7 @@ class Covariance(EstMethod):
         if statargs is not None or statkwargs is not None:
             warning("statargs/kwargs set but values unused")
 
-        def stat_cb(pars):
-            return statfunc(pars)[0]
+        stat_cb = StatCallback(statfunc)
 
         def fit_cb(scb, pars, parmins, parmaxes, i):
             # parameter i is a no-op usually
@@ -305,8 +305,7 @@ class Confidence(EstMethod):
         if statargs is not None or statkwargs is not None:
             warning("statargs/kwargs set but values unused")
 
-        def stat_cb(pars):
-            return statfunc(pars)[0]
+        stat_cb = StatCallback(statfunc)
 
         def fit_cb(pars, parmins, parmaxes, i):
             # freeze model parameter i
@@ -415,8 +414,7 @@ class Projection(EstMethod):
         if fitfunc is None:
             raise TypeError("fitfunc should not be none")
 
-        def stat_cb(pars):
-            return statfunc(pars)[0]
+        stat_cb = StatCallback(statfunc)
 
         def fit_cb(pars, parmins, parmaxes, i):
             # freeze model parameter i
