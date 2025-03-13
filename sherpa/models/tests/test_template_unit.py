@@ -587,5 +587,16 @@ def test_gridsearch_method(session, method, nfev, statval,
     assert r.nfev == nfev
     assert r.statval == pytest.approx(statval)
 
-    # Expect to see one log message from the fit call
-    assert len(caplog.records) == 1
+    # Expect to see one log message from the fit call, except
+    # for the "NotAMethod" case which first has a warning about
+    # the unknown method value.
+    #
+    if method == "NotAMethod":
+        assert len(caplog.records) == 2
+        rec = caplog.records[0]
+        assert rec.name == "sherpa.optmethods.optfcts"
+        assert rec.levelname == "WARNING"
+        assert rec.getMessage() == "Skipping unknown method 'NotAMethod'"
+
+    else:
+        assert len(caplog.records) == 1

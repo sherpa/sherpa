@@ -69,6 +69,7 @@ Best-fit value: 4.0
 """
 
 from collections.abc import Sequence
+import logging
 from typing import SupportsFloat
 
 import numpy as np
@@ -87,6 +88,8 @@ from .ncoresnm import ncoresNelderMead
 __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
            'minim', 'montecarlo', 'neldermead')
 
+
+warning = logging.getLogger(__name__).warning
 
 # Use FLT_EPSILON as default tolerance
 #
@@ -378,6 +381,9 @@ def difevo_nm(fcn: StatFunc,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
+# Ideally method would send in the actual method, not the name,
+# but it's hard to specialize the arguments.
+#
 def grid_search(fcn: StatFunc,
                 x0: ArrayType,
                 xmin: ArrayType,
@@ -489,20 +495,26 @@ def grid_search(fcn: StatFunc,
     x = answer[1:]
     nfev = len(sequence_results) + 1
 
-    # TODO: should we just use case-insensitive comparison?
-    if method in ['NelderMead', 'neldermead', 'Neldermead', 'nelderMead']:
-        # re.search( '^[Nn]elder[Mm]ead', method ):
-        nm_result = neldermead(fcn, x, xmin, xmax, ftol=ftol, maxfev=maxfev,
-                               verbose=verbose)
-        _update_reported_nfev(nm_result, nfev)
-        return nm_result
+    method_name = "none" if method is None else method.lower()
+    match method_name:
+        case "none":
+            pass
 
-    if method in ['LevMar', 'levmar', 'Levmar', 'levMar']:
-        # re.search( '^[Ll]ev[Mm]ar', method ):
-        levmar_result = lmdif(fcn, x, xmin, xmax, ftol=ftol, xtol=ftol,
-                              gtol=ftol, maxfev=maxfev, verbose=verbose)
-        _update_reported_nfev(levmar_result, nfev)
-        return levmar_result
+        case "neldermead":
+            nm_result = neldermead(fcn, x, xmin, xmax, ftol=ftol,
+                                   maxfev=maxfev, verbose=verbose)
+            _update_reported_nfev(nm_result, nfev)
+            return nm_result
+
+        case "levmar":
+            levmar_result = lmdif(fcn, x, xmin, xmax, ftol=ftol,
+                                  xtol=ftol, gtol=ftol, maxfev=maxfev,
+                                  verbose=verbose)
+            _update_reported_nfev(levmar_result, nfev)
+            return levmar_result
+
+        case _:
+            warning(f"Skipping unknown method '{method}'")
 
     fval = answer[0]
     ierr = 0
