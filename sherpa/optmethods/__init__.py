@@ -284,11 +284,7 @@ class OptMethod(NoNewAttributesAfterInit):
 
         """
 
-        # Calling routines set statarks/kwargs so need to check the
-        # length if not None.
-        #
-        if (statargs is not None and len(statargs) > 0) or \
-           (statkwargs is not None and len(statkwargs) > 0):
+        if statargs is not None and statkwargs is not None:
             warning("statargs/kwargs set but values unused")
 
         output = self._optfunc(statfunc, pars, parmins, parmaxes,
