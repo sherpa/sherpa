@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018 - 2024
+#  Copyright (C) 2007, 2015, 2016, 2018 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -2643,22 +2643,21 @@ def is_in(arg, seq):
     return False
 
 
-def is_iterable(arg):
+def is_iterable(arg) -> bool:
     return isinstance(arg, (list, tuple, np.ndarray)) or np.iterable(arg)
 
 
-# Can this return TypeGuard[Sequence]?
 def is_iterable_not_str(arg: Any) -> bool:
     """It is iterable but not a string."""
 
     return not isinstance(arg, str) and isinstance(arg, Iterable)
 
 
-def is_sequence(start, mid, end):
+def is_sequence(start, mid, end) -> bool:
     return start < mid < end
 
 
-def Knuth_close(x, y, tol, myop=operator.__or__):
+def Knuth_close(x, y, tol, myop=operator.__or__) -> bool:
     """Check whether two floating-point numbers are close together.
 
     See Also
@@ -2718,7 +2717,7 @@ def safe_div(num, denom):
     return num / denom
 
 
-def Knuth_boost_close(x, y, tol, myop=operator.__or__):
+def Knuth_boost_close(x, y, tol, myop=operator.__or__) -> bool:
     """ The following text was taken verbatim from:
 
     http://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction

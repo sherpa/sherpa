@@ -22,6 +22,7 @@ import pytest
 from sherpa.optmethods import _tstoptfct  # type: ignore
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 from sherpa.optmethods.ncoresde import ncoresDifEvo
+from sherpa.stats import StatCallback
 
 
 NCORES_NM = ncoresNelderMead()
@@ -34,10 +35,8 @@ def init(name, npar):
 
 
 def tst_opt(opt, fcn, npar, reltol=1.0e-3, abstol=1.0e-3):
-    def func(arg):
-        return fcn(arg)[0]
     x0, xmin, xmax, fmin = init(fcn.__name__, npar)
-    nfev, fval, par = opt(func, x0, xmin, xmax)
+    nfev, fval, par = opt(StatCallback(fcn), x0, xmin, xmax)
     assert fmin == pytest.approx(fval, rel=reltol, abs=abstol)
 
 
