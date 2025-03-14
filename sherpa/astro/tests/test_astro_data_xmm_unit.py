@@ -750,3 +750,53 @@ def test_can_use_pha_grating(make_data_path, clean_astro_ui):
     assert stat.dof == 108
 
     assert stat.statval == pytest.approx(118.23, rel=0, abs=0.005)
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_issue_2184(make_data_path, clean_astro_ui):
+    """Does the filter expression mask=True match mask=[True, ...]?
+
+    This repeats part of test_can_use_pha_grating
+    """
+
+    ui.load_pha(make_data_path(PHAFILE_GRATING))
+    ui.load_rmf(make_data_path(RMFFILE_GRATING))
+
+    d = ui.get_data()
+    assert d.mask is True
+
+    ui.set_analysis("channel")
+    cf1 = ui.get_filter()
+
+    ui.set_analysis("energy")
+    ef1 = ui.get_filter(format='%.5f')
+
+    ui.set_analysis("wave")
+    wf1 = ui.get_filter(format='%.5f')
+
+    d.mask = [True] * 3600
+
+    ui.set_analysis("channel")
+    cf2 = ui.get_filter()
+
+    ui.set_analysis("energy")
+    ef2 = ui.get_filter(format='%.5f')
+
+    ui.set_analysis("wave")
+    wf2 = ui.get_filter(format='%.5f')
+
+    assert cf1 == '1:3600'
+    assert cf2 == cf1
+
+    # These two should be the same, but they are not (issue #2184).
+    # For now treat this as a regression test.
+    #
+    assert ef1 == "0.31004:3.09188"
+    assert ef2 == "0.30996:3.09961"
+
+    # Ditto.
+    #
+    assert wf1 == '4.01000:39.98998'
+    assert wf2 == '4.00000:39.99998'
