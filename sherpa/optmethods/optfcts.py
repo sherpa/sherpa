@@ -725,7 +725,7 @@ def montecarlo(fcn: StatFunc,
             x = np.asarray(result[1], np.float64)
             nfval = result[2]
         else:
-            ncores_de = ncoresDifEvo()
+            ncores_de = ncoresDifEvo()  # TODO: send in rng?
             mystep = None
             tmp_nfev, tmp_fmin, tmp_par = \
                 ncores_de(stat_cb0, x, xmin, xmax, ftol, mymaxfev, mystep,
