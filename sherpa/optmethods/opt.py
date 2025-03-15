@@ -55,6 +55,7 @@ class WorkerFunc(Protocol):
 
 
 class MyNcores:
+    """Support distributed processing."""
 
     def __init__(self) -> None:
         if multi is False:
