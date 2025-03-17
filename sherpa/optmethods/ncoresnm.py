@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2021, 2023, 2024
+#  Copyright (C) 2019 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,7 +34,8 @@ EPSILON = np.float64(np.finfo(np.float32).eps)
 class MyNelderMead(Opt):
 
     def __init__(self, fcn, xmin, xmax):
-        Opt.__init__(self, fcn, xmin, xmax)
+        super().__init__(fcn, xmin, xmax)
+
         self.expansion_coef = 2.0          # chi
         self.contraction_coef = 0.5          # gamma
         self.reflection_coef = 1.0          # rho
@@ -339,16 +340,13 @@ class ncoresNelderMead:
         nfev = results[0]
         fmin = results[1]
         par = results[2]
-        solution_at = 0
         for ii in range(1, num):
             index = ii * 3
             nfev += results[index]
-            # print(ii, 'unpack_results: f', par, '=', fmin, '@', nfev, 'nfevs')
             if results[index + 1] < fmin:
                 fmin = results[index + 1]
                 par = results[index + 2]
-                solution_at = ii
-        # print('unpack_results: solution_@ =', solution_at)
+
         return nfev, fmin, par
 
 
@@ -369,7 +367,7 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
     #
     def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
                              NelderMead3(), NelderMead4(), NelderMead5()]):
-        ncoresNelderMead.__init__(self, algo)
+        super().__init__(algo)
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
                  numcores=ncpus):
@@ -384,7 +382,6 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin, xmax, tol, maxnfev)
         tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
         nfev += tmp_nfev
-        # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
         if fmin < fval:
             return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
 
