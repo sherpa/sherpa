@@ -686,7 +686,8 @@ def montecarlo(fcn: StatFunc,
         else:
             ncores_nm = ncoresNelderMead()
             nfev, nfval, x = \
-                ncores_nm(stat_cb0, x, xmin, xmax, ftol, mymaxfev, numcores)
+                ncores_nm(stat_cb0, x, xmin, xmax, tol=ftol,
+                          maxnfev=mymaxfev, numcores=numcores, rng=rng)
 
         if verbose:
             print(f'f_nm{x}={nfval:.14e} in {nfev} nfev')
@@ -706,8 +707,12 @@ def montecarlo(fcn: StatFunc,
             ncores_de = ncoresDifEvo()
             mystep = None
             tmp_nfev, tmp_fmin, tmp_par = \
-                ncores_de(stat_cb0, x, xmin, xmax, ftol, mymaxfev, mystep,
-                          numcores, pop, seed, weight, xprob, verbose)
+                ncores_de(stat_cb0, x, xmin, xmax, tol=ftol,
+                          maxnfev=mymaxfev, step=mystep,
+                          numcores=numcores, npop=pop, seed=seed,
+                          sfactor=weight, xprob=xprob,
+                          verbose=verbose, rng=rng)
+
             nfev += tmp_nfev
             if tmp_fmin < nfval:
                 nfval = tmp_fmin
@@ -771,8 +776,10 @@ def montecarlo(fcn: StatFunc,
         else:
             ncores_nm = ncoresNelderMead()
             tmp_nfev, tmp_fmin, tmp_par = \
-                ncores_nm(stat_cb0, x, xmin, xmax, ftol, maxfev - nfev,
-                          numcores)
+                ncores_nm(stat_cb0, x, xmin, xmax, tol=ftol,
+                          maxnfev=maxfev - nfev, numcores=numcores,
+                          rng=rng)
+
             nfev += tmp_nfev
             # There is a bug here somewhere using broyden_tridiagonal
             if tmp_fmin < fval:

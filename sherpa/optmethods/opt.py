@@ -19,12 +19,13 @@
 #
 
 from collections.abc import Callable, Sequence
+from typing import Protocol
 
 import numpy as np
 
 from sherpa.utils import Knuth_close, FuncCounter
 from sherpa.utils.parallel import SupportsQueue, \
-    multi, context, run_tasks
+    multi, context, run_tasks, create_seeds
 from sherpa.utils.random import RandomType, uniform
 from sherpa.utils.types import ArrayType
 
@@ -43,13 +44,19 @@ FUNC_MAX = float(np.finfo(np.float64).max)
 OptimizerFunc = Callable[[np.ndarray], float]
 
 MyOptOutput = tuple[int, float, np.ndarray]
-WorkerFunc = Callable[[OptimizerFunc,
-                       np.ndarray,
-                       np.ndarray,
-                       np.ndarray,
-                       float,
-                       int | None],
-                      MyOptOutput]
+
+class WorkerFunc(Protocol):
+
+    def __call__(self,
+                 func: OptimizerFunc,
+                 x: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float,
+                 maxnfev: int | None,
+                 rng: RandomType | None = None
+                 ) -> MyOptOutput:
+        ...
 
 
 class MyNcores:
@@ -67,9 +74,14 @@ class MyNcores:
              xmin: np.ndarray,
              xmax: np.ndarray,
              tol: float,
-             maxnfev: int | None
+             maxnfev: int | None,
+             rng: RandomType | None = None
              ) -> list[MyOptOutput]:
         """Apply each function to the arguments, running in parallel."""
+
+        nfuncs = len(funcs)
+        if nfuncs == 0:
+            raise TypeError("funcs can not be empty")
 
         for func in funcs:
             if not callable(func):
@@ -85,11 +97,15 @@ class MyNcores:
         manager = context.Manager()
         out_q = manager.Queue()
         err_q = manager.Queue()
+
+        seeds = create_seeds(rng, nfuncs)
+
         procs = [context.Process(target=self.my_worker,
                                  args=(func, ii, out_q, err_q,
-                                       fcn, x, xmin, xmax, tol, maxnfev)
+                                       fcn, x, xmin, xmax, tol, maxnfev),
+                                 kwargs={"rng": np.random.default_rng(seed)}
                                  )
-                 for ii, func in enumerate(funcs)]
+                 for ii, (func, seed) in enumerate(zip(funcs, seeds))]
 
         return run_tasks(procs, err_q, out_q)
 
@@ -103,7 +119,8 @@ class MyNcores:
                   xmin: np.ndarray,
                   xmax: np.ndarray,
                   tol: float,
-                  maxnfev: int | None
+                  maxnfev: int | None,
+                  rng: RandomType | None = None
                   ) -> None:
         raise NotImplementedError("my_worker has not been implemented")
 
@@ -248,9 +265,7 @@ class SimplexBase:
         self.xmax = np.asarray(xmax)
         self.npar = len(xpar)
         if rng is None:
-            # Use the equivalent of "np.random.seed". This will be
-            # updated to use default_rng once the tests have passed.
-            self.rng = np.random.RandomState(seed)
+            self.rng = np.random.default_rng(seed)
         else:
             self.rng = rng
 
