@@ -39,8 +39,8 @@ SEED = 2354
 
 @pytest.mark.parametrize("kwargs",
                          [{"seed": SEED, "rng": None},
-                          {"seed": SEED, "rng": np.random.RandomState(SEED)},
-                          {"seed": None, "rng": np.random.RandomState(SEED)},
+                          {"seed": SEED, "rng": np.random.default_rng(SEED)},
+                          {"seed": None, "rng": np.random.default_rng(SEED)},
                           ])
 def test_is_simplexbase_repeatable(kwargs):
     """The SimplexBase* classes uses RNG, so can we make it repeatable?
@@ -68,9 +68,9 @@ def test_is_simplexbase_repeatable(kwargs):
     # So this tests how repeatable the RNG is.
     #
     expected = np.asarray([[-1.2, 1.0, 24.2],
-                           [-3.35073356, 10.0887400, 148.587036],
-                           [-4.81446429, -5.89369307, 8.45563422e+04],
-                           [6.25720004, 2.32379451, 1.35663379e+05]])
+                           [-1.56818621, -3.88919619,  4.03681915e+03],
+                           [ 4.48924317, -0.376121880, 4.21579083e+04],
+                           [-8.84949593,  9.70166152,  4.70856524e+05]])
     assert simp.simplex == pytest.approx(expected)
 
 

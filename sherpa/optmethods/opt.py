@@ -180,9 +180,7 @@ class SimplexBase:
         self.xmax = xmax
         self.npar = len(xpar)
         if rng is None:
-            # Use the equivalent of "np.random.seed". This will be
-            # updated to use default_rng once the tests have passed.
-            self.rng = np.random.RandomState(seed)
+            self.rng = np.random.default_rng(seed)
         else:
             self.rng = rng
 
