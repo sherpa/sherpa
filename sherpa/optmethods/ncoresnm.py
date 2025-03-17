@@ -45,6 +45,8 @@ class MyNelderMead(Opt):
 
     def __call__(self, xpar, maxnfev, tol, step, finalsimplex, verbose):
 
+        # SimplexStep does not use factor when npop=npar + 1.
+        #
         npar = len(xpar)
         simplex = SimplexStep(func=self.func, npop=npar + 1,
                               xpar=xpar, xmin=self.xmin,
