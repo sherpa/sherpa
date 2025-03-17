@@ -18,7 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
+import numpy as np
 
 from sherpa.utils.parallel import parallel_map, ncpus
 from sherpa.utils import random
@@ -63,9 +63,9 @@ class Strategy:
 
     def calc(self, arg, pop):
         arg[-1] = self.func(arg[:-1])
-        tmp = numpy.empty(self.npar + 2)
+        tmp = np.empty(self.npar + 2)
         tmp[1:] = arg[:]
-        if numpy.finfo(numpy.float64).max == arg[-1]:
+        if np.finfo(np.float64).max == arg[-1]:
             tmp[0] = 0
         else:
             tmp[0] = 1
@@ -79,7 +79,7 @@ class Strategy0(Strategy):
 
     def __call__(self, pop, icurrent):
         r1, r2, r3 = self.init(3)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = pop[0][n] + self.sfactor * (pop[r2][n] - pop[r3][n])
@@ -94,7 +94,7 @@ class Strategy1(Strategy):
 
     def __call__(self, pop, icurrent):
         r1, r2, r3 = self.init(3)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = trial[n] + self.sfactor * (pop[r2][n] - pop[r3][n])
@@ -109,7 +109,7 @@ class Strategy2(Strategy):
 
     def __call__(self, pop, icurrent):
         r1, r2 = self.init(2)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = trial[n] + self.sfactor * (pop[0][n] - trial[n]) + \
@@ -125,7 +125,7 @@ class Strategy3(Strategy):
 
     def __call__(self, pop, icurrent):
         r1, r2, r3, r4 = self.init(4)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = pop[0][n] + \
@@ -142,7 +142,7 @@ class Strategy4(Strategy):
 
     def __call__(self, pop, icurrent):
         r1, r2, r3, r4, r5 = self.init(5)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = pop[r5][n] + \
@@ -159,7 +159,7 @@ class Strategy5(Strategy):
 
     def __call__(self, pop, icurrent):
         r1, r2, r3 = self.init(3)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -175,7 +175,7 @@ class Strategy6(Strategy):
 
     def __call__(self, pop, icurrent):
         r1, r2, r3 = self.init(3)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -191,7 +191,7 @@ class Strategy7(Strategy):
 
     def __call__(self, pop, icurrent):
         r1, r2 = self.init(2)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -207,7 +207,7 @@ class Strategy8(Strategy):
 
     def __call__(self, pop, icurrent):
         r1, r2, r3, r4 = self.init(4)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -223,7 +223,7 @@ class Strategy9(Strategy):
 
     def __call__(self, pop, icurrent):
         r1, r2, r3, r4, r5 = self.init(5)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -240,7 +240,8 @@ class MyDifEvo(Opt):
 
     def __init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob, step,
                  seed, rng=None):
-        Opt.__init__(self, func, xmin, xmax)
+        super().__init__(func, xmin, xmax)
+
         self.ncores_nm = ncoresNelderMead()
         self.key2 = Key2()
         self.npop = min(npop, 4096)
@@ -255,12 +256,12 @@ class MyDifEvo(Opt):
         #
         strats = [Strategy0, Strategy1, Strategy2, Strategy3, Strategy4,
                   Strategy5, Strategy6, Strategy7, Strategy8, Strategy9]
-        sseeds = numpy.random.SeedSequence(seed).spawn(len(strats))
+        sseeds = np.random.SeedSequence(seed).spawn(len(strats))
         self.strategies = [strat(self.func, self.npar, npop, sfactor, xprob,
-                                 rng=numpy.random.default_rng(sseed))
+                                 rng=np.random.default_rng(sseed))
                            for strat, sseed in zip(strats, sseeds)]
 
-        xpar = numpy.asarray(xpar)
+        xpar = np.asarray(xpar)
         if step is None:
             step = xpar * 1.2 + 1.2
         factor = 10
@@ -308,7 +309,7 @@ class MyDifEvo(Opt):
         # needed it when it was random.seed).
         #
         if self.rng is None:
-            numpy.random.seed(int(self.seed))
+            np.random.seed(int(self.seed))
 
         mypop = self.polytope
         best_trial = self.strategies[0](mypop, index)
@@ -324,12 +325,12 @@ class MyDifEvo(Opt):
     def apply_local_opt(self, arg, index):
         local_opt = self.local_opt[index % len(self.local_opt)]
         result = local_opt(self.func, arg[1:-1], self.xmin, self.xmax)
-        tmp = numpy.append(result[0], result[2])
-        result = numpy.append(tmp, result[1])
+        tmp = np.append(result[0], result[2])
+        result = np.append(tmp, result[1])
         return result
 
     def calc_key(self, indices, start=0, end=65536):
-        result = numpy.empty(len(indices), dtype=numpy.int64)
+        result = np.empty(len(indices), dtype=np.int64)
         for ii, index in enumerate(indices):
             # want to generate [start, end)
             rand = random.integers(self.rng, end - start) + start
@@ -354,10 +355,10 @@ class ncoresMyDifEvo(MyDifEvo):
         # random.seed but now changes the NumPy version.
         #
         if self.rng is None:
-            numpy.random.seed(self.seed)
+            np.random.seed(self.seed)
 
         mypop = self.polytope
-        old_fval = numpy.inf
+        old_fval = np.inf
         while nfev < maxnfev:
 
             # all_strategies has been set up so that each strategy has
@@ -386,7 +387,7 @@ class ncoresMyDifEvo(MyDifEvo):
                                    tol)
                 nfev += tmp_nfev
                 if tmp_fval < best_fval:
-                    best_par = numpy.append(tmp_par, tmp_fval)
+                    best_par = np.append(tmp_par, tmp_fval)
                     mypop[1] = best_par[:]
                     self.polytope.sort()
                     old_fval = tmp_fval
