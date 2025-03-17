@@ -40,6 +40,8 @@ P = ParamSpec("P")
 #
 OptimizerFunc = Callable[Concatenate[ArrayType, P], SupportsFloat]
 
+MyOptOutput = tuple[int, SupportsFloat, np.ndarray]
+
 
 class MyNcores:
 

@@ -18,22 +18,25 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections.abc import Callable
+from typing import Any, SupportsFloat
+
 import numpy as np
 
 from sherpa.utils import random
 from sherpa.utils.parallel import parallel_map, ncpus
 
 from .ncoresnm import ncoresNelderMead
-from .opt import Opt, SimplexRandom
+from .opt import Opt, OptimizerFunc, MyOptOutput, SimplexRandom
 
 
 class Key2:
 
-    def __init__(self, n=12):
+    def __init__(self, n: int = 12) -> None:
         self.nbit = n
         self.max_arg2 = 2**n - 1
 
-    def calc(self, arg1, arg2):
+    def calc(self, arg1: int, arg2: int) -> int:
         if arg2 > self.max_arg2:
             raise ValueError(f"arg2 ({arg2}) must be < {self.max_arg2}")
 
@@ -42,7 +45,7 @@ class Key2:
         key += arg2
         return key
 
-    def parse(self, key):
+    def parse(self, key: int) -> tuple[int, int]:
         arg1 = key
         arg1 >>= self.nbit
         arg2 = arg1
@@ -53,7 +56,14 @@ class Key2:
 
 class Strategy:
 
-    def __init__(self, func, npar, npop, sfactor, xprob, rng=None):
+    def __init__(self,
+                 func: OptimizerFunc,
+                 npar: int,
+                 npop: int,
+                 sfactor: float,
+                 xprob: float,
+                 rng: random.RandomType | None = None
+                 ) -> None:
         self.func = func
         self.npar = npar
         self.npop = npop
@@ -61,7 +71,10 @@ class Strategy:
         self.xprob = xprob
         self.rng = rng
 
-    def calc(self, arg, pop):
+    def calc(self,
+             arg: np.ndarray,
+             pop: Any  # unused
+             ) -> np.ndarray:
         arg[-1] = self.func(arg[:-1])
         tmp = np.empty(self.npar + 2)
         tmp[1:] = arg[:]
@@ -71,13 +84,13 @@ class Strategy:
             tmp[0] = 1
         return tmp
 
-    def init(self, num):
+    def init(self, num: int) -> np.ndarray:
         return random.choice(self.rng, range(self.npop), num)
 
 
 class Strategy0(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3 = self.init(3)
         trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
@@ -92,7 +105,7 @@ class Strategy0(Strategy):
 
 class Strategy1(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3 = self.init(3)
         trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
@@ -107,7 +120,7 @@ class Strategy1(Strategy):
 
 class Strategy2(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2 = self.init(2)
         trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
@@ -123,7 +136,7 @@ class Strategy2(Strategy):
 
 class Strategy3(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3, r4 = self.init(4)
         trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
@@ -140,7 +153,7 @@ class Strategy3(Strategy):
 
 class Strategy4(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3, r4, r5 = self.init(5)
         trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
@@ -157,7 +170,7 @@ class Strategy4(Strategy):
 
 class Strategy5(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3 = self.init(3)
         trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
@@ -173,7 +186,7 @@ class Strategy5(Strategy):
 
 class Strategy6(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3 = self.init(3)
         trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
@@ -189,7 +202,7 @@ class Strategy6(Strategy):
 
 class Strategy7(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2 = self.init(2)
         trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
@@ -205,7 +218,7 @@ class Strategy7(Strategy):
 
 class Strategy8(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3, r4 = self.init(4)
         trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
@@ -221,7 +234,7 @@ class Strategy8(Strategy):
 
 class Strategy9(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3, r4, r5 = self.init(5)
         trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
@@ -245,8 +258,18 @@ class MyDifEvo(Opt):
 
     """
 
-    def __init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob, step,
-                 seed, rng=None):
+    def __init__(self,
+                 func: Callable,
+                 xpar: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 npop: int,
+                 sfactor: float,
+                 xprob: float,
+                 step,
+                 seed: int,
+                 rng: random.RandomType | None = None
+                 ) -> None:
         super().__init__(func, xmin, xmax)
 
         self.ncores_nm = ncoresNelderMead()
@@ -282,7 +305,11 @@ class MyDifEvo(Opt):
                                       rng=rng)
         self.local_opt = self.ncores_nm.algo
 
-    def __call__(self, *, maxnfev, ftol):
+    def __call__(self,
+                 *,
+                 maxnfev: int,
+                 ftol: SupportsFloat
+                 ) -> MyOptOutput:
 
         # Set the seed if RNG is not sent in. This used to change
         # random.seed but now changes the NumPy version.
@@ -309,7 +336,7 @@ class MyDifEvo(Opt):
         best_val = best_vertex[-1]
         return self.nfev, best_val, best_par
 
-    def all_strategies(self, key):
+    def all_strategies(self, key: int) -> np.ndarray:
         rand, index = self.key2.parse(key)
 
         # Set the seed if RNG is not sent in. This used to change
@@ -331,14 +358,21 @@ class MyDifEvo(Opt):
             best_trial = self.apply_local_opt(best_trial, index)
         return best_trial
 
-    def apply_local_opt(self, arg, index):
+    def apply_local_opt(self,
+                        arg: np.ndarray,
+                        index: int
+                        ) -> np.ndarray:
         local_opt = self.local_opt[index % len(self.local_opt)]
         result = local_opt(self.func, arg[1:-1], self.xmin, self.xmax)
         tmp = np.append(result[0], result[2])
         result = np.append(tmp, result[1])
         return result
 
-    def calc_key(self, indices, start=0, end=65536):
+    def calc_key(self,
+                 indices,
+                 start: int = 0,
+                 end: int = 65536
+                 ) -> np.ndarray:
         result = np.empty(len(indices), dtype=np.int64)
         for ii, index in enumerate(indices):
             # want to generate [start, end)
@@ -346,7 +380,11 @@ class MyDifEvo(Opt):
             result[ii] = self.key2.calc(rand, index)
         return result
 
-    def check_convergence(self, mypop, ftol, npar):
+    def check_convergence(self,
+                          mypop: np.ndarray,
+                          ftol: SupportsFloat,
+                          npar: Any  # unused
+                          ) -> bool:
         fval_std = np.std([col[-1] for col in mypop])
         return bool(fval_std < ftol)
 
@@ -360,7 +398,13 @@ class ncoresMyDifEvo(MyDifEvo):
 
     """
 
-    def __call__(self, *, maxnfev, ftol, numcores=ncpus):
+    def __call__(self,
+                 *,
+                 maxnfev: int,
+                 ftol: SupportsFloat,
+                 numcores: int | None = ncpus
+                 ) -> MyOptOutput:
+
         nfev = 0
 
         # Set the seed if RNG is not sent in. This used to change
@@ -417,11 +461,25 @@ class DifEvo:
     # The classes tend to take rng as an argument when constructing the
     # object, so follow that approach here.
     #
-    def __init__(self, rng=None):
+    def __init__(self,
+                 rng: random.RandomType | None = None
+                 ) -> None:
         self.rng = rng
 
-    def __call__(self, fcn, x, xmin, xmax, step=None, maxnfev=None, tol=1.0e-6,
-                 npop=None, seed=45, sfactor=0.85, xprob=0.7, verbose=0):
+    def __call__(self,
+                 fcn: Callable,
+                 x: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 step=None,
+                 maxnfev: int | None = None,
+                 tol: SupportsFloat = 1.0e-6,
+                 npop: int | None = None,
+                 seed: int = 45,
+                 sfactor: float = 0.85,
+                 xprob: float = 0.7,
+                 verbose: Any = 0  # unused
+                 ) -> MyOptOutput:
 
         npar = len(x)
         if npop is None:
@@ -442,12 +500,26 @@ class ncoresDifEvo:
     # The classes tend to take rng as an argument when constructing the
     # object, so follow that approach here.
     #
-    def __init__(self, rng=None):
+    def __init__(self,
+                 rng: random.RandomType | None = None
+                 ) -> None:
         self.rng = rng
 
-    def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6, maxnfev=None, step=None,
-                 numcores=None, npop=None, seed=23, sfactor=0.85, xprob=0.7,
-                 verbose=0):
+    def __call__(self,
+                 fcn: Callable,
+                 x: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: SupportsFloat = 1.0e-6,
+                 maxnfev: int | None = None,
+                 step=None,
+                 numcores: int | None = None,
+                 npop: int | None = None,
+                 seed: int = 23,
+                 sfactor: float = 0.85,
+                 xprob: float = 0.7,
+                 verbose: Any = 0  # unused
+                 ) -> MyOptOutput:
 
         npar = len(x)
         if npop is None:
