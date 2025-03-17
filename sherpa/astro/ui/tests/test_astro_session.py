@@ -4512,12 +4512,16 @@ def check_moncar(ncores, fr, g1, g2) -> None:
                 assert False, f"unexpected nfev={fr.nfev}"
 
         case 2:
-            assert fr.nfev == 7243
+            assert fr.nfev == 7048
             gleft = g1
             gright = g2
 
         case 3:
-            assert fr.nfev == 6535
+            # This used have a different number of function evaluations to
+            # ncores=2 but changes to SimplexBase RNG handling changed
+            # the result.
+            #
+            assert fr.nfev == 7048
             gleft = g1
             gright = g2
 
