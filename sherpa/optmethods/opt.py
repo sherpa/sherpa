@@ -19,6 +19,7 @@
 #
 
 from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -193,7 +194,20 @@ class Opt:
         return func_bounds_wrapper
 
 
+# The random state is, as of 4.17.1, now set when calling __init__:
+# either rng is set or it is created based on the seed argument.  The
+# self.rng field is then used to access random numbers, and the seed
+# argument in other routines, such as init, is ignored.
+#
 class SimplexBase:
+    """
+
+    .. versionchanged:: 4.17.1
+       The seed argument is now ignored other than in the initialization
+       code, where it is only used if the rng argument is not set.
+       Some of the arguments must now be set by name.
+
+    """
 
     def __init__(self,
                  func: OptimizerFunc,
@@ -201,6 +215,7 @@ class SimplexBase:
                  xpar: ArrayType,
                  xmin: ArrayType,
                  xmax: ArrayType,
+                 *,
                  step,
                  seed: int | None,
                  factor: float | None,
@@ -210,7 +225,13 @@ class SimplexBase:
         self.xmin = xmin
         self.xmax = xmax
         self.npar = len(xpar)
-        self.rng = rng
+        if rng is None:
+            # Use the equivalent of "np.random.seed". This will be
+            # updated to use default_rng once the tests have passed.
+            self.rng = np.random.RandomState(seed)
+        else:
+            self.rng = rng
+
         self.simplex = self.init(npop=npop, xpar=np.asarray(xpar),
                                  step=step, seed=seed, factor=factor)
 
@@ -299,27 +320,41 @@ class SimplexBase:
         return self.sort_me(simplex)
 
     def init(self,
+             *,
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int | None,
+             seed: Any,  # ignored as of Sherpa 4.17.1
              factor: float | None
              ) -> np.ndarray:
+        """Initialize the class.
+
+        .. versionchanged:: 4.17.1
+           The arguments must now all be given by name and the seed
+           argument is ignored.
+
+        """
         raise NotImplementedError("init has not been implemented")
 
+    # This mutates the input simplex argument (and returns it).
+    #
     def init_random_simplex(self,
                             xpar: np.ndarray,
                             simplex: np.ndarray,
+                            *,
                             start: int,
                             npop: int,
-                            seed: int | None,
+                            seed: Any,  # ignored as of Sherpa 4.17.1
                             factor: float | None
                             ) -> np.ndarray:
-        # Set the seed when there is no RNG set, otherwise the RNG
-        # determines the state.
-        #
-        if self.rng is None:
-            np.random.seed(seed)
+        """Initialize the simplex.
+
+        .. versionchanged:: 4.17.1
+           The seed value is ignored as random numbers are generated
+           using the rng attribute. Most of the arguments must now
+           be set by name.
+
+        """
 
         # This could be done before changing the seed, but code may
         # require the current behavior.
@@ -369,10 +404,11 @@ class SimplexBase:
 class SimplexNoStep(SimplexBase):
 
     def init(self,
+             *,
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int | None,
+             seed: Any,  # ignored as of Sherpa 4.17.1
              factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
@@ -395,10 +431,11 @@ class SimplexNoStep(SimplexBase):
 class SimplexStep(SimplexBase):
 
     def init(self,
+             *,
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int | None,
+             seed: Any,  # ignored as of Sherpa 4.17.1
              factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
@@ -416,10 +453,11 @@ class SimplexStep(SimplexBase):
 class SimplexRandom(SimplexBase):
 
     def init(self,
+             *,
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int | None,
+             seed: Any,  # ignored as of Sherpa 4.17.1
              factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
