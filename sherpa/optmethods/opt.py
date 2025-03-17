@@ -201,8 +201,8 @@ class SimplexBase:
                  xmin: ArrayType,
                  xmax: ArrayType,
                  step: np.ndarray | None,
-                 seed: int,
-                 factor: float,
+                 seed: int | None,
+                 factor: float | None,
                  rng: RandomType | None = None
                  ) -> None:
         self.func = func
@@ -304,8 +304,8 @@ class SimplexBase:
              npop: int,
              xpar: np.ndarray,
              step: np.ndarray | None,
-             seed: int,
-             factor: float
+             seed: int | None,
+             factor: float | None
              ) -> np.ndarray:
         raise NotImplementedError("init has not been implemented")
 
@@ -314,8 +314,8 @@ class SimplexBase:
                             simplex: np.ndarray,
                             start: int,
                             npop: int,
-                            seed: int,
-                            factor: float
+                            seed: int | None,
+                            factor: float | None
                             ) -> np.ndarray:
         # Set the seed when there is no RNG set, otherwise the RNG
         # determines the state.
@@ -329,6 +329,9 @@ class SimplexBase:
         if start >= npop:
             return simplex
 
+        # At this point it is assumed the caller has set factor.
+        #
+        assert factor is not None, "caller did not set factor"
         deltas = factor * np.abs(np.asarray(xpar))
         for ii in range(start, npop):
             simplex[ii][:-1] = \
@@ -358,7 +361,8 @@ class SimplexBase:
                 (self.simplex[ii] - self.simplex[0])
             self.simplex[ii, -1] = self.func(self.simplex[ii, :-1])
 
-    def sort_me(self, simp: np.ndarray
+    def sort_me(self,
+                simp: np.ndarray
                 ) -> np.ndarray:
         myshape = simp.shape
         tmp = np.array(sorted(simp, key=lambda arg: arg[-1]))
@@ -375,8 +379,8 @@ class SimplexNoStep(SimplexBase):
              npop: int,
              xpar: np.ndarray,
              step: np.ndarray | None,
-             seed: int,
-             factor: float
+             seed: int | None,
+             factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -401,8 +405,8 @@ class SimplexStep(SimplexBase):
              npop: int,
              xpar: np.ndarray,
              step: np.ndarray | None,
-             seed: int,
-             factor: float
+             seed: int | None,
+             factor: float | None
              ) -> np.ndarray:
 
         # This should raise an error, but as it is low-level code, just
@@ -427,8 +431,8 @@ class SimplexRandom(SimplexBase):
              npop: int,
              xpar: np.ndarray,
              step: np.ndarray | None,
-             seed: int,
-             factor: float
+             seed: int | None,
+             factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
