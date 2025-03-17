@@ -343,16 +343,13 @@ class ncoresNelderMead:
         nfev = results[0]
         fmin = results[1]
         par = results[2]
-        solution_at = 0
         for ii in range(1, num):
             index = ii * 3
             nfev += results[index]
-            # print(ii, 'unpack_results: f', par, '=', fmin, '@', nfev, 'nfevs')
             if results[index + 1] < fmin:
                 fmin = results[index + 1]
                 par = results[index + 2]
-                solution_at = ii
-        # print('unpack_results: solution_@ =', solution_at)
+
         return nfev, fmin, par
 
 
