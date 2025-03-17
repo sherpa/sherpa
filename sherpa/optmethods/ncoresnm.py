@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2021, 2023, 2024
+#  Copyright (C) 2019 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -43,6 +43,8 @@ class MyNelderMead(Opt):
 
     def __call__(self, xpar, maxnfev, tol, step, finalsimplex, verbose):
 
+        # SimplexStep does not use factor when npop=npar + 1.
+        #
         npar = len(xpar)
         simplex = SimplexStep(func=self.func, npop=npar + 1,
                               xpar=xpar, xmin=self.xmin,
@@ -268,6 +270,8 @@ class NelderMead6(NelderMeadBase):
     class MyNelderMead6(MyNelderMead):
 
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
+            # SimplexNoStep does not use factor when npop=npar + 1.
+            #
             npar = len(x)
             simplex = SimplexNoStep(func=self.func, npop=npar + 1,
                                     xpar=x, xmin=self.xmin,
