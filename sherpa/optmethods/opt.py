@@ -19,7 +19,7 @@
 #
 
 from collections.abc import Callable, Sequence
-from typing import Any, Concatenate, ParamSpec, SupportsFloat
+from typing import Concatenate, ParamSpec, SupportsFloat
 
 import numpy as np
 
@@ -187,7 +187,7 @@ class SimplexBase:
             self.rng = rng
 
         self.simplex = self.init(npop=npop, xpar=np.asarray(xpar),
-                                 step=step, seed=seed, factor=factor)
+                                 step=step, factor=factor)
 
     def __getitem__(self, index):
         return self.simplex[index]
@@ -278,14 +278,13 @@ class SimplexBase:
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: Any,  # ignored as of Sherpa 4.17.1
              factor: float | None
              ) -> np.ndarray:
         """Initialize the class.
 
         .. versionchanged:: 4.17.1
            The arguments must now all be given by name and the seed
-           argument is ignored.
+           argument has been removed.
 
         """
         raise NotImplementedError("init has not been implemented")
@@ -298,15 +297,13 @@ class SimplexBase:
                             *,
                             start: int,
                             npop: int,
-                            seed: Any,  # ignored as of Sherpa 4.17.1
                             factor: float | None
                             ) -> np.ndarray:
         """Initialize the simplex.
 
         .. versionchanged:: 4.17.1
-           The seed value is ignored as random numbers are generated
-           using the rng attribute. Most of the arguments must now
-           be set by name.
+           The seed argument has been removed. Most of the arguments
+           must now be set by name.
 
         """
 
@@ -361,7 +358,6 @@ class SimplexNoStep(SimplexBase):
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: Any,  # ignored as of Sherpa 4.17.1
              factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
@@ -376,8 +372,7 @@ class SimplexNoStep(SimplexBase):
             simplex[ii+1][:-1] = tmp[:]
 
         simplex = self.init_random_simplex(xpar, simplex, start=npar1,
-                                           npop=npop, seed=seed,
-                                           factor=factor)
+                                           npop=npop, factor=factor)
         return self.eval_simplex(npop, simplex)
 
 
@@ -388,7 +383,6 @@ class SimplexStep(SimplexBase):
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: Any,  # ignored as of Sherpa 4.17.1
              factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
@@ -399,7 +393,7 @@ class SimplexStep(SimplexBase):
             simplex[ii + 1][:-1] = tmp
 
         simplex = self.init_random_simplex(xpar, simplex, start=npar1,
-                                           npop=npop, seed=seed, factor=factor)
+                                           npop=npop, factor=factor)
         return self.eval_simplex(npop, simplex)
 
 
@@ -410,7 +404,6 @@ class SimplexRandom(SimplexBase):
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: Any,  # ignored as of Sherpa 4.17.1
              factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
@@ -418,6 +411,5 @@ class SimplexRandom(SimplexBase):
         simplex[0][:-1] = np.copy(xpar)
 
         simplex = self.init_random_simplex(xpar, simplex, start=1,
-                                           npop=npop, seed=seed,
-                                           factor=factor)
+                                           npop=npop, factor=factor)
         return self.eval_simplex(npop, simplex)
