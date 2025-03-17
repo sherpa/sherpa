@@ -822,8 +822,8 @@ def make_simplex_kwargs():
     """Need a new RNG each time we call it."""
     return [
         {"seed": SIMPLEX_SEED, "rng": None},
-        {"seed": SIMPLEX_SEED, "rng": np.random.RandomState(SIMPLEX_SEED)},
-        {"seed": None, "rng": np.random.RandomState(SIMPLEX_SEED)},
+        {"seed": SIMPLEX_SEED, "rng": np.random.default_rng(SIMPLEX_SEED)},
+        {"seed": None, "rng": np.random.default_rng(SIMPLEX_SEED)},
     ]
 
 
@@ -868,12 +868,14 @@ def test_simplexstep(npar, kwargs):
     # It's not clear what to actually test here, so just try this.
     assert simp.simplex.shape == (22, 20)
 
+    # Changing the RNG state seems to change the last element; is this
+    # expected.
     expected = [4.59800000e+03, 1.33342000e+04, 1.33342000e+04, 1.33342000e+04,
                 1.33342000e+04, 1.33342000e+04, 1.33342000e+04, 1.33342000e+04,
                 1.33342000e+04, 1.33342000e+04, 1.33342000e+04, 9.42590000e+04,
                 9.42590000e+04, 9.42590000e+04, 9.42590000e+04, 9.42590000e+04,
                 9.42590000e+04, 9.42590000e+04, 9.42590000e+04, 9.42590000e+04,
-                9.42590000e+04, 5.26696072e+06]
+                9.42590000e+04, 6.66107487e+06]
     assert simp.fctvals == pytest.approx(expected)
 
 
@@ -894,13 +896,13 @@ def test_simplexrandom(npar, kwargs):
     # It's not clear what to actually test here, so just try this.
     assert simp.simplex.shape == (25, 20)
 
-    expected = [4.59800000e+03, 1.87575996e+06, 2.24392925e+06, 2.93141604e+06,
-                3.97078993e+06, 4.04528040e+06, 4.27902906e+06, 4.56916204e+06,
-                5.20492989e+06, 5.26696072e+06, 5.35932638e+06, 6.20197202e+06,
-                6.59620990e+06, 6.84850846e+06, 6.94056545e+06, 7.84584981e+06,
-                7.96867981e+06, 8.55119428e+06, 8.57490213e+06, 8.94455460e+06,
-                9.23797380e+06, 9.33632243e+06, 9.35800168e+06, 1.10551927e+07,
-                1.11014649e+07]
+    expected = [4.59800000e+03, 2.37401650e+06, 3.38258584e+06, 3.59153846e+06,
+                4.53562162e+06, 4.62091088e+06, 4.67306804e+06, 5.15919068e+06,
+                5.86998715e+06, 6.61257873e+06, 6.66107487e+06, 6.82568363e+06,
+                7.18958553e+06, 7.21841331e+06, 7.24979198e+06, 7.36309871e+06,
+                8.02178252e+06, 8.98114684e+06, 9.66013120e+06, 9.74769138e+06,
+                9.89524917e+06, 1.06868783e+07, 1.10175987e+07, 1.13171554e+07,
+                1.25916870e+07]
     assert simp.fctvals == pytest.approx(expected)
 
 
