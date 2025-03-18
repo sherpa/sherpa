@@ -285,6 +285,12 @@ class MyDifEvo(Opt):
         #
         strats = [Strategy0, Strategy1, Strategy2, Strategy3, Strategy4,
                   Strategy5, Strategy6, Strategy7, Strategy8, Strategy9]
+
+        # See also sherpa.utils.parallel.create_seeds.
+        #
+        # Should the seed for SeesSequence be created from the RNG
+        # (so, use create_seeds) rather than using a hard-coded value?
+        #
         sseeds = np.random.SeedSequence(seed).spawn(len(strats))
         self.strategies = [strat(self.func, self.npar, npop, sfactor, xprob,
                                  rng=np.random.default_rng(sseed))
@@ -495,14 +501,13 @@ class DifEvo:
 
 
 class ncoresDifEvo:
+    """
 
-    # The classes tend to take rng as an argument when constructing the
-    # object, so follow that approach here.
-    #
-    def __init__(self,
-                 rng: random.RandomType | None = None
-                 ) -> None:
-        self.rng = rng
+    .. versionchanged:: 4.17.1
+       The rng argument is now set when calling the class, not when
+       creating it.
+
+    """
 
     def __call__(self,
                  fcn: OptimizerFunc,
@@ -517,7 +522,8 @@ class ncoresDifEvo:
                  seed: int = 23,
                  sfactor: float = 0.85,
                  xprob: float = 0.7,
-                 verbose: Any = 0  # unused
+                 verbose: Any = 0,  # unused
+                 rng: random.RandomType | None = None
                  ) -> MyOptOutput:
 
         npar = len(x)
@@ -528,7 +534,7 @@ class ncoresDifEvo:
             maxnfev = 8192 * npar
 
         mydifevo = ncoresMyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob,
-                                  step, seed, rng=self.rng)
+                                  step, seed, rng=rng)
         return mydifevo(ftol=tol, maxnfev=maxnfev, numcores=numcores)
 
 
@@ -549,7 +555,8 @@ class ncoresDifEvoNelderMead:
                  verbose=0):
 
         nfev, nm_fmin, nm_par = \
-            self.ncores_nm(fcn, x, xmin, xmax, tol, maxnfev, numcores)
+            self.ncores_nm(fcn, x, xmin, xmax, tol=tol,
+                           maxnfev=maxnfev, numcores=numcores, rng=self.rng)
 
         npar = len(x)
         if npop is None:
@@ -573,8 +580,11 @@ class ncoresDifEvoNelderMead:
         else:
             my_fmin = de_fmin
             my_par = de_par
-        nm_nfev, nm_fmin, nm_par = self.ncores_nm(fcn, my_par, xmin, xmax, tol,
-                                                  maxnfev - nfev, numcores)
+        nm_nfev, nm_fmin, nm_par = self.ncores_nm(fcn, my_par, xmin,
+                                                  xmax, tol=tol,
+                                                  maxnfev=maxnfev - nfev,
+                                                  numcores=numcores,
+                                                  rng=rng)
         nfev += nm_nfev
 
         if nm_fmin < my_fmin:

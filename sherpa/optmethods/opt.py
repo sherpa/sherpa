@@ -19,13 +19,13 @@
 #
 
 from collections.abc import Callable, Sequence
-from typing import Concatenate, ParamSpec, SupportsFloat
+from typing import Concatenate, ParamSpec, Protocol, SupportsFloat
 
 import numpy as np
 
 from sherpa.utils import Knuth_close, FuncCounter
 from sherpa.utils.parallel import SupportsQueue, \
-    multi, context, run_tasks
+    multi, context, run_tasks, create_seeds
 from sherpa.utils.random import RandomType, uniform
 from sherpa.utils.types import ArrayType
 
@@ -41,13 +41,19 @@ P = ParamSpec("P")
 OptimizerFunc = Callable[Concatenate[ArrayType, P], SupportsFloat]
 
 MyOptOutput = tuple[int, SupportsFloat, np.ndarray]
-WorkerFunc = Callable[[OptimizerFunc,
-                       np.ndarray,
-                       np.ndarray,
-                       np.ndarray,
-                       SupportsFloat,
-                       int | None],
-                      MyOptOutput]
+
+class WorkerFunc(Protocol):
+
+    def __call__(self,
+                 func: OptimizerFunc,
+                 x: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: SupportsFloat,
+                 maxnfev: int | None,
+                 rng: RandomType | None = None
+                 ) -> MyOptOutput:
+        ...
 
 
 class MyNcores:
@@ -64,9 +70,14 @@ class MyNcores:
              xmin: np.ndarray,
              xmax: np.ndarray,
              tol: SupportsFloat,
-             maxnfev: int | None
+             maxnfev: int | None,
+             rng: RandomType | None = None
              ) -> list[MyOptOutput]:
         """Apply each function to the arguments, running in parallel."""
+
+        nfuncs = len(funcs)
+        if nfuncs == 0:
+            raise TypeError("funcs can not be empty")
 
         for func in funcs:
             if not callable(func):
@@ -82,11 +93,15 @@ class MyNcores:
         manager = context.Manager()
         out_q = manager.Queue()
         err_q = manager.Queue()
+
+        seeds = create_seeds(rng, nfuncs)
+
         procs = [context.Process(target=self.my_worker,
                                  args=(func, ii, out_q, err_q,
-                                       fcn, x, xmin, xmax, tol, maxnfev)
+                                       fcn, x, xmin, xmax, tol, maxnfev),
+                                 kwargs={"rng": np.random.default_rng(seed)}
                                  )
-                 for ii, func in enumerate(funcs)]
+                 for ii, (func, seed) in enumerate(zip(funcs, seeds))]
 
         return run_tasks(procs, err_q, out_q)
 
@@ -100,7 +115,8 @@ class MyNcores:
                   xmin: np.ndarray,
                   xmax: np.ndarray,
                   tol: SupportsFloat,
-                  maxnfev: int | None
+                  maxnfev: int | None,
+                  rng: RandomType | None = None
                   ) -> None:
         raise NotImplementedError("my_worker has not been implemented")
 
