@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018 - 2024
+#  Copyright (C) 2007, 2015, 2016, 2018 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -32,10 +32,11 @@
 """
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from configparser import ConfigParser
 import inspect
 import logging
-from typing import Any, Final, Optional, Protocol, Sequence, TypeVar
+from typing import Any, Final, Protocol, TypeVar
 
 import numpy as np
 
@@ -68,7 +69,7 @@ class CallbackWithRNG(Protocol[I_contra, O_co]):
 
     def __call__(self,
                  arg: I_contra,
-                 rng: Optional[RandomType]) -> O_co:
+                 rng: RandomType | None) -> O_co:
         ...
 
 
@@ -78,7 +79,7 @@ class CallbackWithRNG(Protocol[I_contra, O_co]):
 class SupportsProcess(Protocol):
     """Label those methods from multiprocessing.Process we need."""
 
-    exitcode: Optional[int]
+    exitcode: int | None
 
     @abstractmethod
     def start(self) -> None:
@@ -124,7 +125,7 @@ class SupportsLock(Protocol):
     @abstractmethod
     def acquire(self,
                 block: bool = True,
-                timeout: Optional[float] = None) -> bool:
+                timeout: float | None = None) -> bool:
         ...
 
     @abstractmethod
@@ -180,10 +181,10 @@ if not _ncpu_val.startswith('NONE'):
 
 _multi = False
 
-# This should be Optional[multiprocessing.context.BaseContext] but
+# This should be multiprocessing.context.BaseContext | None but
 # we do not require multiprocessing to be available.
 #
-_context : Optional[SupportsContext]
+_context : SupportsContext | None
 
 try:
     import multiprocessing
@@ -343,7 +344,7 @@ def worker_rng(func: CallbackWithRNG[I_contra, O_co],
                chunk: Sequence[I_contra],
                out_q: SupportsQueue[tuple[int, list[O_co]]],
                err_q: SupportsQueue[Exception],
-               rng: Optional[RandomType]
+               rng: RandomType | None
                ) -> None:
     """Evaluate a function for each element, add response to queue.
 
@@ -421,7 +422,7 @@ def process_tasks(procs: Sequence[SupportsProcess],
 def run_tasks(procs: Sequence[SupportsProcess],
               err_q: SupportsQueue[Exception],
               out_q: SupportsQueue[tuple[int, list[O_co]]],
-              num: Optional[Any] = None) -> list[O_co]:
+              num: Any = None) -> list[O_co]:
     """Run the processes, exiting early if necessary, and return the results.
 
     .. versionchanged:: 4.16.0
@@ -478,7 +479,7 @@ def run_tasks(procs: Sequence[SupportsProcess],
 
 def parallel_map(function: Callback[I_contra, O_co],
                  sequence: Sequence[I_contra],
-                 numcores: Optional[int] = None
+                 numcores: int | None = None
                  ) -> list[O_co]:
     """Run a function on a sequence of inputs in parallel.
 
@@ -714,12 +715,49 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     return run_tasks(procs, err_q, out_q)
 
 
+def create_seeds(rng: RandomType | None,
+                 nelem: int
+                 ) -> list[np.random.SeedSequence]:
+    """Create nelem seed sequences.
+
+    Parameters
+    ----------
+    rng
+       How to generate the RNG values.
+    nelem
+       The number of seed sequences to generate.
+
+    Returns
+    -------
+    ans : list
+       The seed sequences.
+
+    """
+
+    # TODO: Should the seed be created for a larger (i.e. more bits)
+    # data type?
+    #
+    maxval = np.iinfo(np.uint64).max
+    if rng is None:
+        root_seed = np.random.randint(maxval, dtype=np.uint64)
+    else:
+        try:
+            root_seed = rng.integers(maxval,  # type: ignore[union-attr]
+                                     endpoint=False,
+                                     dtype=np.uint64)
+        except AttributeError:
+            root_seed = rng.randint(maxval,  # type: ignore[union-attr]
+                                    dtype=np.uint64)
+
+    return np.random.SeedSequence(root_seed).spawn(nelem)
+
+
 # The typing is not quite right for function
 #
 def parallel_map_rng(function: CallbackWithRNG[I_contra, O_co],
                      sequence: Sequence[I_contra],
-                     numcores: Optional[int] = None,
-                     rng: Optional[RandomType] = None
+                     numcores: int | None = None,
+                     rng: RandomType | None = None
                      ) -> list[O_co]:
     """Run a function on a sequence of inputs in parallel with a RNG.
 
@@ -832,22 +870,7 @@ def parallel_map_rng(function: CallbackWithRNG[I_contra, O_co],
     # Create the RNG for each chunk. To be repeatable an explicit seed
     # is created given the input rng.
     #
-    # TODO: Should the seed be created for a larger (i.e. more bits)
-    # data type?
-    #
-    maxval = np.iinfo(np.uint64).max
-    if rng is None:
-        root_seed = np.random.randint(maxval, dtype=np.uint64)
-    else:
-        try:
-            root_seed = rng.integers(maxval,  # type: ignore[union-attr]
-                                     endpoint=False,
-                                     dtype=np.uint64)
-        except AttributeError:
-            root_seed = rng.randint(maxval,  # type: ignore[union-attr]
-                                    dtype=np.uint64)
-
-    seeds = np.random.SeedSequence(root_seed).spawn(len(sequence))
+    seeds = create_seeds(rng, len(sequence))
 
     # This always uses default_rng; I can not see a sensible way to
     # allow the user to over-ride this (if they want to choose a
