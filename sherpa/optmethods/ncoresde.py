@@ -18,7 +18,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from collections.abc import Callable
 from typing import Any, SupportsFloat
 
 import numpy as np
@@ -259,7 +258,7 @@ class MyDifEvo(Opt):
     """
 
     def __init__(self,
-                 func: Callable,
+                 func: OptimizerFunc,
                  xpar: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -467,7 +466,7 @@ class DifEvo:
         self.rng = rng
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  x: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -506,7 +505,7 @@ class ncoresDifEvo:
         self.rng = rng
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  x: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,

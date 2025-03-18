@@ -18,7 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from typing import SupportsFloat
 
 import numpy as np
@@ -26,7 +26,7 @@ import numpy as np
 from sherpa.utils.parallel import SupportsQueue, ncpus
 
 from . import _saoopt  # type: ignore
-from .opt import MyNcores, Opt, OptimizerFunc, MyOptOutput, \
+from .opt import MyNcores, Opt, OptimizerFunc, WorkerFunc, MyOptOutput, \
     SimplexBase, SimplexNoStep, SimplexStep, SimplexRandom
 
 __all__ = ('ncoresNelderMead', )
@@ -49,7 +49,7 @@ EPSILON = np.float64(np.finfo(np.float32).eps)
 class MyNelderMead(Opt):
 
     def __init__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  xmin: np.ndarray,
                  xmax: np.ndarray
                  ) -> None:
@@ -194,7 +194,7 @@ class NelderMeadBase:
                   invalid='ignore')
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  xpar: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -217,7 +217,7 @@ class NelderMeadBase:
 class NelderMead0(NelderMeadBase):
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  xpar: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -236,7 +236,7 @@ class NelderMead0(NelderMeadBase):
         return 1.2 * x
 
     def neldermead0(self,
-                    fcn: Callable,
+                    fcn: OptimizerFunc,
                     xpar: np.ndarray,
                     xmin: np.ndarray,
                     xmax: np.ndarray,
@@ -279,7 +279,7 @@ class NelderMead2(NelderMead0):
 class NelderMead3(NelderMead0):
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  xpar: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -310,7 +310,7 @@ class NelderMead3(NelderMead0):
 class NelderMead4(NelderMead0):
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  xpar: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -348,7 +348,7 @@ class NelderMead4(NelderMead0):
 class NelderMead5(NelderMead0):
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  xpar: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -399,7 +399,7 @@ class NelderMead6(NelderMeadBase):
                                  finalsimplex, verbose)
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  xpar: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -439,7 +439,7 @@ class NelderMead7(NelderMeadBase):
                                  finalsimplex, verbose)
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  xpar: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -458,7 +458,7 @@ class NelderMead7(NelderMeadBase):
 class nmNcores(MyNcores):
 
     def my_worker(self,
-                  opt: Callable,
+                  opt: WorkerFunc,
                   idval: int,
                   out_q: SupportsQueue,
                   err_q: SupportsQueue[Exception],
@@ -498,7 +498,7 @@ class ncoresNelderMead:
             self.algo = algo
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  x: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -541,7 +541,7 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
     vertices are close, or the simplex has become very small. """
 
     def __call__(self,
-                 fcn: Callable,
+                 fcn: OptimizerFunc,
                  x: np.ndarray,
                  xmin: np.ndarray,
                  xmax: np.ndarray,
@@ -553,7 +553,7 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
         return self.calc(fcn, x, xmin, xmax, tol, maxnfev, numcores)
 
     def calc(self,
-             fcn: Callable,
+             fcn: OptimizerFunc,
              x: np.ndarray,
              xmin: np.ndarray,
              xmax: np.ndarray,

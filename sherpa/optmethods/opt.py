@@ -41,6 +41,13 @@ P = ParamSpec("P")
 OptimizerFunc = Callable[Concatenate[ArrayType, P], SupportsFloat]
 
 MyOptOutput = tuple[int, SupportsFloat, np.ndarray]
+WorkerFunc = Callable[[OptimizerFunc,
+                       np.ndarray,
+                       np.ndarray,
+                       np.ndarray,
+                       SupportsFloat,
+                       int | None],
+                      MyOptOutput]
 
 
 class MyNcores:
@@ -50,7 +57,7 @@ class MyNcores:
             raise TypeError("multicores not available")
 
     def calc(self,
-             funcs: Sequence[Callable],
+             funcs: Sequence[WorkerFunc],
              numcores: int,  # TODO: this is currently unused
              fcn: OptimizerFunc,
              x: np.ndarray,
@@ -81,7 +88,7 @@ class MyNcores:
         return run_tasks(procs, err_q, out_q)
 
     def my_worker(self,
-                  opt: Callable,
+                  opt: WorkerFunc,
                   idval: int,
                   out_q: SupportsQueue,
                   err_q: SupportsQueue[Exception],
@@ -183,7 +190,7 @@ class SimplexBase:
     """
 
     def __init__(self,
-                 func: Callable,
+                 func: OptimizerFunc,
                  npop: int,
                  xpar: ArrayType,
                  xmin: ArrayType,
