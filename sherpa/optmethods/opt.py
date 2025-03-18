@@ -191,7 +191,7 @@ class SimplexBase:
 
         def is_fct_stddev_small_enough() -> bool:
             fval_std = np.std([col[-1] for col in self.simplex])
-            # Force float comparison to please type checkers, both for
+            # Force float comparison to avoid type checker warnings, both for
             # the arguments to the comparison and the return value.
             return float(fval_std) < float(ftol)
 
@@ -212,7 +212,7 @@ class SimplexBase:
                 xi_x0 = xi - x0
                 max_xi_x0 = max(max_xi_x0, np.dot(xi_x0, xi_x0))
 
-            # force float conversion to please the type checker
+            # force float conversion to avoid type checker warnings
             return max_xi_x0 <= float(ftol) * max(1.0, np.dot(x0, x0))
 
         if 0 == method:

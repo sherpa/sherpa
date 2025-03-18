@@ -55,7 +55,7 @@ StatResults = tuple[float, np.ndarray]
 # Represent statistic evaluation.
 #
 # There is partial support for sending extra information to the
-# statistics function. At present all that is requires is that the
+# statistics function. At present all that is required is that the
 # first argument is ArrayType and the rest are ignored.
 #
 StatFunc = Callable[Concatenate[ArrayType, P], StatResults]
