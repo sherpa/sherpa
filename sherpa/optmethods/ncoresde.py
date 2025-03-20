@@ -237,6 +237,13 @@ class Strategy9(Strategy):
 
 
 class MyDifEvo(Opt):
+    """
+
+    .. versionchanged:: 4.17.1
+       Calling the object now requires named arguments: maxnfev and
+       ftol.
+
+    """
 
     def __init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob, step,
                  seed, rng=None):
@@ -261,17 +268,21 @@ class MyDifEvo(Opt):
                                  rng=np.random.default_rng(sseed))
                            for strat, sseed in zip(strats, sseeds)]
 
-        xpar = np.asarray(xpar)
+        xpar_np = np.asarray(xpar)
+        xmin_np = np.asarray(xmin)
+        xmax_np = np.asarray(xmax)
         if step is None:
-            step = xpar * 1.2 + 1.2
+            step = xpar_np * 1.2 + 1.2
         factor = 10
         self.rng = rng
-        self.polytope = SimplexRandom(func=func, npop=npop, xpar=xpar,
-                                      xmin=xmin, xmax=xmax, step=step,
-                                      seed=seed, factor=factor, rng=rng)
+        self.polytope = SimplexRandom(func=func, npop=npop,
+                                      xpar=xpar_np, xmin=xmin_np,
+                                      xmax=xmax_np, step=step,
+                                      seed=seed, factor=factor,
+                                      rng=rng)
         self.local_opt = self.ncores_nm.algo
 
-    def __call__(self, maxnfev, ftol):
+    def __call__(self, *, maxnfev, ftol):
 
         # Set the seed if RNG is not sent in. This used to change
         # random.seed but now changes the NumPy version.
@@ -337,14 +348,19 @@ class MyDifEvo(Opt):
 
     def check_convergence(self, mypop, ftol, npar):
         fval_std = np.std([col[-1] for col in mypop])
-        if fval_std < ftol:
-            return True
-        return False
+        return bool(fval_std < ftol)
 
 
 class ncoresMyDifEvo(MyDifEvo):
+    """
 
-    def __call__(self, tol, maxnfev, numcores=ncpus):
+    .. versionchanged:: 4.17.1
+       Calling the object now requires named arguments and the
+       ordering has been changed to match the superclass.
+
+    """
+
+    def __call__(self, *, maxnfev, ftol, numcores=ncpus):
         nfev = 0
 
         # Set the seed if RNG is not sent in. This used to change
@@ -371,7 +387,7 @@ class ncoresMyDifEvo(MyDifEvo):
                     mypop[index] = result[1:]
 
             self.polytope.sort()
-            if self.polytope.check_convergence(tol, 0):
+            if self.polytope.check_convergence(ftol, 0):
                 break
 
             best = mypop[0]
@@ -380,7 +396,7 @@ class ncoresMyDifEvo(MyDifEvo):
                 best_par = best[:-1]
                 tmp_nfev, tmp_fval, tmp_par = \
                     self.ncores_nm(self.func, best_par, self.xmin, self.xmax,
-                                   tol)
+                                   ftol)
                 nfev += tmp_nfev
                 if tmp_fval < best_fval:
                     best_par = np.append(tmp_par, tmp_fval)
@@ -418,7 +434,7 @@ class DifEvo:
         seed = 123
         mydifevo = MyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob, step,
                             seed, rng=self.rng)
-        return mydifevo(maxnfev, tol)
+        return mydifevo(maxnfev=maxnfev, ftol=tol)
 
 
 class ncoresDifEvo:
@@ -442,9 +458,15 @@ class ncoresDifEvo:
 
         mydifevo = ncoresMyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob,
                                   step, seed, rng=self.rng)
-        return mydifevo(tol, maxnfev, numcores)
+        return mydifevo(ftol=tol, maxnfev=maxnfev, numcores=numcores)
 
 
+# WARNING:
+#
+# This code has obvious bugs in it and there are no tests (unless
+# sherpa/optmethods/tests/test_opt_original.py is run directly, not
+# via pytest).
+#
 class ncoresDifEvoNelderMead:
 
     def __init__(self, rng=None):
@@ -466,6 +488,7 @@ class ncoresDifEvoNelderMead:
             maxnfev = 8192 * npar
 
         # TODO: the seed argument is not sent in
+        # TODO: mydifevo does not match the calling sequence used below
         mydifevo = \
             ncoresMyDifEvo(fcn, nm_par, xmin, xmax, npop, sfactor, xprob,
                            step, rng=self.rng)
