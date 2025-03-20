@@ -432,7 +432,7 @@ class nmNcores(MyNcores):
     def my_worker(self,
                   opt: WorkerFunc,
                   idval: int,
-                  out_q: SupportsQueue[tuple[int, list]],
+                  out_q: SupportsQueue[tuple[int, list[MyOptOutput]]],
                   err_q: SupportsQueue[Exception],
                   fcn: OptimizerFunc,
                   x: np.ndarray,
@@ -446,8 +446,12 @@ class nmNcores(MyNcores):
         except Exception as e:
             err_q.put(e)
             return
-        # output the result and task ID to output queue
-        out_q.put((idval, vals))
+
+        # The output queue is sent the positon and a list of
+        # results. In this case only one result has been generated so
+        # convert it to a list.
+        #
+        out_q.put((idval, [vals]))
 
 
 class ncoresNelderMead:
@@ -479,25 +483,32 @@ class ncoresNelderMead:
                  numcores=ncpus
                  ) -> MyOptOutput:
 
-        num_algo = len(self.algo)
         nm_ncores = nmNcores()
         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin,
                                  xmax, tol, maxnfev)
-        return self.unpack_results(num_algo, results)
+        return self.unpack_results(results)
 
     def unpack_results(self,
-                       num: int,
-                       results
+                       results: list[MyOptOutput]
                        ) -> MyOptOutput:
-        nfev = results[0]
-        fmin = results[1]
-        par = results[2]
-        for ii in range(1, num):
-            index = ii * 3
-            nfev += results[index]
-            if results[index + 1] < fmin:
-                fmin = results[index + 1]
-                par = results[index + 2]
+        """
+
+        .. versionchanged:: 4.17.1
+           The num arguments has been removed.
+
+        """
+
+        # As self.algo is not empty then results is not empty, but
+        # this is hard to assert with types.
+        #
+        assert len(results) > 0
+
+        nfev, fmin, par = results[0]
+        for nfev1, fmin1, par1 in results[1:]:
+            nfev += nfev1
+            if fmin1 < fmin:
+                fmin = fmin1
+                par = par1
 
         return nfev, fmin, par
 
@@ -539,11 +550,10 @@ class ncoresNelderMead:
 #              nfev: int = 0
 #              ) -> MyOptOutput:
 #
-#         num_algo = len(self.algo)
 #         nm_ncores = nmNcores()
 #         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin,
 #                                  xmax, tol, maxnfev)
-#         tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
+#         tmp_nfev, fmin, par = self.unpack_results(results)
 #         nfev += tmp_nfev
 #         if fmin < fval:
 #             return self.calc(fcn, par, xmin, xmax, tol, maxnfev,
