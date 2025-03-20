@@ -24,7 +24,8 @@ from typing import Concatenate, ParamSpec, SupportsFloat
 import numpy as np
 
 from sherpa.utils import Knuth_close, FuncCounter
-from sherpa.utils.parallel import multi, context, run_tasks
+from sherpa.utils.parallel import SupportsQueue, \
+    multi, context, run_tasks
 from sherpa.utils.random import RandomType, uniform
 from sherpa.utils.types import ArrayType
 
@@ -45,7 +46,13 @@ class MyNcores:
     def calc(self,
              funcs: Sequence[Callable],
              numcores: int,  # TODO: this is currently unused
-             *args, **kwargs) -> list:
+             fcn: Callable,
+             x: np.ndarray,
+             xmin: np.ndarray,
+             xmax: np.ndarray,
+             tol: SupportsFloat,
+             maxnfev: int | None
+             ) -> list:
 
         for func in funcs:
             if not callable(func):
@@ -60,7 +67,9 @@ class MyNcores:
         out_q = manager.Queue()
         err_q = manager.Queue()
         procs = [context.Process(target=self.my_worker,
-                                 args=(func, ii, out_q, err_q) + args)
+                                 args=(func, ii, out_q, err_q,
+                                       fcn, x, xmin, xmax, tol, maxnfev)
+                                 )
                  for ii, func in enumerate(funcs)]
 
         return run_tasks(procs, err_q, out_q)
@@ -68,9 +77,15 @@ class MyNcores:
     def my_worker(self,
                   opt: Callable,
                   idval: int,
-                  out_q,
-                  err_q,
-                  *args):
+                  out_q: SupportsQueue,
+                  err_q: SupportsQueue[Exception],
+                  fcn: Callable,
+                  x: np.ndarray,
+                  xmin: np.ndarray,
+                  xmax: np.ndarray,
+                  tol: SupportsFloat,
+                  maxnfev: int | None
+                  ) -> None:
         raise NotImplementedError("my_worker has not been implemented")
 
 

@@ -18,11 +18,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from typing import SupportsFloat
 
 import numpy as np
 
-from sherpa.utils.parallel import ncpus
+from sherpa.utils.parallel import SupportsQueue, ncpus
 
 from . import _saoopt  # type: ignore
 from .opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
@@ -329,8 +330,18 @@ class NelderMead7(NelderMeadBase):
 
 class nmNcores(MyNcores):
 
-    def my_worker(self, opt, idval, out_q, err_q,
-                  fcn, x, xmin, xmax, tol, maxnfev):
+    def my_worker(self,
+                  opt: Callable,
+                  idval: int,
+                  out_q: SupportsQueue,
+                  err_q: SupportsQueue[Exception],
+                  fcn: Callable,
+                  x: np.ndarray,
+                  xmin: np.ndarray,
+                  xmax: np.ndarray,
+                  tol: SupportsFloat,
+                  maxnfev: int | None
+                  ) -> None:
         try:
             vals = opt(fcn, x, xmin, xmax, tol, maxnfev)
         except Exception as e:
