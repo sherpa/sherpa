@@ -41,7 +41,6 @@ class MyNelderMead(Opt):
         self.contraction_coef = 0.5          # gamma
         self.reflection_coef = 1.0          # rho
         self.shrink_coef = 0.5          # sigma
-        self.simplex = None
 
     def __call__(self, xpar, maxnfev, tol, step, finalsimplex, verbose):
 
@@ -157,10 +156,9 @@ class NelderMeadBase:
         np.seterr(over='ignore', divide='ignore', under='ignore',
                   invalid='ignore')
 
-    def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6,  maxnfev=None,
+    def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6, maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
-        num = len(xpar)
-        return self.nfev, self.fmin, num * [self.par]
+        raise NotImplementedError()
 
     def get_maxnfev(self, maxnfev, npar):
         if maxnfev is None:
@@ -171,24 +169,34 @@ class NelderMeadBase:
 
 class NelderMead0(NelderMeadBase):
 
-    def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None, step=None,
-                 finalsimplex=1, verbose=0):
-        return self.neldermead0(fcn, x, xmin, xmax, step, finalsimplex, maxnfev,
-                                tol, verbose)
+    def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6,
+                 maxnfev=None, step=None, finalsimplex=1, verbose=0):
+        return self.neldermead0(fcn, xpar, xmin, xmax, step=step,
+                                finalsimplex=finalsimplex,
+                                maxnfev=maxnfev, tol=tol,
+                                verbose=verbose)
 
     def calc_step(self, x):
         return 1.2 * x
 
-    def neldermead0(self, fcn, x0, xmin, xmax, step=None, finalsimplex=1,
-                    maxnfev=None, tol=1.0e-6, verbose=0):
-        x0 = np.asarray(x0)
+    def neldermead0(self, fcn, xpar, xmin, xmax, *, step=None,
+                    finalsimplex=1, maxnfev=None, tol=1.0e-6,
+                    verbose=0):
+        """
+
+        .. versionchanged:: 4.17.1
+           Most of the arguments must now be given by name.
+
+        """
+        x0 = np.asarray(xpar)
         maxnfev = self.get_maxnfev(maxnfev, len(x0))
 
         my_nm = MyNelderMead(fcn, xmin, xmax)
         if step is None:
             step = self.calc_step(x0)
 
-        return my_nm(x0, maxnfev, tol, step, finalsimplex, verbose)
+        return my_nm(xpar=x0, maxnfev=maxnfev, tol=tol, step=step,
+                     finalsimplex=finalsimplex, verbose=verbose)
 
 
 class NelderMead1(NelderMead0):
@@ -200,43 +208,45 @@ class NelderMead1(NelderMead0):
 class NelderMead2(NelderMead0):
 
     def calc_step(self, x):
-        return abs(x)
+        return np.abs(x)
 
 
 class NelderMead3(NelderMead0):
 
-    def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
+    def __call__(self, fcn, xpar, xmin, xmax, tol=EPSILON, maxnfev=None,
                  step=None, finalsimplex=None, verbose=0):
 
         # Avoid having a mutable argument
         if finalsimplex is None:
             finalsimplex = [0, 1, 1]
 
-        x0 = np.asarray(x0)
+        x0 = np.asarray(xpar)
         n = len(x0)
         if step is None:
-            step = n * [1.2]
+            step = np.full(n, 1.2)
+
         maxnfev = self.get_maxnfev(maxnfev, n)
         init = 0
         par, fmin, nfev, err = \
-            _saoopt.neldermead(verbose, maxnfev, init, finalsimplex, tol, step,
-                               xmin, xmax, x0, fcn)
+            _saoopt.neldermead(verbose, maxnfev, init, finalsimplex,
+                               tol, step, xmin, xmax, x0, fcn)
         return nfev, fmin, par
 
 
 class NelderMead4(NelderMead0):
 
-    def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
+    def __call__(self, fcn, xpar, xmin, xmax, tol=EPSILON, maxnfev=None,
                  step=None, finalsimplex=None, verbose=0, reflect=True):
 
         # Avoid having a mutable argument
         if finalsimplex is None:
             finalsimplex = [0, 1, 1]
 
-        x0 = np.asarray(x0)
+        x0 = np.asarray(xpar)
         n = len(x0)
         if step is None:
-            step = abs(x0) + 1.2
+            step = np.abs(x0) + 1.2
+
         maxnfev = self.get_maxnfev(maxnfev, n)
         init = 0
         x0, fval, nfev, err = \
@@ -244,7 +254,7 @@ class NelderMead4(NelderMead0):
                                xmin, xmax, x0, fcn)
         iquad = 1
         simp = 1.0e-2 * tol
-        step = n * [0.4]
+        step = np.full(n, 0.4)
         self.par, self.fmin, tmpnfev, ifault = \
             _saoopt.minim(reflect, verbose, maxnfev - nfev, init, iquad, simp,
                           tol*10, step, xmin, xmax, x0, fcn)
@@ -254,15 +264,16 @@ class NelderMead4(NelderMead0):
 
 class NelderMead5(NelderMead0):
 
-    def __call__(self, fcn, x0, xmin, xmax, tol=1.0e-6,  maxnfev=None,
+    def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6, maxnfev=None,
                  step=None, finalsimplex=1, verbose=0, reflect=True):
         init = 0
         iquad = 1
         simp = 1.0e-2 * tol
-        x0 = np.asarray(x0)
+        x0 = np.asarray(xpar)
         n = len(x0)
         if step is None:
-            step = n * [0.4]
+            step = np.full(n, 0.4)
+
         maxnfev = self.get_maxnfev(maxnfev, n)
         par, fmin, nfev, ifault = \
             _saoopt.minim(reflect, verbose, maxnfev, init, iquad, simp, tol*10,
@@ -357,7 +368,8 @@ class ncoresNelderMead:
 
         num_algo = len(self.algo)
         nm_ncores = nmNcores()
-        results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin, xmax, tol, maxnfev)
+        results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin,
+                                 xmax, tol, maxnfev)
         return self.unpack_results(num_algo, results)
 
     def unpack_results(self, num, results):
@@ -397,10 +409,12 @@ class ncoresNelderMead:
 #
 #         num_algo = len(self.algo)
 #         nm_ncores = nmNcores()
-#         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin, xmax, tol, maxnfev)
+#         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin,
+#                                  xmax, tol, maxnfev)
 #         tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
 #         nfev += tmp_nfev
 #         if fmin < fval:
-#             return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
+#             return self.calc(fcn, par, xmin, xmax, tol, maxnfev,
+#                              numcores, fval=fmin, nfev=nfev)
 #
 #         return nfev, fval, par
