@@ -26,8 +26,8 @@ import numpy as np
 from sherpa.utils.parallel import SupportsQueue, ncpus
 
 from . import _saoopt  # type: ignore
-from .opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
-    SimplexRandom
+from .opt import MyNcores, Opt, OptimizerFunc, \
+    SimplexNoStep, SimplexStep, SimplexRandom
 
 __all__ = ('ncoresNelderMead', )
 
@@ -335,7 +335,7 @@ class nmNcores(MyNcores):
                   idval: int,
                   out_q: SupportsQueue,
                   err_q: SupportsQueue[Exception],
-                  fcn: Callable,
+                  fcn: OptimizerFunc,
                   x: np.ndarray,
                   xmin: np.ndarray,
                   xmax: np.ndarray,

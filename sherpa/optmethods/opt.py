@@ -36,6 +36,10 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
 
 P = ParamSpec("P")
 
+# The extra parameters can likely be removed from this.
+#
+OptimizerFunc = Callable[Concatenate[ArrayType, P], SupportsFloat]
+
 
 class MyNcores:
 
@@ -46,7 +50,7 @@ class MyNcores:
     def calc(self,
              funcs: Sequence[Callable],
              numcores: int,  # TODO: this is currently unused
-             fcn: Callable,
+             fcn: OptimizerFunc,
              x: np.ndarray,
              xmin: np.ndarray,
              xmax: np.ndarray,
@@ -79,7 +83,7 @@ class MyNcores:
                   idval: int,
                   out_q: SupportsQueue,
                   err_q: SupportsQueue[Exception],
-                  fcn: Callable,
+                  fcn: OptimizerFunc,
                   x: np.ndarray,
                   xmin: np.ndarray,
                   xmax: np.ndarray,
@@ -99,8 +103,7 @@ class Opt:
     """
 
     def __init__(self,
-                 func: Callable[Concatenate[ArrayType, P],
-                                SupportsFloat],
+                 func: OptimizerFunc,
                  xmin: ArrayType,
                  xmax: ArrayType
                  ) -> None:
@@ -125,12 +128,11 @@ class Opt:
     # re-write this logic.
     #
     def func_bounds(self,
-                    func: Callable[Concatenate[ArrayType, P],
-                                   SupportsFloat],
+                    func: OptimizerFunc,
                     npar: int,
                     xmin: ArrayType | None = None,
                     xmax: ArrayType | None = None
-                    ) -> Callable:
+                    ) -> OptimizerFunc:
         """In order to keep the current number of function evaluations:
         func_counter should be called before func_bounds. For example,
         the following code
