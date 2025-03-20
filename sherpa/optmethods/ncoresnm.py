@@ -22,20 +22,36 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from sherpa.utils.parallel import ncpus
+from sherpa.utils.parallel import SupportsQueue, ncpus
 
 from . import _saoopt  # type: ignore
-from .opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
-    SimplexRandom
+from .opt import MyNcores, Opt, OptimizerFunc, WorkerFunc, MyOptOutput, \
+    SimplexBase, SimplexNoStep, SimplexStep, SimplexRandom
 
 __all__ = ('ncoresNelderMead', )
 
-EPSILON = np.float64(np.finfo(np.float32).eps)
+
+# In the following it is unclear when the following hold
+#
+#   finalsimplex: int
+#   finalsimplex: int | None
+#   finalsimplex: Sequence[int] | int | None
+#
+# (and other variants). The current typing ignores the list option
+# even though some code ends up setting a list.
+#
+
+
+EPSILON = float(np.finfo(np.float32).eps)
 
 
 class MyNelderMead(Opt):
 
-    def __init__(self, fcn, xmin, xmax):
+    def __init__(self,
+                 fcn: OptimizerFunc,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray
+                 ) -> None:
         super().__init__(fcn, xmin, xmax)
 
         self.expansion_coef = 2.0          # chi
@@ -44,7 +60,14 @@ class MyNelderMead(Opt):
         self.shrink_coef = 0.5          # sigma
         self.simplex = None
 
-    def __call__(self, xpar, maxnfev, tol, step, finalsimplex, verbose):
+    def __call__(self,
+                 xpar: np.ndarray,
+                 maxnfev: int,  # TODO: can this be None?
+                 tol: float,
+                 step,
+                 finalsimplex: int,
+                 verbose: int
+                 ) -> MyOptOutput:
 
         # SimplexStep does not use factor when npop=npar + 1.
         #
@@ -56,8 +79,16 @@ class MyNelderMead(Opt):
         return self.optimize(xpar, simplex, maxnfev, tol,
                              finalsimplex, verbose)
 
-    def contract_in_out(self, simplex, centroid, reflection_pt, rho_gamma,
-                        contraction_coef, badindex, maxnfev, verbose):
+    def contract_in_out(self,
+                        simplex: SimplexBase,
+                        centroid,
+                        reflection_pt,
+                        rho_gamma,
+                        contraction_coef,
+                        badindex: int,
+                        maxnfev: int,
+                        verbose: int
+                        ) -> bool:
 
         if simplex[badindex - 1, -1] <= reflection_pt[-1] and \
                reflection_pt[-1] < simplex[badindex, -1]:
@@ -92,7 +123,14 @@ class MyNelderMead(Opt):
         print('something is wrong with contract_in_out')
         return True
 
-    def optimize(self, xpar, simplex, maxnfev, tol, finalsimplex, verbose):
+    def optimize(self,
+                 xpar: np.ndarray,
+                 simplex: SimplexBase,
+                 maxnfev: int,
+                 tol: float,
+                 finalsimplex: int,
+                 verbose: int
+                 ) -> MyOptOutput:
 
         rho_chi = self.reflection_coef * self.expansion_coef
         rho_gamma = self.reflection_coef * self.contraction_coef
@@ -143,7 +181,7 @@ class MyNelderMead(Opt):
 
 class NelderMeadBase:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.nfev = 0
         self.fmin = np.inf
         self.par = np.nan
@@ -154,12 +192,21 @@ class NelderMeadBase:
         np.seterr(over='ignore', divide='ignore', under='ignore',
                   invalid='ignore')
 
-    def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6, maxnfev=None,
-                 step=None, finalsimplex=1, verbose=0):
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 xpar: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float = 1.0e-6,
+                 maxnfev: int | None = None,
+                 step=None,
+                 finalsimplex: int | None = 1,
+                 verbose: int = 0
+                 ) -> MyOptOutput:
         num = len(xpar)
         return self.nfev, self.fmin, np.full(shape=num, fill_value=self.par)
 
-    def get_maxnfev(self, maxnfev, npar):
+    def get_maxnfev(self, maxnfev: int | None, npar: int) -> int:
         if maxnfev is None:
             return 512 * npar
 
@@ -168,8 +215,17 @@ class NelderMeadBase:
 
 class NelderMead0(NelderMeadBase):
 
-    def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6,
-                 maxnfev=None, step=None, finalsimplex=1, verbose=0):
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 xpar: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float = 1.0e-6,
+                 maxnfev: int | None = None,  # TODO: can we drop the None?
+                 step=None,
+                 finalsimplex: int | None = 1,
+                 verbose: int = 0
+                 ) -> MyOptOutput:
         return self.neldermead0(fcn, xpar, xmin, xmax, step=step,
                                 finalsimplex=finalsimplex,
                                 maxnfev=maxnfev, tol=tol,
@@ -178,9 +234,18 @@ class NelderMead0(NelderMeadBase):
     def calc_step(self, x):
         return 1.2 * x
 
-    def neldermead0(self, fcn, xpar, xmin, xmax, *, step=None,
-                    finalsimplex=1, maxnfev=None, tol=1.0e-6,
-                    verbose=0):
+    def neldermead0(self,
+                    fcn: OptimizerFunc,
+                    xpar: np.ndarray,
+                    xmin: np.ndarray,
+                    xmax: np.ndarray,
+                    *,
+                    step=None,
+                    finalsimplex: int | None = 1,
+                    maxnfev: int | None = None,
+                    tol: float = 1.0e-6,
+                    verbose: int = 0
+                    ) -> MyOptOutput:
         """
 
         .. versionchanged:: 4.17.1
@@ -212,8 +277,17 @@ class NelderMead2(NelderMead0):
 
 class NelderMead3(NelderMead0):
 
-    def __call__(self, fcn, xpar, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 step=None, finalsimplex=None, verbose=0):
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 xpar: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float = EPSILON,
+                 maxnfev: int | None = None,
+                 step=None,
+                 finalsimplex: int | None = None,
+                 verbose: int = 0
+                 ) -> MyOptOutput:
 
         # Avoid having a mutable argument
         if finalsimplex is None:
@@ -228,13 +302,24 @@ class NelderMead3(NelderMead0):
         par, fmin, nfev, err = \
             _saoopt.neldermead(verbose, maxnfev, init, finalsimplex,
                                tol, step, xmin, xmax, x0, fcn)
+
         return nfev, fmin, par
 
 
 class NelderMead4(NelderMead0):
 
-    def __call__(self, fcn, xpar, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 step=None, finalsimplex=None, verbose=0, reflect=True):
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 xpar: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float = EPSILON,
+                 maxnfev: int | None = None,
+                 step=None,
+                 finalsimplex: int | None = None,
+                 verbose: int = 0,
+                 reflect: bool = True
+                 ) -> MyOptOutput:
 
         # Avoid having a mutable argument
         if finalsimplex is None:
@@ -261,8 +346,18 @@ class NelderMead4(NelderMead0):
 
 class NelderMead5(NelderMead0):
 
-    def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6, maxnfev=None,
-                 step=None, finalsimplex=1, verbose=0, reflect=True):
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 xpar: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float = 1.0e-6,
+                 maxnfev: int | None = None,
+                 step=None,
+                 finalsimplex: int | None = 1,
+                 verbose: int = 0,
+                 reflect: bool = True
+                 ) -> MyOptOutput:
         init = 0
         iquad = 1
         simp = 1.0e-2 * tol
@@ -284,7 +379,14 @@ class NelderMead6(NelderMeadBase):
     # TODO: do we really need this internal class?
     class MyNelderMead6(MyNelderMead):
 
-        def __call__(self, xpar, maxnfev, tol, step, finalsimplex, verbose):
+        def __call__(self,
+                     xpar: np.ndarray,
+                     maxnfev: int,
+                     tol: float,
+                     step,
+                     finalsimplex: int,
+                     verbose: int
+                     ) -> MyOptOutput:
             # SimplexNoStep does not use factor when npop=npar + 1.
             #
             npar = len(xpar)
@@ -295,8 +397,17 @@ class NelderMead6(NelderMeadBase):
             return self.optimize(xpar, simplex, maxnfev, tol,
                                  finalsimplex, verbose)
 
-    def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6, maxnfev=None,
-                 step=None, finalsimplex=1, verbose=0):
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 xpar: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float = 1.0e-6,
+                 maxnfev: int | None = None,
+                 step=None,
+                 finalsimplex: int | None = 1,
+                 verbose: int = 0
+                 ) -> MyOptOutput:
         my_nm_6 = NelderMead6.MyNelderMead6(fcn, xmin, xmax)
         if maxnfev is None:
             maxnfev = 512 * len(xpar)
@@ -310,7 +421,14 @@ class NelderMead7(NelderMeadBase):
     # TODO: do we really need this internal class?
     class MyNelderMead7(MyNelderMead):
 
-        def __call__(self, xpar, maxnfev, tol, step, finalsimplex, verbose):
+        def __call__(self,
+                     xpar: np.ndarray,
+                     maxnfev: int,
+                     tol: float,
+                     step,
+                     finalsimplex: int,
+                     verbose: int
+                     ) -> MyOptOutput:
             npar = len(xpar)
             factor = 2
             simplex = SimplexRandom(func=self.func, npop=npar + 1, xpar=xpar,
@@ -319,8 +437,17 @@ class NelderMead7(NelderMeadBase):
             return self.optimize(xpar, simplex, maxnfev, tol,
                                  finalsimplex, verbose)
 
-    def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6, maxnfev=None,
-                 step=None, finalsimplex=1, verbose=0):
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 xpar: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float = 1.0e-6,
+                 maxnfev: int | None = None,
+                 step=None,
+                 finalsimplex: int | None = 1,
+                 verbose: int = 0
+                 ) -> MyOptOutput:
         my_nm_7 = NelderMead7.MyNelderMead7(fcn, xmin, xmax)
         if maxnfev is None:
             maxnfev = 512 * len(xpar)
@@ -329,8 +456,18 @@ class NelderMead7(NelderMeadBase):
 
 class nmNcores(MyNcores):
 
-    def my_worker(self, opt, idval, out_q, err_q,
-                  fcn, x, xmin, xmax, tol, maxnfev):
+    def my_worker(self,
+                  opt: WorkerFunc,
+                  idval: int,
+                  out_q: SupportsQueue[tuple[int, list]],
+                  err_q: SupportsQueue[Exception],
+                  fcn: OptimizerFunc,
+                  x: np.ndarray,
+                  xmin: np.ndarray,
+                  xmax: np.ndarray,
+                  tol: float,
+                  maxnfev: int | None
+                  ) -> None:
         try:
             vals = opt(fcn, x, xmin, xmax, tol, maxnfev)
         except Exception as e:
@@ -359,8 +496,15 @@ class ncoresNelderMead:
         else:
             self.algo = algo
 
-    def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 numcores=ncpus):
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 x: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float = EPSILON,
+                 maxnfev: int | None = None,
+                 numcores=ncpus
+                 ) -> MyOptOutput:
 
         num_algo = len(self.algo)
         nm_ncores = nmNcores()
@@ -368,7 +512,10 @@ class ncoresNelderMead:
                                  xmax, tol, maxnfev)
         return self.unpack_results(num_algo, results)
 
-    def unpack_results(self, num, results):
+    def unpack_results(self,
+                       num: int,
+                       results
+                       ) -> MyOptOutput:
         nfev = results[0]
         fmin = results[1]
         par = results[2]
@@ -392,13 +539,29 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
     reflect the progress of the algorithm: either the function values at the
     vertices are close, or the simplex has become very small. """
 
-    def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 numcores=ncpus):
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 x: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float = EPSILON,
+                 maxnfev: int | None = None,
+                 numcores=ncpus
+                 ) -> MyOptOutput:
 
         return self.calc(fcn, x, xmin, xmax, tol, maxnfev, numcores)
 
-    def calc(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-             numcores=ncpus, fval=np.inf, nfev=0):
+    def calc(self,
+             fcn: OptimizerFunc,
+             x: np.ndarray,
+             xmin: np.ndarray,
+             xmax: np.ndarray,
+             tol: float = EPSILON,
+             maxnfev: int | None = None,
+             numcores=ncpus,
+             fval: float = np.inf,
+             nfev: int = 0
+             ) -> MyOptOutput:
 
         num_algo = len(self.algo)
         nm_ncores = nmNcores()
