@@ -65,7 +65,8 @@ class MyNcores:
              xmax: np.ndarray,
              tol: SupportsFloat,
              maxnfev: int | None
-             ) -> list:
+             ) -> list[MyOptOutput]:
+        """Apply each function to the arguments, running in parallel."""
 
         for func in funcs:
             if not callable(func):
@@ -74,6 +75,8 @@ class MyNcores:
         # See sherpa.utils.parallel for the logic used here.
         # At this point we can assume that context is not None,
         # since multi is True.
+        #
+        # Should this shard by numcores?
         #
         assert context is not None
         manager = context.Manager()
@@ -90,7 +93,7 @@ class MyNcores:
     def my_worker(self,
                   opt: WorkerFunc,
                   idval: int,
-                  out_q: SupportsQueue,
+                  out_q: SupportsQueue[tuple[int, list[MyOptOutput]]],
                   err_q: SupportsQueue[Exception],
                   fcn: OptimizerFunc,
                   x: np.ndarray,
