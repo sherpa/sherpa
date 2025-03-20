@@ -19,12 +19,13 @@
 #
 
 from collections.abc import Callable, Sequence
-from typing import Concatenate, ParamSpec, SupportsFloat
+from typing import Concatenate, ParamSpec
 
 import numpy as np
 
 from sherpa.utils import Knuth_close, FuncCounter
-from sherpa.utils.parallel import multi, context, run_tasks
+from sherpa.utils.parallel import SupportsQueue, \
+    multi, context, run_tasks
 from sherpa.utils.random import RandomType, uniform
 from sherpa.utils.types import ArrayType
 
@@ -33,19 +34,43 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
            'SimplexStep')
 
 
+FUNC_MAX = float(np.finfo(np.float64).max)
+
 P = ParamSpec("P")
+
+# The extra parameters can likely be removed from this.
+# Some code assumes the first argument is an ndarray, but is this always
+# the case? For now assume that the data is always sent as an ndarray.
+#
+OptimizerFunc = Callable[Concatenate[np.ndarray, P], float]
+
+MyOptOutput = tuple[int, float, np.ndarray]
+WorkerFunc = Callable[[OptimizerFunc,
+                       np.ndarray,
+                       np.ndarray,
+                       np.ndarray,
+                       float,
+                       int | None],
+                      MyOptOutput]
 
 
 class MyNcores:
+    """Support distributed processing."""
 
     def __init__(self) -> None:
         if multi is False:
             raise TypeError("multicores not available")
 
     def calc(self,
-             funcs: Sequence[Callable],
+             funcs: Sequence[WorkerFunc],
              numcores: int,  # TODO: this is currently unused
-             *args, **kwargs) -> list:
+             fcn: OptimizerFunc,
+             x: np.ndarray,
+             xmin: np.ndarray,
+             xmax: np.ndarray,
+             tol: float,
+             maxnfev: int | None
+             ) -> list:
 
         for func in funcs:
             if not callable(func):
@@ -60,17 +85,25 @@ class MyNcores:
         out_q = manager.Queue()
         err_q = manager.Queue()
         procs = [context.Process(target=self.my_worker,
-                                 args=(func, ii, out_q, err_q) + args)
+                                 args=(func, ii, out_q, err_q,
+                                       fcn, x, xmin, xmax, tol, maxnfev)
+                                 )
                  for ii, func in enumerate(funcs)]
 
         return run_tasks(procs, err_q, out_q)
 
     def my_worker(self,
-                  opt: Callable,
+                  opt: WorkerFunc,
                   idval: int,
-                  out_q,
-                  err_q,
-                  *args):
+                  out_q: SupportsQueue[tuple[int, list]],
+                  err_q: SupportsQueue[Exception],
+                  fcn: OptimizerFunc,
+                  x: np.ndarray,
+                  xmin: np.ndarray,
+                  xmax: np.ndarray,
+                  tol: float,
+                  maxnfev: int | None
+                  ) -> None:
         raise NotImplementedError("my_worker has not been implemented")
 
 
@@ -84,8 +117,7 @@ class Opt:
     """
 
     def __init__(self,
-                 func: Callable[Concatenate[ArrayType, P],
-                                SupportsFloat],
+                 func: OptimizerFunc,
                  xmin: ArrayType,
                  xmax: ArrayType
                  ) -> None:
@@ -110,12 +142,11 @@ class Opt:
     # re-write this logic.
     #
     def func_bounds(self,
-                    func: Callable[Concatenate[ArrayType, P],
-                                   SupportsFloat],
+                    func: OptimizerFunc,
                     npar: int,
                     xmin: ArrayType | None = None,
                     xmax: ArrayType | None = None
-                    ) -> Callable:
+                    ) -> OptimizerFunc:
         """In order to keep the current number of function evaluations:
         func_counter should be called before func_bounds. For example,
         the following code
@@ -142,7 +173,7 @@ class Opt:
 
         def func_bounds_wrapper(x, *args):
             if self._outside_limits(x, xmin, xmax):
-                return np.finfo(np.float64).max
+                return FUNC_MAX
             return func(x, *args)
 
         return func_bounds_wrapper
@@ -151,7 +182,7 @@ class Opt:
 class SimplexBase:
 
     def __init__(self,
-                 func: Callable,
+                 func: OptimizerFunc,
                  npop: int,
                  xpar: ArrayType,
                  xmin: ArrayType,
@@ -179,7 +210,7 @@ class SimplexBase:
         return np.mean(self.simplex[:-1, :], 0)
 
     def check_convergence(self,
-                          ftol: SupportsFloat,
+                          ftol: float,
                           method: int
                           ) -> bool:
 
