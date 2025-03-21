@@ -336,13 +336,14 @@ class NelderMead4(NelderMead0):
             _saoopt.neldermead(verbose, maxnfev, init, finalsimplex, tol, step,
                                xmin, xmax, x0, fcn)
         iquad = 1
-        simp = 1.0e-2 * tol
+        ftol = float(tol)
+        simp = 1.0e-2 * ftol
         step = n * [0.4]
-        self.par, self.fmin, tmpnfev, ifault = \
+        par, fmin, tmpnfev, ifault = \
             _saoopt.minim(reflect, verbose, maxnfev - nfev, init, iquad, simp,
-                          tol*10, step, xmin, xmax, x0, fcn)
-        self.nfev = nfev + tmpnfev
-        return self.nfev, self.fmin, self.par
+                          ftol*10, step, xmin, xmax, x0, fcn)
+        nfev += tmpnfev
+        return nfev, fmin, par
 
 
 class NelderMead5(NelderMead0):
@@ -361,14 +362,15 @@ class NelderMead5(NelderMead0):
                  ) -> MyOptOutput:
         init = 0
         iquad = 1
-        simp = 1.0e-2 * tol
+        ftol = float(tol)
+        simp = 1.0e-2 * ftol
         x0 = np.asarray(xpar)
         n = len(x0)
         if step is None:
             step = n * [0.4]
         maxnfev = self.get_maxnfev(maxnfev, n)
         par, fmin, nfev, ifault = \
-            _saoopt.minim(reflect, verbose, maxnfev, init, iquad, simp, tol*10,
+            _saoopt.minim(reflect, verbose, maxnfev, init, iquad, simp, ftol*10,
                           step, xmin, xmax, x0, fcn)
         return nfev, fmin, par
 
@@ -410,8 +412,7 @@ class NelderMead6(NelderMeadBase):
                  verbose: int = 0
                  ) -> MyOptOutput:
         my_nm_6 = NelderMead6.MyNelderMead6(fcn, xmin, xmax)
-        if maxnfev is None:
-            maxnfev = 512 * len(xpar)
+        maxnfev = self.get_maxnfev(maxnfev, len(xpar))
         return my_nm_6(xpar, maxnfev, tol, step, finalsimplex, verbose)
 
 
@@ -450,8 +451,7 @@ class NelderMead7(NelderMeadBase):
                  verbose: int = 0
                  ) -> MyOptOutput:
         my_nm_7 = NelderMead7.MyNelderMead7(fcn, xmin, xmax)
-        if maxnfev is None:
-            maxnfev = 512 * len(xpar)
+        maxnfev = self.get_maxnfev(maxnfev, len(xpar))
         return my_nm_7(xpar, maxnfev, tol, step, finalsimplex, verbose)
 
 
@@ -574,4 +574,5 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
             return self.calc(fcn, par, xmin, xmax, tol, maxnfev,
                              numcores, fval=fmin, nfev=nfev)
 
+        # TODO: shouldn't this return fmin rather than fval?
         return nfev, fval, par
