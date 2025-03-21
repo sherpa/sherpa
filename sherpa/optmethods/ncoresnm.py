@@ -341,11 +341,11 @@ class NelderMead4(NelderMead0):
         iquad = 1
         simp = 1.0e-2 * tol
         step = np.full(n, 0.4)
-        self.par, self.fmin, tmpnfev, ifault = \
+        par, fmin, tmpnfev, ifault = \
             _saoopt.minim(reflect, verbose, maxnfev - nfev, init, iquad, simp,
                           tol*10, step, xmin, xmax, x0, fcn)
-        self.nfev = nfev + tmpnfev
-        return self.nfev, self.fmin, self.par
+        nfev += tmpnfev
+        return nfev, fmin, par
 
 
 class NelderMead5(NelderMead0):
@@ -549,4 +549,5 @@ class ncoresNelderMead:
 #             return self.calc(fcn, par, xmin, xmax, tol, maxnfev,
 #                              numcores, fval=fmin, nfev=nfev)
 #
+#         # TODO: shouldn't this return fmin rather than fval?
 #         return nfev, fval, par
