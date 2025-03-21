@@ -19,7 +19,7 @@
 #
 
 from collections.abc import Callable, Sequence
-from typing import Concatenate, ParamSpec, Protocol, SupportsFloat
+from typing import Protocol, SupportsFloat
 
 import numpy as np
 
@@ -34,11 +34,7 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
            'SimplexStep')
 
 
-P = ParamSpec("P")
-
-# The extra parameters can likely be removed from this.
-#
-OptimizerFunc = Callable[Concatenate[ArrayType, P], SupportsFloat]
+OptimizerFunc = Callable[[ArrayType], SupportsFloat]
 
 MyOptOutput = tuple[int, SupportsFloat, np.ndarray]
 
@@ -198,10 +194,10 @@ class Opt:
             xmin = np.asarray([- np.inf for ii in range(npar)])
             xmax = np.asarray([np.inf for ii in range(npar)])
 
-        def func_bounds_wrapper(x, *args):
+        def func_bounds_wrapper(x):
             if self._outside_limits(x, xmin, xmax):
                 return np.finfo(np.float64).max
-            return func(x, *args)
+            return func(x)
 
         return func_bounds_wrapper
 
