@@ -32,7 +32,8 @@ from typing import Any, Protocol, runtime_checkable
 import numpy as np
 
 from sherpa.data import Data, DataSimulFit
-from sherpa.estmethods import EstMethod, Covariance, EstNewMin
+from sherpa.estmethods import EstMethod, Covariance, EstNewMin, \
+    FreezePar, ParName, ReportProgress, ThawPar
 from sherpa.models import Model, SimulFitModel
 from sherpa.models.parameter import Parameter
 from sherpa.optmethods import OptMethod, LevMar, NelderMead
@@ -667,9 +668,8 @@ class IterFit:
     This class is highly coupled to `Fit`.
 
     .. versionchanged:: 4.17.0
-       Several internal fields have been removed as they are now
-       handled by the IterCallback class and the changes to the
-       _get_callback routine.
+       A number of internal variables have been removed as they are
+       now handled by the `IterCallback` class.
 
     """
 
@@ -777,8 +777,8 @@ class IterFit:
                  pars: ArrayType,
                  parmins: ArrayType,
                  parmaxes: ArrayType,
-                 statargs: Sequence[Any] = (),
-                 statkwargs: Mapping[str, Any] | None = None,
+                 statargs: Any = None,
+                 statkwargs: Any = None,
                  cache: bool = True
                  ) -> OptReturn:
         """Exclude points that are significately far away from the best fit.
@@ -790,6 +790,9 @@ class IterFit:
         has converged or a maximum number of iterations has been reached.
         The error removal can be asymmetric, since there are separate
         options for the lower and upper limits.
+
+        .. versionchanged:: 4.17.1
+           The statargs and statkwargs arguments are now ignored.
 
         Raises
         ------
@@ -819,8 +822,9 @@ class IterFit:
         .. [3] http://iraf.net/irafhelp.php?val=sfit
 
         """
-        if statkwargs is None:
-            statkwargs = {}
+
+        if statargs is not None or statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
 
         # Sigma-rejection can only be used with chi-squared;
         # raise exception if it is attempted with least-squares,
@@ -897,9 +901,9 @@ class IterFit:
                     self.stat.calc_staterror)
                 self.model.startup(cache)
                 final_fit_results = self.method.fit(statfunc,
-                                                    self.model.thawedpars,
-                                                    parmins, parmaxes,
-                                                    statargs, statkwargs)
+                                                    pars=self.model.thawedpars,
+                                                    parmins=parmins,
+                                                    parmaxes=parmaxes)
                 model_iterator = iter(self.model())
                 rejected = False
 
@@ -995,19 +999,25 @@ class IterFit:
             pars: ArrayType,
             parmins: ArrayType,
             parmaxes: ArrayType,
-            statargs: Sequence[Any] = (),
-            statkwargs: Mapping[str, Any] | None = None
+            statargs: Any = None,
+            statkwargs: Any = None
             ) -> OptReturn:
+        """
 
-        if statkwargs is None:
-            statkwargs = {}
+        .. versionchanged:: 4.17.1
+           The statargs and statkwargs arguments are now ignored.
+
+        """
+
+        if statargs is not None or statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
 
         if self.current_func is None:
-            return self.method.fit(statfunc, pars, parmins, parmaxes,
-                                   statargs, statkwargs)
+            return self.method.fit(statfunc, pars=pars,
+                                   parmins=parmins, parmaxes=parmaxes)
 
-        return self.current_func(statfunc, pars, parmins, parmaxes,
-                                 statargs, statkwargs)
+        return self.current_func(statfunc, pars=pars, parmins=parmins,
+                                 parmaxes=parmaxes)
 
 
 # What is the best way to annotate the return value here?
@@ -1415,7 +1425,7 @@ class Fit(NoNewAttributesAfterInit):
             # have the case that self.stat and self._iterfit.stat were
             # not guaranteed to be the same).
             #
-            # Could we skip this if newpars is them same as thawedpars?
+            # Could we skip this if newpars is the same as thawedpars?
             #
             fval_new, _ = cb(newpars)
 
@@ -1527,60 +1537,10 @@ class Fit(NoNewAttributesAfterInit):
         #
         thawedpars = self.model.get_thawed_pars()
 
-        # Define functions to freeze and thaw a parameter before
-        # we call fit function -- projection can call fit several
-        # times, for each parameter -- that parameter must be frozen
-        # while the others freely vary.
-        def freeze_par(pars, parmins, parmaxes, idx):
-            # Freeze the indicated parameter; return
-            # its place in the list of all parameters,
-            # and the current values of the parameters,
-            # and the hard mins amd maxs of the parameters
-            thawedpars[idx].val = pars[idx]
-            thawedpars[idx].frozen = True
-            self.current_frozen = idx
-
-            # Identify those parameters that are not frozen.
-            keep_pars = np.ones_like(pars)
-            keep_pars[idx] = 0
-            pars_idx = np.where(keep_pars)
-
-            current_pars = pars[pars_idx]
-            current_parmins = parmins[pars_idx]
-            current_parmaxes = parmaxes[pars_idx]
-            return (current_pars, current_parmins, current_parmaxes)
-
-        def thaw_par(idx):
-            if idx < 0:
-                return
-
-            thawedpars[idx].frozen = False
-            self.current_frozen = -1
-
-        # confidence needs to know which parameter it is working on.
-        def get_par_name(idx):
-            return thawedpars[idx].fullname
-
-        # Call from a parameter estimation method, to report that
-        # limits for a given parameter have been found At present (mid
-        # 2023) it looks like lower/upper are both single-element
-        # ndarrays, hence the need to convert to a scalar by accessing
-        # the first element (otherwise there's a deprecation warning
-        # from NumPy 1.25).
-        #
-        def report_progress(idx, lower, upper):
-            if idx < 0:
-                return
-
-            name = thawedpars[idx].fullname
-            if np.isnan(lower) or np.isinf(lower):
-                info("%s \tlower bound: -----", name)
-            else:
-                info("%s \tlower bound: %g", name, lower[0])
-            if np.isnan(upper) or np.isinf(upper):
-                info("%s \tupper bound: -----", name)
-            else:
-                info("%s \tupper bound: %g", name, upper[0])
+        freeze_par = FreezePar(thawedpars, self)
+        thaw_par = ThawPar(thawedpars, self)
+        get_par_name = ParName(thawedpars)
+        report_progress = ReportProgress(thawedpars)
 
         # If starting fit statistic is chi-squared or C-stat,
         # can calculate reduced fit statistic -- if it is
