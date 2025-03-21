@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2012, 2015-2016, 2018-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -594,9 +594,9 @@ class MyCacheTestModel(ArithmeticModel):
         b = par[2]
         fvec = A * np.exp(- mylambda * x) + b
         if self.counter == 0:
-            assert self._use_caching
+            assert self.cache > 0
         else:
-            assert not self._use_caching
+            assert self.cache == 0
         self.counter += 1
         return fvec
 
