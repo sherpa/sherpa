@@ -44,7 +44,8 @@ from sherpa.ui.utils import Session
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, IOErr, ModelErr, PlotErr, SessionErr
 from sherpa.utils.logging import SherpaVerbosity
-from sherpa.utils.testing import requires_data, requires_fits, requires_group
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_group, requires_psf
 
 
 @pytest.fixture
@@ -3610,6 +3611,7 @@ def test_delete_psf_not_there(session):
     assert s.list_psf_ids() == []
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_delete_psf_there(session):
     """delete_psf removes the PSF"""
@@ -3864,6 +3866,7 @@ def test_pack_image():
     assert s.pack_image() is not None
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [Session, AstroSession])
 @pytest.mark.parametrize("idval", [None, 1, "bob"])
 def test_show_kernel(session, idval):
@@ -3892,6 +3895,7 @@ def test_show_kernel(session, idval):
     assert len(toks) == 12
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_show_kernel_multi(session):
 
@@ -3918,6 +3922,7 @@ def test_show_kernel_multi(session):
     assert len(toks) == 3
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_load_conv_model_instance(session):
     """Corner case"""
