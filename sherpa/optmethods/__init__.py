@@ -112,7 +112,7 @@ const1d
 
 """
 
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 import logging
 from typing import Any
 
@@ -120,7 +120,7 @@ import numpy as np
 
 from sherpa.utils import NoNewAttributesAfterInit, \
     get_keyword_names, get_keyword_defaults, print_fields
-from sherpa.utils.types import ArrayType, OptReturn, StatFunc
+from sherpa.utils.types import ArrayType, OptFunc, OptReturn, StatFunc
 
 from .optfcts import grid_search, lmdif, montecarlo, neldermead
 
@@ -154,12 +154,10 @@ class OptMethod(NoNewAttributesAfterInit):
 
     The optfunc function must accept the positional arguments::
 
-        fcn:  Callable[[ArrayType, ...], tuple[float, np.ndarray]]
+        fcn:  OptFunc
         x0:   ArrayType
         xmin: ArrayType
         xmax: ArrayType
-
-        ArrayType = Sequence[float] | np.ndarray
 
     and the remaining arguments are sent in as keyword arguments, and
     so can be specific to the optimization function. The x0, xmin, and
@@ -176,7 +174,7 @@ class OptMethod(NoNewAttributesAfterInit):
 
     def __init__(self,
                  name: str,
-                 optfunc: Callable[..., OptReturn]
+                 optfunc: OptFunc
                  ) -> None:
         self.name = name
         self._optfunc = optfunc
@@ -341,7 +339,7 @@ class GridSearch(OptMethod):
 
     """
 
-    def __init__(self, name='gridsearch') -> None:
+    def __init__(self, name: str = 'gridsearch') -> None:
         super().__init__(name=name, optfunc=grid_search)
 
 
@@ -595,7 +593,7 @@ class LevMar(OptMethod):
            Springer-Verlag: Berlin, 1978, pp.105-116.
 
         """
-    def __init__(self, name='levmar') -> None:
+    def __init__(self, name: str = 'levmar') -> None:
         super().__init__(name=name, optfunc=lmdif)
 
 
@@ -660,7 +658,7 @@ class MonCar(OptMethod):
 
     """
 
-    def __init__(self, name='moncar') -> None:
+    def __init__(self, name: str = 'moncar') -> None:
         super().__init__(name=name, optfunc=montecarlo)
 
 
@@ -864,73 +862,5 @@ class NelderMead(OptMethod):
            http://citeseer.ist.psu.edu/155516.html
 
     """
-    def __init__(self, name='simplex') -> None:
+    def __init__(self, name: str = 'simplex') -> None:
         super().__init__(name=name, optfunc=neldermead)
-
-
-###############################################################################
-
-# # from sherpa.optmethods.fminpowell import *
-# # from sherpa.optmethods.nmpfit import *
-
-# # from sherpa.optmethods.odrpack import odrpack
-# # from sherpa.optmethods.stogo import stogo
-# # from sherpa.optmethods.chokkan import chokkanlbfgs
-# # from sherpa.optmethods.odr import odrf77
-
-# # def myall( targ, arg ):
-# #     fubar = list( targ )
-# #     fubar.append( arg )
-# #     return tuple( fubar )
-
-# # __all__ = myall( __all__, 'Bobyqa' )
-# # __all__ = myall( __all__, 'Chokkan' )
-# # __all__ = myall( __all__, 'cppLevMar' )
-# # __all__ = myall( __all__, 'Dif_Evo' )
-# # __all__ = myall( __all__, 'MarLev' )
-# # __all__ = myall( __all__, 'MyMinim' )
-# # __all__ = myall( __all__, 'Nelder_Mead' )
-# # __all__ = myall( __all__, 'NMPFIT' )
-# # __all__ = myall( __all__, 'Newuoa' )
-# # __all__ = myall( __all__, 'Odr' )
-# # __all__ = myall( __all__, 'OdrPack' )
-# # __all__ = myall( __all__, 'PortChi' )
-# # __all__ = myall( __all__, 'PortFct' )
-# # __all__ = myall( __all__, 'ScipyPowell' )
-# # __all__ = myall( __all__, 'StoGo' )
-
-# # class Chokkan(OptMethod):
-# #     def __init__(self, name='chokkan'):
-# #         OptMethod.__init__(self, name, chokkanlbfgs)
-
-# # class cppLevMar(OptMethod):
-
-# #    def __init__(self, name='clevmar'):
-# # 	OptMethod.__init__(self, name, optfcts.lmdif_cpp)
-
-# # class MyMinim(OptMethod):
-
-# #     def __init__(self, name='simplex'):
-# # 	OptMethod.__init__(self, name, minim)
-
-# # class NMPFIT(OptMethod):
-# #     def __init__(self, name='pytools_nmpfit'):
-# #         OptMethod.__init__(self, name, nmpfit.pytools_nmpfit)
-
-# # class OdrPack(OptMethod):
-# #     def __init__(self, name='odrpack'):
-# #         OptMethod.__init__(self, name, odrpack)
-
-# # class Odr(OptMethod):
-# #     def __init__(self, name='odr'):
-# #         OptMethod.__init__(self, name, odrf77)
-
-# # class ScipyPowell(OptMethod):
-# #     def __init__(self, name='scipypowell'):
-# #         OptMethod.__init__(self, name, my_fmin_powell)
-
-# # class StoGo(OptMethod):
-# #     def __init__(self, name='stogo'):
-# # 	OptMethod.__init__(self, name, stogo)
-
-###############################################################################

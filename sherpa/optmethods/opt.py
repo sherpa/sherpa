@@ -19,7 +19,7 @@
 #
 
 from collections.abc import Callable, Sequence
-from typing import SupportsFloat
+from typing import Concatenate, ParamSpec, SupportsFloat
 
 import numpy as np
 
@@ -33,16 +33,7 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
            'SimplexStep')
 
 
-# import autograd.numpy as np
-# from autograd import hessian
-# from numpy.linalg.linalg import LinAlgError
-# def autograd_covar(func, par):
-#     try:
-#         hess = hessian(func)(par)
-#         result = 2.0 * np.linalg.inv(hess)
-#         return result
-#     except LinAlgError:
-#         return None
+P = ParamSpec("P")
 
 
 class MyNcores:
@@ -93,7 +84,8 @@ class Opt:
     """
 
     def __init__(self,
-                 func: Callable,
+                 func: Callable[Concatenate[ArrayType, P],
+                                SupportsFloat],
                  xmin: ArrayType,
                  xmax: ArrayType
                  ) -> None:
@@ -118,7 +110,8 @@ class Opt:
     # re-write this logic.
     #
     def func_bounds(self,
-                    func: Callable,
+                    func: Callable[Concatenate[ArrayType, P],
+                                   SupportsFloat],
                     npar: int,
                     xmin: ArrayType | None = None,
                     xmax: ArrayType | None = None
@@ -190,17 +183,19 @@ class SimplexBase:
                           method: int
                           ) -> bool:
 
-        def are_func_vals_close_enough():
+        def are_func_vals_close_enough() -> bool:
             smallest_fct_val = self.simplex[0, -1]
             largest_fct_val = self.simplex[-1, -1]
             return Knuth_close(smallest_fct_val, largest_fct_val,
                                ftol)
 
-        def is_fct_stddev_small_enough():
+        def is_fct_stddev_small_enough() -> bool:
             fval_std = np.std([col[-1] for col in self.simplex])
-            return fval_std < ftol
+            # Force float comparison to avoid type checker warnings, both for
+            # the arguments to the comparison and the return value.
+            return float(fval_std) < float(ftol)
 
-        def is_max_length_small_enough():
+        def is_max_length_small_enough() -> bool:
             """
 
                max  || x  - x  || <= tol max(1.0, || x ||)
@@ -216,7 +211,9 @@ class SimplexBase:
                 xi = self.simplex[ii, :-1]
                 xi_x0 = xi - x0
                 max_xi_x0 = max(max_xi_x0, np.dot(xi_x0, xi_x0))
-            return max_xi_x0 <= ftol * max(1.0, np.dot(x0, x0))
+
+            # force float conversion to avoid type checker warnings
+            return max_xi_x0 <= float(ftol) * max(1.0, np.dot(x0, x0))
 
         if 0 == method:
             if is_max_length_small_enough():
@@ -248,7 +245,10 @@ class SimplexBase:
 
         return True
 
-    def eval_simplex(self, npop, simplex):
+    def eval_simplex(self,
+                     npop: int,
+                     simplex: np.ndarray
+                     ) -> np.ndarray:
         for ii in range(npop):
             simplex[ii][-1] = self.func(simplex[ii][:-1])
         return self.sort_me(simplex)
@@ -258,7 +258,7 @@ class SimplexBase:
              xpar: np.ndarray,
              step,
              seed: int,
-             factor
+             factor: float
              ) -> np.ndarray:
         raise NotImplementedError("init has not been implemented")
 
@@ -268,7 +268,8 @@ class SimplexBase:
                             start: int,
                             npop: int,
                             seed: int,
-                            factor) -> np.ndarray:
+                            factor: float
+                            ) -> np.ndarray:
         # Set the seed when there is no RNG set, otherwise the RNG
         # determines the state.
         #
@@ -281,9 +282,6 @@ class SimplexBase:
         if start >= npop:
             return simplex
 
-        # Note that factor can be None when there's nothing to do
-        # here, hence the early-return above.
-        #
         deltas = factor * np.abs(np.asarray(xpar))
         for ii in range(start, npop):
             simplex[ii][:-1] = \
@@ -327,7 +325,7 @@ class SimplexNoStep(SimplexBase):
              xpar: np.ndarray,
              step,
              seed: int,
-             factor
+             factor: float
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -353,7 +351,7 @@ class SimplexStep(SimplexBase):
              xpar: np.ndarray,
              step,
              seed: int,
-             factor
+             factor: float
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -374,7 +372,7 @@ class SimplexRandom(SimplexBase):
              xpar: np.ndarray,
              step,
              seed: int,
-             factor
+             factor: float
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))

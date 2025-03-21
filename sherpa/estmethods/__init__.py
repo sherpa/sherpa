@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023, 2024
+#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,18 +18,25 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from itertools import chain
+from __future__ import annotations
+
+from collections.abc import Callable, Sequence
 import logging
+from typing import Any, Protocol, SupportsFloat
+import warnings
 
 import numpy as np
 from numpy.linalg import LinAlgError
 
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, \
-    is_iterable, list_to_open_interval, quad_coef, \
-    demuller, zeroin, OutOfBoundErr, FuncCounter
-from sherpa.utils.parallel import multi, ncpus, context, process_tasks
+from sherpa.utils import NoNewAttributesAfterInit, \
+    FuncCounter, OutOfBoundErr, Knuth_close, \
+    print_fields, is_iterable, list_to_open_interval, quad_coef, \
+    demuller, zeroin
+from sherpa.utils.parallel import SupportsLock, SupportsProcess, \
+    SupportsQueue, multi, ncpus, context, process_tasks
+from sherpa.utils.types import ArrayType, FitFunc, StatFunc
 
-import sherpa.estmethods._est_funcs
+from . import _est_funcs  # type: ignore
 
 
 # TODO: this should not be set globally
@@ -41,6 +48,17 @@ __all__ = ('EstNewMin', 'Covariance', 'Confidence',
            'est_hardmax', 'est_hardminmax', 'est_newmin', 'est_maxiter',
            'est_hitnan')
 
+
+# The return type for the estimation routines.
+#
+# It looks like the limits can be numbers or None.
+#
+ArrayVal = Sequence[SupportsFloat | None] | np.ndarray
+EstReturn = tuple[ArrayVal, ArrayVal,
+                  Sequence[int | None] | np.ndarray,
+                  int, np.ndarray | None]
+
+
 est_success = 0
 est_failure = 1
 est_hardmin = 2
@@ -50,55 +68,23 @@ est_newmin = 5
 est_maxiter = 6
 est_hitnan = 7
 
-# For every method listed here, we have the same goal:  derive confidence
-# limits for thawed parameters.  Thawed parameters are allowed to vary
-# during a fit; when a model has been fit to data, then the current
-# parameter values are presumably the best-fit values.  Think of the
-# best-fit values as being at the lowest point in a valley in parameter
-# space--any step away, in any direction, means a worse fit (i.e., the
-# value of the fit statistic is greater).  Confidence limits tell you
-# how well constrained those best fit values are; i.e., are we in a deep,
-# narrow valley in parameter space?  If so, we can be confident the limits
-# are small.  But if the valley is shallow and broad, then the confidence
-# limits will also be very broad.
-#
-# Every method is passed the same information:
-#  the current values of all thawed parameters;
-#  the soft limits of all thawed parameters;
-#  the hard limits of all thawed parameters;
-#  the list of parameters for which we are actually want confidence
-#    limits (this can be a subset of all thawed parameters)
-#  a reference to the statistic function;
-#  a reference to the fitting function.
 
-
-# class EstMethodError(SherpaError):
-#    "Reached an error while computing parameter confidence limits"
-#    pass
-#
-# class EstHardMin(EstMethodError):
-#    "Reached a parameter hard minimum"
-#    pass
-#
-# class EstHardMax(EstMethodError):
-#    "Reached a parameter hard maximum"
-#    pass
+# This class is used to send around the "new parameter values" in
+# sherpa.fit.Fit.est_errors.
 #
 class EstNewMin(Exception):
-
     "Reached a new minimum fit statistic"
     pass
-#
-# class EstMaxIter(EstMethodError):
-#    "Reached maximum iterations in scaling function"
-#    pass
-#
-# class EstNaN(EstMethodError):
-#    "Reached a NaN during computation"
-#    pass
 
 
 class EstMethod(NoNewAttributesAfterInit):
+    """Estimate errors on a set of parameters.
+
+    .. versionchanged:: 4.17.1
+       The estfunc argument is now unused and will be removed in a
+       later release.
+
+    """
 
     # defined pre-instantiation for pickling
     config = {'sigma': 1,
@@ -106,16 +92,22 @@ class EstMethod(NoNewAttributesAfterInit):
               'maxiters': 200,
               'soft_limits': False}
 
-    def __init__(self, name, estfunc):
-        self._estfunc = estfunc
+    def __init__(self,
+                 name: str,
+                 estfunc: Any = None
+                 ) -> None:
         self.name = name
+
+        if estfunc is not None:
+            warnings.warn("EstMethod: the estfunc argument is deprecated",
+                          DeprecationWarning)
 
         # config should be defined pre-instantiation for pickling
         # however, for some unknown reason membership in self.__dict__
         # requires declaration in __init__()
         self.config = self.config.copy()
 
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def __getattr__(self, name):
         if name in self.__dict__.get('config', ()):
@@ -128,10 +120,10 @@ class EstMethod(NoNewAttributesAfterInit):
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} error-estimation method instance '{self.name}'>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         # Put name first always
         keylist = list(self.config.keys())
         keylist = ['name'] + keylist
@@ -144,18 +136,82 @@ class EstMethod(NoNewAttributesAfterInit):
         self.__dict__.update(state)
 
         # obtain config values from object class
-        # TODO: pylint points out there's no name or estfunc set for
+        # TODO: pylint points out there's no name set for
         #       the initialization call
         self.__dict__['config'] = getattr(self.__class__(), 'config', {})
 
         # update new config dict with user defined from old
         self.__dict__['config'].update(state.get('config', {}))
 
-    def compute(self, statfunc, fitfunc, pars,
-                parmins, parmaxes, parhardmins,
-                parhardmaxes, limit_parnums, freeze_par, thaw_par,
-                report_progress, get_par_name,
-                statargs=(), statkwargs={}):
+    def compute(self,
+                statfunc: StatFunc,
+                fitfunc: FitFunc,
+                *,
+                pars: np.ndarray,
+                parmins: np.ndarray,
+                parmaxes: np.ndarray,
+                parhardmins: np.ndarray,
+                parhardmaxes: np.ndarray,
+                limit_parnums: np.ndarray,  # integers
+                freeze_par: Callable,
+                thaw_par: Callable,
+                report_progress: Callable,
+                get_par_name: Callable,
+                statargs=(),
+                statkwargs={}
+                ) -> EstReturn:
+        """Estimate the error range.
+
+        .. versionchanged:: 4.17.1
+           All arguments other than statfunc and fitfunc are now
+           keyword-only.
+
+        Notes
+        -----
+        The statargs and statkwargs arguments are currently unused.
+
+        """
+
+        # This does not use abc.abstractmethod as inheriting from
+        # NoNewAttributesAfterInit.
+        #
+        raise NotImplementedError()
+
+
+class Covariance(EstMethod):
+    """The covariance method for estimating errors."""
+
+    def __init__(self, name: str = 'covariance') -> None:
+        super().__init__(name)
+
+    def compute(self,
+                statfunc: StatFunc,
+                fitfunc: FitFunc,
+                *,
+                pars: np.ndarray,
+                parmins: np.ndarray,
+                parmaxes: np.ndarray,
+                parhardmins: np.ndarray,
+                parhardmaxes: np.ndarray,
+                limit_parnums: np.ndarray,
+                freeze_par: Callable,
+                thaw_par: Callable,
+                report_progress: Callable,
+                get_par_name: Callable,
+                statargs=(),
+                statkwargs={}
+                ) -> EstReturn:
+        """Estimate the error range.
+
+        .. versionchanged:: 4.17.1
+           All arguments other than statfunc and fitfunc are now
+           keyword-only.
+
+        Notes
+        -----
+        The statargs and statkwargs arguments are currently unused.
+
+        """
 
         def stat_cb(pars):
             return statfunc(pars)[0]
@@ -173,20 +229,25 @@ class EstMethod(NoNewAttributesAfterInit):
 
         remin = -1.0
         tol = -1.0
-        return self._estfunc(pars, parmins, parmaxes, parhardmins,
-                             parhardmaxes, self.sigma, self.eps,
-                             tol,
-                             self.maxiters, remin, limit_parnums,
-                             stat_cb, fit_cb, report_progress)
+        return covariance(pars,
+                          parmins=parmins,
+                          parmaxes=parmaxes,
+                          parhardmins=parhardmins,
+                          parhardmaxes=parhardmaxes,
+                          sigma=self.sigma,
+                          eps=self.eps,
+                          tol=tol,
+                          maxiters=self.maxiters,
+                          remin=remin,
+                          limit_parnums=limit_parnums,
+                          stat_cb=stat_cb,
+                          fit_cb=fit_cb,
+                          report_progress=report_progress)
 
-
-class Covariance(EstMethod):
-
-    def __init__(self, name='covariance'):
-        EstMethod.__init__(self, name, covariance)
 
 
 class Confidence(EstMethod):
+    """The confidence method for estimating errors."""
 
     # defined pre-instantiation for pickling
     _added_config = {'remin': 0.01,
@@ -199,17 +260,41 @@ class Confidence(EstMethod):
                      'verbose': False,
                      'openinterval': False}
 
-    def __init__(self, name='confidence'):
-        EstMethod.__init__(self, name, confidence)
+    def __init__(self, name: str = 'confidence') -> None:
+        super().__init__(name)
 
         # Update EstMethod.config dict with Confidence specifics
         self.config.update(self._added_config)
 
-    def compute(self, statfunc, fitfunc, pars,
-                parmins, parmaxes, parhardmins,
-                parhardmaxes, limit_parnums, freeze_par, thaw_par,
-                report_progress, get_par_name,
-                statargs=(), statkwargs={}):
+    def compute(self,
+                statfunc: StatFunc,
+                fitfunc: FitFunc,
+                *,
+                pars: np.ndarray,
+                parmins: np.ndarray,
+                parmaxes: np.ndarray,
+                parhardmins: np.ndarray,
+                parhardmaxes: np.ndarray,
+                limit_parnums: np.ndarray,  # integers
+                freeze_par: Callable,
+                thaw_par: Callable,
+                report_progress: Callable,
+                get_par_name: Callable,
+                statargs=(),
+                statkwargs={}
+                ) -> EstReturn:
+
+        """Estimate the error range.
+
+        .. versionchanged:: 4.17.1
+           All arguments other than statfunc and fitfunc are now
+           keyword-only.
+        Notes
+        -----
+        The statargs and statkwargs arguments are currently unused.
+
+
+        """
 
         def stat_cb(pars):
             return statfunc(pars)[0]
@@ -246,15 +331,30 @@ class Confidence(EstMethod):
         else:
             fitcb = fit_cb
 
-        return self._estfunc(pars, parmins, parmaxes, parhardmins,
-                             parhardmaxes, self.sigma, self.eps,
-                             self.tol, self.maxiters, self.remin,
-                             self.verbose, limit_parnums,
-                             statcb, fitcb, report_progress, get_par_name,
-                             self.parallel, self.numcores, self.openinterval)
+        return confidence(pars,
+                          parmins=parmins,
+                          parmaxes=parmaxes,
+                          parhardmins=parhardmins,
+                          parhardmaxes=parhardmaxes,
+                          sigma=self.sigma,
+                          eps=self.eps,
+                          tol=self.tol,
+                          maxiters=self.maxiters,
+                          remin=self.remin,
+                          verbose=self.verbose,
+                          limit_parnums=limit_parnums,
+                          stat_cb=statcb,
+                          fit_cb=fitcb,
+                          report_progress=report_progress,
+                          get_par_name=get_par_name,
+                          do_parallel=self.parallel,
+                          numcores=self.numcores,
+                          open_interval=self.openinterval)
+
 
 
 class Projection(EstMethod):
+    """The projection method for estimating errors."""
 
     # defined pre-instantiation for pickling
     _added_config = {'remin': 0.01,
@@ -265,17 +365,40 @@ class Projection(EstMethod):
                      'max_rstat': 3,
                      'tol': 0.2}
 
-    def __init__(self, name='projection'):
-        EstMethod.__init__(self, name, projection)
+    def __init__(self, name: str = 'projection') -> None:
+        super().__init__(name)
 
         # Update EstMethod.config dict with Projection specifics
         self.config.update(self._added_config)
 
-    def compute(self, statfunc, fitfunc, pars,
-                parmins, parmaxes, parhardmins,
-                parhardmaxes, limit_parnums, freeze_par, thaw_par,
-                report_progress, get_par_name,
-                statargs=(), statkwargs={}):
+    def compute(self,
+                statfunc: StatFunc,
+                fitfunc: FitFunc,
+                *,
+                pars: np.ndarray,
+                parmins: np.ndarray,
+                parmaxes: np.ndarray,
+                parhardmins: np.ndarray,
+                parhardmaxes: np.ndarray,
+                limit_parnums: np.ndarray,  # integers
+                freeze_par: Callable,
+                thaw_par: Callable,
+                report_progress: Callable,
+                get_par_name: Callable,
+                statargs=(),
+                statkwargs={}
+                ) -> EstReturn:
+        """Estimate the error range.
+
+        .. versionchanged:: 4.17.1
+           All arguments other than statfunc and fitfunc are now
+           keyword-only.
+
+        Notes
+        -----
+        The statargs and statkwargs arguments are currently unused.
+
+        """
 
         if fitfunc is None:
             raise TypeError("fitfunc should not be none")
@@ -300,17 +423,42 @@ class Projection(EstMethod):
             thaw_par(i)
             return stat
 
-        return self._estfunc(pars, parmins, parmaxes, parhardmins,
-                             parhardmaxes, self.sigma, self.eps,
-                             self.tol,
-                             self.maxiters, self.remin, limit_parnums,
-                             stat_cb, fit_cb, report_progress, get_par_name,
-                             self.parallel, self.numcores)
+        return projection(pars,
+                          parmins=parmins,
+                          parmaxes=parmaxes,
+                          parhardmins=parhardmins,
+                          parhardmaxes=parhardmaxes,
+                          sigma=self.sigma,
+                          eps=self.eps,
+                          tol=self.tol,
+                          maxiters=self.maxiters,
+                          remin=self.remin,
+                          limit_parnums=limit_parnums,
+                          stat_cb=stat_cb,
+                          fit_cb=fit_cb,
+                          report_progress=report_progress,
+                          get_par_name=get_par_name,
+                          do_parallel=self.parallel,
+                          numcores=self.numcores)
 
 
-def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
-               tol, maxiters, remin, limit_parnums, stat_cb, fit_cb,
-               report_progress):
+def covariance(pars: np.ndarray,
+               parmins: np.ndarray,
+               parmaxes: np.ndarray,
+               parhardmins: np.ndarray,
+               parhardmaxes: np.ndarray,
+               sigma: float,
+               eps: float,
+               tol: float,
+               maxiters: int,
+               remin: float,
+               limit_parnums: np.ndarray,  # integers
+               stat_cb: Callable,
+               fit_cb: Callable,
+               report_progress: Callable
+               ) -> EstReturn:
+    """Estimate errors using the covariance method."""
+
     # Do nothing with tol
     # Do nothing with report_progress (generally fast enough we don't
     # need to report back per-parameter progress)
@@ -348,8 +496,6 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     # of order 1.0, and an error of order 10^-30, for example.  The
     # simpler inv function for inverting matrices does not appear to
     # have the same issue.
-
-    inv_info = None
 
     try:
         inv_info = np.linalg.inv(info)
@@ -406,9 +552,25 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
             np.array(error_flags), 0, inv_info)
 
 
-def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
-               tol, maxiters, remin, limit_parnums, stat_cb, fit_cb,
-               report_progress, get_par_name, do_parallel, numcores):
+def projection(pars: np.ndarray,
+               parmins: np.ndarray,
+               parmaxes: np.ndarray,
+               parhardmins: np.ndarray,
+               parhardmaxes: np.ndarray,
+               sigma: float,
+               eps: float,
+               tol: float,
+               maxiters: int,
+               remin: float,
+               limit_parnums: np.ndarray,  # integers
+               stat_cb: Callable,
+               fit_cb: Callable,
+               report_progress: Callable,
+               get_par_name: Callable,
+               do_parallel: bool,
+               numcores: int
+               ) -> EstReturn:
+    """Estimate errors using the projection method."""
 
     # Number of parameters to be searched on (*not* number of thawed
     # parameters, just number we are searching on)
@@ -429,7 +591,11 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 
     proj_func = _est_funcs.projection
 
-    def func(i, singleparnum, lock=None):
+    # LocalEstFunction
+    def func(counter: int,  # unused
+             singleparnum: int,
+             lock: SupportsLock | None = None
+             ) -> tuple[SupportsFloat, SupportsFloat, int, int, None]:
         try:
             singlebounds = proj_func(pars, parmins, parmaxes,
                                      parhardmins, parhardmaxes,
@@ -479,7 +645,14 @@ class ConfArgs:
     """The class ConfArgs is responsible for the arguments to the fit
     call back function."""
 
-    def __init__(self, xpars, smin, smax, hmin, hmax, target_stat):
+    def __init__(self,
+                 xpars: ArrayType,
+                 smin: ArrayType,
+                 smax: ArrayType,
+                 hmin: ArrayType,
+                 hmax: ArrayType,
+                 target_stat: SupportsFloat
+                 ) -> None:
         self.ith_par = 0
         self.xpars = np.array(xpars, copy=True)
         self.slimit = (np.array(smin, copy=True),
@@ -488,11 +661,12 @@ class ConfArgs:
                        np.array(hmax, copy=True))
         self.target_stat = target_stat
 
-    def __call__(self):
+    def __call__(self
+                 ) -> tuple[int, np.ndarray, np.ndarray, np.ndarray, SupportsFloat]:
         return (self.ith_par, self.xpars, self.slimit, self.hlimit,
                 self.target_stat)
 
-    def __str__(self):
+    def __str__(self) -> str:
         a2s = np.array2string
         msg = ''
         msg += '# smin = ' + a2s(self.slimit[0], precision=6) + '\n'
@@ -505,66 +679,82 @@ class ConfArgs:
         msg += '# while searching for the `lower/upper` confidence level, respectively.\n#'
         return msg
 
-    def get_par(self):
+    def get_par(self) -> SupportsFloat:
         """return the current (worked on) par"""
         return self.xpars[self.ith_par]
 
-    def get_hlimit(self, dir):
+    def get_hlimit(self, dir: int) -> SupportsFloat:
         """ return the current (worked on) hard limit"""
         return self.hlimit[dir][self.ith_par]
 
-    def get_slimit(self, dir):
+    def get_slimit(self, dir: int) -> SupportsFloat:
         """ return the current (worked on) soft limit"""
         return self.slimit[dir][self.ith_par]
 
 
 class ConfBlog:
 
-    def __init__(self, blogger, prefix, verbose, lock, debug=False):
+    def __init__(self, blogger, prefix, verbose, lock) -> None:
         self.blogger = blogger
         self.prefix = prefix
         self.verbose = verbose
         self.lock = lock
-        self.debug = debug
+
+
+class Limit:
+    """Represent a limit.
+
+    This should not be used directly: use `LowerLimit` or `UpperLimit`
+    instead.
+
+    """
+
+    def __init__(self, limit: SupportsFloat) -> None:
+        self.limit = limit
+
+
+class LowerLimit(Limit):
+    "A lower limit"
+
+    def __str__(self) -> str:
+        return f'LowerLimit: limit={self.limit:e}'
+
+    def is_beyond_limit(self, x) -> bool:
+        return x < self.limit
+
+
+class UpperLimit(Limit):
+    "An upper limit"
+
+    def __str__(self) -> str:
+        return f'UpperLimit: limit={self.limit:e}'
+
+    def is_beyond_limit(self, x: SupportsFloat) -> bool:
+        # The float calls are for typing checks.
+        return float(x) > float(self.limit)
 
 
 class ConfBracket:
-
     """The class ConfBracket is responsible for bracketing the root within
     the interval (a,b) where f(a)*f(b) < 0.0"""
 
     neg_pos = (-1, 1)
 
-    # Is there any benefit to making these local to ConfBracket?
-    class Limit:
-
-        def __init__(self, limit):
-            self.limit = limit
-
-    class LowerLimit(Limit):
-
-        def __str__(self):
-            return f'LowerLimit: limit={self.limit:e}'
-
-        def is_beyond_limit(self, x):
-            return x < self.limit
-
-    class UpperLimit(Limit):
-
-        def __str__(self):
-            return f'UpperLimit: limit={self.limit:e}'
-
-        def is_beyond_limit(self, x):
-            return x > self.limit
-
-    def __init__(self, myargs, trial_points):
+    def __init__(self, myargs, trial_points) -> None:
         self.myargs = myargs
         self.trial_points = trial_points
-        self.fcn = None
+        self.fcn: Callable | None = None
 
     # TODO: rename the dir and iter arguments
-    def __call__(self, dir, iter, step_size, open_interval, maxiters, tol,
-                 bloginfo):
+    def __call__(self,
+                 dir: int,
+                 iter,
+                 step_size,
+                 open_interval,
+                 maxiters,
+                 tol,
+                 bloginfo: ConfBlog
+                 ) -> ConfRootNone:
 
         #
         # Either 1) a root has been found (ConfRootZero), 2) an interval
@@ -572,21 +762,27 @@ class ConfBracket:
         # possible chance for a root (ConfRootNone), ie by trying points
         # upto/beyond the hard limit and no chance for a root has been found.
         #
-        find = trace_fcn(self.find, bloginfo)
-        return find(dir, iter, step_size, open_interval, maxiters, tol,
-                    bloginfo)
+        return self.find(dir, iter, step_size, open_interval,
+                         maxiters, tol, bloginfo)
 
     # TODO: rename the dir and iter arguments
     # TODO: the iter argument gets over-ridden below, so do we need it? (and rename it)
-    def find(self, dir, iter, step_size, open_interval, maxiters, tol,
-             bloginfo, base=2.0):
+    def find(self,
+             dir: int,
+             iter,
+             step_size,
+             open_interval,
+             maxiters, tol,
+             bloginfo: ConfBlog,
+             base=2.0
+             ) -> ConfRootNone:
 
         assert self.fcn is not None, 'callback func has not been set'
 
-        hlimit = [ConfBracket.LowerLimit(self.myargs.get_hlimit(dir)),
-                  ConfBracket.UpperLimit(self.myargs.get_hlimit(dir))]
-        slimit = [ConfBracket.LowerLimit(self.myargs.get_slimit(dir)),
-                  ConfBracket.UpperLimit(self.myargs.get_slimit(dir))]
+        hlimit = [LowerLimit(self.myargs.get_hlimit(dir)),
+                  UpperLimit(self.myargs.get_hlimit(dir))]
+        slimit = [LowerLimit(self.myargs.get_slimit(dir)),
+                  UpperLimit(self.myargs.get_slimit(dir))]
 
         xxx = self.trial_points[0]
         fff = self.trial_points[1]
@@ -672,10 +868,11 @@ class ConfBracket:
 
 
 class ConfRootNone:
-
     """The base class for the root of the confidence interval"""
 
-    def __init__(self, root=None):
+    def __init__(self,
+                 root: SupportsFloat | None = None
+                 ) -> None:
         """If self.root == None, then
         1) points up to the hard limits were tried and it was not possible
         to bracketed the solution.
@@ -683,25 +880,34 @@ class ConfRootNone:
         was found to be **less** then the initial minimum"""
         self.root = root
 
-    def __call__(self, tol, bloginfo):
+    def __call__(self,
+                 tol,
+                 bloginfo: ConfBlog
+                 ) -> SupportsFloat | None:
         return self.root
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'No possible root exist'
 
 
 class ConfRootBracket(ConfRootNone):
-
     """The class contains the bracket where the confidence root has
     been bracketed, ie where f(a)*f(b) < 0"""
 
-    def __init__(self, fcn, trial_points, open_interval):
-        ConfRootNone.__init__(self, None)
+    def __init__(self,
+                 fcn,
+                 trial_points,
+                 open_interval
+                 ) -> None:
+        super().__init__(root=None)
         self.fcn = fcn
         self.trial_points = trial_points
         self.open_interval = open_interval
 
-    def __call__(self, tol, bloginfo):
+    def __call__(self,
+                 tol,
+                 bloginfo: ConfBlog
+                 ) -> SupportsFloat | tuple[SupportsFloat, SupportsFloat] | None:
 
         def warn_user_about_open_interval(listval):
 
@@ -728,9 +934,8 @@ class ConfRootBracket(ConfRootNone):
             self.root = None
             return None
 
-        myzeroin = trace_fcn(zeroin, bloginfo)
-        answer = myzeroin(self.fcn, xxx[-2], xxx[-1], fa=fff[-2],
-                          fb=fff[-1], maxfev=32, tol=tol)
+        answer = zeroin(self.fcn, xxx[-2], xxx[-1], fa=fff[-2],
+                        fb=fff[-1], maxfev=32, tol=tol)
         if abs(answer[0][1]) > tol:
             xafa = answer[1][0]
             xa = xafa[0]
@@ -750,7 +955,7 @@ class ConfRootBracket(ConfRootNone):
         self.root = answer[0][0]
         return self.root
 
-    def __str__(self):
+    def __str__(self) -> str:
         msg = 'root is within the interval ( f(%e)=%e, f(%e)=%e )' \
             % (self.trial_points[0][-2], self.trial_points[1][-2],
                self.trial_points[0][-1], self.trial_points[1][-1], )
@@ -758,16 +963,15 @@ class ConfRootBracket(ConfRootNone):
 
 
 class ConfRootZero(ConfRootNone):
-
     """The class with the root/zero of the confidence interval"""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'root = {self.root:e}'
 
 
 class ConfStep:
 
-    def __init__(self, xtrial, ftrial):
+    def __init__(self, xtrial, ftrial) -> None:
         self.xtrial = xtrial
         self.ftrial = ftrial
 
@@ -796,7 +1000,7 @@ class ConfStep:
 
         return [x, fval]
 
-    def is_same_dir(self, dir, current_pos, proposed_pos):
+    def is_same_dir(self, dir, current_pos, proposed_pos) -> bool:
         delta = proposed_pos - current_pos
         return np.sign(delta) == ConfBracket.neg_pos[dir]
 
@@ -816,8 +1020,7 @@ class ConfStep:
             return self.covar(dir, iter, step_size, base)
 
         try:
-            Halley = trace_fcn(self.Halley, bloginfo)
-            [xroot, froot] = Halley(coeffs, xroot, tol=1.0e-3)
+            [xroot, froot] = self.Halley(coeffs, xroot, tol=1.0e-3)
         except ZeroDivisionError:
             xroot = None
 
@@ -850,40 +1053,26 @@ class ConfStep:
         return self.covar(dir, iter, step_size, base)
 
 
-def trace_fcn(fcn, bloginfo):
-
-    if not bloginfo.debug:
-        return fcn
-
-    def echo(*args, **kwargs):
-        '''compact but more details then debugger'''
-        name = fcn.__name__
-        msg = '%s%s(%s)' % (bloginfo.prefix, name, ", ".join(
-            list(map(repr, chain(args, list(kwargs.values()))))))
-        bloginfo.blogger.info(msg)
-        return fcn(*args, **kwargs)
-
-    def debugger(*args, **kwargs):
-        msg = '%s%s( ' % (bloginfo.prefix, fcn.__name__)
-        if len(args) > 1:
-            msg += str(args[0])
-        for arg in args[1:]:
-            msg = '%s, %s' % (msg, arg)
-        for key in kwargs.keys():
-            value = kwargs[key]
-            msg = '%s, %s=%s' % (msg, key, value)
-        val = fcn(*args, **kwargs)
-        msg += ' )  %s ' % val
-        bloginfo.blogger.info(msg)
-        return val
-
-    return debugger
-
-
-def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
-               tol, maxiters, remin, verbose, limit_parnums, stat_cb,
-               fit_cb, report_progress, get_par_name, do_parallel, numcores,
-               open_interval):
+def confidence(pars: np.ndarray,
+               parmins: np.ndarray,
+               parmaxes: np.ndarray,
+               parhardmins: np.ndarray,
+               parhardmaxes: np.ndarray,
+               sigma: float,
+               eps: float,
+               tol: float,
+               maxiters: int,
+               remin: float,
+               verbose: bool,      # different to covariance/projection
+               limit_parnums: np.ndarray,  # integers
+               stat_cb: Callable,
+               fit_cb: Callable,
+               report_progress: Callable,
+               get_par_name: Callable,
+               do_parallel: bool,
+               numcores: int,
+               open_interval
+               ) -> EstReturn:
 
     def get_prefix(index, name, minus_plus):
         '''To print the prefix/indent when verbose is on'''
@@ -1012,8 +1201,6 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     except:
         error_scales = np.full(len(pars), est_hardminmax)
 
-    debug = False                                 # for internal use only
-
     myargs = ConfArgs(pars, parmins, parmaxes, parhardmins, parhardmaxes,
                       target_stat)
 
@@ -1030,7 +1217,11 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     # never used. Do we need it?
     store = {}
 
-    def func(counter, singleparnum, lock=None):
+    # LocalEstFunc
+    def func(counter: int,
+             singleparnum: int,
+             lock: SupportsLock | None = None
+             ) -> tuple[SupportsFloat, SupportsFloat, int, int, None]:
 
         counter_cb = FuncCounter(fit_cb)
 
@@ -1078,8 +1269,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
             bracket.trial_points[0].append(pars[myargs.ith_par])
             bracket.trial_points[1].append(- delta_stat)
 
-            myblog = ConfBlog(sherpablog, prefix[dirn], verbose, lock,
-                              debug)
+            myblog = ConfBlog(sherpablog, prefix[dirn], verbose, lock)
 
             # have to set the callback func otherwise disaster.
             bracket.fcn = myfitcb[dirn]
@@ -1131,7 +1321,22 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 #################################confidence###################################
 
 
-def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
+class LocalEstFunc(Protocol):
+    """Process a single parameter."""
+
+    def __call__(self,
+                 counter: int,
+                 singleparnum: int,
+                 lock: SupportsLock | None = None
+                 ) -> tuple[SupportsFloat, SupportsFloat, int, int, None]:
+        ...
+
+
+def parallel_est(estfunc: LocalEstFunc,
+                 limit_parnums: np.ndarray,  # integers
+                 pars: np.ndarray,
+                 numcores: int = ncpus
+                 ) -> EstReturn:
     """Run a function on a sequence of inputs in parallel.
 
     A specialized version of sherpa.utils.parallel.parallel_map.
@@ -1152,7 +1357,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
 
     Returns
     -------
-    ans : array
+    ans : tuple
 
     """
 
@@ -1180,7 +1385,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
     limit_parnums = np.array_split(limit_parnums, numcores)
     parids = np.array_split(parids, numcores)
 
-    def worker(parids, parnums):
+    def worker(parids, parnums) -> None:
         results = []
         for parid, singleparnum in zip(parids, parnums):
             try:
@@ -1207,7 +1412,11 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
     return run_tasks(tasks, out_q, err_q, size)
 
 
-def run_tasks(tasks, out_q, err_q, size):
+def run_tasks(tasks: Sequence[SupportsProcess],
+              out_q: SupportsQueue,
+              err_q: SupportsQueue,
+              size: int
+              ) -> EstReturn:
     """Run the processes, exiting early if necessary, and return the results.
 
     A specialized version of sherpa.utils.parallel.run_tasks (note the

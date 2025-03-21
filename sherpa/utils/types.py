@@ -26,8 +26,8 @@ in Python matures.
 
 """
 
-from collections.abc import Callable, Sequence
-from typing import Any
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any, Concatenate, ParamSpec, Protocol
 
 import numpy as np
 
@@ -36,6 +36,8 @@ import numpy as np
 # minimum) and then type/TypeAliasType once Python 3.12 is the
 # minimum.
 #
+
+P = ParamSpec('P')
 
 # Represent identifiers; mainly used in the UI code.
 #
@@ -46,16 +48,21 @@ IdType = int | str
 #
 ArrayType = Sequence[float] | np.ndarray
 
+# Return the statistic and a per-bin value.
+#
+StatResults = tuple[float, np.ndarray]
+
 # Represent statistic evaluation.
 #
-# Ideally the callable routines would be labelled as accepting
-# [ArrayType] and return np.ndarray, but we do not enforce this yet
-# (and it is not entirely clear whether the stat functions may accept
-# multiple arguments).
+# There is partial support for sending extra information to the
+# statistics function. At present all that is required is that the
+# first argument is ArrayType and the rest are ignored.
+#
+StatFunc = Callable[Concatenate[ArrayType, P], StatResults]
+
+# What is the best typing rule here?
 #
 StatErrFunc = Callable[..., ArrayType]
-StatResults = tuple[float, np.ndarray]
-StatFunc = Callable[..., StatResults]
 
 # What do the optimization functions return?
 #
@@ -65,6 +72,17 @@ OptReturn = tuple[bool,            # did the optimiser succeed
                   str,             # message
                   dict[str, Any]]  # information to pass back
 
+# The optimizers are sent the statistic, data, and other
+# arguments, and return OptReturn.
+#
+OptFunc = Callable[Concatenate[StatFunc,
+                               ArrayType,  # starting position
+                               ArrayType,  # minimum values
+                               ArrayType,  # maximum values
+                               P],
+                   OptReturn]
+
+
 # Represent model evaluation. Using a Protocol may be better, but
 # for now keep with a Callable. Ideally the model would just
 # return an ndarray but
@@ -73,3 +91,17 @@ OptReturn = tuple[bool,            # did the optimiser succeed
 # - models could return a sequence rather than a ndarray
 #
 ModelFunc = Callable[..., ArrayType]
+
+
+# Fit-like function used by both the optimisation and fit modules.
+#
+class FitFunc(Protocol):
+    def __call__(self,
+                 statfunc: StatFunc,
+                 pars: ArrayType,
+                 parmins: ArrayType,
+                 parmaxes: ArrayType,
+                 statargs: Sequence[Any] = (),
+                 statkwargs: Mapping[str, Any] | None = None
+                 ) -> OptReturn:
+        ...

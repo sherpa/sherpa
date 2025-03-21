@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2018, 2021, 2023
+#  Copyright (C) 2007, 2018, 2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -64,6 +64,15 @@ minpars = numpy.array([1, 0, 0])
 hardmaxpars = numpy.array([1.0e+120, 1.0e+120, 1.0e+120])
 hardminpars = numpy.array([1.0e-120, -1.0e+120, -1.0e+120])
 
+# Avoid accidentally changing these values during the tests.
+#
+for ary in [x, y, fittedpars, limit_parnums, maxpars, minpars,
+            hardmaxpars, hardminpars]:
+    ary.setflags(write=False)
+
+del ary
+
+
 gfactor = 4.0 * 0.6931471805599453094172321214581766
 
 
@@ -107,64 +116,86 @@ def fitter(scb, pars, parmins, parmaxs):
     return (1, pars, scb(pars)[0])
 
 
-def test_covar_failures1():
+def get_working_kwargs():
+    """This is a valid set of keyword arguments for compute"""
+
+    return {
+        "pars": fittedpars,
+        "parmins": minpars,
+        "parmaxes": maxpars,
+        "parhardmins": hardminpars,
+        "parhardmaxes": hardmaxpars,
+        "limit_parnums": limit_parnums,
+        "freeze_par": freeze_par,
+        "thaw_par": thaw_par,
+        "report_progress": report_progress,
+        "get_par_name": get_par_name
+    }
+
+
+# Note: the code could be updated so that the different classes error
+# out the same way, but this is low-level code so it is not worth it
+# at this time.
+#
+@pytest.mark.parametrize("cls", [Covariance, Projection, Confidence])
+def test_cls_failures_no_stat(cls):
+    obj = cls()
+    kwargs = get_working_kwargs()
     with pytest.raises(TypeError):
-        Covariance().compute(None, fitter, fittedpars,
-                             minpars, maxpars,
-                             hardminpars, hardmaxpars,
-                             limit_parnums, freeze_par, thaw_par,
-                             report_progress)
+        obj.compute(None, fitter, **kwargs)
 
 
-def test_covar_failures2():
-    with pytest.raises(RuntimeError):
-        Covariance().compute(stat, fitter, None, minpars, maxpars,
-                             hardminpars, hardmaxpars, limit_parnums, freeze_par,
-                             thaw_par, report_progress, get_par_name)
-
-
-def test_covar_failures3():
-    with pytest.raises(RuntimeError):
-        Covariance().compute(stat, fitter, numpy.array([1, 2]),
-                             minpars, maxpars, hardminpars, hardmaxpars,
-                             limit_parnums, freeze_par, thaw_par,
-                             report_progress, get_par_name)
-
-
-def test_covar_failures4():
-    with pytest.raises(RuntimeError):
-        Covariance().compute(stat, fitter, fittedpars, numpy.array([1, 2]),
-                             maxpars, hardminpars, hardmaxpars, limit_parnums,
-                             freeze_par, thaw_par, report_progress, get_par_name)
-
-
-def test_projection_failures1():
+# Note that Covariance can set fitfunc to None
+@pytest.mark.parametrize("cls", [Projection, Confidence])
+def test_cls_failures_no_fitter(cls):
+    obj = cls()
+    kwargs = get_working_kwargs()
     with pytest.raises(TypeError):
-        Projection().compute(stat, None, fittedpars, minpars, maxpars,
-                             hardminpars, hardmaxpars, limit_parnums, freeze_par,
-                             thaw_par, report_progress, get_par_name)
+        obj.compute(stat, None, **kwargs)
 
 
-def test_projection_failures2():
-    with pytest.raises(RuntimeError):
-        Projection().compute(stat, fitter, None, minpars, maxpars,
-                             hardminpars, hardmaxpars, limit_parnums,
-                             freeze_par, thaw_par, report_progress, get_par_name)
+@pytest.mark.parametrize("cls", [Covariance, Projection, Confidence])
+def test_cls_failures_no_stat_fitter(cls):
+    obj = cls()
+    kwargs = get_working_kwargs()
+    with pytest.raises(TypeError):
+        obj.compute(None, None, **kwargs)
 
 
-def test_projection_failures3():
-    with pytest.raises(RuntimeError):
-        Projection().compute(stat, fitter, numpy.array([1, 2]),
-                             minpars, maxpars, hardminpars, hardmaxpars,
-                             limit_parnums, freeze_par, thaw_par,
-                             report_progress, get_par_name)
+@pytest.mark.parametrize("cls,etype",
+                         [(Covariance, RuntimeError),
+                          (Projection, RuntimeError),
+                          (Confidence, TypeError)])
+def test_cls_failures_no_pars(cls, etype):
+    obj = cls()
+    kwargs = get_working_kwargs()
+    kwargs["pars"] = None
+    with pytest.raises(etype):
+        obj.compute(stat, fitter, **kwargs)
 
 
-def test_projection_failures4():
-    with pytest.raises(RuntimeError):
-        Projection().compute(stat, fitter, fittedpars, numpy.array([1, 2]),
-                             maxpars, hardminpars, hardmaxpars, limit_parnums,
-                             freeze_par, thaw_par, report_progress, get_par_name)
+@pytest.mark.parametrize("cls,etype",
+                         [(Covariance, RuntimeError),
+                          (Projection, RuntimeError),
+                          (Confidence, IndexError)])
+def test_cls_failures_pars_wrong_size(cls, etype):
+    obj = cls()
+    kwargs = get_working_kwargs()
+    kwargs["pars"] = numpy.array([1, 2])
+    with pytest.raises(etype):
+        obj.compute(stat, fitter, **kwargs)
+
+
+@pytest.mark.parametrize("cls,etype",
+                         [(Covariance, RuntimeError),
+                          (Projection, RuntimeError),
+                          (Confidence, IndexError)])
+def test_cls_failures_parmins_wrong_size(cls, etype):
+    obj = cls()
+    kwargs = get_working_kwargs()
+    kwargs["parmins"] = numpy.array([1, 2])
+    with pytest.raises(etype):
+        obj.compute(stat, fitter, **kwargs)
 
 
 # Unlike projection, covariance does not have a "parallel" option.
@@ -175,15 +206,9 @@ def test_covar():
                             [numpy.nan,  numpy.nan,  2.58857314]])
 
     cov = Covariance()
-    results = cov.compute(stat, None, fittedpars,
-                          minpars, maxpars,
-                          hardminpars, hardmaxpars,
-                          limit_parnums, freeze_par, thaw_par,
-                          report_progress, get_par_name)
+    kwargs = get_working_kwargs()
+    results = cov.compute(stat, None, **kwargs)
 
-    # These tests used to have a tolerance of 1e-4 but it appears to
-    # be able to use a more-restrictive tolerance.
-    #
     expected = standard.diagonal()
     assert results[1] == pytest.approx(expected)
 
@@ -199,16 +224,9 @@ def test_projection(parallel):
     proj.parallel = parallel
     assert proj.parallel == parallel
 
-    results = proj.compute(stat, fitter, fittedpars,
-                           minpars, maxpars,
-                           hardminpars, hardmaxpars,
-                           limit_parnums, freeze_par, thaw_par,
-                           report_progress, get_par_name)
+    kwargs = get_working_kwargs()
+    results = proj.compute(stat, fitter, **kwargs)
 
-    # These tests used to have a tolerance of 1e-4 but it appears to
-    # be able to use a more-restrictive tolerance (given that the
-    # "fitter" doesn't do a fit here).
-    #
     assert results[0] == pytest.approx(standard_elo)
     assert results[1] == pytest.approx(standard_ehi)
 
