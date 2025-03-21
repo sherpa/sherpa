@@ -337,11 +337,11 @@ class NelderMead4(NelderMead0):
         iquad = 1
         simp = 1.0e-2 * tol
         step = n * [0.4]
-        self.par, self.fmin, tmpnfev, ifault = \
+        par, fmin, tmpnfev, ifault = \
             _saoopt.minim(reflect, verbose, maxnfev - nfev, init, iquad, simp,
                           tol*10, step, xmin, xmax, x0, fcn)
-        self.nfev = nfev + tmpnfev
-        return self.nfev, self.fmin, self.par
+        nfev += tmpnfev
+        return nfev, fmin, par
 
 
 class NelderMead5(NelderMead0):
@@ -409,8 +409,7 @@ class NelderMead6(NelderMeadBase):
                  verbose: int = 0
                  ) -> MyOptOutput:
         my_nm_6 = NelderMead6.MyNelderMead6(fcn, xmin, xmax)
-        if maxnfev is None:
-            maxnfev = 512 * len(xpar)
+        maxnfev = self.get_maxnfev(maxnfev, len(xpar))
         return my_nm_6(xpar, maxnfev, tol, step, finalsimplex, verbose)
 
 
@@ -449,8 +448,7 @@ class NelderMead7(NelderMeadBase):
                  verbose: int = 0
                  ) -> MyOptOutput:
         my_nm_7 = NelderMead7.MyNelderMead7(fcn, xmin, xmax)
-        if maxnfev is None:
-            maxnfev = 512 * len(xpar)
+        maxnfev = self.get_maxnfev(maxnfev, len(xpar))
         return my_nm_7(xpar, maxnfev, tol, step, finalsimplex, verbose)
 
 
@@ -573,4 +571,6 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
             return self.calc(fcn, par, xmin, xmax, tol, maxnfev,
                              numcores, fval=fmin, nfev=nfev)
 
+        # TODO: shouldn't this return fmin rather than fval?
+        # However we have no tests of this code to verify such a change.
         return nfev, fval, par
