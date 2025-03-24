@@ -196,9 +196,9 @@ the ``fftw`` options in the ``sherpa_config`` section of the
 ``setup.cfg`` file. The options to change are::
 
     fftw=local
-    fftw-include_dirs=/usr/local/include
-    fftw-lib-dirs=/use/local/lib
-    fftw-libraries=fftw3
+    fftw_include_dirs=/usr/local/include
+    fftw_lib_dirs=/use/local/lib
+    fftw_libraries=fftw3
 
 The ``fftw`` option must be set to ``local`` and then the remaining
 options changed to match the location of the local installation.
@@ -213,7 +213,7 @@ Sherpa can be built to use the Astronomy models provided by
 made to the ``xspec_config`` section of the ``setup.cfg`` file. The
 available options (with default values) are::
 
-    with-xspec = False
+    with_xspec = False
     xspec_version = 12.12.0
     xspec_lib_dirs = None
     xspec_include_dirs = None
@@ -228,7 +228,7 @@ available options (with default values) are::
     gfortran_libraries =
 
 To build the :py:mod:`sherpa.astro.xspec` module, the
-``with-xspec`` option must be set to ``True`` **and** the
+``with_xspec`` option must be set to ``True`` **and** the
 ``xspec_version`` option set to the correct version string (the XSPEC
 patch level must not be included), and then the
 remaining options depend on the version of XSPEC and whether
@@ -241,7 +241,7 @@ match the contents of the XSPEC installation.
 
 1. If the full XSPEC 12.14.1 system has been built then use::
 
-       with-xspec = True
+       with_xspec = True
        xspec_version = 12.14.1
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include
@@ -254,7 +254,7 @@ match the contents of the XSPEC installation.
 
 2. If the full XSPEC 12.14.0 system has been built then use::
 
-       with-xspec = True
+       with_xspec = True
        xspec_version = 12.14.0
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include
@@ -267,7 +267,7 @@ match the contents of the XSPEC installation.
 
 3. If the full XSPEC 12.13.1 system has been built then use::
 
-       with-xspec = True
+       with_xspec = True
        xspec_version = 12.13.1
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include
@@ -280,7 +280,7 @@ match the contents of the XSPEC installation.
 
 4. If the full XSPEC 12.13.0 system has been built then use::
 
-       with-xspec = True
+       with_xspec = True
        xspec_version = 12.13.0
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include
@@ -290,7 +290,7 @@ match the contents of the XSPEC installation.
 
 5. If the full XSPEC 12.12.1 system has been built then use::
 
-       with-xspec = True
+       with_xspec = True
        xspec_version = 12.12.1
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include
@@ -300,7 +300,7 @@ match the contents of the XSPEC installation.
 
 6. If the full XSPEC 12.12.0 system has been built then use::
 
-       with-xspec = True
+       with_xspec = True
        xspec_version = 12.12.0
        xspec_lib_dirs = $HEADAS/lib
        xspec_include_dirs = $HEADAS/include

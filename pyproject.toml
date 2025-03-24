@@ -14,6 +14,7 @@ description = "Modeling and fitting package for scientific data analysis"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}
 
+
 authors = [
   { name = "Smithsonian Astrophysical Observatory / Chandra X-Ray Center", email = "cxchelp@cfa.harvard.edu" }
 ]

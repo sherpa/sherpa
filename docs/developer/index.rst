@@ -226,26 +226,26 @@ should be updated to match the output above::
 
     configure=None
 
-    disable-group=True
-    disable-stk=True
+    disable_group=True
+    disable_stk=True
 
     fftw=local
-    fftw-include_dirs=${ASCDS_INSTALL}/include
-    fftw-lib-dirs=${ASCDS_INSTALL}/lib
-    fftw-libraries=fftw3
+    fftw_include_dirs=${ASCDS_INSTALL}/include
+    fftw_lib_dirs=${ASCDS_INSTALL}/lib
+    fftw_libraries=fftw3
 
     region=local
     region-include_dirs=${ASCDS_INSTALL}/include
-    region-lib-dirs=${ASCDS_INSTALL}/lib
-    region-libraries=region ascdm
-    region-use-cxc-parser=True
+    region_lib_dirs=${ASCDS_INSTALL}/lib
+    region_libraries=region ascdm
+    region_use_cxc_parser=True
 
     wcs=local
-    wcs-include-dirs=${ASCDS_INSTALL}/include
-    wcs-lib-dirs=${ASCDS_INSTALL}/lib
-    wcs-libraries=wcs
+    wcs_include_dirs=${ASCDS_INSTALL}/include
+    wcs_lib_dirs=${ASCDS_INSTALL}/lib
+    wcs_libraries=wcs
 
-    with-xspec=True
+    with_xspec=True
     xspec_version = 12.12.0
     xspec_lib_dirs = ${ASCDS_INSTALL}/lib
     xspec_include_dirs = ${ASCDS_INSTALL}/include
