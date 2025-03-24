@@ -24,6 +24,7 @@
 from io import StringIO
 import logging
 import os
+import platform
 import re
 import sys
 
@@ -44,6 +45,8 @@ from sherpa.ui.utils import Session
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, IOErr, ModelErr, PlotErr, SessionErr
 from sherpa.utils.logging import SherpaVerbosity
+from sherpa.utils.parallel import multi
+from sherpa.utils.random import poisson_noise
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
@@ -4317,3 +4320,255 @@ def test_dataspace1d_datapha_invalid_args(start, stop, step, numbins):
     with pytest.raises(DataErr):
         s.dataspace1d(start, stop, step=step, numbins=numbins,
                       dstype=DataPHA)
+
+
+# Ideally there would be a test of the low-level code, but it's
+# important to check all the pieces tie together in the UI layer.
+#
+def setup_multicore_data(s: Session) -> tuple[ArithmeticModel, ArithmeticModel]:
+    """Create data and model for fitting.
+
+    The idea is to have a complex-enough dataset for fitting.  It
+    should really be fit with a Poisson statistic, but the meaning of
+    the data is secondary here to the mechanics of the process.
+
+    """
+
+    # Use a known random generator that is unlikely to change.
+    #
+    rng = np.random.RandomState(28567883)
+    x = np.linspace(10, 20, 101)
+
+    cpt1 = s.create_model_component("pseudovoigt1d", "cpt1")
+    cpt2 = s.create_model_component("pseudovoigt1d", "cpt2")
+
+    cpt1.pos = 14
+    cpt2.pos = 16
+    cpt1.fwhm = 2
+    cpt2.fwhm = 1
+    cpt2.ampl = 0.5
+
+    y = 40 * (cpt1(x) + cpt2(x))
+    ynoise = poisson_noise(y, rng=rng)
+
+    s.load_arrays(1, x, ynoise)
+
+    # Set up the model
+    g1 = s.create_model_component("gauss1d", "g1")
+    g2 = s.create_model_component("gauss1d", "g2")
+    s.set_model(g1 + g2)
+
+    g1.pos = 13
+    g2.pos = 17
+    g1.fwhm = 1
+    g2.fwhm = 1
+
+    # Scale the normalization to match the data. Note that sherpa.ui does
+    # not have calc_data_sum / calc_model_sum.
+    #
+    dsum = ynoise.sum()
+    msum = (g1 + g2)(x).sum()
+    g1.ampl.val = dsum / msum
+    g2.ampl.val = dsum / msum
+
+    return g1, g2
+
+
+# Note: gridsearch is too slow to test this way
+#
+@pytest.mark.skipif(not multi, reason="multi-core support not enabled")
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("ncores", [1, 2, 3])
+def test_method_numcores_levmar(session, ncores):
+    """Check we can use numcores>1 with levmar"""
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s._add_model_types(sherpa.astro.models)
+
+    s.set_method("levmar")
+    assert s.get_method_opt("numcores") == 1
+    g1, g2 = setup_multicore_data(s)
+
+    s.set_method_opt("numcores", ncores)
+
+    s.fit()
+    fr = s.get_fit_results()
+    assert fr.succeeded
+    assert fr.nfev == 86
+
+    # This is a regression test so the values may need to be updated
+    # if there are code changes.
+    #
+    assert s.calc_stat() == pytest.approx(36.361386219144144)
+    assert g1.fwhm.val == pytest.approx(1.9300181)
+    assert g1.pos.val == pytest.approx(13.9416281)
+    assert g1.ampl.val == pytest.approx(15.640982)
+    assert g2.fwhm.val == pytest.approx(0.93861216)
+    assert g2.pos.val == pytest.approx(15.996664)
+    assert g2.ampl.val == pytest.approx(17.5676458)
+
+
+@pytest.mark.skipif(not multi, reason="multi-core support not enabled")
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("ncores", [1, 3])  # save some time not using ncores=2
+def test_errors_numcores_levmar_proj(session, ncores):
+    """Check we can use numcores>1 with proj"""
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s._add_model_types(sherpa.astro.models)
+
+    s.set_method("levmar")
+    g1, g2 = setup_multicore_data(s)
+
+    s.set_method_opt("numcores", ncores)
+    s.set_proj_opt("numcores", ncores)
+
+    s.fit()
+    s.proj()
+    er = s.get_proj_results()
+
+    expected_min = [-0.21564270748219488, -0.08639213346164719,
+                    -1.617272949347591, -0.12547690776049508, -0.056782009516933685,
+                    -2.3698218720245747]
+    expected_max = [0.25876915334935, 0.09161118250645264,
+                    1.674625672058838, 0.14154111359757932, 0.057580058182037645,
+                    2.465752208364928]
+
+    assert er.nfits == 91
+    assert er.parnames == ("g1.fwhm", "g1.pos", "g1.ampl",
+                           "g2.fwhm", "g2.pos", "g2.ampl")
+    assert er.parmins == pytest.approx(expected_min)
+    assert er.parmaxes == pytest.approx(expected_max)
+
+
+@pytest.mark.skipif(not multi, reason="multi-core support not enabled")
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("ncores", [1, 3])  # save some time not using ncores=2
+def test_errors_numcores_levmar_conf(session, ncores):
+    """Check we can use numcores>1 with conf"""
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s._add_model_types(sherpa.astro.models)
+
+    s.set_method("levmar")
+    g1, g2 = setup_multicore_data(s)
+
+    s.set_method_opt("numcores", ncores)
+    s.set_conf_opt("numcores", ncores)
+
+    s.fit()
+    s.conf()
+    er = s.get_conf_results()
+
+    expected_min = [-0.21477888015062274, -0.08681341855843705,
+                    -1.6174209957119814, -0.1253305806729782, -0.056762396167645335,
+                    -2.371195730565118]
+    expected_max = [0.25896816939546996, 0.09163144070870466,
+                    1.6707992758440593, 0.1409228050875413, 0.05738787459702266,
+                    2.4592801192590272]
+
+    assert er.nfits == 53
+    assert er.parnames == ("g1.fwhm", "g1.pos", "g1.ampl",
+                           "g2.fwhm", "g2.pos", "g2.ampl")
+    assert er.parmins == pytest.approx(expected_min)
+    assert er.parmaxes == pytest.approx(expected_max)
+
+
+def check_moncar_left(g) -> None:
+    """Check the gauss1d object represents the source at x=14"""
+
+    assert g.fwhm.val == pytest.approx(1.929922245)
+    assert g.pos.val == pytest.approx(13.94163747)
+    assert g.ampl.val == pytest.approx(15.6415652)
+
+
+def check_moncar_right(g) -> None:
+    """Check the gauss1d object represents the source at x=16"""
+
+    assert g.fwhm.val == pytest.approx(0.93857467)
+    assert g.pos.val == pytest.approx(15.9966625)
+    assert g.ampl.val == pytest.approx(17.5683955)
+
+
+def check_moncar(ncores, fr, g1, g2) -> None:
+    """Check moncar results for a given ncores"""
+
+    match ncores:
+
+        case 1:
+            # The result seems to depend on architecture, so include a
+            # test for this (so we know if/when this assumption
+            # changes).
+            #
+            if platform.machine() == "x86_64":
+                nexp = 13788
+                gleft = g2
+                gright = g1
+
+            else:
+                # This is known to work with Linux/aarch64 and
+                # Darwin/arm64.
+                nexp = 13785
+                gleft = g1
+                gright = g2
+
+        case 2:
+            # These do not seem to depend on architecture.
+            nexp = 7243
+            gleft = g1
+            gright = g2
+
+        case 3:
+            # These do not seem to depend on architecture.
+            nexp = 6535
+            gleft = g1
+            gright = g2
+
+        case _:
+            assert False
+
+    # Check the parameter values before the number of steps since, in
+    # most cases, we care more about the final fit than the number of
+    # evaluations being the same.
+    #
+    check_moncar_left(gleft)
+    check_moncar_right(gright)
+    assert fr.nfev == nexp, (fr.nfev, nexp, ncores, platform.uname())
+
+
+@pytest.mark.skipif(not multi, reason="multi-core support not enabled")
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("ncores", [1, 2, 3])
+def test_method_numcores_moncar(session, ncores):
+    """Check we can use numcores>1 with moncar"""
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+    s._add_model_types(sherpa.astro.models)
+
+    s.set_method("moncar")
+    assert s.get_method_opt("numcores") == 1
+    assert s.get_method_opt("rng") is None
+    g1, g2 = setup_multicore_data(s)
+
+    s.set_method_opt("numcores", ncores)
+
+    # The random state is taken from the rng parameter of the
+    # optimizer, which does not fit in well with the current design
+    # (Sherpa 4.16).
+    #
+    # rng = np.random.RandomState(8273)
+    # s.set_rng(rng)
+    assert s.get_rng() is None  # Note if this changes
+
+    rng = np.random.RandomState(8273)
+    s.set_method_opt("rng", rng)
+
+    s.fit()
+    fr = s.get_fit_results()
+    assert fr.succeeded
+    assert fr.statval == pytest.approx(36.36138580050819)
+    check_moncar(ncores, fr, g1, g2)
