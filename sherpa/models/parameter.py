@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2017, 2020 - 2024
+#  Copyright (C) 2007, 2017, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -721,11 +721,21 @@ Examples
     __add__, __radd__ = _make_binop(np.add, '+')
     __sub__, __rsub__ = _make_binop(np.subtract, '-')
     __mul__, __rmul__ = _make_binop(np.multiply, '*')
-    __div__, __rdiv__ = _make_binop(np.divide, '/')
     __floordiv__, __rfloordiv__ = _make_binop(np.floor_divide, '//')
     __truediv__, __rtruediv__ = _make_binop(np.true_divide, '/')
     __mod__, __rmod__ = _make_binop(np.remainder, '%')
     __pow__, __rpow__ = _make_binop(np.power, '**')
+
+    numpy_binop_with_symbols = {
+        np.add: '+',
+        np.subtract: '-',
+        np.multiply: '*',
+        np.divide: '/',
+        np.floor_divide: '//',
+        np.true_divide: '/',
+        np.remainder: '%',
+        np.power: '**',
+    }
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if not method == '__call__':
@@ -743,8 +753,34 @@ Examples
         if ufunc.nin == 1:
             return UnaryOpParameter(inputs[0], ufunc, name)
         if ufunc.nin == 2:
-            return BinaryOpParameter(inputs[0], inputs[1], ufunc, name,
-                                     strformat='{opstr}({lhs}, {rhs})')
+            if ufunc in self.numpy_binop_with_symbols:
+                # We want to replace certain numpy functions with symbols
+                # to make the expression more readable.
+                # For example, `np.multiply(a, b)` should be displayed as
+                # `a * b`.
+                # In many cases, `a * b` will trigger the __mul__ method
+                # of the ArithmeticModel, which will return a BinaryOpModel
+                # with the symbol `*`.
+                # This works where both `a` and `b` are ArithmeticModels or when
+                # e.g. `a` is a Python float and `b` is an ArithmeticModel.
+                # However, that is not the case if `a` some other objects that
+                # does have an `__array_ufunc__` method itself, but raises an
+                # NotImplemented error when called with an ArtihmeticModel.
+                # In that case, the `__array_ufunc__` method of the other object
+                # will be called, and, when it fails, it will fall back to call
+                # the `__array_ufunc__` method of the ArithmeticModel.
+                # This leads to be surprinsing behavior that
+                # `float(0.5) * model` will be displayed as `0.5 * model`
+                # while `np.float64(0.5) * model` will be displayed as
+                # `numpy.multiply(0.5, model)`.
+                # To avoid this, we explicity set the display for ufuncs like
+                # `np.multiply` to use the symbol `*`.
+                name = self.numpy_binop_with_symbols[ufunc]
+                return BinaryOpParameter(inputs[0], inputs[1], ufunc, name,
+                                     strformat='{lhs} {opstr} {rhs}')
+            else:
+                return BinaryOpParameter(inputs[0], inputs[1], ufunc, name,
+                                         strformat='{opstr}({lhs}, {rhs})')
         return NotImplemented
 
     def freeze(self) -> None:
