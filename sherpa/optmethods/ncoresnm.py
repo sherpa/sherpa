@@ -23,6 +23,7 @@ from collections.abc import Sequence
 import numpy as np
 
 from sherpa.utils.parallel import SupportsQueue, ncpus
+from sherpa.utils.random import RandomType
 
 from . import _saoopt  # type: ignore
 from .opt import MyNcores, Opt, OptimizerFunc, WorkerFunc, MyOptOutput, \
@@ -46,11 +47,18 @@ EPSILON = float(np.finfo(np.float32).eps)
 
 
 class MyNelderMead(Opt):
+    """
+
+    .. versionchanged::
+       Added the rng argument.
+
+    """
 
     def __init__(self,
                  fcn: OptimizerFunc,
                  xmin: np.ndarray,
-                 xmax: np.ndarray
+                 xmax: np.ndarray,
+                 rng: RandomType | None = None
                  ) -> None:
         super().__init__(fcn, xmin, xmax)
 
@@ -59,6 +67,7 @@ class MyNelderMead(Opt):
         self.reflection_coef = 1.0          # rho
         self.shrink_coef = 0.5          # sigma
         self.simplex = None
+        self.rng = rng
 
     def __call__(self,
                  xpar: np.ndarray,
@@ -75,7 +84,7 @@ class MyNelderMead(Opt):
         simplex = SimplexStep(func=self.func, npop=npar + 1,
                               xpar=xpar, xmin=self.xmin,
                               xmax=self.xmax, step=step, seed=None,
-                              factor=None)
+                              factor=None, rng=self.rng)
         return self.optimize(xpar, simplex, maxnfev, tol,
                              finalsimplex, verbose)
 
@@ -201,7 +210,8 @@ class NelderMeadBase:
                  maxnfev: int | None = None,
                  step=None,
                  finalsimplex: int | None = 1,
-                 verbose: int = 0
+                 verbose: int = 0,
+                 rng: RandomType | None = None
                  ) -> MyOptOutput:
         # This code is currently unused, but points out what the
         # behavior should be for the subclasses.
@@ -226,12 +236,13 @@ class NelderMead0(NelderMeadBase):
                  maxnfev: int | None = None,  # TODO: can we drop the None?
                  step=None,
                  finalsimplex: int | None = 1,
-                 verbose: int = 0
+                 verbose: int = 0,
+                 rng: RandomType | None = None
                  ) -> MyOptOutput:
         return self.neldermead0(fcn, xpar, xmin, xmax, step=step,
                                 finalsimplex=finalsimplex,
                                 maxnfev=maxnfev, tol=tol,
-                                verbose=verbose)
+                                verbose=verbose, rng=rng)
 
     def calc_step(self, x):
         return 1.2 * x
@@ -246,7 +257,8 @@ class NelderMead0(NelderMeadBase):
                     finalsimplex: int | None = 1,
                     maxnfev: int | None = None,
                     tol: float = 1.0e-6,
-                    verbose: int = 0
+                    verbose: int = 0,
+                    rng: RandomType | None = None
                     ) -> MyOptOutput:
         """
 
@@ -257,7 +269,7 @@ class NelderMead0(NelderMeadBase):
         x0 = np.asarray(xpar)
         maxnfev = self.get_maxnfev(maxnfev, len(x0))
 
-        my_nm = MyNelderMead(fcn, xmin, xmax)
+        my_nm = MyNelderMead(fcn, xmin, xmax, rng=rng)
         if step is None:
             step = self.calc_step(x0)
 
@@ -288,7 +300,8 @@ class NelderMead3(NelderMead0):
                  maxnfev: int | None = None,
                  step=None,
                  finalsimplex: int | None = None,
-                 verbose: int = 0
+                 verbose: int = 0,
+                 rng: RandomType | None = None
                  ) -> MyOptOutput:
 
         # Avoid having a mutable argument
@@ -320,6 +333,7 @@ class NelderMead4(NelderMead0):
                  step=None,
                  finalsimplex: int | None = None,
                  verbose: int = 0,
+                 rng: RandomType | None = None,
                  reflect: bool = True
                  ) -> MyOptOutput:
 
@@ -358,6 +372,7 @@ class NelderMead5(NelderMead0):
                  step=None,
                  finalsimplex: int | None = 1,
                  verbose: int = 0,
+                 rng: RandomType | None = None,
                  reflect: bool = True
                  ) -> MyOptOutput:
         init = 0
@@ -436,10 +451,12 @@ class nmNcores(MyNcores):
                   xmin: np.ndarray,
                   xmax: np.ndarray,
                   tol: float,
-                  maxnfev: int | None
+                  maxnfev: int | None,
+                  rng: RandomType | None = None
                   ) -> None:
+
         try:
-            vals = opt(fcn, x, xmin, xmax, tol, maxnfev)
+            vals = opt(fcn, x, xmin, xmax, tol, maxnfev, rng=rng)
         except Exception as e:
             err_q.put(e)
             return
@@ -451,11 +468,21 @@ class nmNcores(MyNcores):
         out_q.put((idval, [vals]))
 
 
+# The rng argument could be sent in when initializing the class or
+# when calling it. To avoid signigicant changes to the optimization
+# code, and the test suite, it is easiest if it is sent in as part of
+# the call, rather than initialization code.
+#
+# I think send the rng to init so that can say "must be parallel safe"
+# but need to check - the .algo field is used by MyDifEvo/ncoresMyDifEvo
+# to run stuff in parallel but does not send in a RNG
+
 class ncoresNelderMead:
     """
 
     .. versionchanged:: 4.17.1
-       The default for the algo parameter is now None.
+       The default for the algo parameter is now None and the
+       rng attribute has been added to the call.
 
     """
 
@@ -477,12 +504,13 @@ class ncoresNelderMead:
                  xmax: np.ndarray,
                  tol: float = EPSILON,
                  maxnfev: int | None = None,
-                 numcores=ncpus
+                 numcores=ncpus,
+                 rng: RandomType | None = None
                  ) -> MyOptOutput:
 
         nm_ncores = nmNcores()
         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin,
-                                 xmax, tol, maxnfev)
+                                 xmax, tol, maxnfev, rng=rng)
         return self.unpack_results(results)
 
     def unpack_results(self,
@@ -531,10 +559,12 @@ class ncoresNelderMead:
 #                  xmax: np.ndarray,
 #                  tol: float = EPSILON,
 #                  maxnfev: int | None = None,
-#                  numcores=ncpus
+#                  numcores=ncpus,
+#                  rng: RandomType | None = None
 #                  ) -> MyOptOutput:
 #
-#         return self.calc(fcn, x, xmin, xmax, tol, maxnfev, numcores)
+#         return self.calc(fcn, x, xmin, xmax, tol=tol, maxnfev=maxnfev,
+#                          numcores=numcores, rng=rng)
 #
 #     def calc(self,
 #              fcn: OptimizerFunc,
@@ -545,17 +575,18 @@ class ncoresNelderMead:
 #              maxnfev: int | None = None,
 #              numcores=ncpus,
 #              fval: float = np.inf,
-#              nfev: int = 0
+#              nfev: int = 0,
+#              rng: RandomType | None = None
 #              ) -> MyOptOutput:
 #
 #         nm_ncores = nmNcores()
 #         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin,
-#                                  xmax, tol, maxnfev)
+#                                  xmax, tol, maxnfev, rng=rng)
 #         tmp_nfev, fmin, par = self.unpack_results(results)
 #         nfev += tmp_nfev
 #         if fmin < fval:
 #             return self.calc(fcn, par, xmin, xmax, tol, maxnfev,
-#                              numcores, fval=fmin, nfev=nfev)
+#                              numcores, fval=fmin, nfev=nfev, rng=rng)
 #
 #         # TODO: shouldn't this return fmin rather than fval?
 #         return nfev, fval, par
