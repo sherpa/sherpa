@@ -276,13 +276,15 @@ def test_resample_rmd(make_data_path):
 
 @requires_data
 @requires_fits
-def test_warning(make_data_path):
+def test_warning(make_data_path, clean_astro_ui):
 
     infile = make_data_path('gro.txt')
     ui.load_ascii_with_errors(1, infile)
     powlaw1d = PowLaw1D('p1')
     ui.set_model(powlaw1d)
     ui.fit()
+    assert ui.get_rng() is None  # review the test if this fails
+    ui.set_rng(np.random.RandomState(56243))
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         ui.resample_data(1, 3)
