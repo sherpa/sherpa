@@ -345,7 +345,7 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.14.1, 12.14.0, 12.13.1, 12.13.0, 12.12.1,
+:term:`XSPEC` versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, 12.13.0, 12.12.1,
 and 12.12.0.
 It may build against newer versions, but if it does it will not provide
 access to any new models in the release. The following sections of the
@@ -406,7 +406,9 @@ version then you can use four helper scripts:
    Python (``sherpa/astro/xspec/__init__.py``). The Python code
    lacks documentation and some values either need adding (e.g.
    the Sherpa version) or lnks checked and possibly updated (due
-   to the way that XSPEC models are documented).
+   to the way that XSPEC models are documented). The compiled code
+   can likely be ignored since `update_xspec_functions.py` should
+   be all that is needed, but it is displayed as a safety check.
 
 #. ``scripts/update_xspec_docs.py``
 

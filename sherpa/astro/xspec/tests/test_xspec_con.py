@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2023, 2024
+#  Copyright (C) 2020, 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -57,6 +57,7 @@ XSPEC_CON_MODELS = [('cflux', 1, 2),
                     ('rdblur', 1, 3),
                     ('reflect', 1, 4),
                     ('rfxconv', 2, 3),
+                    ('rgsext', 0, 2),
                     ('rgsxsrc', 0, 1),
                     ('simpl', 2, 1),
                     ('thcomp', 3, 1),
