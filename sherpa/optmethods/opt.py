@@ -35,7 +35,9 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
 
 FUNC_MAX = float(np.finfo(np.float64).max)
 
-OptimizerFunc = Callable[[ArrayType], float]
+# sherpa.stats.StatCallback converts a StatFunc into an OptimizerFunc.
+#
+OptimizerFunc = Callable[[np.ndarray], float]
 
 MyOptOutput = tuple[int, float, np.ndarray]
 WorkerFunc = Callable[[OptimizerFunc,
