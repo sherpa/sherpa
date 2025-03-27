@@ -220,8 +220,6 @@ that the `${ASCDS_INSTALL}` environment variable **must** be
 replaced by its actual value, and the ``xspec_version`` line
 should be updated to match the output above::
 
-    bdist_wheel = sherpa_config xspec_config bdist_wheel
-
     install_dir=${ASCDS_INSTALL}
 
     configure=None
@@ -394,18 +392,21 @@ version then you can use three helper scripts:
    It is strongly suggested that the ordering from this routine
    is used, as it makes it easier to validate changes over time.
 
-   One issue is that this script can not identify which lines need be
-   enclosed in a ``#if def XSPEC_x_y_z`` block, so care needs to be
-   taken when updating the ``_xspec.cc`` file with this output.
+   The script uses the existing ``_xspec.cc`` file to identify
+   the list of symbols that depend on the XSPEC version. There
+   is an attempt to merge any new symbols in with existing ones,
+   but there may be times when an extra ``#ifdef`` line is added
+   which could have been avoided (it is not worth the complexity
+   in the script to avoid this).
 
 #. ``scripts/add_xspec_model.py``
 
    This will report the basic code needed to be added to both
    the compiled code (``sherpa/astro/xspec/src/_xspec.cc``) and
-   Python (``sherpa/astro/xspec/__init__.py``). Note that it
-   does not deal with conditional compilation, the need to
-   add a decorator to the Python class, or missing documentation
-   for the class.
+   Python (``sherpa/astro/xspec/__init__.py``). The Python code
+   lacks documentation and some values either need adding (e.g.
+   the Sherpa version) or lnks checked and possibly updated (due
+   to the way that XSPEC models are documented).
 
 These routines are designed to simplify the process but are not
 guaranteed to handle all cases (as the model.dat file syntax is not
@@ -434,7 +435,9 @@ Sherpa and XSPEC versions)::
 The list of function definitions, needed in ``_xspec.cc``, can be
 generated::
 
-  % ./scripts/update_xspec_functions.py ~/local/heasoft-6.31/spectral/manager/model.dat
+  % ./scripts/update_xspec_functions.py 12.13.0 ~/local/heasoft-6.31/spectral/manager/model.dat
+    // Start model definitions
+
     XSPECMODELFCT_C_NORM(C_agauss, 3),               // XSagauss
     XSPECMODELFCT_NORM(agnsed, 16),                  // XSagnsed
     XSPECMODELFCT_NORM(agnslim, 15),                 // XSagnslim
@@ -445,14 +448,16 @@ generated::
 
     XSPECMODELFCT_C_NORM(beckerwolff, 13),           // XSbwcycl
 
-Please note that this output needs to be reviewed as it can not
-identify which lines are conditional on the XSPEC version.
+    // Emd model definitions
+
+Please note that this output needs to be reviewed as it relies on the
+existing ``_xspec.cc`` file to determine the version-specific models.
 
 Although the ``wdem`` model is included in the XSPEC models, here is
 how the ``add_xspec_model.py`` script can be used for those models
 noted as not being supported::
 
-  % ./scripts/add_xspec_model.py ~/local/heasoft-6.31/spectral/manager/model.dat wdem
+  % ./scripts/add_xspec_model.py 12.13.0 ~/local/heasoft-6.31/spectral/manager/model.dat wdem
   # C++ code for sherpa/astro/xspec/src/_xspec.cc
 
   // Includes
@@ -509,8 +514,14 @@ noted as not being supported::
   # Python code for sherpa/astro/xspec/__init__.py
 
 
+  @version_at_least("12.13.0")
   class XSwdem(XSAdditiveModel):
-      """XSPEC AdditiveModel: wdem
+      """The XSPEC wdem model:  TBD
+
+      The model is described at [1]_.
+
+      .. versionadded: ???
+         This model requires XSPEC 12.13.0 or later.
 
       Parameters
       ----------
@@ -523,8 +534,14 @@ noted as not being supported::
       switch
       norm
 
+      References
+      ----------
+
+      .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
+
       """
-      _calc = _models.C_wDem
+
+      __function__ = "C_wDem"
 
       def __init__(self, name='wdem'):
           self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
@@ -546,7 +563,7 @@ This code then can then be added to
 pass.
 
 .. note::
-   The output from ``add_xspec_model.py`` is designed for XSPEC user
+   The output from ``add_xspec_model.py`` is primarily designed for XSPEC user
    models, and so contains output that either is not needed or is
    already included in the ``_xspec.cc`` file.
 
@@ -756,10 +773,9 @@ available.
 	...
 	// End model definitions
 
-      markers. However, the script **can not** determine the state of
-      each symbol (e.g. whether it needs to be protected by a version
-      check, as discussed earlier), or to add further notes, so care
-      needs to be taken to update this information.
+      markers. The existing ``_xspec.cc`` file is used to identify
+      version contraints on each symbol, but the output should be
+      reviewed.
 
       Those models that do not use the ``_C`` version of the macro (or,
       for convolution-style models, have to use
@@ -778,9 +794,6 @@ available.
       If you are unsure, do not add a declaration and then try to
       build Sherpa: the compiler should fail with an indication of
       what symbol names are missing.
-
-      .. note:: Ideally we would have a sensible ordering for the declarations in this
-		file, but at present it is ad-hoc.
 
    b. ``sherpa/astro/xspec/__init__.py``
 
@@ -883,7 +896,7 @@ Adding typing statements
 
 Typing rules, such as::
 
-  def random(rng: Optional[RandomType]) -> float:
+  def random(rng: RandomType | None) -> float:
 
 are being added to the Sherpa code base to see if they improve the
 maintenance and development of Sherpa. This is an incremental process

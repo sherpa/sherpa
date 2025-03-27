@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023, 2024
+#  Copyright (C) 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -429,6 +429,7 @@ class XSapec(XSAdditiveModel):
     norm
 
     """
+
     _calc = _models.C_apec
 
     def __init__(self, name='apec'):
@@ -484,6 +485,91 @@ PyMODINIT_FUNC PyInit__models(void) {
 
 
 @requires_xspec
+def test_create_model_additive_xspec(caplog):
+    """Fake up an additive model for XSPEC"""
+
+    model = StringIO("""onlynorm           0  0.         1.e20           C_fred    add  0
+
+""")
+    parsed = xspec.parse_xspec_model_description(model)
+
+    converted = xspec.create_xspec_code(parsed, internal=(9, 2, 34))
+
+    expected = '''
+@version_at_least("9.2.34")
+class XSonlynorm(XSAdditiveModel):
+    """The XSPEC onlynorm model:  TBD
+
+    The model is described at [1]_.
+
+    .. versionadded:: ???
+       This model requires XSPEC 9.2.34 or later.
+
+    Parameters
+    ----------
+    norm
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelOnlynorm.html
+
+    """
+
+    __function__ = "C_fred"
+
+    def __init__(self, name='onlynorm'):
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = ()
+        XSAdditiveModel.__init__(self, name, pars)
+
+'''
+    assert converted.python == expected
+
+    check_compiled(converted.compiled,
+                   '''// Defines
+
+void cppModelWrapper(const double* energy, int nFlux, const double* params,
+  int spectrumNumber, double* flux, double* fluxError, const char* initStr,
+  int nPar, void (*cppFunc)(const RealArray&, const RealArray&,
+  int, RealArray&, RealArray&, const string&));
+
+extern "C" {
+  XSCCall fred;
+  void C_fred(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr) {
+    const size_t nPar = 1;
+    cppModelWrapper(energy, nFlux, params, spectrumNumber, flux, fluxError, initStr, nPar, fred);
+  }
+}
+
+// Wrapper
+
+static PyMethodDef Wrappers[] = {
+  XSPECMODELFCT_C_NORM(C_fred, 1),
+  { NULL, NULL, 0, NULL }
+};
+
+// Module
+
+static struct PyModuleDef wrapper_module = {
+  PyModuleDef_HEAD_INIT,
+  "_models",
+  NULL,
+  -1,
+  Wrappers,
+};
+
+PyMODINIT_FUNC PyInit__models(void) {
+  import_array();
+  return PyModule_Create(&wrapper_module);
+}
+''')
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
 def test_create_model_multiplicative(caplog):
     """Fake up a multplicative model"""
 
@@ -504,6 +590,7 @@ class XSabcd(XSMultiplicativeModel):
     nH
 
     """
+
     _calc = _models.foos
 
     def __init__(self, name='abcd'):
@@ -572,6 +659,7 @@ class XSrgsxsrc(XSConvolutionKernel):
     order
 
     """
+
     _calc = _models.rgsxsrc
 
     def __init__(self, name='rgsxsrc'):
@@ -639,6 +727,7 @@ class XSabcd(XSAdditiveModel):
     norm
 
     """
+
     _calc = _models.foos
 
     def __init__(self, name='abcd'):
@@ -713,6 +802,7 @@ class XSabcd(XSAdditiveModel):
     norm
 
     """
+
     _calc = _models.C_foos
 
     def __init__(self, name='abcd'):
