@@ -23,13 +23,6 @@ import logging
 import operator
 import warnings
 
-# Repeat the logic from sherpa/models/model.py
-#
-try:
-    from hashlib import md5 as hashfunc
-except ImportError:
-    from hashlib import sha256 as hashfunc
-
 import numpy
 
 import pytest
@@ -43,6 +36,7 @@ from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
     Scale1D, Integrate1D, Const2D, Gauss2D, Scale2D, Poisson
 from sherpa.fit import Fit
 from sherpa.utils.err import ModelErr, ParameterErr
+from sherpa.models.model import hashfunc
 
 
 def validate_warning(warning_capturer, parameter_name="norm",
