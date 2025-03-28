@@ -369,7 +369,7 @@ Checking against a previous XSPEC version
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you have a version of Sherpa compiled with a previous XSPEC
-version then you can use three helper scripts:
+version then you can use four helper scripts:
 
 #. ``scripts/check_xspec_update.py``
 
@@ -407,6 +407,12 @@ version then you can use three helper scripts:
    lacks documentation and some values either need adding (e.g.
    the Sherpa version) or lnks checked and possibly updated (due
    to the way that XSPEC models are documented).
+
+#. ``scripts/update_xspec_docs.py``
+
+   This will report the suggested contents for the
+   ``docs/model_classes/astro_xspec.rst`` given a ``model.dat`` file
+   from XSPEC.
 
 These routines are designed to simplify the process but are not
 guaranteed to handle all cases (as the model.dat file syntax is not
@@ -858,6 +864,10 @@ available.
       New models should be added to both the ``Classes`` rubric - sorted
       by addtive and then multiplicative models, using an alphabetical
       sorting - and to the appropriate ``inheritance-diagram`` rule.
+
+      The ``scripts/update_xspec_docs.py`` script will create the
+      contents of most of the file (from the ``.. rubric:: Classes``
+      line onwards).
 
 #. Documentation updates
 

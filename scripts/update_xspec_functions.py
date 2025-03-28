@@ -22,7 +22,7 @@
 
 """Usage:
 
-  ./update_spec_functions.py version infile
+  ./update_xspec_functions.py version infile
 
 Aim:
 
