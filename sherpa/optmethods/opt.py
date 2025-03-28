@@ -175,7 +175,7 @@ class SimplexBase:
     def __setitem__(self, index, val):
         self.simplex[index] = val
 
-    def calc_centroid(self) -> SupportsFloat:
+    def calc_centroid(self) -> np.ndarray:
         return np.mean(self.simplex[:-1, :], 0)
 
     def check_convergence(self,
