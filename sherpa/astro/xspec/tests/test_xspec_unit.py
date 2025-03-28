@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 - 2021, 2023 - 2025
+#  Copyright (C) 2016-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1826,9 +1826,9 @@ def test_model_can_send_spectrumnumber_combine():
     # As we evaluate the models multiple times with the same
     # arguments we need to ensure the models are not cached.
     #
-    m1._use_caching = False
-    m2._use_caching = False
-    # comb._use_caching = False  no cache for composite models
+    m1.cache = 0
+    m2.cache = 0
+    # comb.cache = 0  no cache for composite models
 
     egrid = np.arange(1, 4)
     elo = egrid[:-1]
@@ -1915,8 +1915,8 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
     m2 = Scale1D("m2")
     m2.c0 = 1.5
 
-    m1._use_caching = False
-    m2._use_caching = False
+    m1.cache = 0
+    m2.cache = 0
 
     # These should evaluate to the same thing.
     #
