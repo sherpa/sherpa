@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014 - 2018, 2020 - 2024
+#  Copyright (C) 2014-2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -79,18 +79,18 @@ def get_version(version):
 class xspec_config(Command):
     description = "Configure XSPEC Models external module (optional) "
     user_options = [
-                    ('with-xspec', None, "Whether sherpa must build the XSPEC module (default False)"),
-                    ('xspec-version', None, "the XSPEC version (default 12.12.0)"),
-                    ('xspec-lib-dirs', None, "Where the xspec libraries are located, if with-xspec is True"),
-                    ('xspec-libraries', None, "Name of the libraries that should be linked for xspec"),
-                    ('cfitsio-lib-dirs', None, "Where the cfitsio libraries are located, if with-xspec is True"),
-                    ('cfitsio-libraries', None, "Name of the libraries that should be linked for cfitsio"),
-                    ('ccfits-lib-dirs', None, "Where the CCfits libraries are located, if with-xspec is True"),
-                    ('ccfits-libraries', None, "Name of the libraries that should be linked for CCfits"),
-                    ('wcslib-lib-dirs', None, "Where the WCSLIB libraries are located, if with-xspec is True"),
-                    ('wcslib-libraries', None, "Name of the libraries that should be linked for WCSLIB"),
-                    ('gfortran-lib-dirs', None, "Where the gfortran libraries are located, if with-xspec is True"),
-                    ('gfortran-libraries', None, "Name of the libraries that should be linked for gfortran"),
+                    ('with_xspec', None, "Whether sherpa must build the XSPEC module (default False)"),
+                    ('xspec_version', None, "the XSPEC version (default 12.12.0)"),
+                    ('xspec_lib_dirs', None, "Where the xspec libraries are located, if with_xspec is True"),
+                    ('xspec_libraries', None, "Name of the libraries that should be linked for xspec"),
+                    ('cfitsio_lib_dirs', None, "Where the cfitsio libraries are located, if with_xspec is True"),
+                    ('cfitsio_libraries', None, "Name of the libraries that should be linked for cfitsio"),
+                    ('ccfits_lib_dirs', None, "Where the CCfits libraries are located, if with_xspec is True"),
+                    ('ccfits_libraries', None, "Name of the libraries that should be linked for CCfits"),
+                    ('wcslib_lib_dirs', None, "Where the WCSLIB libraries are located, if with_xspec is True"),
+                    ('wcslib_libraries', None, "Name of the libraries that should be linked for WCSLIB"),
+                    ('gfortran_lib_dirs', None, "Where the gfortran libraries are located, if with_xspec is True"),
+                    ('gfortran_libraries', None, "Name of the libraries that should be linked for gfortran"),
                     ]
 
     def initialize_options(self):

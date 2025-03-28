@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014 - 2016, 2020, 2022, 2024
+#  Copyright (C) 2014-2016, 2020, 2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -33,25 +33,25 @@ class sherpa_config(Command):
     description = "Configure Sherpa build options. If in doubt, ignore this command and stick to defaults. See setup.cfg for more information."
     user_options = [
                     ('fftw', None, "Whether Sherpa should build the embedded fftw3 library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
-                    ('fftw-include-dirs', None, "Where the fftw3 headers are located, if fftw is 'local'"),
-                    ('fftw-lib-dirs', None, "Where the fftw3 libraries are located, if fftw is 'local'"),
-                    ('fftw-libraries', None, "Name of the libraries that should be linked as fftw3"),
+                    ('fftw_include_dirs', None, "Where the fftw3 headers are located, if fftw is 'local'"),
+                    ('fftw_lib_dirs', None, "Where the fftw3 libraries are located, if fftw is 'local'"),
+                    ('fftw_libraries', None, "Name of the libraries that should be linked as fftw3"),
                     ('region', None, "Whether Sherpa should build the embedded region library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
-                    ('region-include-dirs', None, "Where the region headers are located, if region is 'local'"),
-                    ('region-lib-dirs', None, "Where the region libraries are located, if region is 'local'"),
-                    ('region-libraries', None, "Name of the libraries that should be linked as region"),
-                    ('region-use-cxc-parser', None, "If set to True than use the CXC Data Model library to parse region files"),
+                    ('region_include_dirs', None, "Where the region headers are located, if region is 'local'"),
+                    ('region_lib_dirs', None, "Where the region libraries are located, if region is 'local'"),
+                    ('region_libraries', None, "Name of the libraries that should be linked as region"),
+                    ('region_use_cxc_parser', None, "If set to True than use the CXC Data Model library to parse region files"),
                     ('wcs', None, "Whether Sherpa should build the embedded wcs library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
-                    ('wcs-include-dirs', None, "Where the wcs subroutines headers are located"),
-                    ('wcs-lib-dirs', None, "Where the wcs subroutines libraries are located"),
-                    ('wcs-libraries', None, "Name of the libraries that should be linked as wcs"),
-                    ('group-location', None, "Location of the group  python module"),
-                    ('disable-group', None, "Disable the group module install"),
-                    ('stk-location', None, "Location of the stack library python module"),
-                    ('disable-stk', None, "Disable the stack library module install"),
-                    ('install-dir', None, "Directory where external dependencies must be installed (--prefix)"),
+                    ('wcs_include_dirs', None, "Where the wcs subroutines headers are located"),
+                    ('wcs_lib_dirs', None, "Where the wcs subroutines libraries are located"),
+                    ('wcs_libraries', None, "Name of the libraries that should be linked as wcs"),
+                    ('group_location', None, "Location of the group  python module"),
+                    ('disable_group', None, "Disable the group module install"),
+                    ('stk_location', None, "Location of the stack library python module"),
+                    ('disable_stk', None, "Disable the stack library module install"),
+                    ('install_dir', None, "Directory where external dependencies must be installed (--prefix)"),
                     ('configure', None, "Additional configure flags for the external dependencies"),
-                    ('group-cflags', None, "Additional cflags for building the grouping library"),
+                    ('group_cflags', None, "Additional cflags for building the grouping library"),
                     ]
 
     def initialize_options(self):
