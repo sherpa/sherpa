@@ -235,7 +235,7 @@ should be updated to match the output above::
     fftw_libraries=fftw3
 
     region=local
-    region-include_dirs=${ASCDS_INSTALL}/include
+    region_include_dirs=${ASCDS_INSTALL}/include
     region_lib_dirs=${ASCDS_INSTALL}/lib
     region_libraries=region ascdm
     region_use_cxc_parser=True

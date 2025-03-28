@@ -76,7 +76,7 @@ sed -i="" "s|#disable_group=True|disable_group=True|" $cfg
 sed -i="" "s|#disable_stk=True|disable_stk=True|" $cfg
 
 sed -i="" "s|#region=local|region=local|" $cfg
-sed -i="" "s|#region-include_dirs=build/include|region-include_dirs=${CONDA_PREFIX}/include|" $cfg
+sed -i="" "s|#region_include_dirs=build/include|region_include_dirs=${CONDA_PREFIX}/include|" $cfg
 sed -i="" "s|#region_lib_dirs=build/lib|region_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
 sed -i="" "s|#region_libraries=region|region_libraries=region ascdm|" $cfg
 sed -i="" "s|#region_use_cxc_parser=False|region_use_cxc_parser=True|" $cfg
@@ -84,7 +84,7 @@ sed -i="" "s|#region_use_cxc_parser=False|region_use_cxc_parser=True|" $cfg
 sed -i="" "s|#wcs=local|wcs=local|" $cfg
 # Historically the setup file has used the wrong form here
 # so support both 'include-dirs' and 'include_dirs'.
-sed -i="" "s|#wcs-include.dirs=build/include|wcs-include_dirs=${CONDA_PREFIX}/include|" $cfg
+sed -i="" "s|#wcs_include.dirs=build/include|wcs_include_dirs=${CONDA_PREFIX}/include|" $cfg
 sed -i="" "s|#wcs_lib_dirs=build/lib|wcs_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
 sed -i="" "s|#wcs_libraries=wcs|wcs_libraries=wcs|" $cfg
 
