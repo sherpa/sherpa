@@ -851,6 +851,22 @@ def xsmodel():
     return func
 
 
+@pytest.fixture(scope="session", autouse=True)
+def set_xspec_atomdb_version():
+    """Ensure the AtomDB abundance is 3.0.9 if XSPEC is enabled."""
+
+    if not has_xspec:
+        return
+
+    # XSPEC 12.15.0 switches the AtomDB version from 3.0.9 to 3.1.2
+    # which can changes enough to cause the test to fail. The
+    # tolerances could be changed but instead try setting the AtomDB
+    # version. Unfortunately the current interface is rather limited
+    # (see #2216), so this is done globally.
+    #
+    xspec.set_xsxset("APECROOT", "3.0.9")
+
+
 # Fixtures that control access to the tests, based on the availability
 # of external "features" (normally this is the presence of optional
 # modules). These used to be decorators in sherpa.utils.testing.
