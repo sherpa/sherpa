@@ -68,12 +68,13 @@ Best-fit value: 4.0
 
 """
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 import logging
 from typing import SupportsFloat
 
 import numpy as np
 
+from sherpa.stats import StatCallback
 from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import FuncCounter, random
 from sherpa.utils.parallel import parallel_map
@@ -196,25 +197,6 @@ def _update_reported_nfev(result: OptReturn,
     result[4]['nfev'] += nfev
 
 
-class Callback:
-    """Handle the callback argument for the optimizers.
-
-    See Also
-    --------
-    InfinitePotential
-
-    """
-
-    __slots__ = ("func",)
-
-    def __init__(self,
-                 func: StatFunc) -> None:
-        self.func = func
-
-    def __call__(self, pars: np.ndarray) -> float:
-        return self.func(pars)[0]
-
-
 class InfinitePotential:
     """Ensure the parameter values stay within bounds.
 
@@ -225,7 +207,7 @@ class InfinitePotential:
 
     See Also
     --------
-    Callback
+    sherpa.optmethods.opt.InfinitePotential
 
     Notes
     -----
@@ -350,7 +332,7 @@ def difevo_nm(fcn: StatFunc,
               weighting_factor: float
               ) -> OptReturn:
 
-    stat_cb0 = Callback(fcn)
+    stat_cb0 = StatCallback(fcn)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -378,6 +360,50 @@ def difevo_nm(fcn: StatFunc,
 
     status, msg = _get_saofit_msg(maxfev, ierr)
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
+
+
+def make_range_sequence(npar: int,
+                        xmin: np.ndarray,
+                        xmax: np.ndarray,
+                        N: int
+                        ) -> list[list[float]]:
+
+    step = complex(N)
+    slices = [slice(x1, x2, step)
+              for x1, x2 in zip(xmin, xmax)]
+
+    mgrid = np.mgrid[slices]
+    mynfev = pow(N, npar)
+    grid = list(map(np.ravel, mgrid))
+    sequence = []
+    for index in range(mynfev):
+        tmp = []
+        for xx in range(npar):
+            tmp.append(grid[xx][index])
+        sequence.append(tmp)
+
+    return sequence
+
+
+class AddParameters:
+    """Append the current parameters to the statistic."""
+
+    __slots__ = ("func", "verbose")
+
+    def __init__(self,
+                 func: StatFunc,
+                 verbose: bool  # TODO: can this be removed?
+                 ) -> None:
+        self.func = StatCallback(func)
+        self.verbose = verbose
+
+    def __call__(self, pars: np.ndarray) -> np.ndarray:
+
+        out = self.func(pars)
+        if self.verbose:
+            print(f'f{pars}={out:g}')
+
+        return np.append(out, pars)
 
 
 # Ideally method would send in the actual method, not the name,
@@ -445,45 +471,18 @@ def grid_search(fcn: StatFunc,
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     npar = len(x)
-
-    def func(pars):
-        aaa = fcn(pars)[0]
-        if verbose:
-            print(f'f{pars}={aaa:g}')
-        return aaa
-
-    def make_sequence(ranges, N):
-        list_ranges = list(ranges)
-        for ii in range(npar):
-            list_ranges[ii] = tuple(list_ranges[ii]) + (complex(N),)
-            list_ranges[ii] = slice(*list_ranges[ii])
-
-        grid = np.mgrid[list_ranges]
-        mynfev = pow(N, npar)
-        grid = list(map(np.ravel, grid))
-        sequence = []
-        for index in range(mynfev):
-            tmp = []
-            for xx in range(npar):
-                tmp.append(grid[xx][index])
-            sequence.append(tmp)
-        return sequence
-
-    def eval_stat_func(xxx):
-        return np.append(func(xxx), xxx)
+    eval_stat_func = AddParameters(fcn, bool(verbose))
 
     if sequence is None:
-        ranges = []
-        for index in range(npar):
-            ranges.append([xmin[index], xmax[index]])
-        sequence = make_sequence(ranges, num)
-    else:
-        if not np.iterable(sequence):
-            raise TypeError("sequence option must be iterable")
+        sequence = make_range_sequence(npar, xmin, xmax, num)
 
+    elif np.iterable(sequence):
         for seq in sequence:
             if npar != len(seq):
                 raise TypeError(f"{seq} must be of length {npar}")
+
+    else:
+        raise TypeError("sequence option must be iterable")
 
     answer = eval_stat_func(x)
     sequence_results = parallel_map(eval_stat_func, sequence, numcores)
@@ -660,7 +659,7 @@ def montecarlo(fcn: StatFunc,
 
     """
 
-    stat_cb0 = Callback(fcn)
+    stat_cb0 = StatCallback(fcn)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -708,7 +707,8 @@ def montecarlo(fcn: StatFunc,
         else:
             ncores_nm = ncoresNelderMead()
             nfev, nfval, x = \
-                ncores_nm(stat_cb0, x, xmin, xmax, ftol, mymaxfev, numcores)
+                ncores_nm(stat_cb0, x, xmin, xmax, tol=ftol,
+                          maxnfev=mymaxfev, numcores=numcores, rng=rng)
 
         if verbose:
             print(f'f_nm{x}={nfval:.14e} in {nfev} nfev')
@@ -728,8 +728,9 @@ def montecarlo(fcn: StatFunc,
             ncores_de = ncoresDifEvo()
             mystep = None
             tmp_nfev, tmp_fmin, tmp_par = \
-                ncores_de(stat_cb0, x, xmin, xmax, ftol, mymaxfev, mystep,
-                          numcores, pop, seed, weight, xprob, verbose)
+                ncores_de(stat_cb0, x, xmin, xmax, ftol, mymaxfev,
+                          mystep, numcores, pop, seed, weight, xprob,
+                          verbose, rng=rng)
             nfev += tmp_nfev
             if tmp_fmin < nfval:
                 nfval = tmp_fmin
@@ -791,8 +792,9 @@ def montecarlo(fcn: StatFunc,
         else:
             ncores_nm = ncoresNelderMead()
             tmp_nfev, tmp_fmin, tmp_par = \
-                ncores_nm(stat_cb0, x, xmin, xmax, ftol, maxfev - nfev,
-                          numcores)
+                ncores_nm(stat_cb0, x, xmin, xmax, tol=ftol,
+                          maxnfev=maxfev - nfev, numcores=numcores,
+                          rng=rng)
             nfev += tmp_nfev
             # There is a bug here somewhere using broyden_tridiagonal
             if tmp_fmin < fval:
@@ -809,6 +811,35 @@ def montecarlo(fcn: StatFunc,
 #
 # Nelder Mead
 #
+def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
+            myfcn, ofval=FUNC_MAX):
+    """Simplex implementation for neldermead.
+
+    .. versionadded:: 4.17.1
+       In earlier versions this was an internal routine to neldermead.
+
+    """
+
+    if len(final) >= 3:
+        # get rid of the last entry in the list
+        tmpfinal = final[0:-1]
+    else:
+        tmpfinal = final[:]
+
+    xx, ff, nf, er = _saoopt.neldermead(verbose, maxfev, init,
+                                        tmpfinal, tol, step, xmin,
+                                        xmax, x, myfcn)
+
+    if len(final) >= 3 and ff < 0.995 * ofval and nf < maxfev:
+        myfinal = [final[-1]]
+        x, fval, nfev, err = simplex(verbose, maxfev - nf, init,
+                                     myfinal, tol, step, xmin, xmax,
+                                     x, myfcn, ofval=ff)
+        return x, fval, nfev + nf, err
+
+    return xx, ff, nf, er
+
+
 def neldermead(fcn: StatFunc,
                x0: ArrayType,
                xmin: ArrayType,
@@ -1079,26 +1110,6 @@ def neldermead(fcn: StatFunc,
     if maxfev is None:
         maxfev = 1024 * len(x)
 
-    def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
-                myfcn, ofval=FUNC_MAX):
-
-        tmpfinal = final[:]
-        if len(final) >= 3:
-            # get rid of the last entry in the list
-            tmpfinal = final[0:-1]
-
-        xx, ff, nf, er = _saoopt.neldermead(verbose, maxfev, init, tmpfinal,
-                                            tol, step, xmin, xmax, x, myfcn)
-
-        if len(final) >= 3 and ff < 0.995 * ofval and nf < maxfev:
-            myfinal = [final[-1]]
-            x, fval, nfev, err = simplex(verbose, maxfev-nf, init, myfinal, tol,
-                                         step, xmin, xmax, x, myfcn,
-                                         ofval=ff)
-            return x, fval, nfev + nf, err
-
-        return xx, ff, nf, er
-
     x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, fsimplex,
                                  ftol, step, xmin, xmax, x, stat_cb0)
 
@@ -1137,6 +1148,94 @@ def neldermead(fcn: StatFunc,
         imap['covarerr'] = covarerr
 
     return (status, x, fval, msg, imap)
+
+
+class FdJac:
+    """Jacobian calculation.
+
+    .. versionadded:: 4.17.1
+
+    """
+
+    def __init__(self, func, fvec, pars, epsfcn, xmax):
+        self.func = func
+        self.fvec = fvec
+        epsmch = np.finfo(float).eps
+        self.eps = np.sqrt(max(epsmch, epsfcn))
+        self.h = self.calc_h(pars, xmax)
+        self.pars = np.copy(pars)
+
+    def __call__(self, param):
+        wa = self.func(param[1:])
+        return (wa - self.fvec) / self.h[int(param[0])]
+
+    def calc_h(self, pars, xmax):
+        nn = len(pars)
+        h = np.empty((nn,))
+        for ii in range(nn):
+            h[ii] = self.eps * pars[ii]
+            if h[ii] == 0.0:
+                h[ii] = self.eps
+            if pars[ii] + h[ii] > xmax[ii]:
+                h[ii] = - h[ii]
+        return h
+
+    def calc_params(self):
+        params = []
+        for ii in range(len(self.h)):
+            tmp_pars = np.copy(self.pars)
+            tmp_pars[ii] += self.h[ii]
+            tmp_pars = np.append(ii, tmp_pars)
+            params.append(tmp_pars)
+        return tuple(params)
+
+
+class ParallelizeFdJac:
+    """Parallelize the FdJac calls.
+
+    .. versionadded:: 4.17.1
+
+    """
+
+    __slots__ = ("func", "epsfcn", "xmax", "numcores")
+
+    def __init__(self, func: Callable,
+                 *, epsfcn, xmax, numcores) -> None:
+        self.func = func
+        self.epsfcn = epsfcn
+        self.xmax = xmax
+        self.numcores = numcores
+
+    def __call__(self, pars, fvec) -> np.ndarray:
+        fd_jac = FdJac(self.func, fvec, pars,
+                       epsfcn=self.epsfcn, xmax=self.xmax)
+        params = fd_jac.calc_params()
+        fjac = parallel_map(fd_jac, params, self.numcores)
+        return np.concatenate(fjac)
+
+
+class PerBinStatCallback:
+    """Return the per-bin statistic values for a set of parameters.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    sherpa.stats.StatCallback
+
+    """
+
+    __slots__ = ("func", )
+
+    def __init__(self,
+                 func: StatFunc
+                 ) -> None:
+        self.func = func
+
+    def __call__(self,
+                 pars: np.ndarray
+                 ) -> np.ndarray:
+        return self.func(pars)[1]
 
 
 def lmdif(fcn: StatFunc,
@@ -1221,56 +1320,19 @@ def lmdif(fcn: StatFunc,
 
     """
 
-    class fdJac:
-
-        def __init__(self, func, fvec, pars):
-            self.func = func
-            self.fvec = fvec
-            epsmch = np.finfo(float).eps
-            self.eps = np.sqrt(max(epsmch, epsfcn))
-            self.h = self.calc_h(pars)
-            self.pars = np.copy(pars)
-
-        def __call__(self, param):
-            wa = self.func(param[1:])
-            return (wa - self.fvec) / self.h[int(param[0])]
-
-        def calc_h(self, pars):
-            nn = len(pars)
-            h = np.empty((nn,))
-            for ii in range(nn):
-                h[ii] = self.eps * pars[ii]
-                if h[ii] == 0.0:
-                    h[ii] = self.eps
-                if pars[ii] + h[ii] > xmax[ii]:
-                    h[ii] = - h[ii]
-            return h
-
-        def calc_params(self):
-            params = []
-            for idx, h in enumerate(self.h):
-                hadj = np.copy(self.pars)
-                hadj[idx] += h
-                pars = np.append(idx, hadj)
-                params.append(pars)
-
-            return tuple(params)
-
     x, xmin, xmax = _check_args(x0, xmin, xmax)
+
+    # Note that the counter does not count the parallelization in
+    # ParallelizedFdJac (i.e. the parallel_map call within that
+    # routine).
+    #
+    stat_cb1 = PerBinStatCallback(fcn)
+    fcn_parallel = ParallelizeFdJac(stat_cb1, epsfcn=epsfcn,
+                                    xmax=xmax, numcores=numcores)
+    fcn_parallel_counter = FuncCounter(fcn_parallel)
 
     if maxfev is None:
         maxfev = 256 * len(x)
-
-    def stat_cb1(pars):
-        return fcn(pars)[1]
-
-    def fcn_parallel(pars, fvec):
-        fd_jac = fdJac(stat_cb1, fvec, pars)
-        params = fd_jac.calc_params()
-        fjac = parallel_map(fd_jac, params, numcores)
-        return np.concatenate(fjac)
-
-    fcn_parallel_counter = FuncCounter(fcn_parallel)
 
     # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif
     m = np.asanyarray(stat_cb1(x)).size
