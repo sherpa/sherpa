@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2023, 2024
+#  Copyright (C) 2010, 2015, 2023-2025
 #  Smithsonian Astrophysical Observator
 #
 #
@@ -133,7 +133,6 @@ class RMFModel(CompositeModel, ArithmeticModel):
 
         # Used to rebin against finer or coarser energy grids
         self.rmfargs = ()
-
         CompositeModel.__init__(self, f'apply_rmf({model.name})', (model,))
         self.filter()
 

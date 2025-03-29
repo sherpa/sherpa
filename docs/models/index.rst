@@ -72,7 +72,7 @@ more-complicated cases, such as :doc:`convolution models
 Combining models
 ================
 
-Models can be combined and shared by using the standard Python
+The easiest way to combined and share models is by using the standard Python
 numerical operators. For instance, a one-dimensional gaussian
 plus a flat background - using the
 :py:class:`~sherpa.models.basic.Const1D` class - would be
@@ -114,7 +114,8 @@ FWHM (full-width half-maximum)
 parameters to be the same but to let the position and amplitude
 values vary independently.
 
-More information is available in the
+More information including more complex, but more powerful ways to combined models
+is available in the
 :doc:`combining models <../evaluation/combine>`
 and
 :doc:`convolution <../evaluation/convolution>`
