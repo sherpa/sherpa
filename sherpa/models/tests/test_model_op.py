@@ -187,6 +187,64 @@ def test_binop_combine_model_with_number(in1, in2, op, mdlname):
     assert mdl.ndim == 2
 
 
+def custom_func_nin3(a, b, c):
+   return a + b + c
+
+custom_ufunc_nin3 = np.frompyfunc(custom_func_nin3, nin=3, nout=1)
+
+def test_model_ufunc_too_many_inputs():
+    '''Check that we get the right error if we have too many inputs'''
+    l = basic.Polynom2D()
+    r = basic.Gauss2D()
+    m = basic.NormGauss2D()
+    with pytest.raises(TypeError,
+                       match=re.escape("operand type(s) all returned NotImplemented from __array_ufunc__(<ufunc 'custom_func_nin3 (vectorized)'>, '__call__', <Polynom2D model instance 'polynom2d'>, <NormGauss2D model instance 'normgauss2d'>, <Gauss2D model instance 'gauss2d'>): 'Polynom2D', 'NormGauss2D', 'Gauss2D'")):
+        mdl = custom_ufunc_nin3(l, m, r)
+
+
+
+def custom_func_nout_2(a, b):
+   return a + b, a - b
+
+custom_ufunc_nout_2 = np.frompyfunc(custom_func_nout_2, nin=2, nout=2)
+
+def test_model_ufunc_too_many_outputs():
+    '''Check that we get the right error if we have too many outputs'''
+    l = basic.Polynom2D()
+    r = basic.Gauss2D()
+    with pytest.raises(TypeError,
+                       match=re.escape("operand type(s) all returned NotImplemented from __array_ufunc__(<ufunc 'custom_func_nout_2 (vectorized)'>, '__call__', <Polynom2D model instance 'polynom2d'>, <Gauss2D model instance 'gauss2d'>): 'Polynom2D', 'Gauss2D'")):
+        mdl = custom_ufunc_nout_2(l, r)
+
+
+def test_model_ufunc_not_call():
+    '''Models only support __call__, but other modes of ufuncs such as
+    accumulate, reduce, reduceat, etc.
+    '''
+    l = basic.Polynom2D()
+    r = basic.Gauss2D()
+    with pytest.raises(TypeError,
+                       match=re.escape("operand type(s) all returned NotImplemented from __array_ufunc__(<ufunc 'add'>, 'accumulate', <Polynom2D model instance 'polynom2d'>, axis=<Gauss2D model instance 'gauss2d'>): 'Polynom2D'")):
+        mdl = np.add.accumulate(l, r)
+
+
+def custom_func_nin1(a):
+   return 2 * a
+
+custom_ufunc_nin1 = np.frompyfunc(custom_func_nin1, nin=1, nout=1)
+
+def test_model_ufunc_nin1():
+    '''In most cases, this will be abs, or negative, which is handled with symbols
+    but it could be an arbitrary ufunc'''
+    l = basic.Const1D()
+    mdl = custom_ufunc_nin1(l)
+    assert isinstance(mdl, UnaryOpModel)
+    assert mdl.name == "custom_func_nin1(const1d)"
+    assert len(mdl.parts) == 1
+    assert mdl.ndim == 1
+    assert mdl([1, 2, 3]) == pytest.approx([2, 2, 2])
+
+
 def test_eval_op():
     """Pick a "complicated" combination just to check."""
 

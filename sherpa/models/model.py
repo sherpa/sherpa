@@ -1456,6 +1456,8 @@ class ArithmeticModel(Model):
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if not method == '__call__':
             return NotImplemented
+        if ufunc.nout != 1:
+            return NotImplemented
         if hasattr(np, ufunc.__name__):
             name = f"numpy.{ufunc.__name__}"
         else:
