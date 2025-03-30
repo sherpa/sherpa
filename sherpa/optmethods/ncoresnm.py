@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2021, 2023, 2024
+#  Copyright (C) 2019 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -23,8 +23,7 @@ import numpy as np
 from sherpa.utils.parallel import ncpus
 
 from . import _saoopt  # type: ignore
-from .opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
-    SimplexRandom
+from .opt import MyNcores, Opt, SimplexStep
 
 __all__ = ('ncoresNelderMead', )
 
@@ -262,48 +261,54 @@ class NelderMead5(NelderMead0):
         return nfev, fmin, par
 
 
-class NelderMead6(NelderMeadBase):
+# This is only used by tests/test_opt_original.py when run directly,
+# not via pytest. Left commented out to make it easier to find.
+#
+# class NelderMead6(NelderMeadBase):
+#
+#     # TODO: do we really need this internal class?
+#     class MyNelderMead6(MyNelderMead):
+#
+#         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
+#             npar = len(x)
+#             simplex = SimplexNoStep(func=self.func, npop=npar + 1,
+#                                     xpar=x, xmin=self.xmin,
+#                                     xmax=self.xmax, step=None,
+#                                     seed=None, factor=None)
+#             return self.optimize(x, simplex, maxnfev, tol,
+#                                  finalsimplex, verbose)
+#
+#     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
+#                  step=None, finalsimplex=1, verbose=0):
+#         my_nm_6 = NelderMead6.MyNelderMead6(fcn, xmin, xmax)
+#         if maxnfev is None:
+#             maxnfev = 512 * len(x)
+#         return my_nm_6(x, maxnfev, tol, step, finalsimplex, verbose)
 
-    # TODO: do we really need this internal class?
-    class MyNelderMead6(MyNelderMead):
 
-        def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
-            npar = len(x)
-            simplex = SimplexNoStep(func=self.func, npop=npar + 1,
-                                    xpar=x, xmin=self.xmin,
-                                    xmax=self.xmax, step=None,
-                                    seed=None, factor=None)
-            return self.optimize(x, simplex, maxnfev, tol,
-                                 finalsimplex, verbose)
-
-    def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
-                 step=None, finalsimplex=1, verbose=0):
-        my_nm_6 = NelderMead6.MyNelderMead6(fcn, xmin, xmax)
-        if maxnfev is None:
-            maxnfev = 512 * len(x)
-        return my_nm_6(x, maxnfev, tol, step, finalsimplex, verbose)
-
-
-class NelderMead7(NelderMeadBase):
-
-    # TODO: do we really need this internal class?
-    class MyNelderMead7(MyNelderMead):
-
-        def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
-            npar = len(x)
-            factor = 2
-            simplex = SimplexRandom(func=self.func, npop=npar + 1, xpar=x,
-                                    xmin=self.xmin, xmax=self.xmax,
-                                    step=None, seed=None, factor=factor)
-            return self.optimize(x, simplex, maxnfev, tol,
-                                 finalsimplex, verbose)
-
-    def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
-                 step=None, finalsimplex=1, verbose=0):
-        my_nm_7 = NelderMead7.MyNelderMead7(fcn, xmin, xmax)
-        if maxnfev is None:
-            maxnfev = 512 * len(x)
-        return my_nm_7(x, maxnfev, tol, step, finalsimplex, verbose)
+# This is only used by tests/test_opt_original.py when run directly,
+# not via pytest. Left commented out to make it easier to find.
+#
+# class NelderMead7(NelderMeadBase):
+#
+#     # TODO: do we really need this internal class?
+#     class MyNelderMead7(MyNelderMead):
+#
+#         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
+#             npar = len(x)
+#             factor = 2
+#             simplex = SimplexRandom(func=self.func, npop=npar + 1, xpar=x,
+#                                     xmin=self.xmin, xmax=self.xmax,
+#                                     step=None, seed=None, factor=factor)
+#             return self.optimize(x, simplex, maxnfev, tol,
+#                                  finalsimplex, verbose)
+#
+#     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
+#                  step=None, finalsimplex=1, verbose=0):
+#         my_nm_7 = NelderMead7.MyNelderMead7(fcn, xmin, xmax)
+#         if maxnfev is None:
+#             maxnfev = 512 * len(x)
+#         return my_nm_7(x, maxnfev, tol, step, finalsimplex, verbose)
 
 
 class nmNcores(MyNcores):
@@ -339,53 +344,53 @@ class ncoresNelderMead:
         nfev = results[0]
         fmin = results[1]
         par = results[2]
-        solution_at = 0
         for ii in range(1, num):
             index = ii * 3
             nfev += results[index]
-            # print(ii, 'unpack_results: f', par, '=', fmin, '@', nfev, 'nfevs')
             if results[index + 1] < fmin:
                 fmin = results[index + 1]
                 par = results[index + 2]
-                solution_at = ii
-        # print('unpack_results: solution_@ =', solution_at)
+
         return nfev, fmin, par
 
 
-class ncoresNelderMeadRecursive(ncoresNelderMead):
-    """ As noted in the paper, terminating the simplex is not a simple task:
-    For any non-derivative method, the issue of termination is problematical as
-    well as highly sensitive to problem scaling. Since gradient information is
-    unavailable, it is provably impossible to verify closeness to optimality
-    simply by sampling f at a finite number of points. Most implementations
-    of direct search methods terminate based on two criteria intended to
-    reflect the progress of the algorithm: either the function values at the
-    vertices are close, or the simplex has become very small. """
-
-    # TODO: using a list as an argument triggers pylint dangerous-default-value check
-    #
-    # algo is the same as used in ncoresNelderMead but leave as is in case
-    # there is a need to have a different set of classes.
-    #
-    def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
-                             NelderMead3(), NelderMead4(), NelderMead5()]):
-        ncoresNelderMead.__init__(self, algo)
-
-    def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 numcores=ncpus):
-
-        return self.calc(fcn, x, xmin, xmax, tol, maxnfev, numcores)
-
-    def calc(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-             numcores=ncpus, fval=np.inf, nfev=0):
-
-        num_algo = len(self.algo)
-        nm_ncores = nmNcores()
-        results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin, xmax, tol, maxnfev)
-        tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
-        nfev += tmp_nfev
-        # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
-        if fmin < fval:
-            return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
-
-        return nfev, fval, par
+# This code is currently unused. Left commented out to make it easier
+# to find.
+#
+# class ncoresNelderMeadRecursive(ncoresNelderMead):
+#     """ As noted in the paper, terminating the simplex is not a simple task:
+#     For any non-derivative method, the issue of termination is problematical as
+#     well as highly sensitive to problem scaling. Since gradient information is
+#     unavailable, it is provably impossible to verify closeness to optimality
+#     simply by sampling f at a finite number of points. Most implementations
+#     of direct search methods terminate based on two criteria intended to
+#     reflect the progress of the algorithm: either the function values at the
+#     vertices are close, or the simplex has become very small. """
+#
+#     # TODO: using a list as an argument triggers pylint dangerous-default-value check
+#     #
+#     # algo is the same as used in ncoresNelderMead but leave as is in case
+#     # there is a need to have a different set of classes.
+#     #
+#     def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
+#                              NelderMead3(), NelderMead4(), NelderMead5()]):
+#         ncoresNelderMead.__init__(self, algo)
+#
+#     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
+#                  numcores=ncpus):
+#
+#         return self.calc(fcn, x, xmin, xmax, tol, maxnfev, numcores)
+#
+#     def calc(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
+#              numcores=ncpus, fval=np.inf, nfev=0):
+#
+#         num_algo = len(self.algo)
+#         nm_ncores = nmNcores()
+#         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin, xmax, tol, maxnfev)
+#         tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
+#         nfev += tmp_nfev
+#         # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
+#         if fmin < fval:
+#             return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
+#
+#         return nfev, fval, par
