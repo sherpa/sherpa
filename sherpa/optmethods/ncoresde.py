@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2021, 2023, 2024
+#  Copyright (C) 2019 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -270,32 +270,34 @@ class MyDifEvo(Opt):
                                       seed=seed, factor=factor, rng=rng)
         self.local_opt = self.ncores_nm.algo
 
-    def __call__(self, maxnfev, ftol):
-
-        # Set the seed if RNG is not sent in. This used to change
-        # random.seed but now changes the NumPy version.
-        #
-        if self.rng is None:
-            numpy.random.seed(self.seed)
-
-        mypop = self.polytope
-        npop_1 = self.npop - 1
-        while self.nfev < maxnfev:
-            for pop_index in range(self.npop):
-                key = self.calc_key([pop_index])
-                # trial = self.all_strategies(pop_index)
-                trial = self.all_strategies(key[0])
-                if trial[-1] < mypop[npop_1][-1]:
-                    mypop[npop_1] = trial[1:]
-                    self.polytope.sort()
-
-            if self.check_convergence(mypop, ftol, 0):
-                break
-
-        best_vertex = mypop[0]
-        best_par = best_vertex[:-1]
-        best_val = best_vertex[-1]
-        return self.nfev, best_val, best_par
+    # Only used by DifEvo which is currently unused.
+    #
+    # def __call__(self, maxnfev, ftol):
+    #
+    #     # Set the seed if RNG is not sent in. This used to change
+    #     # random.seed but now changes the NumPy version.
+    #     #
+    #     if self.rng is None:
+    #         numpy.random.seed(self.seed)
+    #
+    #     mypop = self.polytope
+    #     npop_1 = self.npop - 1
+    #     while self.nfev < maxnfev:
+    #         for pop_index in range(self.npop):
+    #             key = self.calc_key([pop_index])
+    #             # trial = self.all_strategies(pop_index)
+    #             trial = self.all_strategies(key[0])
+    #             if trial[-1] < mypop[npop_1][-1]:
+    #                 mypop[npop_1] = trial[1:]
+    #                 self.polytope.sort()
+    #
+    #         if self.check_convergence(mypop, ftol, 0):
+    #             break
+    #
+    #     best_vertex = mypop[0]
+    #     best_par = best_vertex[:-1]
+    #     best_val = best_vertex[-1]
+    #     return self.nfev, best_val, best_par
 
     def all_strategies(self, key):
         rand, index = self.key2.parse(key)
@@ -334,11 +336,13 @@ class MyDifEvo(Opt):
             result[ii] = self.key2.calc(rand, index)
         return result
 
-    def check_convergence(self, mypop, ftol, npar):
-        fval_std = numpy.std([col[-1] for col in mypop])
-        if fval_std < ftol:
-            return True
-        return False
+    # Only used by DifEvo which is currently unused.
+    #
+    # def check_convergence(self, mypop, ftol, npar):
+    #     fval_std = numpy.std([col[-1] for col in mypop])
+    #     if fval_std < ftol:
+    #         return True
+    #     return False
 
 
 class ncoresMyDifEvo(MyDifEvo):
@@ -395,29 +399,32 @@ class ncoresMyDifEvo(MyDifEvo):
         return nfev, best_fval, best_par
 
 
-class DifEvo:
-
-    # The classes tend to take rng as an argument when constructing the
-    # object, so follow that approach here.
-    #
-    def __init__(self, rng=None):
-        self.rng = rng
-
-    def __call__(self, fcn, x, xmin, xmax, step=None, maxnfev=None, tol=1.0e-6,
-                 npop=None, seed=45, sfactor=0.85, xprob=0.7, verbose=0):
-
-        npar = len(x)
-        if npop is None:
-            npop = 10 * npar
-        npop = max(npop, npar * 4)
-        if maxnfev is None:
-            maxnfev = 8192 * npar
-
-        # TODO: this over-writes the seed argument, which looks wrong
-        seed = 123
-        mydifevo = MyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob, step,
-                            seed, rng=self.rng)
-        return mydifevo(maxnfev, tol)
+# This is only used by tests/test_opt_original.py when run directly,
+# not via pytest.
+#
+#  class DifEvo:
+#
+#      # The classes tend to take rng as an argument when constructing the
+#      # object, so follow that approach here.
+#      #
+#      def __init__(self, rng=None):
+#          self.rng = rng
+#
+#      def __call__(self, fcn, x, xmin, xmax, step=None, maxnfev=None, tol=1.0e-6,
+#                   npop=None, seed=45, sfactor=0.85, xprob=0.7, verbose=0):
+#
+#          npar = len(x)
+#          if npop is None:
+#              npop = 10 * npar
+#          npop = max(npop, npar * 4)
+#          if maxnfev is None:
+#              maxnfev = 8192 * npar
+#
+#          # TODO: this over-writes the seed argument, which looks wrong
+#          seed = 123
+#          mydifevo = MyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob, step,
+#                              seed, rng=self.rng)
+#          return mydifevo(maxnfev, tol)
 
 
 class ncoresDifEvo:
@@ -444,46 +451,49 @@ class ncoresDifEvo:
         return mydifevo(tol, maxnfev, numcores)
 
 
-class ncoresDifEvoNelderMead:
-
-    def __init__(self, rng=None):
-        self.ncores_nm = ncoresNelderMead()
-        self.rng = rng
-
-    def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6, maxnfev=None, step=None,
-                 numcores=None, npop=None, seed=23, sfactor=0.85, xprob=0.7,
-                 verbose=0):
-
-        nfev, nm_fmin, nm_par = \
-            self.ncores_nm(fcn, x, xmin, xmax, tol, maxnfev, numcores)
-
-        npar = len(x)
-        if npop is None:
-            npop = 12 * npar
-        npop = max(npop, npar * 32)
-        if maxnfev is None:
-            maxnfev = 8192 * npar
-
-        # TODO: the seed argument is not sent in
-        mydifevo = \
-            ncoresMyDifEvo(fcn, nm_par, xmin, xmax, npop, sfactor, xprob,
-                           step, rng=self.rng)
-        de_nfev, de_fmin, de_par = \
-            mydifevo(tol, maxnfev - nfev, step, seed, numcores)
-        nfev += de_nfev
-
-        if nm_fmin < de_fmin:
-            my_fmin = nm_fmin
-            my_par = nm_par
-        else:
-            my_fmin = de_fmin
-            my_par = de_par
-        nm_nfev, nm_fmin, nm_par = self.ncores_nm(fcn, my_par, xmin, xmax, tol,
-                                                  maxnfev - nfev, numcores)
-        nfev += nm_nfev
-
-        if nm_fmin < my_fmin:
-            my_fmin = nm_fmin
-            my_par = nm_par
-
-        return nfev, my_fmin, my_par
+# This is only used by tests/test_opt_original.py when run directly,
+# not via pytest. The code fails so has been commented out.
+#
+# class ncoresDifEvoNelderMead:
+#
+#     def __init__(self, rng=None):
+#         self.ncores_nm = ncoresNelderMead()
+#         self.rng = rng
+#
+#     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6, maxnfev=None, step=None# ,
+#                  numcores=None, npop=None, seed=23, sfactor=0.85, xprob=0.7,
+#                  verbose=0):
+#
+#         nfev, nm_fmin, nm_par = \
+#             self.ncores_nm(fcn, x, xmin, xmax, tol, maxnfev, numcores)
+#
+#         npar = len(x)
+#         if npop is None:
+#             npop = 12 * npar
+#         npop = max(npop, npar * 32)
+#         if maxnfev is None:
+#             maxnfev = 8192 * npar
+#
+#         # TODO: the seed argument is not sent in
+#         mydifevo = \
+#             ncoresMyDifEvo(fcn, nm_par, xmin, xmax, npop, sfactor, xprob,
+#                            step, rng=self.rng)
+#         de_nfev, de_fmin, de_par = \
+#             mydifevo(tol, maxnfev - nfev, step, seed, numcores)
+#         nfev += de_nfev
+#
+#         if nm_fmin < de_fmin:
+#             my_fmin = nm_fmin
+#             my_par = nm_par
+#         else:
+#             my_fmin = de_fmin
+#             my_par = de_par
+#         nm_nfev, nm_fmin, nm_par = self.ncores_nm(fcn, my_par, xmin, xmax, tol# ,
+#                                                   maxnfev - nfev, numcores)
+#         nfev += nm_nfev
+#
+#         if nm_fmin < my_fmin:
+#             my_fmin = nm_fmin
+#             my_par = nm_par
+#
+#         return nfev, my_fmin, my_par

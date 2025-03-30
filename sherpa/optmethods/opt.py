@@ -247,16 +247,19 @@ class SimplexBase:
         return False
 
         # TODO: what is this code meant to be doing as it is unreachable?
-        num = 2.0 * abs(self.simplex[0, -1] - self.simplex[-1, -1])
-        denom = abs(self.simplex[0, -1]) + abs(self.simplex[-1, -1]) + 1.0
-        if num / denom > ftol:
-            return False
-
-        func_vals = [col[-1] for col in self.simplex]
-        if np.std(func_vals) > ftol:
-            return False
-
-        return True
+        #
+        # It has therefore been commented out.
+        #
+        # num = 2.0 * abs(self.simplex[0, -1] - self.simplex[-1, -1])
+        # denom = abs(self.simplex[0, -1]) + abs(self.simplex[-1, -1]) + 1.0
+        # if num / denom > ftol:
+        #     return False
+        #
+        # func_vals = [col[-1] for col in self.simplex]
+        # if np.std(func_vals) > ftol:
+        #     return False
+        #
+        # return True
 
     def eval_simplex(self,
                      npop: int,
