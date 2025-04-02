@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 - 2024
+#  Copyright (C) 2016 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -865,6 +865,8 @@ def set_xspec_atomdb_version():
     # (see #2216), so this is done globally.
     #
     xspec.set_xsxset("APECROOT", "3.0.9")
+    xspec.set_xsxset("NEIAPECROOT", "3.0.9")
+    xspec.set_xsxset("NEIVERS", "3.0.4")
 
 
 # Fixtures that control access to the tests, based on the availability
