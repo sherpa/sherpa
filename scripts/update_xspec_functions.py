@@ -146,7 +146,7 @@ def find_file() -> Path:
 
     # Can we find it from the installed location (which implies an
     # editable install)? This is not ideal, since it is somewhat
-    # mis-using the importlib machinery. The files is labelled as
+    # mis-using the importlib machinery. The files call is labelled as
     # returning a Traversable object which is not quite a Path, so
     # explicitly convert it here (even though the actual return type
     # is a Path).
