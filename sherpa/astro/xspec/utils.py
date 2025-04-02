@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2022
+#  Copyright (C) 2017, 2018, 2019, 2022, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -77,6 +77,9 @@ class ModelMeta(type):
 
     def __init__(cls, *args, **kwargs):
         if hasattr(cls, '__function__'):
+            # If this class extends an existing XSPEC class then _calc
+            # can already be set but it does not seem worth optimising
+            # this as perhaps __function__ has changed.
             try:
                 cls._calc = getattr(_xspec, cls.__function__)
             except AttributeError:

@@ -17134,7 +17134,7 @@ class XScflux(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_cflux
+    __function__ = "C_cflux"
 
     def __init__(self, name='xscflux'):
         self.Emin = XSParameter(name, 'Emin', 0.5, min=0.0, max=1e6,
@@ -17346,7 +17346,7 @@ class XScpflux(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_cpflux
+    __function__ = "C_cpflux"
 
     def __init__(self, name='xscpflux'):
         self.Emin = XSParameter(name, 'Emin', 0.5, min=0.0, max=1e6,
@@ -17399,7 +17399,7 @@ class XSgsmooth(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_gsmooth
+    __function__ = "C_gsmooth"
 
     def __init__(self, name='xsgsmooth'):
         self.Sig_6keV = XSParameter(name, 'Sig_6keV', 1.0, min=0.0, max=10.0,
@@ -17459,7 +17459,7 @@ class XSireflect(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_ireflct
+    __function__ = "C_ireflct"
 
     def __init__(self, name='xsireflect'):
         self.rel_refl = XSParameter(name, 'rel_refl', 0.0, min=-1.0, max=1e6,
@@ -17516,7 +17516,7 @@ class XSkdblur(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_kdblur
+    __function__ = "C_kdblur"
 
     def __init__(self, name='xskdblur'):
         self.Index = XSParameter(name, 'Index', 3.0, min=-10.0, max=10.0,
@@ -17574,7 +17574,7 @@ class XSkdblur2(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_kdblur2
+    __function__ = "C_kdblur2"
 
     def __init__(self, name='xskdblur2'):
         self.Index = XSParameter(name, 'Index', 3.0, min=-10.0, max=10.0,
@@ -17650,7 +17650,7 @@ class XSkerrconv(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_spinconv
+    __function__ = "C_spinconv"
 
     def __init__(self, name='xskerrconv'):
         self.Index1 = XSParameter(name, 'Index1', 3.0, min=-10.0, max=10.0,
@@ -17713,7 +17713,7 @@ class XSlsmooth(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_lsmooth
+    __function__ = "C_lsmooth"
 
     def __init__(self, name='xslsmooth'):
         self.Sig_6keV = XSParameter(name, 'Sig_6keV', 1.0, min=0.0, max=10.0,
@@ -17747,7 +17747,8 @@ class XSpartcov(XSConvolutionKernel):
     .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPartcov.html
 
     """
-    _calc = _xspec.C_PartialCovering
+
+    __function__ = "C_PartialCovering"
 
     def __init__(self, name='xspartcov'):
         self.CvrFract = XSParameter(name, 'CvrFract', 0.5, min=0.05, max=0.95,
@@ -17788,7 +17789,8 @@ class XSrdblur(XSConvolutionKernel):
     .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRdblur.html
 
     """
-    _calc = _xspec.C_rdblur
+
+    __function__ = "C_rdblur"
 
     def __init__(self, name='xsrdblur'):
         self.Betor10 = XSParameter(name, 'Betor10', -2.0, min=-10.0, max=20.0,
@@ -17852,7 +17854,8 @@ class XSreflect(XSConvolutionKernel):
     .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelReflect.html
 
     """
-    _calc = _xspec.C_reflct
+
+    __function__ = "C_reflct"
 
     def __init__(self, name='xsreflect'):
         self.rel_refl = XSParameter(name, 'rel_refl', 0.0, min=-1.0, max=1e6,
@@ -17958,7 +17961,7 @@ class XSrgsxsrc(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.rgsxsrc
+    __function__ = "rgsxsrc"
 
     def __init__(self, name='xsrgsxsrc'):
         self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1,
@@ -17995,7 +17998,7 @@ class XSsimpl(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_simpl
+    __function__ = "C_simpl"
 
     def __init__(self, name='xssimpl'):
         self.Gamma = XSParameter(name, 'Gamma', 2.3, min=1.1, max=4.0,
@@ -18262,7 +18265,7 @@ class XSzashift(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_zashift
+    __function__ = "C_zashift"
 
     def __init__(self, name='xszashift'):
         self.Redshift = mkRedshift(name)
@@ -18298,7 +18301,7 @@ class XSzmshift(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.C_zmshift
+    __function__ = "C_zmshift"
 
     def __init__(self, name='xszmshift'):
         self.Redshift = mkRedshift(name)
