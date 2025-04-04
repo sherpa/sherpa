@@ -9,7 +9,7 @@ Combining models and parameters
 
 Most of the examples show far have used a single model component,
 such as a one-dimensional polynomial or a two-dimensional gaussian,
-but individual components can be combined together, most commonly by addition,
+but individual components can be combined, most commonly by addition,
 multiplication, subtraction, or even division. Components can also
 be combined with scalar values or - with *great* care - NumPy vectors.
 Parameter values can be "combined" by
@@ -53,8 +53,8 @@ expression is not going to be used in a general setting).
 
 Any ufunc can be used to combine models
 =======================================
-Any `numpy universal function ("ufunc") <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs>`_
-can be used to combined models, for example::
+Any `universal function ("ufunc") <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs>`_
+can be used to modify or combine models, for example::
 
     >>> import numpy as np
     >>> from sherpa.models import Gauss1D
@@ -62,6 +62,7 @@ can be used to combined models, for example::
     >>> mdl = np.log10(g1)
 
 This includes many commonly used mathematical and trigonometric functions
+that are defines in the NumPy library,
 such as log, exp, sin, cos, which allows building quite complex model expressions.
 Only the numpy versions work here, **not** the functions from the
 build-in ``math`` module, so use `numpy.exp` instead of `math.exp`.
@@ -95,7 +96,7 @@ Not every possible link function makes sense
 With this flexibility, it is possible to define links that make no sense,
 for example taking the logical not of a parameter that represents a mass or
 turning values of parameters into arrays (Sherpa optimisers can only deal
-with scalar parameters.) In practice, such mistakes
+with scalar parameters). In practice, such mistakes
 are easy to spot when displaying a model; because Sherpa is meant to be
 a general and flexible modelling application that works with (almost)
 arbitrary user-defined models, the code puts as few restrictions

@@ -112,10 +112,15 @@ def test_basic_binop_raw(op):
 
 
 @pytest.mark.parametrize("op,opstr",
-                         [(operator.add, '+'), (operator.mul, '*'),
+                         [(np.add, '+'), (np.multiply, '*'),
+                          (np.subtract, '-'), (np.divide, '/'),
+                          (np.floor_divide, '//'), (np.true_divide, '/'),
+                          (np.remainder, '%'), (np.power, '**'),
+                          (operator.add, '+'), (operator.mul, '*'),
                           (operator.sub, '-'),
                           (operator.floordiv, '//'), (operator.truediv, '/'),
-                          (operator.mod, '%'), (operator.pow, '**')],
+                          (operator.mod, '%'), (operator.pow, '**'),
+                          ],
                           )
 def test_basic_binop(op, opstr):
 

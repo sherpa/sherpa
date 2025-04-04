@@ -1362,7 +1362,7 @@ class ArithmeticConstantModel(Model):
 #
 def _make_unop(op: Callable,
                opstr: str,
-               strformat: Optional[str] = None) -> Callable:
+               strformat: str | None = None) -> Callable:
 
     if strformat is None:
         def func(self):
@@ -1494,11 +1494,11 @@ class ArithmeticModel(Model):
                 # To avoid this, we explicity set the display for ufuncs like
                 # `np.multiply` to use the symbol `*`.
                 name = self.numpy_binop_with_symbols[ufunc]
-                return BinaryOpModel(inputs[0], inputs[1], ufunc, name,
-                                     strformat='{lhs} {opstr} {rhs}')
+                strformat = '{lhs} {opstr} {rhs}'
             else:
-                return BinaryOpModel(inputs[0], inputs[1], ufunc, name,
-                                     strformat='{opstr}({lhs}, {rhs})')
+                strformat = '{opstr}({lhs}, {rhs})'
+            return BinaryOpModel(inputs[0], inputs[1], ufunc, name,
+                                 strformat=strformat)
         return NotImplemented
 
     def __setstate__(self, state):

@@ -72,7 +72,9 @@ more-complicated cases, such as :doc:`convolution models
 Combining models
 ================
 
-The easiest way to combined and share models is by using the standard Python
+Models can be combined to serve as building blocs for more complex
+models; the same building block can be used multiple times.
+The easiest way to combine models is by using the standard Python
 numerical operators. For instance, a one-dimensional gaussian
 plus a flat background - using the
 :py:class:`~sherpa.models.basic.Const1D` class - would be

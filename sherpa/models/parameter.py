@@ -769,18 +769,18 @@ Examples
                 # In that case, the `__array_ufunc__` method of the other object
                 # will be called, and, when it fails, it will fall back to call
                 # the `__array_ufunc__` method of the ArithmeticModel.
-                # This leads to be surprinsing behavior that
+                # This leads to be surprising behavior that
                 # `float(0.5) * model` will be displayed as `0.5 * model`
                 # while `np.float64(0.5) * model` will be displayed as
                 # `numpy.multiply(0.5, model)`.
-                # To avoid this, we explicity set the display for ufuncs like
+                # To avoid this, we explicitly set the display for ufuncs like
                 # `np.multiply` to use the symbol `*`.
                 name = self.numpy_binop_with_symbols[ufunc]
-                return BinaryOpParameter(inputs[0], inputs[1], ufunc, name,
-                                     strformat='{lhs} {opstr} {rhs}')
+                strformat='{lhs} {opstr} {rhs}'
             else:
-                return BinaryOpParameter(inputs[0], inputs[1], ufunc, name,
-                                         strformat='{opstr}({lhs}, {rhs})')
+                strformat='{opstr}({lhs}, {rhs})'
+            return BinaryOpParameter(inputs[0], inputs[1], ufunc, name,
+                                     strformat=strformat)
         return NotImplemented
 
     def freeze(self) -> None:

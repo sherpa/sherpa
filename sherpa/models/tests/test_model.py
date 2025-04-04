@@ -546,7 +546,7 @@ def test_composite_iter():
 
 
 def test_composite_iter_ufunc():
-    """Repeat the test, but call a ufunc instead of using the "+" symbol"""
+    """Repeat test_composite_iter, but call a ufunc instead of using the "+" symbol"""
     out = setup_composite()
     m = np.add(np.multiply(3, out.m), out.m2)
     parts = list(m)
