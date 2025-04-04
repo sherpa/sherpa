@@ -1943,7 +1943,7 @@ def test_pha_get_specresp_no_response(make_test_pha):
 def test_pha_get_specresp_analysis_no_filter(make_test_pha, units):
     """Do we get sensible results with units setting, no filter?
 
-    There's noting in get_specresp that suggests the values should
+    There's nothing in get_specresp that suggests the values should
     change when the analysis setting changes (and specresp is in cm^2
     so is "independent" of the independent axis).
 
