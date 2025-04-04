@@ -1362,14 +1362,10 @@ class ArithmeticConstantModel(Model):
 #
 def _make_unop(op: Callable,
                opstr: str,
-               strformat: str | None = None) -> Callable:
-
-    if strformat is None:
-        def func(self):
-            return UnaryOpModel(self, op, opstr)
-    else:
-        def func(self):
-            return UnaryOpModel(self, op, opstr, strformat=strformat)
+               strformat: str = '{opstr}({arg})') -> Callable:
+    # The default for strformat matches the deault in UnaryOpModel
+    def func(self):
+        return UnaryOpModel(self, op, opstr, strformat=strformat)
 
     return func
 
