@@ -921,7 +921,7 @@ def test_deprecated_use_caching():
 def test_evaluate_no_cache1d_use_caching():
     """Check we can turn off caching: 1d"""
 
-    xgrid = numpy.arange(2, 10, 1.5)
+    xgrid = np.arange(2, 10, 1.5)
 
     mdl = Polynom1D()
     mdl.integrate = False
@@ -930,7 +930,7 @@ def test_evaluate_no_cache1d_use_caching():
     assert len(mdl._cache) == 0
 
     # Check the default values
-    expected = numpy.ones(6)
+    expected = np.ones(6)
     assert mdl(xgrid) == pytest.approx(expected)
     assert len(mdl._cache) == 0
 
@@ -997,13 +997,13 @@ def test_cache_is_actually_used():
     Here, we manipulte the cached value and then call the model
     to check that the cached value is used.
     """
-    xgrid = numpy.arange(2, 10, 1.5)
+    xgrid = np.arange(2, 10, 1.5)
 
     mdl = Polynom1D()
     assert len(mdl._cache) == 0
 
     # Check the default values
-    expected = numpy.ones(6)
+    expected = np.ones(6)
     assert mdl(xgrid) == pytest.approx(expected)
 
     # Manipulate the values in the cache
@@ -1162,7 +1162,6 @@ class DoNotUseModel(Model):
 
     def __init__(self, *args, **kwargs) -> None:
         # Model caching ability
-        self.cache = 2
         self.cache_clear()
         Model.__init__(self, *args, **kwargs)
 
@@ -1224,7 +1223,7 @@ def test_cache_reset_when_size_changes():
     mdl = Polynom1D()
     mdl.cache = 2
 
-    x = numpy.arange(2, 10, 1.5)
+    x = np.arange(2, 10, 1.5)
     mdl(x)
 
     assert len(mdl._cache) == 1
@@ -1261,7 +1260,7 @@ def test_cache_not_used_in_fit():
     """
     mdl = Const1D('con1')
     mdl.c0 = 1
-    dat = Data1D('data', numpy.arange(4), 2 * numpy.ones(4), numpy.ones(4))
+    dat = Data1D('data', np.arange(4), 2 * np.ones(4), np.ones(4))
     fit = Fit(dat, mdl)
     res = fit.fit()
     assert mdl.c0.val == pytest.approx(2)
