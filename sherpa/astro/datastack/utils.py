@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2015, 2016, 2020  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016, 2020, 2022
+# Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,9 +30,13 @@ logger = config_logger(__name__)
 ID_STR = '__ID'
 
 try:
-    import stk
-except:
-    logger.warning("could not import stk library. CIAO stack files and syntax will be disabled")
+    # Are we using the Sherpa-supplied version or the CIAO one?
+    from sherpa import stk
+except ImportError:
+    try:
+        import stk
+    except:
+        logger.warning("could not import stk library. CIAO stack files and syntax will be disabled")
 
 
 @public
