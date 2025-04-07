@@ -54,6 +54,9 @@ class Key2:
 
 
 class Strategy:
+    """Create a trial set of parameters.
+
+    """
 
     def __init__(self,
                  func: OptimizerFunc,
@@ -110,7 +113,7 @@ class Strategy0(Strategy):
                  icurrent: int
                  ) -> np.ndarray:
         r1, r2, r3 = self.init(3)
-        trial = np.array(pop[icurrent][:])
+        trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = pop[0][n] + self.sfactor * (pop[r2][n] - pop[r3][n])
@@ -128,7 +131,7 @@ class Strategy1(Strategy):
                  icurrent: int
                  ) -> np.ndarray:
         r1, r2, r3 = self.init(3)
-        trial = np.array(pop[icurrent][:])
+        trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = trial[n] + self.sfactor * (pop[r2][n] - pop[r3][n])
@@ -146,7 +149,7 @@ class Strategy2(Strategy):
                  icurrent: int
                  ) -> np.ndarray:
         r1, r2 = self.init(2)
-        trial = np.array(pop[icurrent][:])
+        trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = trial[n] + self.sfactor * (pop[0][n] - trial[n]) + \
@@ -165,7 +168,7 @@ class Strategy3(Strategy):
                  icurrent: int
                  ) -> np.ndarray:
         r1, r2, r3, r4 = self.init(4)
-        trial = np.array(pop[icurrent][:])
+        trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = pop[0][n] + \
@@ -185,7 +188,7 @@ class Strategy4(Strategy):
                  icurrent: int
                  ) -> np.ndarray:
         r1, r2, r3, r4, r5 = self.init(5)
-        trial = np.array(pop[icurrent][:])
+        trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = pop[r5][n] + \
@@ -205,7 +208,7 @@ class Strategy5(Strategy):
                  icurrent: int
                  ) -> np.ndarray:
         r1, r2, r3 = self.init(3)
-        trial = np.array(pop[icurrent][:])
+        trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -224,7 +227,7 @@ class Strategy6(Strategy):
                  icurrent: int
                  ) -> np.ndarray:
         r1, r2, r3 = self.init(3)
-        trial = np.array(pop[icurrent][:])
+        trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -243,7 +246,7 @@ class Strategy7(Strategy):
                  icurrent: int
                  ) -> np.ndarray:
         r1, r2 = self.init(2)
-        trial = np.array(pop[icurrent][:])
+        trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -262,7 +265,7 @@ class Strategy8(Strategy):
                  icurrent: int
                  ) -> np.ndarray:
         r1, r2, r3, r4 = self.init(4)
-        trial = np.array(pop[icurrent][:])
+        trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -281,7 +284,7 @@ class Strategy9(Strategy):
                  icurrent: int
                  ) -> np.ndarray:
         r1, r2, r3, r4, r5 = self.init(5)
-        trial = np.array(pop[icurrent][:])
+        trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
