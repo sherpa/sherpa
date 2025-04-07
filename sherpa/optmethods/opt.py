@@ -138,6 +138,16 @@ class Opt:
         self.func = self.func_bounds(self.func_count, self.npar,
                                      self.xmin, self.xmax)
 
+    # The sub-classes have different arguments, but do have maxnfev
+    # and ftol as common values.
+    #
+    def __call__(self,
+                 maxnfev: int,
+                 ftol: float,
+                 *args,
+                 **kwargs) -> MyOptOutput:
+        raise NotImplementedError
+
     @property
     def nfev(self) -> int:
         """How many evaluations of the function have been made?
