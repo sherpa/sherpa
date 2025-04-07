@@ -46,6 +46,12 @@ EPSILON = float(np.finfo(np.float32).eps)
 
 
 class MyNelderMead(Opt):
+    """
+
+    .. versionchanged:: 4.17.1
+       The calling convention has changed to match its superclass.
+
+    """
 
     def __init__(self,
                  fcn: OptimizerFunc,
@@ -60,9 +66,9 @@ class MyNelderMead(Opt):
         self.shrink_coef = 0.5          # sigma
 
     def __call__(self,
-                 xpar: np.ndarray,
                  maxnfev: int,  # TODO: can this be None?
-                 tol: float,
+                 ftol: float,
+                 xpar: np.ndarray,
                  step: np.ndarray,
                  finalsimplex: int,
                  verbose: int
@@ -75,7 +81,7 @@ class MyNelderMead(Opt):
                               xpar=xpar, xmin=self.xmin,
                               xmax=self.xmax, step=step, seed=None,
                               factor=None)
-        return self.optimize(xpar, simplex, maxnfev, tol,
+        return self.optimize(xpar, simplex, maxnfev, ftol,
                              finalsimplex, verbose)
 
     def contract_in_out(self,
@@ -261,7 +267,7 @@ class NelderMead0(NelderMeadBase):
         if step is None:
             step = self.calc_step(x0)
 
-        return my_nm(xpar=x0, maxnfev=maxnfev, tol=tol, step=step,
+        return my_nm(xpar=x0, maxnfev=maxnfev, ftol=tol, step=step,
                      finalsimplex=finalsimplex, verbose=verbose)
 
 
