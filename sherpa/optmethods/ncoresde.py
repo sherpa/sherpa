@@ -26,7 +26,7 @@ from sherpa.utils.parallel import parallel_map, ncpus
 from sherpa.utils import random
 
 from .ncoresnm import ncoresNelderMead
-from .opt import Opt, OptimizerFunc, MyOptOutput, SimplexRandom
+from .opt import FUNC_MAX, Opt, OptimizerFunc, MyOptOutput, SimplexRandom
 
 
 class Key2:
@@ -76,31 +76,20 @@ class Strategy:
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         raise NotImplementedError
 
     # The arg argument contains parameter values and then the
     # statistic value (which will be updated by this call).
     #
-    # The return value is the combination of
-    #      nfev, pars, statval
-    # where nfev is 1 if the values are "sensible" and 0 otherwise
-    # (relying on self.func to trigger any outside-parameter-range
-    # logic). This is essentially MyOptOutput but in a single array
-    # and the ordering is different.
-    #
     def calc(self,
              arg: np.ndarray,
              pop: Any  # unused
-             ) -> np.ndarray:
-        arg[-1] = self.func(arg[:-1])
-        tmp = np.empty(self.npar + 2)
-        tmp[1:] = arg[:]
-        if np.finfo(np.float64).max == arg[-1]:
-            tmp[0] = 0
-        else:
-            tmp[0] = 1
-        return tmp
+             ) -> MyOptOutput:
+
+        funcval = self.func(arg[:-1])
+        nfev = 1 if funcval != FUNC_MAX else 0
+        return (nfev, funcval, arg[:-1])
 
     def init(self, num: int) -> np.ndarray:
         return random.choice(self.rng, range(self.npop), num)
@@ -111,7 +100,7 @@ class Strategy0(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         # Although only two numbers are needed, leave as is since the
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
@@ -131,7 +120,7 @@ class Strategy1(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         # Although only two numbers are needed, leave as is since the
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
@@ -151,7 +140,7 @@ class Strategy2(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         r1, r2 = self.init(2)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
@@ -170,7 +159,7 @@ class Strategy3(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         r1, r2, r3, r4 = self.init(4)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
@@ -190,7 +179,7 @@ class Strategy4(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         r1, r2, r3, r4, r5 = self.init(5)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
@@ -210,7 +199,7 @@ class Strategy5(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         # Although only two numbers are needed, leave as is since the
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
@@ -231,7 +220,7 @@ class Strategy6(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         r1, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
@@ -250,7 +239,7 @@ class Strategy7(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         r1, r2 = self.init(2)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
@@ -269,7 +258,7 @@ class Strategy8(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         # Although only three numbers are needed, leave as is since the
         # code has been tested using this call.
         _, r2, r3, r4 = self.init(4)
@@ -290,7 +279,7 @@ class Strategy9(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> np.ndarray:
+                 ) -> MyOptOutput:
         r1, r2, r3, r4, r5 = self.init(5)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
@@ -309,8 +298,7 @@ class MyDifEvo(Opt):
     """
 
     .. versionchanged:: 4.17.1
-       Calling the object now requires named arguments: maxnfev and
-       ftol.
+       Some of the methods now use more-structured return types.
 
     """
 
@@ -390,8 +378,8 @@ class MyDifEvo(Opt):
     #     best_val = best_vertex[-1]
     #     return self.nfev, best_val, best_par
 
-    def all_strategies(self, key: int) -> np.ndarray:
-        rand, index = self.key2.parse(key)
+    def all_strategies(self, key: int) -> MyOptOutput:
+        _, index = self.key2.parse(key)
 
         # Set the seed if RNG is not sent in. This used to change
         # random.seed but now changes the NumPy version. It is not
@@ -405,22 +393,20 @@ class MyDifEvo(Opt):
         best_trial = self.strategies[0](mypop, index)
         for ii in range(1, len(self.strategies)):
             trial = self.strategies[ii](mypop, index)
-            if trial[-1] < best_trial[-1]:
+            if trial[1] < best_trial[1]:
                 best_trial = trial
 
-        if best_trial[-1] < mypop[0][-1]:
-            best_trial = self.apply_local_opt(best_trial, index)
+        if best_trial[1] < mypop[0][-1]:
+            return self.apply_local_opt(best_trial, index)
+
         return best_trial
 
     def apply_local_opt(self,
-                        arg: np.ndarray,
+                        arg: MyOptOutput,
                         index: int
-                        ) -> np.ndarray:
+                        ) -> MyOptOutput:
         local_opt = self.local_opt[index % len(self.local_opt)]
-        result = local_opt(self.func, arg[1:-1], self.xmin, self.xmax)
-        tmp = np.append(result[0], result[2])
-        result = np.append(tmp, result[1])
-        return result
+        return local_opt(self.func, arg[2], self.xmin, self.xmax)
 
     def calc_key(self,
                  indices,
@@ -476,13 +462,16 @@ class ncoresMyDifEvo(MyDifEvo):
             # and not have to think about parallel_map_rng.
             #
             keys = self.calc_key(range(self.npop))
-            results = \
+            results: list[MyOptOutput] = \
                 parallel_map(self.all_strategies, keys, numcores)
 
-            for index, result in enumerate(results):
-                nfev += int(result[0])
-                if result[-1] < mypop[index][-1]:
-                    mypop[index] = result[1:]
+            for index, (nfev_r, fval_r, pars_r) in enumerate(results):
+                nfev += int(nfev_r)
+                if fval_r < mypop[index][-1]:
+                    # SimplexRandom stores <par1, ..., parN, statval>
+                    # in each row (index vaue).
+                    tmp = np.append(pars_r, fval_r)
+                    mypop[index] = tmp
 
             self.polytope.sort()
             if self.polytope.check_convergence(ftol, 0):
