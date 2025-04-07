@@ -103,7 +103,9 @@ References
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import suppress
+import functools
 import logging
 from pathlib import Path
 import string
@@ -1861,6 +1863,50 @@ def mkabund(name: str,
                        hard_min=minval, hard_max=maxval, frozen=True)
 
 
+
+def eval_xspec_with_fixed_norm(func: Callable) -> Callable:
+    """Decorator to evaluate an `XSAdditativeModel` with norm=1.
+
+    The norm is then applied in Python, instead of in the XSPEC code.
+    This is a speed optimization. For a single call to an XSPEC model, there
+    is no advantage, because the XSPEC model needs to be called anyway; it is
+    just called with norm=1 instead of the actal norm and the output of the
+    XSPEC model is multiplied by the actual norm in Python.
+    The main advantage comes in fitting: Because the XSPEC model is called with
+    the same norm (1.0) every time, is is far more likely to hit a parameter
+    combination that is already cached (every time the optimizer changes only the norm).
+    This results in a much higher hit rate for the cache, speeding up the fit.
+
+    This decorator is written specifically for the `XSAdditiveModel` class where, by
+    construction, the last parameter is always the norm.
+    It is applied by wrapping the `calc` method of the class, which then on the inside
+    calls the `calc` method of the super class, which itself applies the
+    `sherpa.models.model.modelCacher1d` decorator.
+
+    See https://github.com/sherpa/sherpa/issues/767 for an extensive discussion
+    including performance benchmarks.
+    While some XSPEC models seem to have an internal cache for the norm similar to
+    this decorator, in other cases, we see 20% speed-ups in the fitting time.
+    Details depend a lot on the data and models in case. At the very least, no
+    case has been found where this decorator slows down the fitting process
+    significantly, thus it is justified to apply it broadly to all XSAdditiveModels.
+
+    For some models, there is an additional benefit: Since it is multiplied on in
+    Python, the norm retains the full precision of a float, while some XSPEC models use
+    lower precision floats internally. The higher precision can reduce the number of
+    function evaluations needed to reach the same accuracy in the fit.
+    """
+    @functools.wraps(func)
+    def cache_model(cls, pars, xlo, *args, **kwargs):
+        # While the following line looks harmless, benchmarking indicates a
+        # noticable performance hit from the lookup of order 10 ms per fuction call,
+        # thus it is commented out in the production version of the code.
+        # assert cls.pars[-1].name == 'norm'
+        pars_with_norm_1 = (*pars[:-1], 1)
+        return pars[-1] * func(cls, pars_with_norm_1, xlo, *args, **kwargs)
+    return cache_model
+
+
 class XSAdditiveModel(XSModel):
     """The base class for XSPEC additive models.
 
@@ -1899,6 +1945,10 @@ class XSAdditiveModel(XSModel):
         """
         norm = get_xspec_norm(dep, self(*args))
         param_apply_limits(norm, self.norm, **kwargs)
+
+    @eval_xspec_with_fixed_norm
+    def calc(self, p, xlo, *args, **kwargs):
+        return super().calc(p, xlo, *args, **kwargs)
 
 
 class XSMultiplicativeModel(XSModel):
