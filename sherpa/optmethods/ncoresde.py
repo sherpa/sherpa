@@ -86,6 +86,8 @@ class Strategy:
     # The arg argument contains just the parameter values.
     #
     def calc(self,
+             # do we need to send in arg like this as it looks to
+             # be more than just the pars?
              arg: np.ndarray,
              pop: Any  # unused
              ) -> MyOptOutput:
