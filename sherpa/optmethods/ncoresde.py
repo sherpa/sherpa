@@ -433,13 +433,11 @@ class ncoresMyDifEvo(MyDifEvo):
     """
 
     .. versionchanged:: 4.17.1
-       Calling the object now requires named arguments and the
-       ordering has been changed to match the superclass.
+       The calling convention has been changed to match its superclass.
 
     """
 
     def __call__(self,
-                 *,
                  maxnfev: int,
                  ftol: float,
                  numcores: int | None = ncpus
