@@ -95,6 +95,11 @@ class MyNelderMead(Opt):
 
         rho_chi = self.reflection_coef * self.expansion_coef
         rho_gamma = self.reflection_coef * self.contraction_coef
+
+        # This is presumably because SimplexStep was called with
+        # npop=npar + 1, so bad_index corresponds to the last pop
+        # element.
+        #
         bad_index = len(xpar)
 
         while self.nfev < maxnfev:
@@ -103,11 +108,10 @@ class MyNelderMead(Opt):
             if verbose > 2:
                 print(f'f{simplex[0, :-1]}={simplex[0, -1]:e}')
 
-            centroid = simplex.calc_centroid()
-
             if simplex.check_convergence(tol, finalsimplex):
                 break
 
+            centroid = simplex.calc_centroid()
             reflection_pt = simplex.move_vertex(centroid, self.reflection_coef)
 
             if simplex[0, -1] <= reflection_pt[-1] and \
