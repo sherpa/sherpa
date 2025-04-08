@@ -25,9 +25,10 @@ import numpy as np
 
 import pytest
 
-from sherpa.astro.ui.utils import Session
+from sherpa.astro import hc
 from sherpa.astro.data import Data1D, DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
 from sherpa.astro.instrument import create_arf, create_delta_rmf
+from sherpa.astro.ui.utils import Session
 from sherpa.models.basic import Gauss1D, Gauss2D
 from sherpa.utils import parse_expr
 from sherpa.utils.err import ArgumentTypeErr, DataErr
@@ -3959,6 +3960,65 @@ def test_to_guess_when_all_ignored_dataimg():
     with pytest.raises(DataErr,
                        match="mask excludes all data"):
         _ = data.to_guess()
+
+
+def make_pha_for_guess():
+
+    channels = [1, 2, 3, 4, 5]
+    counts = [10, 12, 0, 3, 5]
+    grouping = [1, 1, 1, 1, -1]
+    quality = [0, 0, 5, 0, 0]
+    exposure = 100
+
+    egrid = np.asarray([20.1, 20.2, 21.2, 21.3, 22.0, 24.5])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    specresp = np.asarray([1000, 1010, 50, 1040, 1020])
+    arf = create_arf(elo, ehi, specresp)
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    # So,
+    #    exposure  = 100
+    #    arf       ~ 1000 [for good channels]
+    #    bin width ~ 0.1 to 2.5 keV
+    #
+    # These could be adjusted to give nice numbers for the tests.
+    #
+    pha = DataPHA("guess", channels, counts, exposure=exposure,
+                  quality=quality, grouping=grouping)
+    pha.set_rmf(rmf)
+    pha.set_arf(arf)
+    pha.ignore_bad()
+
+    assert pha.grouped
+    assert pha.units == "channel"
+    return pha
+
+
+@pytest.mark.parametrize("units,lo,hi,y",
+                         [("channel",
+                           [1, 2, 4], [2, 3, 6], [0.1, 0.12, 0.04]),
+                          ("energy",
+                           [20.1, 20.2, 21.3], [20.2, 21.2, 24.5],
+                           [0.001, 1.18812e-4, 2.427184e-5]),
+                          ("wave",
+                           [hc / 20.2, hc / 21.2, hc / 24.5],
+                           [hc / 20.1, hc / 20.2, hc / 21.3],
+                           [3.274772e-2, 4.103749e-3, 1.021603e-3])
+                          ])
+def test_datapha_to_guess(units, lo, hi, y):
+    """Minimal check that to_guess returns something sensible.
+
+    This is partly a regression test.
+
+    """
+
+    pha = make_pha_for_guess()
+    pha.set_analysis(units)
+    a, b, c = pha.to_guess()
+    assert a == pytest.approx(y)
+    assert b == pytest.approx(lo)
+    assert c == pytest.approx(hi)
 
 
 def test_get_x_when_empty_datapha():
