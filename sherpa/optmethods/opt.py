@@ -214,8 +214,8 @@ class SimplexBase:
                  rng: RandomType | None = None
                  ) -> None:
         self.func = func
-        self.xmin = xmin
-        self.xmax = xmax
+        self.xmin = np.asarray(xmin)
+        self.xmax = np.asarray(xmax)
         self.npar = len(xpar)
         self.rng = rng
 
@@ -342,15 +342,10 @@ class SimplexBase:
         #
         assert factor is not None, "caller did not set factor"
         deltas = factor * np.abs(np.asarray(xpar))
+        xmins = np.maximum(self.xmin, xpar - deltas)
+        xmaxs = np.minimum(self.xmax, xpar + deltas)
         for ii in range(start, npop):
-            simplex[ii][:-1] = \
-                np.array([uniform(self.rng,
-                                  max(xmin, xp - delta),
-                                  min(xmax, xp + delta))
-                          for xmin, xmax, xp, delta in zip(self.xmin,
-                                                           self.xmax,
-                                                           xpar,
-                                                           deltas)])
+            simplex[ii][:-1] = uniform(self.rng, xmins, xmaxs)
 
         return simplex
 
@@ -363,12 +358,12 @@ class SimplexBase:
         return vertex
 
     def shrink(self, shrink_coef: float) -> None:
-        npars_plus_1 = self.npar + 1
-        for ii in range(1, npars_plus_1):
-            self.simplex[ii] = \
-                self.simplex[0] + shrink_coef * \
-                (self.simplex[ii] - self.simplex[0])
-            self.simplex[ii, -1] = self.func(self.simplex[ii, :-1])
+
+        self.simplex[1:] = self.simplex[0] + \
+            shrink_coef * (self.simplex[1:] - self.simplex[0])
+
+        for simplex in self.simplex[1:]:
+            simplex[-1] = self.func(simplex[:-1])
 
     @staticmethod
     def sort_me(simp: np.ndarray
