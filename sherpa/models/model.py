@@ -1363,7 +1363,7 @@ class ArithmeticConstantModel(Model):
 def _make_unop(op: Callable,
                opstr: str,
                strformat: str = '{opstr}({arg})') -> Callable:
-    # The default for strformat matches the deault in UnaryOpModel
+    # The default for strformat matches the default in UnaryOpModel
     def func(self):
         return UnaryOpModel(self, op, opstr, strformat=strformat)
 
@@ -1477,13 +1477,13 @@ class ArithmeticModel(Model):
                 # with the symbol `*`.
                 # This works where both `a` and `b` are ArithmeticModels or when
                 # e.g. `a` is a Python float and `b` is an ArithmeticModel.
-                # However, that is not the case if `a` some other objects that
+                # However, that is not the case if `a` is some other objects that
                 # does have an `__array_ufunc__` method itself, but raises an
                 # NotImplemented error when called with an ArtihmeticModel.
                 # In that case, the `__array_ufunc__` method of the other object
                 # will be called, and, when it fails, it will fall back to call
                 # the `__array_ufunc__` method of the ArithmeticModel.
-                # This leads to be surprinsing behavior that
+                # This leads to be surprising behavior that
                 # `float(0.5) * model` will be displayed as `0.5 * model`
                 # while `np.float64(0.5) * model` will be displayed as
                 # `numpy.multiply(0.5, model)`.
@@ -1718,7 +1718,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
 
         # Is this an infix or prefix operator? This could be specified
         # explicitly (and, in fact, could replace the use of the
-        # strformat argument), but for now the behvaiour is inferred
+        # strformat argument), but for now the behaviour is inferred
         # by assuming that a prefix operator has strformat beginning
         # with '{opstr}(. This heuristic is not perfect, but should be
         # sufficient for our needs.

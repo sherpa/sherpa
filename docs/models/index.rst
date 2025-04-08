@@ -72,7 +72,7 @@ more-complicated cases, such as :doc:`convolution models
 Combining models
 ================
 
-Models can be combined to serve as building blocs for more complex
+Models can be combined to serve as building blocks for more complex
 models; the same building block can be used multiple times.
 The easiest way to combine models is by using the standard Python
 numerical operators. For instance, a one-dimensional gaussian
@@ -116,7 +116,7 @@ FWHM (full-width half-maximum)
 parameters to be the same but to let the position and amplitude
 values vary independently.
 
-More information including more complex, but more powerful ways to combined models
+More information including more complex, but more powerful ways to combine models
 is available in the
 :doc:`combining models <../evaluation/combine>`
 and

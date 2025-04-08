@@ -150,7 +150,7 @@ custom_ufunc = np.frompyfunc(custom_func, nin=2, nout=1)
                           (np.heaviside, "numpy.heaviside(polynom2d, gauss2d)"),
                           (np.greater, "numpy.greater(polynom2d, gauss2d)"),
                           (np.arctan2, "numpy.arctan2(polynom2d, gauss2d)"),
-                          # and out own, custom made ufunc
+                          # and our own, custom made ufunc
                           (custom_ufunc, "custom_func(polynom2d, gauss2d)"),
                       ]
                           )

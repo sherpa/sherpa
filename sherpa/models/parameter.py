@@ -763,7 +763,7 @@ Examples
                 # with the symbol `*`.
                 # This works where both `a` and `b` are ArithmeticModels or when
                 # e.g. `a` is a Python float and `b` is an ArithmeticModel.
-                # However, that is not the case if `a` some other objects that
+                # However, that is not the case if `a` is some other objects that
                 # does have an `__array_ufunc__` method itself, but raises an
                 # NotImplemented error when called with an ArtihmeticModel.
                 # In that case, the `__array_ufunc__` method of the other object
