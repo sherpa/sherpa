@@ -213,6 +213,13 @@ class Opt:
 # statistic array" by number (the pop argument).
 #
 class SimplexBase:
+    """
+
+    .. versionchanged:: 4.17.1
+       The init routine has been reworked and is now sent the
+       starting simplex.
+
+    """
 
     def __init__(self,
                  func: OptimizerFunc,
@@ -225,14 +232,29 @@ class SimplexBase:
                  factor: float | None,
                  rng: RandomType | None = None
                  ) -> None:
+
+        assert npop > 0  # safety check
+
         self.func = func
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
         self.npar = len(xpar)
         self.rng = rng
 
-        self.simplex = self.init(npop=npop, xpar=np.asarray(xpar),
-                                 step=step, seed=seed, factor=factor)
+        xpar_np = np.asarray(xpar)
+
+        # simplex is a npop by (npar + 1) array, where each row
+        # contains the parameter values and then the corresponding
+        # statistic value for that set of parameters.
+        #
+        # The __get/setitem__ calls allow the object to index into
+        # the "pars + statistic array" by pop number.
+        #
+        simplex = np.empty((npop, self.npar + 1))
+        simplex[0][:-1] = xpar_np
+        simplex = self.init(npop=npop, xpar=xpar_np, simplex=simplex,
+                            step=step, seed=seed, factor=factor)
+        self.simplex = self.eval_simplex(npop, simplex)
 
     def __getitem__(self, index):
         return self.simplex[index]
@@ -324,6 +346,7 @@ class SimplexBase:
     def init(self,
              npop: int,
              xpar: np.ndarray,
+             simplex: np.ndarray,
              step: np.ndarray | None,
              seed: int | None,
              factor: float | None
@@ -395,25 +418,23 @@ class SimplexNoStep(SimplexBase):
     def init(self,
              npop: int,
              xpar: np.ndarray,
+             simplex: np.ndarray,
              step: np.ndarray | None,
              seed: int | None,
              factor: float | None
              ) -> np.ndarray:
-        npar1 = self.npar + 1
-        simplex = np.empty((npop, npar1))
-        simplex[0][:-1] = np.copy(xpar)
         for ii in range(self.npar):
             tmp = np.copy(xpar)
             if 0.0 == tmp[ii]:
                 tmp[ii] = 2.5e-4
             else:
                 tmp[ii] *= 1.05
-            simplex[ii+1][:-1] = tmp[:]
+            simplex[ii+1][:-1] = tmp
 
-        simplex = self.init_random_simplex(xpar, simplex, start=npar1,
-                                           npop=npop, seed=seed,
-                                           factor=factor)
-        return self.eval_simplex(npop, simplex)
+        npar1 = self.npar + 1
+        return self.init_random_simplex(xpar, simplex, start=npar1,
+                                        npop=npop, seed=seed,
+                                        factor=factor)
 
 
 class SimplexStep(SimplexBase):
@@ -421,6 +442,7 @@ class SimplexStep(SimplexBase):
     def init(self,
              npop: int,
              xpar: np.ndarray,
+             simplex: np.ndarray,
              step: np.ndarray | None,
              seed: int | None,
              factor: float | None
@@ -430,16 +452,14 @@ class SimplexStep(SimplexBase):
         # use an assert.
         assert step is not None
 
-        npar1 = self.npar + 1
-        simplex = np.empty((npop, npar1))
-        simplex[0][:-1] = np.copy(xpar)
         for ii in range(self.npar):
             tmp = xpar[ii] + step[ii]
             simplex[ii + 1][:-1] = tmp
 
-        simplex = self.init_random_simplex(xpar, simplex, start=npar1,
-                                           npop=npop, seed=seed, factor=factor)
-        return self.eval_simplex(npop, simplex)
+        npar1 = self.npar + 1
+        return self.init_random_simplex(xpar, simplex, start=npar1,
+                                        npop=npop, seed=seed,
+                                        factor=factor)
 
 
 class SimplexRandom(SimplexBase):
@@ -447,15 +467,12 @@ class SimplexRandom(SimplexBase):
     def init(self,
              npop: int,
              xpar: np.ndarray,
+             simplex: np.ndarray,
              step: np.ndarray | None,
              seed: int | None,
              factor: float | None
              ) -> np.ndarray:
-        npar1 = self.npar + 1
-        simplex = np.empty((npop, npar1))
-        simplex[0][:-1] = np.copy(xpar)
 
-        simplex = self.init_random_simplex(xpar, simplex, start=1,
-                                           npop=npop, seed=seed,
-                                           factor=factor)
-        return self.eval_simplex(npop, simplex)
+        return self.init_random_simplex(xpar, simplex, start=1,
+                                        npop=npop, seed=seed,
+                                        factor=factor)
