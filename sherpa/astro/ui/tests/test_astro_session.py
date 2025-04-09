@@ -4515,13 +4515,14 @@ def check_moncar(ncores, fr, g1, g2) -> None:
                 gright = g2
 
         case 2:
-            nexp = 7243
+            # These do not seem to depend on architecture.
+            nexp = 7119
             gleft = g1
             gright = g2
 
         case 3:
             if platform.machine() == "x86_64":
-                nexp = 6535
+                nexp = 5835
             else:
                 nexp = 7253
 

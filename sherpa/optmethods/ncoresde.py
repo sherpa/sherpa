@@ -79,17 +79,15 @@ class Strategy:
                  ) -> MyOptOutput:
         raise NotImplementedError
 
-    # The arg argument contains parameter values and then the
-    # statistic value (which will be updated by this call).
+    # The arg argument contains just the parameter values.
     #
     def calc(self,
              arg: np.ndarray,
              pop: Any  # unused
              ) -> MyOptOutput:
-
-        funcval = self.func(arg[:-1])
+        funcval = self.func(arg)
         nfev = 1 if funcval != FUNC_MAX else 0
-        return (nfev, funcval, arg[:-1])
+        return (nfev, funcval, arg)
 
     def init(self, num: int) -> np.ndarray:
         return random.choice(self.rng, range(self.npop), num)
@@ -426,7 +424,7 @@ class MyDifEvo(Opt):
             if trial[1] < best_trial[1]:
                 best_trial = trial
 
-        if best_trial[1] < mypop[0][-1]:
+        if best_trial[1] < mypop.fctvals[0]:
             return self.apply_local_opt(best_trial, index)
 
         return best_trial
@@ -495,36 +493,30 @@ class ncoresMyDifEvo(MyDifEvo):
 
             for index, (nfev_r, fval_r, pars_r) in enumerate(results):
                 nfev += int(nfev_r)
-                if fval_r < mypop[index][-1]:
-                    # SimplexRandom stores <par1, ..., parN, statval>
-                    # in each row (index vaue).
-                    tmp = np.append(pars_r, fval_r)
-                    mypop[index] = tmp
+                if fval_r < mypop.fctvals[index]:
+                    mypop[index] = pars_r
+                    mypop.fctvals[index] = fval_r
 
             self.polytope.sort()
             if self.polytope.check_convergence(ftol, 0):
                 break
 
-            best = mypop[0]
-            best_fval = best[-1]
+            best_fval = mypop.fctvals[0]
             if best_fval < old_fval:
-                best_par = best[:-1]
+                best_par = mypop[0]
                 tmp_nfev, tmp_fval, tmp_par = \
                     self.ncores_nm(self.func, best_par, self.xmin,
                                    self.xmax, tol=ftol)
                 nfev += tmp_nfev
                 if tmp_fval < best_fval:
-                    best_par = np.append(tmp_par, tmp_fval)
-                    mypop[1] = best_par[:]
+                    mypop[1] = tmp_par
+                    mypop.fctvals[1] = tmp_fval
                     self.polytope.sort()
                     old_fval = tmp_fval
                 else:
                     old_fval = best_fval
 
-        best_vertex = self.polytope[0]
-        best_par = best_vertex[:-1]
-        best_fval = best_vertex[-1]
-        return nfev, best_fval, best_par
+        return nfev, self.polytope.fctvals[0], self.polytope[0]
 
 
 # This is only used by tests/test_opt_original.py when run directly,
