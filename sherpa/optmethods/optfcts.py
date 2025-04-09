@@ -718,6 +718,8 @@ def montecarlo(fcn: StatFunc,
 
         ############################## nmDifEvo #############################
 
+        # TODO: what happens here when numcores > 1?
+        #
         ofval = FUNC_MAX
         while nfev < maxfev:
 
