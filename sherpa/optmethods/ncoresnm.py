@@ -87,7 +87,7 @@ class MyNelderMead(Opt):
     def contract_in_out(self,
                         simplex: SimplexBase,
                         centroid: np.ndarray,
-                        reflection_pt: np.ndarray,
+                        reflection_pt: tuple[np.ndarray, float],
                         rho_gamma: float,
                         contraction_coef: float,
                         badindex: int,
@@ -95,14 +95,15 @@ class MyNelderMead(Opt):
                         verbose: int
                         ) -> bool:
 
-        if simplex[badindex - 1, -1] <= reflection_pt[-1] and \
-               reflection_pt[-1] < simplex[badindex, -1]:
+        if simplex.fctvals[badindex - 1] <= reflection_pt[1] and \
+               reflection_pt[1] < simplex.fctvals[badindex]:
 
             outside_contraction_pt = \
                 simplex.move_vertex(centroid, rho_gamma)
 
-            if outside_contraction_pt[-1] <= reflection_pt[-1]:
-                simplex[badindex] = outside_contraction_pt
+            if outside_contraction_pt[1] <= reflection_pt[1]:
+                simplex[badindex] = outside_contraction_pt[0]
+                simplex.fctvals[badindex] = outside_contraction_pt[1]
                 if verbose > 2:
                     print('\taccept outside contraction point')
                     # and terminate the iteration
@@ -111,13 +112,14 @@ class MyNelderMead(Opt):
             # otherwise, go to step 5 (perform a shrink).
             return True
 
-        if reflection_pt[-1] >= simplex[badindex, -1]:
+        if reflection_pt[1] >= simplex.fctvals[badindex]:
 
             inside_contraction_pt = simplex.move_vertex(centroid,
                                                         - contraction_coef)
 
-            if inside_contraction_pt[-1] < simplex[badindex, -1]:
-                simplex[badindex] = inside_contraction_pt
+            if inside_contraction_pt[1] < simplex.fctvals[badindex]:
+                simplex[badindex] = inside_contraction_pt[0]
+                simplex.fctvals[badindex] = inside_contraction_pt[1]
                 if verbose > 2:
                     print('\taccept inside contraction point')
                 return False
@@ -150,7 +152,7 @@ class MyNelderMead(Opt):
 
             simplex.sort()
             if verbose > 2:
-                print(f'f{simplex[0, :-1]}={simplex[0, -1]:e}')
+                print(f'f{simplex[0]}={simplex.fctvals[0]:e}')
 
             if simplex.check_convergence(tol, finalsimplex):
                 break
@@ -158,21 +160,24 @@ class MyNelderMead(Opt):
             centroid = simplex.calc_centroid()
             reflection_pt = simplex.move_vertex(centroid, self.reflection_coef)
 
-            if simplex[0, -1] <= reflection_pt[-1] and \
-                    reflection_pt[-1] < simplex[bad_index - 1, -1]:
-                simplex[bad_index] = reflection_pt
+            if simplex.fctvals[0] <= reflection_pt[1] and \
+                    reflection_pt[1] < simplex.fctvals[bad_index - 1]:
+                simplex[bad_index] = reflection_pt[0]
+                simplex.fctvals[bad_index] = reflection_pt[1]
                 if verbose > 2:
                     print('\taccept reflection point')
 
-            elif reflection_pt[-1] < simplex[0, -1]:
+            elif reflection_pt[1] < simplex.fctvals[0]:
                 expansion_pt = simplex.move_vertex(centroid, rho_chi)
 
-                if expansion_pt[-1] < reflection_pt[-1]:
-                    simplex[bad_index] = expansion_pt
+                if expansion_pt[1] < reflection_pt[1]:
+                    simplex[bad_index] = expansion_pt[0]
+                    simplex.fctvals[bad_index] = expansion_pt[1]
                     if verbose > 2:
                         print('\taccept expansion point')
                 else:
-                    simplex[bad_index] = reflection_pt
+                    simplex[bad_index] = reflection_pt[0]
+                    simplex.fctvals[bad_index] = reflection_pt[1]
                     if verbose > 2:
                         print('\taccept reflection point')
 
@@ -182,10 +187,7 @@ class MyNelderMead(Opt):
                                         bad_index, maxnfev, verbose):
                     simplex.shrink(self.shrink_coef)
 
-        best_vertex = simplex[0]
-        best_par = best_vertex[:-1]
-        best_val = best_vertex[-1]
-        return self.nfev, best_val, best_par
+        return self.nfev, simplex.fctvals[0], simplex[0]
 
 
 class NelderMeadBase:

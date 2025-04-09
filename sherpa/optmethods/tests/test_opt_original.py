@@ -842,13 +842,13 @@ def test_simplexnostep(npar, kwargs):
     print('simp =\n', simp.simplex)
 
     # It's not clear what to actually test here, so just try this.
-    assert simp.simplex.shape == (21, 21)
+    assert simp.simplex.shape == (21, 20)
 
     expected = [4593.85,     4598.,       4613.434976, 4640.003125, 4640.003125, 4640.003125,
                 4640.003125, 4640.003125, 4640.003125, 4640.003125, 4640.003125, 4640.003125,
                 4640.194976, 4640.194976, 4640.194976, 4640.194976, 4640.194976, 4640.194976,
                 4640.194976, 4640.194976, 4640.194976]
-    assert simp.simplex[:, -1] == pytest.approx(expected)
+    assert simp.fctvals == pytest.approx(expected)
 
 
 @pytest.mark.parametrize("kwargs", make_simplex_kwargs())
@@ -866,7 +866,7 @@ def test_simplexstep(npar, kwargs):
     print('simp =\n', simp.simplex)
 
     # It's not clear what to actually test here, so just try this.
-    assert simp.simplex.shape == (22, 21)
+    assert simp.simplex.shape == (22, 20)
 
     expected = [4.59800000e+03, 1.33342000e+04, 1.33342000e+04, 1.33342000e+04,
                 1.33342000e+04, 1.33342000e+04, 1.33342000e+04, 1.33342000e+04,
@@ -874,7 +874,7 @@ def test_simplexstep(npar, kwargs):
                 9.42590000e+04, 9.42590000e+04, 9.42590000e+04, 9.42590000e+04,
                 9.42590000e+04, 9.42590000e+04, 9.42590000e+04, 9.42590000e+04,
                 9.42590000e+04, 5.26696072e+06]
-    assert simp.simplex[:, -1] == pytest.approx(expected)
+    assert simp.fctvals == pytest.approx(expected)
 
 
 @pytest.mark.parametrize("kwargs", make_simplex_kwargs())
@@ -892,7 +892,7 @@ def test_simplexrandom(npar, kwargs):
     print('simp =\n', simp.simplex)
 
     # It's not clear what to actually test here, so just try this.
-    assert simp.simplex.shape == (25, 21)
+    assert simp.simplex.shape == (25, 20)
 
     expected = [4.59800000e+03, 1.87575996e+06, 2.24392925e+06, 2.93141604e+06,
                 3.97078993e+06, 4.04528040e+06, 4.27902906e+06, 4.56916204e+06,
@@ -901,7 +901,7 @@ def test_simplexrandom(npar, kwargs):
                 7.96867981e+06, 8.55119428e+06, 8.57490213e+06, 8.94455460e+06,
                 9.23797380e+06, 9.33632243e+06, 9.35800168e+06, 1.10551927e+07,
                 1.11014649e+07]
-    assert simp.simplex[:, -1] == pytest.approx(expected)
+    assert simp.fctvals == pytest.approx(expected)
 
 
 if __name__ == "__main__":

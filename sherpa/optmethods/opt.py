@@ -19,7 +19,6 @@
 #
 
 from collections.abc import Callable, Sequence
-import operator
 
 import numpy as np
 
@@ -216,8 +215,9 @@ class SimplexBase:
     """
 
     .. versionchanged:: 4.17.1
-       The init routine has been reworked and is now sent the
-       starting simplex.
+       The init routine has been reworked and is now sent the starting
+       simplex and the statistic value is now stored separately from
+       the simplex.
 
     """
 
@@ -243,18 +243,15 @@ class SimplexBase:
 
         xpar_np = np.asarray(xpar)
 
-        # simplex is a npop by (npar + 1) array, where each row
-        # contains the parameter values and then the corresponding
-        # statistic value for that set of parameters.
-        #
         # The __get/setitem__ calls allow the object to index into
-        # the "pars + statistic array" by pop number.
+        # the pars array by pop number. The statistic needs to be
+        # set/get manually via the fctvals field.
         #
-        simplex = np.empty((npop, self.npar + 1))
-        simplex[0][:-1] = xpar_np
+        simplex = np.empty((npop, self.npar))
+        simplex[0] = xpar_np
         simplex = self.init(npop=npop, xpar=xpar_np, simplex=simplex,
                             step=step, seed=seed, factor=factor)
-        self.simplex = self.eval_simplex(npop, simplex)
+        self.simplex, self.fctvals = self.eval_simplex(npop, simplex)
 
     def __getitem__(self, index):
         return self.simplex[index]
@@ -271,13 +268,11 @@ class SimplexBase:
                           ) -> bool:
 
         def are_func_vals_close_enough() -> bool:
-            smallest_fct_val = self.simplex[0, -1]
-            largest_fct_val = self.simplex[-1, -1]
-            return Knuth_close(smallest_fct_val, largest_fct_val,
+            return Knuth_close(self.fctvals[0], self.fctvals[-1],
                                ftol)
 
         def is_fct_stddev_small_enough() -> bool:
-            fval_std = np.std([col[-1] for col in self.simplex])
+            fval_std = np.std(self.fctvals)
             # Force float comparison to avoid type checker warnings, both for
             # the arguments to the comparison and the return value.
             return float(fval_std) < float(ftol)
@@ -291,11 +286,11 @@ class SimplexBase:
             where 1 <= i <= n"""
 
             max_xi_x0 = -1.0
-            x0 = self.simplex[0, :-1]
+            x0 = self.simplex[0]
 
             npar_plus_1 = len(x0) + 1
             for ii in range(1, npar_plus_1):
-                xi = self.simplex[ii, :-1]
+                xi = self.simplex[ii]
                 xi_x0 = xi - x0
                 max_xi_x0 = max(max_xi_x0, np.dot(xi_x0, xi_x0))
 
@@ -338,10 +333,13 @@ class SimplexBase:
     def eval_simplex(self,
                      npop: int,
                      simplex: np.ndarray
-                     ) -> np.ndarray:
+                     ) -> tuple[np.ndarray, np.ndarray]:
+
+        fctvals = np.zeros(npop)
         for ii in range(npop):
-            simplex[ii][-1] = self.func(simplex[ii][:-1])
-        return self.sort_me(simplex)
+            fctvals[ii] = self.func(simplex[ii])
+
+        return self.sort_me(simplex, fctvals)
 
     def init(self,
              npop: int,
@@ -380,37 +378,37 @@ class SimplexBase:
         xmins = np.maximum(self.xmin, xpar - deltas)
         xmaxs = np.minimum(self.xmax, xpar + deltas)
         for ii in range(start, npop):
-            simplex[ii][:-1] = uniform(self.rng, xmins, xmaxs)
+            simplex[ii] = uniform(self.rng, xmins, xmaxs)
 
         return simplex
 
     def move_vertex(self,
                     centroid: np.ndarray,
                     coef: float
-                    ) -> np.ndarray:
+                    ) -> tuple[np.ndarray, float]:
         vertex = (1.0 + coef) * centroid - coef * self.simplex[self.npar]
-        vertex[-1] = self.func(vertex[:-1])
-        return vertex
+        return vertex, self.func(vertex)
 
     def shrink(self, shrink_coef: float) -> None:
 
         self.simplex[1:] = self.simplex[0] + \
             shrink_coef * (self.simplex[1:] - self.simplex[0])
 
-        for simplex in self.simplex[1:]:
-            simplex[-1] = self.func(simplex[:-1])
+        for idx, simplex in enumerate(self.simplex[1:], 1):
+            self.fctvals[idx] = self.func(simplex)
 
     @staticmethod
-    def sort_me(simp: np.ndarray
-                ) -> np.ndarray:
+    def sort_me(simp: np.ndarray,
+                fctvals: np.ndarray
+                ) -> tuple[np.ndarray, np.ndarray]:
         """Reorder the simplex by the statistic value (low to high)"""
-        myshape = simp.shape
-        tmp = np.array(sorted(simp, key=operator.itemgetter(-1)))
-        tmp.reshape(myshape)
-        return tmp
+
+        idx = np.argsort(fctvals)
+        return simp[idx], fctvals[idx]
 
     def sort(self) -> None:
-        self.simplex = self.sort_me(self.simplex)
+        self.simplex, self.fctvals = self.sort_me(self.simplex,
+                                                  self.fctvals)
 
 
 class SimplexNoStep(SimplexBase):
@@ -429,7 +427,7 @@ class SimplexNoStep(SimplexBase):
                 tmp[ii] = 2.5e-4
             else:
                 tmp[ii] *= 1.05
-            simplex[ii+1][:-1] = tmp
+            simplex[ii + 1] = tmp
 
         npar1 = self.npar + 1
         return self.init_random_simplex(xpar, simplex, start=npar1,
@@ -454,7 +452,7 @@ class SimplexStep(SimplexBase):
 
         for ii in range(self.npar):
             tmp = xpar[ii] + step[ii]
-            simplex[ii + 1][:-1] = tmp
+            simplex[ii + 1] = tmp
 
         npar1 = self.npar + 1
         return self.init_random_simplex(xpar, simplex, start=npar1,
