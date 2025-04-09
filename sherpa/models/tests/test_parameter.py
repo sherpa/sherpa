@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018 - 2024
+#  Copyright (C) 2007, 2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -225,6 +225,8 @@ def test_binop_string():
     comp = p + p2
     assert repr(comp) == "<BinaryOpParameter 'model.p + model.p2'>"
     comp = 1 + p * 2.7**p2
+    assert repr(comp) == "<BinaryOpParameter '1 + model.p * 2.7 ** model.p2'>"
+    comp = 1 + p * np.float64(2.7)**p2
     assert repr(comp) == "<BinaryOpParameter '1 + model.p * 2.7 ** model.p2'>"
     comp = np.logaddexp2(p, p2)
     assert repr(comp) == "<BinaryOpParameter 'numpy.logaddexp2(model.p, model.p2)'>"
@@ -608,14 +610,8 @@ def test_explicit_numpy_combination():
     assert isinstance(implicit, BinaryOpParameter)
     assert isinstance(explicit, BinaryOpParameter)
 
-    # The model version of this
-    # test_model_op::test_explicit_numpy_combination()
-    # has the names being the same, but they are not here.
-    # Is this related to #1653
-    #
-    # assert explicit.name == implicit.name
+    assert explicit.name == implicit.name
     assert implicit.name == "m1.a * (m2.b + m4.xx)"
-    assert explicit.name == "numpy.multiply(m1.a, numpy.add(m2.b, m4.xx))"
 
     # Check they evaluate to the same values.
     #

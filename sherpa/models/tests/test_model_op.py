@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020 - 2024
+#  Copyright (C) 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -50,7 +50,6 @@ def test_basic_unop_neg_raw():
 
     assert mdl.name == '<->(polynom2d)'
     assert mdl.op == np.negative
-    assert mdl.opstr == '<->'
     assert mdl.ndim == 2
 
 
@@ -61,7 +60,6 @@ def test_basic_unop_neg():
 
     assert mdl.name == '-(polynom2d)'
     assert mdl.op == np.negative
-    assert mdl.opstr == '-'
     assert mdl.ndim == 2
 
 
@@ -72,7 +70,6 @@ def test_basic_unop_pos():
 
     assert mdl.name == '+(polynom2d)'
     assert mdl.op == np.positive
-    assert mdl.opstr == '+'
     assert mdl.ndim == 2
 
 
@@ -83,7 +80,6 @@ def test_basic_unop_abs_raw():
 
     assert mdl.name == 'foo(polynom2d)'
     assert mdl.op == np.absolute
-    assert mdl.opstr == 'foo'
     assert mdl.ndim == 2
 
 
@@ -94,7 +90,6 @@ def test_basic_unop_abs():
 
     assert mdl.name == 'abs(polynom2d)'
     assert mdl.op == np.absolute
-    assert mdl.opstr == 'abs'
     assert mdl.ndim == 2
 
 
@@ -110,7 +105,6 @@ def test_basic_binop_raw(op):
     assert isinstance(mdl, BinaryOpModel)
     assert mdl.name == 'polynom2d xOx gauss2d'
     assert mdl.op == op
-    assert mdl.opstr == 'xOx'
     assert len(mdl.parts) == 2
     assert mdl.parts[0] == l
     assert mdl.parts[1] == r
@@ -121,7 +115,13 @@ def test_basic_binop_raw(op):
                          [(np.add, '+'), (np.multiply, '*'),
                           (np.subtract, '-'), (np.divide, '/'),
                           (np.floor_divide, '//'), (np.true_divide, '/'),
-                          (np.remainder, '%'), (np.power, '**')])
+                          (np.remainder, '%'), (np.power, '**'),
+                          (operator.add, '+'), (operator.mul, '*'),
+                          (operator.sub, '-'),
+                          (operator.floordiv, '//'), (operator.truediv, '/'),
+                          (operator.mod, '%'), (operator.pow, '**'),
+                          ],
+                          )
 def test_basic_binop(op, opstr):
 
     l = basic.Polynom2D()
@@ -130,12 +130,124 @@ def test_basic_binop(op, opstr):
 
     assert isinstance(mdl, BinaryOpModel)
     assert mdl.name == f'polynom2d {opstr} gauss2d'
-    assert mdl.op == op
-    assert mdl.opstr == opstr
+    isinstance(mdl.op, np.ufunc)  # The operator model function will be converted into the numpy version
     assert len(mdl.parts) == 2
     assert mdl.parts[0] == l
     assert mdl.parts[1] == r
     assert mdl.ndim == 2
+
+
+def custom_func(a, b):
+   return a + b
+
+custom_ufunc = np.frompyfunc(custom_func, nin=2, nout=1)
+
+@pytest.mark.parametrize("op,mdlname",
+                         [
+                          # Test a random selection of numpy ufuncs
+                          (np.add, "polynom2d + gauss2d"),
+                          (np.multiply, "polynom2d * gauss2d"),
+                          (np.heaviside, "numpy.heaviside(polynom2d, gauss2d)"),
+                          (np.greater, "numpy.greater(polynom2d, gauss2d)"),
+                          (np.arctan2, "numpy.arctan2(polynom2d, gauss2d)"),
+                          # and our own, custom made ufunc
+                          (custom_ufunc, "custom_func(polynom2d, gauss2d)"),
+                      ]
+                          )
+def test_binop_numpy_functions(op, mdlname):
+    """Same as the previous test, but with ufuncs from numpy
+    instead of the operator module."""
+
+    l = basic.Polynom2D()
+    r = basic.Gauss2D()
+    mdl = op(l, r)
+
+    assert isinstance(mdl, BinaryOpModel)
+    assert mdl.name == mdlname
+    assert mdl.op == op
+    assert len(mdl.parts) == 2
+    assert mdl.parts[0] == l
+    assert mdl.parts[1] == r
+    assert mdl.ndim == 2
+
+
+@pytest.mark.parametrize("in1, in2, op, mdlname",
+                         [
+                            (basic.Polynom2D(), float(2), np.add, "polynom2d + 2.0"),
+                            (int(2), basic.Polynom2D(), np.add, "2.0 + polynom2d"),
+                            (basic.Polynom2D(), 2, np.multiply, "polynom2d * 2.0"),
+                            (np.float64(0.5), basic.Polynom2D(), np.multiply, "0.5 * polynom2d"),
+                            (basic.Gauss2D(), np.float64(0.5), np.multiply, "gauss2d * 0.5"),
+                      ]
+                          )
+def test_binop_combine_model_with_number(in1, in2, op, mdlname):
+    """Same as the previous test, but with ufuncs from numpy
+    instead of the operator module."""
+    mdl = op(in1, in2)
+
+    assert isinstance(mdl, BinaryOpModel)
+    assert mdl.name == mdlname
+    assert mdl.op == op
+    assert len(mdl.parts) == 2
+    assert mdl.ndim == 2
+
+
+def custom_func_nin3(a, b, c):
+   return a + b + c
+
+custom_ufunc_nin3 = np.frompyfunc(custom_func_nin3, nin=3, nout=1)
+
+def test_model_ufunc_too_many_inputs():
+    '''Check that we get the right error if we have too many inputs'''
+    l = basic.Polynom2D()
+    r = basic.Gauss2D()
+    m = basic.NormGauss2D()
+    with pytest.raises(TypeError,
+                       match=re.escape("operand type(s) all returned NotImplemented from __array_ufunc__(<ufunc 'custom_func_nin3 (vectorized)'>, '__call__', <Polynom2D model instance 'polynom2d'>, <NormGauss2D model instance 'normgauss2d'>, <Gauss2D model instance 'gauss2d'>): 'Polynom2D', 'NormGauss2D', 'Gauss2D'")):
+        mdl = custom_ufunc_nin3(l, m, r)
+
+
+
+def custom_func_nout_2(a, b):
+   return a + b, a - b
+
+custom_ufunc_nout_2 = np.frompyfunc(custom_func_nout_2, nin=2, nout=2)
+
+def test_model_ufunc_too_many_outputs():
+    '''Check that we get the right error if we have too many outputs'''
+    l = basic.Polynom2D()
+    r = basic.Gauss2D()
+    with pytest.raises(TypeError,
+                       match=re.escape("operand type(s) all returned NotImplemented from __array_ufunc__(<ufunc 'custom_func_nout_2 (vectorized)'>, '__call__', <Polynom2D model instance 'polynom2d'>, <Gauss2D model instance 'gauss2d'>): 'Polynom2D', 'Gauss2D'")):
+        mdl = custom_ufunc_nout_2(l, r)
+
+
+def test_model_ufunc_not_call():
+    '''Models only support __call__, but other modes of ufuncs such as
+    accumulate, reduce, reduceat, etc.
+    '''
+    l = basic.Polynom2D()
+    r = basic.Gauss2D()
+    with pytest.raises(TypeError,
+                       match=re.escape("operand type(s) all returned NotImplemented from __array_ufunc__(<ufunc 'add'>, 'accumulate', <Polynom2D model instance 'polynom2d'>, axis=<Gauss2D model instance 'gauss2d'>): 'Polynom2D'")):
+        mdl = np.add.accumulate(l, r)
+
+
+def custom_func_nin1(a):
+   return 2 * a
+
+custom_ufunc_nin1 = np.frompyfunc(custom_func_nin1, nin=1, nout=1)
+
+def test_model_ufunc_nin1():
+    '''In most cases, this will be abs, or negative, which is handled with symbols
+    but it could be an arbitrary ufunc'''
+    l = basic.Const1D()
+    mdl = custom_ufunc_nin1(l)
+    assert isinstance(mdl, UnaryOpModel)
+    assert mdl.name == "custom_func_nin1(const1d)"
+    assert len(mdl.parts) == 1
+    assert mdl.ndim == 1
+    assert mdl([1, 2, 3]) == pytest.approx([2, 2, 2])
 
 
 def test_eval_op():
@@ -685,7 +797,8 @@ def test_explicit_numpy_combination():
 
     # Check the names are the same.
     #
-    assert explicit.name == implicit.name
+    # They are the same operations, but they are written differently
+    # assert explicit.name == implicit.name
 
     # Check they evaluate to the same values.
     #

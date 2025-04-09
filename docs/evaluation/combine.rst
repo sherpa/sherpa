@@ -9,7 +9,7 @@ Combining models and parameters
 
 Most of the examples show far have used a single model component,
 such as a one-dimensional polynomial or a two-dimensional gaussian,
-but individual components can be combined together by addition,
+but individual components can be combined, most commonly by addition,
 multiplication, subtraction, or even division. Components can also
 be combined with scalar values or - with *great* care - NumPy vectors.
 Parameter values can be "combined" by
@@ -31,7 +31,7 @@ Model Expressions
 A model, whether it is required to create a
 :py:class:`sherpa.fit.Fit` object or the argument to
 the :py:func:`sherpa.ui.set_source` call, is expected to
-behace like an instance of the
+behave like an instance of the
 :py:class:`sherpa.models.model.ArithmeticModel` class.
 Instances can be combined as
 `numeric types
@@ -49,6 +49,59 @@ Since the models are evaluated on a grid, it is possible to include
 a NumPy vector in the expression, but this is only possible in
 restricted situations, when the grid size is known (i.e. the model
 expression is not going to be used in a general setting).
+
+
+Any ufunc can be used to combine models
+=======================================
+Any `universal function ("ufunc") <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs>`_
+can be used to modify or combine models, for example::
+
+    >>> import numpy as np
+    >>> from sherpa.models import Gauss1D
+    >>> g1 = Gauss1D("g1")
+    >>> mdl = np.log10(g1)
+
+This includes many commonly used mathematical and trigonometric functions
+that are defines in the NumPy library,
+such as log, exp, sin, cos, which allows building quite complex model expressions.
+Only the numpy versions work here, **not** the functions from the
+build-in ``math`` module, so use `numpy.exp` instead of `math.exp`.
+Many more complex functions are available in
+`scipy.special <https://docs.scipy.org/doc/scipy/reference/special.html>`_;
+any arbitrary Python function can be turned into a ufunc with
+`numpy.frompyfunc <https://numpy.org/doc/stable/reference/generated/numpy.frompyfunc.html#numpy.frompyfunc>`_
+and the interface is also available for
+`C extensions <https://numpy.org/doc/stable/user/c-info.ufunc-tutorial.html#creating-a-new-universal-function>`_.
+
+This allows a user to build quite complex model expressions, but in many cases it
+might be better to write a :ref:`dedicated user model <usermodel>` that encompasses that complexity.
+
+In the following example, we combine two models, a Gaussian and a constant such that the
+resulting model value is always the maximum of the two::
+
+    >>> from sherpa.models import Const1D
+    >>> g1 = Gauss1D('g1')
+    >>> g1.fwhm = 2
+    >>> g1.ampl = 4
+    >>> c1 = Const1D('c1')
+    >>> c1.c0 = 1
+    >>> mdl = np.maximum(g1, c1)
+    >>> mdl(np.arange(-5, 5))
+    array([1., 1., 1., 1., 2., 4., 2., 1., 1., 1.])
+
+
+Not every possible link function makes sense
+--------------------------------------------
+
+With this flexibility, it is possible to define links that make no sense,
+for example taking the logical not of a parameter that represents a mass or
+turning values of parameters into arrays (Sherpa optimisers can only deal
+with scalar parameters). In practice, such mistakes
+are easy to spot when displaying a model; because Sherpa is meant to be
+a general and flexible modelling application that works with (almost)
+arbitrary user-defined models, the code puts as few restrictions
+as possible on the functions used for linking parameters.
+
 
 Example
 =======

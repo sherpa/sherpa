@@ -1357,13 +1357,21 @@ class ArithmeticConstantModel(Model):
         pass
 
 
-def _make_unop(op: Callable, opstr: str) -> Callable:
+# It's hard to come up with a sensible typing rule for the operator
+# in _make_unop/binop so we just use Callable.
+#
+def _make_unop(op: Callable,
+               opstr: str,
+               strformat: str = '{opstr}({arg})') -> Callable:
+    # The default for strformat matches the default in UnaryOpModel
     def func(self):
-        return UnaryOpModel(self, op, opstr)
+        return UnaryOpModel(self, op, opstr, strformat=strformat)
+
     return func
 
 
-def _make_binop(op: Callable, opstr: str) -> tuple[Callable, Callable]:
+def _make_binop(op: Callable,
+                opstr: str) -> tuple[Callable, Callable]:
     def func(self, rhs):
         return BinaryOpModel(self, rhs, op, opstr)
 
@@ -1425,11 +1433,69 @@ class ArithmeticModel(Model):
     __add__, __radd__ = _make_binop(np.add, '+')
     __sub__, __rsub__ = _make_binop(np.subtract, '-')
     __mul__, __rmul__ = _make_binop(np.multiply, '*')
-    __div__, __rdiv__ = _make_binop(np.divide, '/')
     __floordiv__, __rfloordiv__ = _make_binop(np.floor_divide, '//')
     __truediv__, __rtruediv__ = _make_binop(np.true_divide, '/')
     __mod__, __rmod__ = _make_binop(np.remainder, '%')
     __pow__, __rpow__ = _make_binop(np.power, '**')
+
+    numpy_binop_with_symbols = {
+        np.add: '+',
+        np.subtract: '-',
+        np.multiply: '*',
+        np.divide: '/',
+        np.floor_divide: '//',
+        np.true_divide: '/',
+        np.remainder: '%',
+        np.power: '**',
+    }
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if not method == '__call__':
+            return NotImplemented
+        if ufunc.nout != 1:
+            return NotImplemented
+        if hasattr(np, ufunc.__name__):
+            name = f"numpy.{ufunc.__name__}"
+        else:
+            # Unfortunately, there is no ufunc.__module__ we could use
+            # This could be a ufunc from e.g. scipy or generated from an
+            # arbitrary Python function with numpy.frompyfunc.
+            # In the latter case, the name will be something like
+            # "func (vectorized)", which looks confusing in our string
+            # representation, so we simplify it.
+            name = ufunc.__name__.replace(' (vectorized)', '')
+        if ufunc.nin == 1:
+            return UnaryOpModel(inputs[0], ufunc, name)
+        if ufunc.nin == 2:
+            if ufunc in self.numpy_binop_with_symbols:
+                # We want to replace certain numpy functions with symbols
+                # to make the expression more readable.
+                # For example, `np.multiply(a, b)` should be displayed as
+                # `a * b`.
+                # In many cases, `a * b` will trigger the __mul__ method
+                # of the ArithmeticModel, which will return a BinaryOpModel
+                # with the symbol `*`.
+                # This works where both `a` and `b` are ArithmeticModels or when
+                # e.g. `a` is a Python float and `b` is an ArithmeticModel.
+                # However, that is not the case if `a` is some other objects that
+                # does have an `__array_ufunc__` method itself, but raises an
+                # NotImplemented error when called with an ArtihmeticModel.
+                # In that case, the `__array_ufunc__` method of the other object
+                # will be called, and, when it fails, it will fall back to call
+                # the `__array_ufunc__` method of the ArithmeticModel.
+                # This leads to be surprising behavior that
+                # `float(0.5) * model` will be displayed as `0.5 * model`
+                # while `np.float64(0.5) * model` will be displayed as
+                # `numpy.multiply(0.5, model)`.
+                # To avoid this, we explicity set the display for ufuncs like
+                # `np.multiply` to use the symbol `*`.
+                name = self.numpy_binop_with_symbols[ufunc]
+                strformat = '{lhs} {opstr} {rhs}'
+            else:
+                strformat = '{opstr}({lhs}, {rhs})'
+            return BinaryOpModel(inputs[0], inputs[1], ufunc, name,
+                                 strformat=strformat)
+        return NotImplemented
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -1538,6 +1604,10 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         The ufunc to apply to the model values.
     opstr : str
         The symbol used to represent the operator.
+    strformat : str
+        Format string for printing this operation. Elements
+        that can be used are `arg` and `opstr`, e.g.
+        `strformat='{opstr}({arg})'`.
 
     Attributes
     ----------
@@ -1569,16 +1639,14 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
     def __init__(self,
                  arg: Any,
                  op: Callable,
-                 opstr: str) -> None:
+                 opstr: str,
+                 strformat: str = '{opstr}({arg})') -> None:
         self.arg = self.wrapobj(arg)
         self.op = op
-        self.opstr = opstr
         self.opprec = get_precedences_op(op)[0]
 
-        # We do not simplify this (e.g. remove brackets if self.arg
-        # is not a composite model).
-        #
-        name = f'{opstr}({self.arg.name})'
+        name = self.arg.name
+        name = strformat.format(opstr=opstr, arg=name)
         CompositeModel.__init__(self, name, (self.arg,))
 
     def calc(self, p: Sequence[SupportsFloat],
@@ -1611,6 +1679,10 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         The ufunc which combines two array values.
     opstr : str
         The symbol used to represent the operator.
+    strformat : str
+        Format string for printing this operation. Elements
+        that can be used are `lhs`, `rhs`, and `opstr`, e.g.
+        `strformat='{opstr}({lhs}, {rhs})'`.
 
     See Also
     --------
@@ -1635,24 +1707,40 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
                  lhs: Any,
                  rhs: Any,
                  op: Callable,
-                 opstr: str) -> None:
+                 opstr: str,
+                 strformat: str = '{lhs} {opstr} {rhs}') -> None:
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
         self.op = op
-        self.opstr = opstr
 
         p, a =  get_precedences_op(op)
         self.opprec = p
 
-        # Simplify the expression if possible.
+        # Is this an infix or prefix operator? This could be specified
+        # explicitly (and, in fact, could replace the use of the
+        # strformat argument), but for now the behaviour is inferred
+        # by assuming that a prefix operator has strformat beginning
+        # with '{opstr}(. This heuristic is not perfect, but should be
+        # sufficient for our needs.
         #
-        lp = get_precedence_expr(self.lhs)
-        rp = get_precedence_expr(self.rhs)
+        if strformat.startswith("{opstr}("):
+            # This is a prefix form so we do not need to worry about
+            # adding brackets around the lhs and rhs terms.
+            #
+            lstr = self.lhs.name
+            rstr = self.rhs.name
 
-        lstr = get_precedence_lhs(self.lhs.name, lp, p, a)
-        rstr = get_precedence_rhs(self.rhs.name, opstr, rp, p)
+        else:
+            # Simplify the expression if possible.
+            #
+            lp = get_precedence_expr(self.lhs)
+            rp = get_precedence_expr(self.rhs)
 
-        name = f'{lstr} {opstr} {rstr}'
+            lstr = get_precedence_lhs(self.lhs.name, lp, p, a)
+            rstr = get_precedence_rhs(self.rhs.name, opstr, rp, p)
+
+
+        name = strformat.format(lhs=lstr, rhs=rstr, opstr=opstr)
         CompositeModel.__init__(self, name, (self.lhs, self.rhs))
 
     def regrid(self, *args, **kwargs):
