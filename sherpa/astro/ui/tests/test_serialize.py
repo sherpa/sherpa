@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018 - 2021, 2023, 2024
+#  Copyright (C) 2015, 2016, 2018 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -653,6 +653,9 @@ set_xschatter(0)
 set_xsabund("lodd")
 set_xscosmo(72, 0.02, 0.71)
 set_xsxsect("vern")
+set_xsxset("APECROOT", "3.0.9")
+set_xsxset("NEIAPECROOT", "3.0.9")
+set_xsxset("NEIVERS", "3.0.4")
 """
 
 _canonical_pha_no_response = """import numpy
@@ -2338,6 +2341,9 @@ set_xschatter(0)
 set_xsabund("angr")
 set_xscosmo(70, 0, 0.73)
 set_xsxsect("bcmc")
+set_xsxset("APECROOT", "3.0.9")
+set_xsxset("NEIAPECROOT", "3.0.9")
+set_xsxset("NEIVERS", "3.0.4")
 """
 
     _canonical_pha_basic += _canonical_extra
@@ -2398,11 +2404,8 @@ def compare_lines(expected, got):
     elines = expected.split('\n')
     glines = got.split('\n')
 
-    # _dump_lines(elines)
-    # _dump_lines(glines)
-
     for e, g in zip(elines, glines):
-        assert e == g
+        assert e == g, f"expected='{e}' got='{g}'"
 
     # Do the line length after checking for the file
     # contents as it is easier to see what the difference
