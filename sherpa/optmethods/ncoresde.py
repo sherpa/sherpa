@@ -106,8 +106,13 @@ class Strategy0(Strategy):
         _, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
+
+        base = pop[0]
+        # Pull out the terms which do not change (so not 'trial').
+        delta = pop[r2] - pop[r3]
+
         for _ in range(self.npar):
-            trial[n] = pop[0][n] + self.sfactor * (pop[r2][n] - pop[r3][n])
+            trial[n] = base[n] + self.sfactor * delta[n]
             n = (n + 1) % self.npar
             if random.random(self.rng) > self.xprob:
                 break
@@ -125,9 +130,13 @@ class Strategy1(Strategy):
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
+
+        base = trial
+        delta = pop[r2] - pop[r3]
+
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
-            trial[n] = trial[n] + self.sfactor * (pop[r2][n] - pop[r3][n])
+            trial[n] = base[n] + self.sfactor * delta[n]
             n = (n + 1) % self.npar
             if random.random(self.rng) > self.xprob:
                 break
@@ -143,10 +152,13 @@ class Strategy2(Strategy):
                  ) -> MyOptOutput:
         r1, r2 = self.init(2)
         trial = pop[icurrent].copy()
+
+        base = trial
+        delta = pop[0] + pop[r1] - pop[r2]
+
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
-            trial[n] = trial[n] + self.sfactor * (pop[0][n] - trial[n]) + \
-                self.sfactor * (pop[r1][n] - pop[r2][n])
+            trial[n] = base[n] + self.sfactor * (delta[n] - trial[n])
             n = (n + 1) % self.npar
             if random.random(self.rng) > self.xprob:
                 break
@@ -162,11 +174,13 @@ class Strategy3(Strategy):
                  ) -> MyOptOutput:
         r1, r2, r3, r4 = self.init(4)
         trial = pop[icurrent].copy()
+
+        base = pop[0]
+        delta = pop[r1] + pop[r2] - pop[r3] - pop[r4]
+
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
-            trial[n] = pop[0][n] + \
-                (pop[r1][n] + pop[r2][n] - pop[r3][n] - pop[r4][n]) * \
-                self.sfactor
+            trial[n] = base[n] + self.sfactor * delta[n]
             n = (n + 1) % self.npar
             if random.random(self.rng) > self.xprob:
                 break
@@ -182,11 +196,13 @@ class Strategy4(Strategy):
                  ) -> MyOptOutput:
         r1, r2, r3, r4, r5 = self.init(5)
         trial = pop[icurrent].copy()
+
+        base = pop[r5]
+        delta = pop[r1] + pop[r2] - pop[r3] - pop[r4]
+
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
-            trial[n] = pop[r5][n] + \
-                (pop[r1][n] + pop[r2][n] - pop[r3][n] - pop[r4][n]) * \
-                self.sfactor
+            trial[n] = base[n] + self.sfactor * delta[n]
             n = (n + 1) % self.npar
             if random.random(self.rng) > self.xprob:
                 break
@@ -204,12 +220,15 @@ class Strategy5(Strategy):
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
+
+        base = pop[0]
+        delta = pop[r2] - pop[r3]
+
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] = pop[0][n] + \
-                    self.sfactor * (pop[r2][n] - pop[r3][n])
+                trial[n] = base[n] + self.sfactor * delta[n]
                 n = (n + 1) % self.npar
 
         return self.calc(trial, pop)
@@ -223,12 +242,15 @@ class Strategy6(Strategy):
                  ) -> MyOptOutput:
         r1, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
+
+        base = pop[r1]
+        delta = pop[r2] - pop[r3]
+
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] = pop[r1][n] + self.sfactor * \
-                    (pop[r2][n] - pop[r3][n])
+                trial[n] = base[n] + self.sfactor * delta[n]
                 n = (n + 1) % self.npar
 
         return self.calc(trial, pop)
@@ -242,12 +264,15 @@ class Strategy7(Strategy):
                  ) -> MyOptOutput:
         r1, r2 = self.init(2)
         trial = pop[icurrent].copy()
+
+        base = trial
+        delta = pop[0] + pop[r1] - pop[r2]
+
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] += self.sfactor * ((pop[0][n] - trial[n]) +
-                                            (pop[r1][n] - pop[r2][n]))
+                trial[n] = base[n] + self.sfactor * (delta[n] - trial[n])
                 n = (n + 1) % self.npar
 
         return self.calc(trial, pop)
@@ -263,12 +288,15 @@ class Strategy8(Strategy):
         # code has been tested using this call.
         _, r2, r3, r4 = self.init(4)
         trial = pop[icurrent].copy()
+
+        base = pop[0]
+        delta = pop[r2] - pop[r3] - pop[r4]
+
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] = pop[0][n] + \
-                    self.sfactor * (pop[r2][n] - pop[r3][n] - pop[r4][n])
+                trial[n] = base[n] + self.sfactor * delta[n]
                 n = (n + 1) % self.npar
 
         return self.calc(trial, pop)
@@ -282,13 +310,15 @@ class Strategy9(Strategy):
                  ) -> MyOptOutput:
         r1, r2, r3, r4, r5 = self.init(5)
         trial = pop[icurrent].copy()
+
+        base = pop[r5]
+        delta = pop[r1] + pop[r2] - pop[r3] - pop[r4]
+
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
                     counter == self.npar - 1:
-                trial[n] = pop[r5][n] + \
-                    self.sfactor * (pop[r1][n] + pop[r2][n] - pop[r3][n] -
-                                    pop[r4][n])
+                trial[n] = base[n] + self.sfactor * delta[n]
                 n = (n + 1) % self.npar
 
         return self.calc(trial, pop)
