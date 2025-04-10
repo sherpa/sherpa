@@ -54,6 +54,7 @@ WorkerFunc = Callable[[OptimizerFunc,
                        int | None],
                       MyOptOutput]
 
+
 class MyNcores:
     """Support distributed processing."""
 
