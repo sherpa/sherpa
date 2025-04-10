@@ -75,7 +75,7 @@ def test_is_simplexbase_repeatable(kwargs):
 
 
 def test_is_simplexbase_repeatable_post_117():
-    """test_is_simplese_repeatable with a post NumPy 1.17 RNG.
+    """test_is_simplexbase_repeatable with a post NumPy 1.17 RNG.
 
     It's not clear how "repeatable" this will be (i.e. using
     a fixed seed is not guaranteed to give the same results
