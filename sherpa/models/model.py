@@ -333,17 +333,7 @@ from sherpa.utils.numeric_types import SherpaFloat
 from .op import get_precedences_op, get_precedence_expr, \
     get_precedence_lhs, get_precedence_rhs
 from .parameter import Parameter, expand_par
-
-# What routine do we use for the hash in modelCacher1d?  As we do not
-# need cryptographic security go for a "quick" algorithm, but md5 is
-# not guaranteed to always be present.  There has been no attempt to
-# check the run times of these routines for the expected data sizes
-# they will be used with.
-#
-try:
-    from hashlib import md5 as hashfunc
-except ImportError:
-    from hashlib import sha256 as hashfunc
+from hashlib import sha256 as hashfunc
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
