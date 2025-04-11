@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021, 2022
+#  Copyright (C) 2007, 2015, 2016, 2018, 2020-2022, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import importlib.metadata
 import os.path
 
 import pytest
@@ -36,6 +37,26 @@ def test_has_version():
     """
     assert isinstance(sherpa.__version__, str)
     assert sherpa.__version__ != ''
+
+
+def test_versions_match():
+    """Check __version__ and the metadata match.
+
+    Suggested by 2024-10-07 version of
+
+    https://packaging.python.org/en/latest/discussions/single-source-version/
+
+    """
+
+    # In an editable build, it is possible for these two to get out of
+    # sync,as the sherpa.__version__ will gain a ".dirty" suffix if a
+    # git-tracked file has been updated, but the metadata version does
+    # not know this (if sherpa was installed before the changes were
+    # made).
+    #
+    got = sherpa.__version__
+    expected = importlib.metadata.version("sherpa")
+    assert got == expected
 
 
 def test_include_dir():
