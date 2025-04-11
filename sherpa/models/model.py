@@ -351,7 +351,7 @@ warning = logging.getLogger(__name__).warning
 
 __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
            'ArithmeticConstantModel', 'ArithmeticModel', 'RegriddableModel1D', 'RegriddableModel2D',
-           'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
+           'UnaryOpModel', 'BinaryOpModel',  'modelCacher1d',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 
 
@@ -675,7 +675,7 @@ class Model(NoNewAttributesAfterInit):
     # This allows all models to be used in iteration contexts, whether or
     # not they're composite
     def __iter__(self) -> Iterator[Model]:
-        return iter([self])
+        return iter(self.get_parts())
 
     def __getattr__(self, name: str) -> Any:
         """Access to parameters is case insensitive. Other fields are exact."""
@@ -730,6 +730,102 @@ class Model(NoNewAttributesAfterInit):
         #
         for alias in val.aliases:
             self._par_index[alias] = val
+
+    def get_parts(self,
+                  include_composites : bool = True,
+                  remove_duplicates : bool = False) -> Sequence[Model]:
+        """Return the parts of the model.
+
+        Parameters
+        ----------
+        include_composites : bool, optional
+            If True, include the components of any composite models.
+            If False, only include the top-level components.
+        remove_duplicates : bool, optional
+            If True, remove any duplicate components. This is
+            useful if the same component is used in multiple
+            places in the model.
+
+        Returns
+        -------
+        modellist : list
+            The parts of the model.
+        """
+        # Note:
+        # include_composites and remove_duplicates is not used in the base class,
+        # but it is used in the CompositeModel class.
+        return [self]
+
+    def get_components_by_name(self, name: str) -> list[Model]:
+        """Return the components of the model with the given name.
+
+        Parameters
+        ----------
+        name : str
+            The name of the component to return.
+
+        Returns
+        -------
+        modellist : list
+            The components of the model with the given name.
+        """
+        parts = [p for p in self.get_parts(remove_duplicates=True) if p.name == name]
+        if len(parts) == 0:
+            raise KeyError(f"No components found with name '{name}'")
+        return parts
+
+    def get_components_by_class(self, cls: type, subclass_ok: bool = True) -> list[Model]:
+        """Return the components of the model with the given type.
+
+        Parameters
+        ----------
+        type : type
+            The type of the component to return.
+        subclass_ok : bool, optional
+            If True, return components that are subclasses of the given
+            type. If False, only return components that are exactly of
+            the given type.
+
+        Returns
+        -------
+        list[Model]
+            The components of the model with the given type.
+        """
+        if subclass_ok:
+            parts = [p for p in self.get_parts(remove_duplicates=True) if isinstance(p, cls)]
+        else:
+            parts = [p for p in self.get_parts(remove_duplicates=True) if type(p) is cls]
+        if len(parts) == 0:
+            raise KeyError(f"No components found with type '{cls}'")
+        return parts
+
+
+    def __getitem__(self, key: Model | str) -> Model | list[Model]:
+        """Return the components of the model with the given name or type.
+
+        Parameters
+        ----------
+        key : Model | str
+            The name or type of the component to return.
+
+        Returns
+        -------
+        Model | list[Model]
+            The components of the model with the given name or type.
+            If there is only one component with that name or type then
+            it is returned as a single object, otherwise a list of
+            components is returned.
+        """
+        if isinstance(key, str):
+            out = self.get_components_by_name(key)
+        elif isinstance(key, type):
+            out = self.get_components_by_class(key)
+        else:
+            raise TypeError(f"Invalid key type: {type(key)}")
+        if len(out) == 1:
+            return out[0]
+        return out
+
 
     def startup(self, cache: bool = False) -> None:
         """Called before a model may be evaluated multiple times.
@@ -1070,6 +1166,7 @@ class CompositeModel(Model):
     ...     print(type(cpt))
     ...
     <class 'sherpa.models.model.BinaryOpModel'>
+    <class 'sherpa.models.model.BinaryOpModel'>
     <class 'sherpa.models.basic.Gauss1D'>
     <class 'sherpa.models.model.BinaryOpModel'>
     <class 'sherpa.models.model.ArithmeticConstantModel'>
@@ -1128,28 +1225,38 @@ class CompositeModel(Model):
                         "Falling back to assuming that the model is continuous.\n")
                 self.is_discrete = False
 
-    def __iter__(self) -> Iterator[Model]:
-        return iter(self._get_parts())
-
-    def _get_parts(self) -> list[Model]:
+    def get_parts(self,
+                  include_composites : bool = True,
+                  remove_duplicates : bool = False) -> Sequence[Model]:
+        # Docstring inherited from base class
         parts = []
+
+        # Including itself seems a bit strange if it's a CompositeModel
+        # but is used by sherpa.astro.instrument.has_pha_instance (and
+        # possibly elsewhere).
+        #
+        if include_composites:
+            parts.append(self)
 
         for p in self.parts:
             # A CompositeModel should not hold a reference to itself
             assert (p is not self), f"'{type(self).__name__}' " + \
                 "object holds a reference to itself"
 
-            # Including itself seems a bit strange if it's a CompositeModel
-            # but is used by sherpa.astro.instrument.has_pha_instance (and
-            # possibly elsewhere).
-            #
-            parts.append(p)
-            if isinstance(p, CompositeModel):
-                parts.extend(p._get_parts())
+            parts.extend(p.get_parts(include_composites=include_composites))
 
-        # FIXME: do we want to remove duplicate components from parts?
+        # This trick to remove duplicates requires all components to be hashable.
+        # I think that is always the case and this is safe.
+        if remove_duplicates:
+            return list(dict.fromkeys(parts))
 
         return parts
+
+    _get_parts = get_parts
+    """_get_parts used to be a private method but may have been used outside of the
+    Sherpa code base. It is now public as `get_parts` but we keep this alias for
+    backwards compatibility.
+    """
 
     def startup(self, cache: bool = False) -> None:
         pass
@@ -1517,9 +1624,6 @@ class ArithmeticModel(Model):
         self.cache_clear()
         self.__dict__.update(state)
 
-    def __getitem__(self, filter):
-        return FilterModel(self, filter)
-
     def startup(self, cache: bool = False) -> None:
         if cache:
             self.cache_clear()
@@ -1776,46 +1880,6 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
                              f"'{type(self.rhs).__name__}: {len(rhs)}'") from ve
         return val
 
-
-# TODO: do we actually make use of this functionality anywhere?
-# We only have 1 test that checks this class, and it is an existence
-# test (check that it works), not that it is used anywhere.
-#
-class FilterModel(CompositeModel, ArithmeticModel):
-
-    def __init__(self, model, filter):
-        self.model = model
-        self.filter = filter
-
-        if isinstance(filter, tuple):
-            filter_str = ','.join([self._make_filter_str(f) for f in filter])
-        else:
-            filter_str = self._make_filter_str(filter)
-
-        CompositeModel.__init__(self,
-                                f'({self.model.name})[{filter_str}]',
-                                (self.model,))
-
-    @staticmethod
-    def _make_filter_str(filter):
-        if not isinstance(filter, slice):
-            if filter is Ellipsis:
-                return '...'
-            return str(filter)
-
-        s = ''
-        if filter.start is not None:
-            s += str(filter.start)
-        s += ':'
-        if filter.stop is not None:
-            s += str(filter.stop)
-        if filter.step is not None:
-            s += f':{filter.step}'
-
-        return s
-
-    def calc(self, p, *args, **kwargs):
-        return self.model.calc(p, *args, **kwargs)[self.filter]
 
 
 class ArithmeticFunctionModel(Model):
