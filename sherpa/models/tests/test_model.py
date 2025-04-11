@@ -537,11 +537,12 @@ def test_composite_iter():
     parts = list(m)
 
     assert type(parts[0]) is BinaryOpModel
-    assert type(parts[1]) is ArithmeticConstantModel
-    assert parts[1].val == 3.0
-    assert parts[2] is out.m
-    assert parts[3] is out.m2
-    assert len(parts) == 4
+    assert type(parts[1]) is BinaryOpModel
+    assert type(parts[2]) is ArithmeticConstantModel
+    assert parts[2].val == 3.0
+    assert parts[3] is out.m
+    assert parts[4] is out.m2
+    assert len(parts) == 5
 
     assert m(4) == 10
 
@@ -553,11 +554,12 @@ def test_composite_iter_ufunc():
     parts = list(m)
 
     assert type(parts[0]) is BinaryOpModel
-    assert type(parts[1]) is ArithmeticConstantModel
-    assert parts[1].val == 3.0
-    assert parts[2] is out.m
-    assert parts[3] is out.m2
-    assert len(parts) == 4
+    assert type(parts[1]) is BinaryOpModel
+    assert type(parts[2]) is ArithmeticConstantModel
+    assert parts[2].val == 3.0
+    assert parts[3] is out.m
+    assert parts[4] is out.m2
+    assert len(parts) == 5
 
     assert m(4) == 10
 
