@@ -17,7 +17,6 @@ The sherpa.models.model module
       ArithmeticModel
       CompositeModel
       BinaryOpModel
-      FilterModel
       MultigridSumModel
       NestedModel
       RegriddableModel
@@ -36,5 +35,5 @@ The sherpa.models.model module
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: Model ArithmeticConstantModel ArithmeticFunctionModel ArithmeticModel CompositeModel BinaryOpModel FilterModel MultigridSumModel NestedModel RegriddableModel RegriddableModel1D RegriddableModel2D SimulFitModel UnaryOpModel
+.. inheritance-diagram:: Model ArithmeticConstantModel ArithmeticFunctionModel ArithmeticModel CompositeModel BinaryOpModel MultigridSumModel NestedModel RegriddableModel RegriddableModel1D RegriddableModel2D SimulFitModel UnaryOpModel
    :parts: 1

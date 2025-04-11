@@ -94,31 +94,41 @@ def test_get_components_by_name():
     """Test the get_components method of a model."""
     # Simple case: One component with the name
     assert [l2] == l2.get_components_by_name('l_other_name')
+    assert l2 == l2['l_other_name']
 
     with pytest.raises(KeyError, match="No components found with name 'ls'"):
         parts = l2.get_components_by_name('ls')
 
+    with pytest.raises(KeyError, match="No components found with name 'ls'"):
+        parts = l2['ls']
 
 def test_get_components_by_name_composite():
     """Test the get_components method of a composite model."""
     # Simple case: One component with the name
     mdl = l1 + (0.5 * l2) + b + b + l_same_name
     assert [l2] == mdl.get_components_by_name('l_other_name')
+    assert l2 == mdl['l_other_name']
 
     # One component appears twice
     assert [b] == mdl.get_components_by_name('b')
+    assert b == mdl['b']
 
     # More than one component with the same string name
     assert [l1, l_same_name] == mdl.get_components_by_name('l1')
+    assert [l1, l_same_name] == mdl['l1']
 
 
     with pytest.raises(KeyError, match="No components found with name 'ls'"):
         parts = mdl.get_components_by_name('ls')
 
+    with pytest.raises(KeyError, match="No components found with name 'no such name'"):
+        parts = mdl['no such name']
+
 
 def test_components_by_class():
     """Test the get_components method of a model."""
     assert [l1] == l1.get_components_by_class(Gauss1D)
+    assert l1 == l1[Gauss1D]
 
 
 def test_components_by_class_composite():
@@ -131,20 +141,28 @@ def test_components_by_class_composite():
     assert isinstance(parts[0], ArithmeticConstantModel)
     assert parts[0].name == '0.5'
 
+    parts = mdl[ArithmeticConstantModel]
+    assert isinstance(parts, ArithmeticConstantModel)
+    assert parts.name == '0.5'
+
     # Simple case: Each component appears only once
     mdl = l1 + (0.5 * l2) + b + b + l_same_name
     assert [l1, l2, l_same_name] == mdl.get_components_by_class(Gauss1D)
+    assert [l1, l2, l_same_name] == mdl[Gauss1D]
 
     # One component appears twice
     assert [b] == mdl.get_components_by_class(Polynom1D)
+    assert b == mdl[Polynom1D]
 
 
 def test_components_by_class_subclass_composite():
     """Test the get_components method of a model in the presence of subclasses."""
     mdl = l1 * l1_subclass - abs(l_same_name)
     assert [l1_subclass] == mdl.get_components_by_class(Gauss1DSubClass)
+    assert l1_subclass == mdl[Gauss1DSubClass]
 
     assert [l1, l1_subclass, l_same_name] == mdl.get_components_by_class(Gauss1D)
+    assert [l1, l1_subclass, l_same_name] == mdl[Gauss1D]
 
     assert [l1, l_same_name] == mdl.get_components_by_class(Gauss1D, subclass_ok=False)
 
@@ -156,3 +174,14 @@ def test_components_by_class_subclass_composite():
 
     with pytest.raises(KeyError, match="No components found with type '<class 'sherpa.models.model.ArithmeticModel'>'"):
         parts = mdl.get_components_by_class(ArithmeticModel, subclass_ok=False)
+
+
+def test_getitem_invalid():
+    """Try to get an item with an invalid key type."""
+    mdl = l1 + (0.5 * l2) + b + b + l_same_name
+    with pytest.raises(TypeError, match="Invalid key type"):
+        mdl[1]  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="Invalid key type"):
+        mdl[None]  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="Invalid key type"):
+        mdl[True]  # type: ignore[arg-type]

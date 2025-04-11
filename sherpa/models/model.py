@@ -351,7 +351,7 @@ warning = logging.getLogger(__name__).warning
 
 __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
            'ArithmeticConstantModel', 'ArithmeticModel', 'RegriddableModel1D', 'RegriddableModel2D',
-           'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
+           'UnaryOpModel', 'BinaryOpModel',  'modelCacher1d',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 
 
@@ -798,6 +798,33 @@ class Model(NoNewAttributesAfterInit):
         if len(parts) == 0:
             raise KeyError(f"No components found with type '{cls}'")
         return parts
+
+
+    def __getitem__(self, key: Model | str) -> Model | list[Model]:
+        """Return the components of the model with the given name or type.
+
+        Parameters
+        ----------
+        key : Model | str
+            The name or type of the component to return.
+
+        Returns
+        -------
+        Model | list[Model]
+            The components of the model with the given name or type.
+            If there is only one component with that name or type then
+            it is returned as a single object, otherwise a list of
+            components is returned.
+        """
+        if isinstance(key, str):
+            out = self.get_components_by_name(key)
+        elif isinstance(key, type):
+            out = self.get_components_by_class(key)
+        else:
+            raise TypeError(f"Invalid key type: {type(key)}")
+        if len(out) == 1:
+            return out[0]
+        return out
 
 
     def startup(self, cache: bool = False) -> None:
@@ -1597,9 +1624,6 @@ class ArithmeticModel(Model):
         self.cache_clear()
         self.__dict__.update(state)
 
-    def __getitem__(self, filter):
-        return FilterModel(self, filter)
-
     def startup(self, cache: bool = False) -> None:
         if cache:
             self.cache_clear()
@@ -1856,46 +1880,6 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
                              f"'{type(self.rhs).__name__}: {len(rhs)}'") from ve
         return val
 
-
-# TODO: do we actually make use of this functionality anywhere?
-# We only have 1 test that checks this class, and it is an existence
-# test (check that it works), not that it is used anywhere.
-#
-class FilterModel(CompositeModel, ArithmeticModel):
-
-    def __init__(self, model, filter):
-        self.model = model
-        self.filter = filter
-
-        if isinstance(filter, tuple):
-            filter_str = ','.join([self._make_filter_str(f) for f in filter])
-        else:
-            filter_str = self._make_filter_str(filter)
-
-        CompositeModel.__init__(self,
-                                f'({self.model.name})[{filter_str}]',
-                                (self.model,))
-
-    @staticmethod
-    def _make_filter_str(filter):
-        if not isinstance(filter, slice):
-            if filter is Ellipsis:
-                return '...'
-            return str(filter)
-
-        s = ''
-        if filter.start is not None:
-            s += str(filter.start)
-        s += ':'
-        if filter.stop is not None:
-            s += str(filter.stop)
-        if filter.step is not None:
-            s += f':{filter.step}'
-
-        return s
-
-    def calc(self, p, *args, **kwargs):
-        return self.model.calc(p, *args, **kwargs)[self.filter]
 
 
 class ArithmeticFunctionModel(Model):

@@ -603,9 +603,23 @@ Alternatively, you can obtain a list of all components with::
     [<Gauss1D model instance 'g1'>, <Gauss1D model instance 'g2'>]
 
 where the ``include_composites`` argument controls whether
-composite models are included in the list or only the leaves. Models can also
-be iterated over to access the individual components - but note that
-this may include composite models.
+composite models are included in the list or only the leaves.
+As a convenience, for example for working interactively in a notebook,
+the same functionality is available as attribute access,
+which can shorten the notation. Here, if the result is a single model,
+it will be returned directly, while a list of models is returned if more
+than one component matches::
+
+    >>> mdl['g2']
+    <Gauss1D model instance 'g2'>
+    >>> mdl[basic.Gauss1D]
+    [<Gauss1D model instance 'g1'>, <Gauss1D model instance 'g2'>]
+
+This allows a very compressed syntax to change the parameters of a single
+component, for example ``mdl['g2'].ampl = 5``.
+
+Models can also be iterated over to access the individual components -
+but note that this may include composite models.
 
     >>> for cpt in iter(mdl):
     ...     print(cpt.name, type(cpt))

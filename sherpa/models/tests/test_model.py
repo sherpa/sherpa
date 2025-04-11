@@ -36,7 +36,7 @@ import pytest
 
 from sherpa.data import Data1D
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
-    ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
+    ArithmeticFunctionModel, BinaryOpModel, Model, NestedModel, \
     UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
@@ -614,15 +614,6 @@ def test_composite_complex_expression():
     y1 = cmplx(out.x)
     y2 = (3 * m + m2) / (m ** 3.2)
     assert y1 == y2
-
-
-def test_filter():
-    out = setup_composite()
-    m = out.s[::2]
-
-    assert type(m) is FilterModel
-
-    assert np.all(m(out.xx) == out.s(out.xx)[::2])
 
 
 def test_nested():
