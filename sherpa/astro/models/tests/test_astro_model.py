@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2016, 2018, 2020-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -91,17 +91,45 @@ def test_create_and_evaluate(name, cls):
                                  models.PseudoVoigt1D,
                                  models.Schechter,
                                  models.Voigt1D])
-def test_send_keyword_1d(cls):
-    """What happens if we use an un-supported keyword?"""
+def test_send_keyword_1d_with_cache(cls):
+    """What happens if we use an un-supported keyword and use caching?"""
 
     mdl = cls()
-    mdl._use_caching = False
 
     if cls == models.LineBroad:
         mdl.vsini = 1e6
 
     # Not guaranteed to produce interesting results
     x = [10, 12, 13, 15]
+    y1 = mdl(x)
+    assert len(mdl._cache) == 1
+    y2 = mdl(x, not_an_argument=True)
+    assert len(mdl._cache) == 2
+    assert y2 == pytest.approx(y1)
+
+
+@pytest.mark.parametrize("cls", [models.Atten,
+                                 models.BBody,
+                                 models.BBodyFreq,
+                                 models.BPL1D,
+                                 models.Beta1D,
+                                 models.Edge,
+                                 models.LineBroad,
+                                 models.Lorentz1D,
+                                 models.NormBeta1D,
+                                 models.PseudoVoigt1D,
+                                 models.Schechter,
+                                 models.Voigt1D])
+def test_send_keyword_1d_no_cache(cls):
+    """What happens if we use an un-supported keyword and disable caching?"""
+
+    mdl = cls()
+    mdl.cache = 0
+    if cls == models.LineBroad:
+        mdl.vsini = 1e6
+
+    # Not guaranteed to produce interesting results
+    x = [10, 11.3, 13, 15]
     y1 = mdl(x)
     y2 = mdl(x, not_an_argument=True)
     assert y2 == pytest.approx(y1)
@@ -118,7 +146,6 @@ def test_send_keyword_2d(cls):
     """What happens if we use an un-supported keyword?"""
 
     mdl = cls()
-    mdl._use_caching = False
 
     # Not guaranteed to produce interesting results
     x0 =  [10, 12, 13, 15]

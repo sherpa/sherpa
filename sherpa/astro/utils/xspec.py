@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012 - 2016, 2020 - 2024
+#  Copyright (C) 2012-2016, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -526,7 +526,7 @@ def read_model_definition(fh, namefunc: Callable[[str], str]) -> Optional[ModelD
 
 def mpop(array: list[str]) -> Optional[float]:
     """Pop first element from array (converting to float),
-    returning defval if empty.
+    returning None if empty.
     """
 
     try:
@@ -876,8 +876,7 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     # initialized.
     #
     if nflags > 1 and mdl.flags[1] == 1:
-        out += f"{t2}self._use_caching = False\n"
-
+        out += f"{t2}self.cache = 0\n"
         # Still warn the user that this is not tested.
         out += f"{t2}warnings.warn('support for models like xs{mdl.name.lower()} "
         out += "(recalculated per spectrum) is untested.')\n"

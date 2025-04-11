@@ -42,6 +42,7 @@ from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
     Scale1D, Integrate1D, Gauss1D, \
     Const2D, Gauss2D, Scale2D, Poisson
+from sherpa.fit import Fit
 from sherpa.utils.err import ModelErr, ParameterErr
 
 
@@ -877,16 +878,15 @@ def test_integrate1d_basic_epsabs(caplog):
     assert len(caplog.records) == 0
 
 
-def check_cache(mdl, expected, x, xhi=None):
+def check_cache(mdl, expected, x, xhi=None, cache_size=1):
     """Check the cache contents.
 
-    We assume only one value is being cached at a time. The
-    code matches that in sherpa.models.model.modelCacher1d,
+    The code matches that in sherpa.models.model.modelCacher1d,
     so all it does is check we are using this method.
     """
 
     cache = mdl._cache
-    assert len(cache) == 1
+    assert len(cache) == cache_size
 
     pars = [p.val for p in mdl.pars]
     data = [np.asarray(pars).tobytes(),
@@ -901,6 +901,47 @@ def check_cache(mdl, expected, x, xhi=None):
     assert cache[digest] == pytest.approx(expected)
 
 
+def test_deprecated_use_caching():
+    """_use_caching is rundundant with `cache`, but kept for
+    backwards compatibility. In this test, we check that it
+    still works.
+    """
+    mdl = Polynom1D()
+    assert mdl._use_caching is True
+    with pytest.warns(DeprecationWarning):
+        mdl._use_caching = False
+    assert mdl._use_caching is False
+    assert mdl.cache == 0
+    with pytest.warns(DeprecationWarning):
+        mdl._use_caching = True
+    assert mdl._use_caching is True
+    assert mdl.cache == 5
+
+
+def test_evaluate_no_cache1d_use_caching():
+    """Check we can turn off caching: 1d"""
+
+    xgrid = np.arange(2, 10, 1.5)
+
+    mdl = Polynom1D()
+    mdl.integrate = False
+    with pytest.warns(DeprecationWarning):
+        mdl._use_caching = False
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = np.ones(6)
+    assert mdl(xgrid) == pytest.approx(expected)
+    assert len(mdl._cache) == 0
+
+    mdl.c0 = 5
+    mdl.c1 = 2
+
+    expected = 5 + 2 * xgrid
+    assert mdl(xgrid) == pytest.approx(expected)
+    assert len(mdl._cache) == 0
+
+
 def test_evaluate_no_cache1d():
     """Check we can turn off caching: 1d"""
 
@@ -908,7 +949,7 @@ def test_evaluate_no_cache1d():
 
     mdl = Polynom1D()
     mdl.integrate = False
-    mdl._use_caching = False
+    mdl.cache = 0
     assert len(mdl._cache) == 0
 
     # Check the default values
@@ -930,21 +971,44 @@ def test_evaluate_cache1d():
     xgrid = np.arange(2, 10, 1.5)
 
     mdl = Polynom1D()
+    mdl.cache = 1
     mdl.integrate = False
-    mdl._use_caching = True
+    mdl.cache = 5
     assert len(mdl._cache) == 0
 
     # Check the default values
     expected = np.ones(6)
     assert mdl(xgrid) == pytest.approx(expected)
-    check_cache(mdl, expected, xgrid)
+    # Model has been run once, so there is one entry in the cache
+    check_cache(mdl, expected, xgrid, cache_size=1)
 
     mdl.c0 = 5
     mdl.c1 = 2
 
     expected = 5 + 2 * xgrid
     assert mdl(xgrid) == pytest.approx(expected)
-    check_cache(mdl, expected, xgrid)
+    # Now, the model has run a second time, so there are two entries in the cache
+    check_cache(mdl, expected, xgrid, cache_size=2)
+
+
+def test_cache_is_actually_used():
+    """Most other tests check that the cache has values in it,
+    but not that those values are actually returned.
+    Here, we manipulte the cached value and then call the model
+    to check that the cached value is used.
+    """
+    xgrid = np.arange(2, 10, 1.5)
+
+    mdl = Polynom1D()
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = np.ones(6)
+    assert mdl(xgrid) == pytest.approx(expected)
+
+    # Manipulate the values in the cache
+    mdl._cache[list(mdl._cache.keys())[0]] = 2 * expected
+    assert mdl(xgrid) == pytest.approx(2 * expected)
 
 
 def test_evaluate_no_cache1dint():
@@ -954,7 +1018,7 @@ def test_evaluate_no_cache1dint():
     xlo, xhi = xgrid[:-1], xgrid[1:]
 
     mdl = Polynom1D()
-    mdl._use_caching = False
+    mdl.cache = 0
     assert len(mdl._cache) == 0
 
     # Check the default values
@@ -984,7 +1048,7 @@ def test_evaluate_cache1dint():
     xlo, xhi = xgrid[:-1], xgrid[1:]
 
     mdl = Polynom1D()
-    mdl._use_caching = True
+    mdl.cache = 1
     assert len(mdl._cache) == 0
 
     # Check the default values
@@ -1019,7 +1083,7 @@ def test_evaluate_cache_swap():
     xlo, xhi = xgrid[:-1], xgrid[1:]
 
     mdl = Polynom1D()
-    mdl._use_caching = True
+    mdl.cache = 1
 
     mdl.c0 = 5
     mdl.c1 = 2
@@ -1051,29 +1115,29 @@ def test_evaluate_cache_arithmeticconstant():
     """Check we run with caching: ArihmeticConstant"""
 
     mdl = ArithmeticConstantModel(2.3)
-    assert not hasattr(mdl, '_use_caching')
+    assert not hasattr(mdl, 'cache')
 
 
 def test_evaluate_cache_unaryop():
     """UnaryOp has no cache"""
 
     mdl = Polynom1D()
-    assert hasattr(mdl, '_use_caching')
+    assert hasattr(mdl, 'cache')
 
     fmdl = -mdl
     assert isinstance(fmdl, UnaryOpModel)
-    assert not hasattr(fmdl, '_use_caching')
+    assert not hasattr(fmdl, 'cache')
 
 
 def test_evaluate_cache_binaryop():
     """BinaryOp has no cache"""
 
     mdl = Polynom1D()
-    assert hasattr(mdl, '_use_caching')
+    assert hasattr(mdl, 'cache')
 
     fmdl = mdl + 2
     assert isinstance(fmdl, BinaryOpModel)
-    assert not hasattr(fmdl, '_use_caching')
+    assert not hasattr(fmdl, 'cache')
 
 
 def test_evaluate_cache_regrid1d():
@@ -1085,7 +1149,7 @@ def test_evaluate_cache_regrid1d():
     rmdl = mdl.regrid(x)
 
     assert isinstance(rmdl, RegridWrappedModel)
-    assert not hasattr(rmdl, '_use_caching')
+    assert not hasattr(rmdl, 'cache')
 
 
 class DoNotUseModel(Model):
@@ -1096,17 +1160,119 @@ class DoNotUseModel(Model):
     to support use with modelCacher1d.
     """
 
-    # We need this for modelCacher1d
-    _use_caching = True
-    _cache: dict[bytes, np.ndarray] = {}
-    _cache_ctr: dict[str, int] = {'hits': 0, 'misses': 0, 'check': 0}
-    _queue = ['']
+    def __init__(self, *args, **kwargs) -> None:
+        # Model caching ability
+        self.cache_clear()
+        Model.__init__(self, *args, **kwargs)
+
+    def cache_clear(self) -> None:
+        """Clear the cache."""
+
+        self._cache: dict[bytes, np.ndarray] = {}
+        self._cache_ctr: dict[str, int] = {'hits': 0, 'misses': 0, 'check': 0}
+        self.cache: int = 2
+
 
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
         """p is ignored."""
 
         return np.ones(args[0].size)
+
+
+def get_cache_classes():
+    """This is a function because we want to conditionally
+    include an XSPEC model. Within a function, we can simply
+    pass that if XSPEC is not available.
+    """
+    cls_list = [DoNotUseModel, Polynom1D]
+
+    try:
+        from sherpa.astro.xspec import XSphabs
+        cls_list.append(XSphabs)
+    except ImportError:
+        pass
+
+    return cls_list
+
+
+@pytest.mark.parametrize('cls', get_cache_classes())
+def test_cache_uses_instance_attributes(cls):
+    """Check that the cache uses the instance attributes.
+
+    This tests both the real code (e.g. ArithmetricModels)
+    but also the DoNotUseModel class which we defined above
+    just for testing, because it previously failed just in that
+    test class in a hard-to-debug way.
+    """
+    mdl = cls("some-name")
+
+    # cache is an int, not a mutable object, so it's OK if it's the same
+    # as the class attribute, unless we set it - then it ought to be different.
+    mdl.cache = 2234
+
+    for attr in ["cache", "_cache", "_cache_ctr"]:
+        assert hasattr(mdl, attr)
+        if hasattr(cls, attr):
+            assert id(getattr(mdl, attr)) != id(getattr(cls, attr))
+
+
+def test_cache_reset_when_size_changes():
+    """Check the cache is reset when the cache size changes."""
+
+    mdl = Polynom1D()
+    mdl.cache = 2
+
+    x = np.arange(2, 10, 1.5)
+    mdl(x)
+
+    assert len(mdl._cache) == 1
+    assert mdl._cache_ctr['check'] == 1
+
+    mdl.cache = 3
+    assert len(mdl._cache) == 0
+    assert mdl._cache_ctr['check'] == 0
+
+    mdl(x)
+    assert len(mdl._cache) == 1
+    assert mdl._cache_ctr['check'] == 1
+
+
+def test_caching_not_used_when_set_to_zero():
+    """Check the cache is not used when the cache size is zero."""
+
+    mdl = Polynom1D()
+    mdl.cache = 0
+
+    x = np.arange(2, 10, 1.5)
+    mdl(x)
+
+    assert len(mdl._cache) == 0
+    # We checked, but found nothing (because the cache is empty)
+    assert mdl._cache_ctr['check'] == 1
+
+
+def test_cache_not_used_in_fit():
+    """Check the cache is not used in a fit when `fit=False`.
+
+    How do we do that without relying too much on the internal
+    implementation?
+    """
+    mdl = Const1D('con1')
+    mdl.c0 = 1
+    dat = Data1D('data', np.arange(4), 2 * np.ones(4), np.ones(4))
+    fit = Fit(dat, mdl)
+    res = fit.fit()
+    assert mdl.c0.val == pytest.approx(2)
+    assert len(mdl._cache) == 5
+
+    mdl.cache_clear()
+    mdl.c0 = 1
+    res = fit.fit(cache=False)
+    assert mdl.c0.val == pytest.approx(2)
+    assert len(mdl._cache) == 0
+    # We cleared the cache and then called the fit with `cache=False`.
+    # After the fit, the cache is still empty, so presumably it was never used.
 
 
 def test_cache_integrate_fall_through_no_integrate():
@@ -1143,6 +1309,10 @@ def test_cache_integrate_fall_through_integrate_true():
     """See also test_cache_integrate_fall_through_no_integrate."""
 
     mdl = DoNotUseModel('notme')
+
+    cache = mdl._cache
+    assert len(cache) == 0
+
     x = np.asarray([2, 3, 7, 100])
     y = mdl(x, integrate=True)
 
@@ -1217,7 +1387,7 @@ def test_cache_status_single(caplog):
     toks = msg.split()
     assert toks[0] == 'polynom1d'
     assert toks[1] == 'size:'
-    assert toks[2] == '1'
+    assert toks[2] == '0'
     assert toks[3] == 'hits:'
     assert toks[4] == '0'
     assert toks[5] == 'misses:'
@@ -1244,7 +1414,7 @@ def test_cache_status_multiple(caplog):
     mdl = c * (2 * p + b)
 
     # One model is not cached
-    b._use_caching = False
+    b.cache = 0
 
     mdl([0.1, 0.2, 0.3])
     mdl([0.1, 0.2, 0.3])
@@ -1262,7 +1432,6 @@ def test_cache_status_multiple(caplog):
         toks = msg.split()
         assert len(toks) == 9
         assert toks[1] == 'size:'
-        assert toks[2] == '1'
         assert toks[3] == 'hits:'
         assert toks[5] == 'misses:'
         assert toks[7] == 'check:'
@@ -1272,16 +1441,19 @@ def test_cache_status_multiple(caplog):
 
     toks = tokens[0]
     assert toks[0] == 'const1d'
+    assert toks[2] == '2'
     assert toks[4] == '1'
     assert toks[6] == '2'
 
     toks = tokens[1]
     assert toks[0] == 'polynom1d'
+    assert toks[2] == '2'
     assert toks[4] == '1'
     assert toks[6] == '2'
 
     toks = tokens[2]
     assert toks[0] == 'box1d'
+    assert toks[2] == '0'
     assert toks[4] == '0'
     assert toks[6] == '0'
 
@@ -1303,7 +1475,7 @@ def test_cache_clear_single():
     p([1, 2, 3])
     p([1, 2, 3, 4])
 
-    assert len(p._cache) == 1
+    assert len(p._cache) == 2
     assert p._cache_ctr['check'] == 3
     assert p._cache_ctr['hits'] == 1
     assert p._cache_ctr['misses'] == 2
@@ -1325,7 +1497,7 @@ def test_cache_clear_multiple():
     mdl = c * (p + 2 * b)
 
     # Ensure one component doesn't use the cache
-    c._use_caching = False
+    c.cache = 0
 
     # There's no official API for accessing the cache data,
     # so do it directly.
@@ -1349,12 +1521,12 @@ def test_cache_clear_multiple():
     mdl([1, 2, 3])
     mdl([1, 2, 3, 4])
 
-    assert len(p._cache) == 1
+    assert len(p._cache) == 2
     assert p._cache_ctr['check'] == 3
     assert p._cache_ctr['hits'] == 1
     assert p._cache_ctr['misses'] == 2
 
-    assert len(b._cache) == 1
+    assert len(b._cache) == 2
     assert b._cache_ctr['check'] == 3
     assert b._cache_ctr['hits'] == 1
     assert b._cache_ctr['misses'] == 2
@@ -1380,6 +1552,51 @@ def test_cache_clear_multiple():
     assert c._cache_ctr['check'] == 0
     assert c._cache_ctr['hits'] == 0
     assert c._cache_ctr['misses'] == 0
+
+
+def test_cache_keeps_limited_size():
+    """Check cache_clear for a single model."""
+
+    p = Polynom1D()
+    p.cache = 2
+
+    # There's no official API for accessing the cache data,
+    # so do it directly.
+    #
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
+
+    p([1, 2, 3])
+    p([1, 2, 3])
+    p([1, 2, 3, 4])
+
+    assert len(p._cache) == 2
+    assert p._cache_ctr['check'] == 3
+    assert p._cache_ctr['hits'] == 1
+    assert p._cache_ctr['misses'] == 2
+
+    p([1.2, 2, 3, 4])
+
+    assert len(p._cache) == 2
+    assert p._cache_ctr['check'] == 4
+    assert p._cache_ctr['hits'] == 1
+    assert p._cache_ctr['misses'] == 3
+
+    # Check what numbers are in the cache.
+    # In order to not have to reconstruct the binary representation,
+    # we just check the length - the first call had three elements and
+    # and that one should have been dropped.
+    for val in p._cache.values():
+        assert len(val) == 4
+
+    p.cache_clear()
+
+    assert len(p._cache) == 0
+    assert p._cache_ctr['check'] == 0
+    assert p._cache_ctr['hits'] == 0
+    assert p._cache_ctr['misses'] == 0
 
 
 def test_model_freeze():
@@ -1465,7 +1682,7 @@ def test_model1d_existing_keywords(cls):
 
     # Important to turn off the cache otherwise the call to create
     # y2 never gets made.
-    mdl._use_caching = False
+    mdl.cache = 0
 
     x = [1.1, 1.6, 3.2]
     y1 = mdl(x)
@@ -1481,7 +1698,7 @@ def test_model2d_existing_keywords(cls):
 
     # Important to turn off the cache otherwise the call to create
     # y2 never gets made.
-    mdl._use_caching = False
+    mdl.cache = 0
 
     x0 = [1.1, 1.6, 3.2]
     x1 = [-2.1, 0.4, 3.4]
@@ -1552,7 +1769,7 @@ def test_model_binop_keywords(kwargs):
     mdl = base1 + base2 + base3
 
     for cpt in [base1, base2, base3]:
-        cpt._use_caching = False
+        cpt.cache = 0
 
     base1.index = 5
     base1.ampl = 4
@@ -1609,7 +1826,7 @@ def test_model_keyword_cache():
     assert store[1][1] == {"user_arg": 2}
 
     # Explicit check what happens when we turn off the cache
-    mdl._use_caching = False
+    mdl.cache = 0
     store.clear()
     mdl(x, user_arg=3)
     assert len(store) == 1
