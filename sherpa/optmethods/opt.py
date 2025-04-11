@@ -19,12 +19,13 @@
 #
 
 from collections.abc import Callable, Sequence
-from typing import Concatenate, ParamSpec, SupportsFloat
+from typing import Protocol
 
 import numpy as np
 
 from sherpa.utils import Knuth_close, FuncCounter
-from sherpa.utils.parallel import multi, context, run_tasks
+from sherpa.utils.parallel import SupportsQueue, \
+    multi, context, run_tasks, create_seeds
 from sherpa.utils.random import RandomType, uniform
 from sherpa.utils.types import ArrayType
 
@@ -33,19 +34,54 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
            'SimplexStep')
 
 
-P = ParamSpec("P")
+FUNC_MAX = float(np.finfo(np.float64).max)
+
+# Some code assumes the first argument is an ndarray, but is this always
+# the case? For now assume that the data is always sent as an ndarray.
+#
+# sherpa.stats.StatCallback converts a StatFunc into an OptimizerFunc.
+#
+OptimizerFunc = Callable[[np.ndarray], float]
+
+MyOptOutput = tuple[int, float, np.ndarray]
+
+class WorkerFunc(Protocol):
+
+    def __call__(self,
+                 func: OptimizerFunc,
+                 x: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float,
+                 maxnfev: int | None,
+                 rng: RandomType | None = None
+                 ) -> MyOptOutput:
+        ...
 
 
 class MyNcores:
+    """Support distributed processing."""
 
     def __init__(self) -> None:
         if multi is False:
             raise TypeError("multicores not available")
 
     def calc(self,
-             funcs: Sequence[Callable],
+             funcs: Sequence[WorkerFunc],
              numcores: int,  # TODO: this is currently unused
-             *args, **kwargs) -> list:
+             fcn: OptimizerFunc,
+             x: np.ndarray,
+             xmin: np.ndarray,
+             xmax: np.ndarray,
+             tol: float,
+             maxnfev: int | None,
+             rng: RandomType | None = None
+             ) -> list[MyOptOutput]:
+        """Apply each function to the arguments, running in parallel."""
+
+        nfuncs = len(funcs)
+        if nfuncs == 0:
+            raise TypeError("funcs can not be empty")
 
         for func in funcs:
             if not callable(func):
@@ -55,27 +91,88 @@ class MyNcores:
         # At this point we can assume that context is not None,
         # since multi is True.
         #
+        # Should this shard by numcores?
+        #
         assert context is not None
         manager = context.Manager()
         out_q = manager.Queue()
         err_q = manager.Queue()
+
+        seeds = create_seeds(rng, nfuncs)
+
         procs = [context.Process(target=self.my_worker,
-                                 args=(func, ii, out_q, err_q) + args)
-                 for ii, func in enumerate(funcs)]
+                                 args=(func, ii, out_q, err_q,
+                                       fcn, x, xmin, xmax, tol, maxnfev),
+                                 kwargs={"rng": np.random.default_rng(seed)}
+                                 )
+                 for ii, (func, seed) in enumerate(zip(funcs, seeds))]
 
         return run_tasks(procs, err_q, out_q)
 
     def my_worker(self,
-                  opt: Callable,
+                  opt: WorkerFunc,
                   idval: int,
-                  out_q,
-                  err_q,
-                  *args):
+                  out_q: SupportsQueue[tuple[int, list[MyOptOutput]]],
+                  err_q: SupportsQueue[Exception],
+                  fcn: OptimizerFunc,
+                  x: np.ndarray,
+                  xmin: np.ndarray,
+                  xmax: np.ndarray,
+                  tol: float,
+                  maxnfev: int | None,
+                  rng: RandomType | None = None
+                  ) -> None:
         raise NotImplementedError("my_worker has not been implemented")
+
+
+class InfinitePotential:
+    """Ensure the parameter values stay within bounds.
+
+    The idea is that if sent a value outside the parameter limits we
+    return "infinity" (here defined to be the maximum value we'd
+    expect rather than inf, to avoid causing problems to the
+    optimizer).
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    sherpa.optmethods.optfcts.InfinitePotential
+
+    Notes
+    -----
+
+    Two differences to the optfcts version:
+      - the func argument return type is different
+      - the bounds here check that they lie within
+            minval <= pars <= maxval
+        and there is no check for NaN values
+
+    """
+
+    __slots__ = ("func", "minval", "maxval")
+
+    def __init__(self,
+                 func: OptimizerFunc,
+                 minval: np.ndarray,
+                 maxval: np.ndarray
+                 ) -> None:
+        self.func = func
+        self.minval = minval
+        self.maxval = maxval
+
+    def __call__(self, x: np.ndarray) -> float:
+        if np.any(x < self.minval) or np.any(x > self.maxval):
+            return FUNC_MAX
+
+        return self.func(x)
 
 
 class Opt:
     """Base optimisation class.
+
+    .. versionchanged:: 4.17.1
+       The `func_bounds` field has been removed.
 
     .. versionchanged:: 4.17.0
        The class structure has been changed (e.g. `nfev` is now a
@@ -84,90 +181,72 @@ class Opt:
     """
 
     def __init__(self,
-                 func: Callable[Concatenate[ArrayType, P],
-                                SupportsFloat],
+                 func: OptimizerFunc,
                  xmin: ArrayType,
                  xmax: ArrayType
                  ) -> None:
-        self.npar = len(xmin)
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
+        self.npar = len(self.xmin)
+        if len(self.xmax) != self.npar:
+            raise ValueError("xmin and xmax must be the same size")
+
+        # The function count should only be done on "valid" ranges,
+        # hence the ordering here.
+        #
         self.func_count = FuncCounter(func)
-        self.func = self.func_bounds(self.func_count, self.npar, xmin, xmax)
+        self.func = InfinitePotential(self.func_count, self.xmin,
+                                      self.xmax)
 
     @property
     def nfev(self) -> int:
+        """How many evaluations of the function have been made?
+
+        This does not count proposed values which were outside the
+        parameter limits.
+
+        """
         return self.func_count.nfev
 
-    def _outside_limits(self,
-                        x: np.ndarray,
-                        xmin: np.ndarray,
-                        xmax: np.ndarray
-                        ) -> bool:
-        return bool(np.any(x < xmin) or np.any(x > xmax))
 
-    # We should be able to take these parameters from the class, or
-    # re-write this logic.
-    #
-    def func_bounds(self,
-                    func: Callable[Concatenate[ArrayType, P],
-                                   SupportsFloat],
-                    npar: int,
-                    xmin: ArrayType | None = None,
-                    xmax: ArrayType | None = None
-                    ) -> Callable:
-        """In order to keep the current number of function evaluations:
-        func_counter should be called before func_bounds. For example,
-        the following code
-          x0 = [-1.2, 1.0]
-          xmin = [-10.0, -10.0]
-          xmax = [10.0, 10.0]
-          nfev, rosen = func_counter(Rosenbrock)
-          rosenbrock = func_bounds(rosen, xmin, xmax)
-          print rosenbrock([-15.0, 1.0]), nfev[0]
-        should output:
-        inf 0"""
-        if xmin is not None and xmax is not None:
-            xmin = np.asarray(xmin)
-            xmax = np.asarray(xmax)
-        elif xmin is not None:
-            xmin = np.asarray(xmin)
-            xmax = np.asarray([np.inf for ii in xmin])
-        elif xmax is not None:
-            xmax = np.asarray(xmax)
-            xmin = np.asarray([- np.inf for ii in xmax])
-        else:
-            xmin = np.asarray([- np.inf for ii in range(npar)])
-            xmax = np.asarray([np.inf for ii in range(npar)])
-
-        def func_bounds_wrapper(x, *args):
-            if self._outside_limits(x, xmin, xmax):
-                return np.finfo(np.float64).max
-            return func(x, *args)
-
-        return func_bounds_wrapper
-
-
+# The random state is, as of 4.17.1, now set when calling __init__:
+# either rng is set or it is created based on the seed argument.  The
+# self.rng field is then used to access random numbers, and the seed
+# argument in other routines, such as init, is ignored.
+#
 class SimplexBase:
+    """
+
+    .. versionchanged:: 4.17.1
+       The seed argument is now ignored other than in the initialization
+       code, where it is only used if the rng argument is not set.
+       Some of the arguments must now be set by name.
+
+    """
 
     def __init__(self,
-                 func: Callable,
+                 func: OptimizerFunc,
                  npop: int,
                  xpar: ArrayType,
                  xmin: ArrayType,
                  xmax: ArrayType,
+                 *,
                  step,
-                 seed: int,
-                 factor: float,
+                 seed: int | None,
+                 factor: float | None,
                  rng: RandomType | None = None
                  ) -> None:
         self.func = func
         self.xmin = xmin
         self.xmax = xmax
         self.npar = len(xpar)
-        self.rng = rng
+        if rng is None:
+            self.rng = np.random.default_rng(seed)
+        else:
+            self.rng = rng
+
         self.simplex = self.init(npop=npop, xpar=np.asarray(xpar),
-                                 step=step, seed=seed, factor=factor)
+                                 step=step, factor=factor)
 
     def __getitem__(self, index):
         return self.simplex[index]
@@ -175,11 +254,11 @@ class SimplexBase:
     def __setitem__(self, index, val):
         self.simplex[index] = val
 
-    def calc_centroid(self) -> SupportsFloat:
+    def calc_centroid(self) -> np.ndarray:
         return np.mean(self.simplex[:-1, :], 0)
 
     def check_convergence(self,
-                          ftol: SupportsFloat,
+                          ftol: float,
                           method: int
                           ) -> bool:
 
@@ -254,27 +333,38 @@ class SimplexBase:
         return self.sort_me(simplex)
 
     def init(self,
+             *,
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int,
-             factor: float
+             factor: float | None
              ) -> np.ndarray:
+        """Initialize the class.
+
+        .. versionchanged:: 4.17.1
+           The arguments must now all be given by name and the seed
+           argument has been removed.
+
+        """
         raise NotImplementedError("init has not been implemented")
 
+    # This mutates the input simplex argument (and returns it).
+    #
     def init_random_simplex(self,
                             xpar: np.ndarray,
                             simplex: np.ndarray,
+                            *,
                             start: int,
                             npop: int,
-                            seed: int,
-                            factor: float
+                            factor: float | None
                             ) -> np.ndarray:
-        # Set the seed when there is no RNG set, otherwise the RNG
-        # determines the state.
-        #
-        if self.rng is None:
-            np.random.seed(seed)
+        """Initialize the simplex.
+
+        .. versionchanged:: 4.17.1
+           The seed argument has been removed. Most of the arguments
+           must now be set by name.
+
+        """
 
         # This could be done before changing the seed, but code may
         # require the current behavior.
@@ -282,6 +372,9 @@ class SimplexBase:
         if start >= npop:
             return simplex
 
+        # At this point it is assumed the caller has set factor.
+        #
+        assert factor is not None, "caller did not set factor"
         deltas = factor * np.abs(np.asarray(xpar))
         for ii in range(start, npop):
             simplex[ii][:-1] = \
@@ -321,11 +414,11 @@ class SimplexBase:
 class SimplexNoStep(SimplexBase):
 
     def init(self,
+             *,
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int,
-             factor: float
+             factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -339,19 +432,18 @@ class SimplexNoStep(SimplexBase):
             simplex[ii+1][:-1] = tmp[:]
 
         simplex = self.init_random_simplex(xpar, simplex, start=npar1,
-                                           npop=npop, seed=seed,
-                                           factor=factor)
+                                           npop=npop, factor=factor)
         return self.eval_simplex(npop, simplex)
 
 
 class SimplexStep(SimplexBase):
 
     def init(self,
+             *,
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int,
-             factor: float
+             factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -361,24 +453,23 @@ class SimplexStep(SimplexBase):
             simplex[ii + 1][:-1] = tmp
 
         simplex = self.init_random_simplex(xpar, simplex, start=npar1,
-                                           npop=npop, seed=seed, factor=factor)
+                                           npop=npop, factor=factor)
         return self.eval_simplex(npop, simplex)
 
 
 class SimplexRandom(SimplexBase):
 
     def init(self,
+             *,
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int,
-             factor: float
+             factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
         simplex[0][:-1] = np.copy(xpar)
 
         simplex = self.init_random_simplex(xpar, simplex, start=1,
-                                           npop=npop, seed=seed,
-                                           factor=factor)
+                                           npop=npop, factor=factor)
         return self.eval_simplex(npop, simplex)

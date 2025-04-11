@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2021, 2023, 2024
+#  Copyright (C) 2019 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,22 +18,24 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
+from typing import Any
+
+import numpy as np
 
 from sherpa.utils.parallel import parallel_map, ncpus
 from sherpa.utils import random
 
 from .ncoresnm import ncoresNelderMead
-from .opt import Opt, SimplexRandom
+from .opt import Opt, OptimizerFunc, MyOptOutput, SimplexRandom
 
 
 class Key2:
 
-    def __init__(self, n=12):
+    def __init__(self, n: int = 12) -> None:
         self.nbit = n
         self.max_arg2 = 2**n - 1
 
-    def calc(self, arg1, arg2):
+    def calc(self, arg1: int, arg2: int) -> int:
         if arg2 > self.max_arg2:
             raise ValueError(f"arg2 ({arg2}) must be < {self.max_arg2}")
 
@@ -42,7 +44,7 @@ class Key2:
         key += arg2
         return key
 
-    def parse(self, key):
+    def parse(self, key: int) -> tuple[int, int]:
         arg1 = key
         arg1 >>= self.nbit
         arg2 = arg1
@@ -52,8 +54,23 @@ class Key2:
 
 
 class Strategy:
+    """Create a trial set of parameters.
 
-    def __init__(self, func, npar, npop, sfactor, xprob, rng=None):
+    The RNG is sent when the strategy is created, rather than when
+    called, as it may be called in parallel, and so needs a unique
+    generator.
+
+    """
+
+
+    def __init__(self,
+                 func: OptimizerFunc,
+                 npar: int,
+                 npop: int,
+                 sfactor: float,
+                 xprob: float,
+                 rng: random.RandomType | None = None
+                 ) -> None:
         self.func = func
         self.npar = npar
         self.npop = npop
@@ -61,25 +78,28 @@ class Strategy:
         self.xprob = xprob
         self.rng = rng
 
-    def calc(self, arg, pop):
+    def calc(self,
+             arg: np.ndarray,
+             pop: Any  # unused
+             ) -> np.ndarray:
         arg[-1] = self.func(arg[:-1])
-        tmp = numpy.empty(self.npar + 2)
+        tmp = np.empty(self.npar + 2)
         tmp[1:] = arg[:]
-        if numpy.finfo(numpy.float64).max == arg[-1]:
+        if np.finfo(np.float64).max == arg[-1]:
             tmp[0] = 0
         else:
             tmp[0] = 1
         return tmp
 
-    def init(self, num):
+    def init(self, num: int) -> np.ndarray:
         return random.choice(self.rng, range(self.npop), num)
 
 
 class Strategy0(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3 = self.init(3)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = pop[0][n] + self.sfactor * (pop[r2][n] - pop[r3][n])
@@ -92,9 +112,9 @@ class Strategy0(Strategy):
 
 class Strategy1(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3 = self.init(3)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = trial[n] + self.sfactor * (pop[r2][n] - pop[r3][n])
@@ -107,9 +127,9 @@ class Strategy1(Strategy):
 
 class Strategy2(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2 = self.init(2)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = trial[n] + self.sfactor * (pop[0][n] - trial[n]) + \
@@ -123,9 +143,9 @@ class Strategy2(Strategy):
 
 class Strategy3(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3, r4 = self.init(4)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = pop[0][n] + \
@@ -140,9 +160,9 @@ class Strategy3(Strategy):
 
 class Strategy4(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3, r4, r5 = self.init(5)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
             trial[n] = pop[r5][n] + \
@@ -157,9 +177,9 @@ class Strategy4(Strategy):
 
 class Strategy5(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3 = self.init(3)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -173,9 +193,9 @@ class Strategy5(Strategy):
 
 class Strategy6(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3 = self.init(3)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -189,9 +209,9 @@ class Strategy6(Strategy):
 
 class Strategy7(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2 = self.init(2)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -205,9 +225,9 @@ class Strategy7(Strategy):
 
 class Strategy8(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3, r4 = self.init(4)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -221,9 +241,9 @@ class Strategy8(Strategy):
 
 class Strategy9(Strategy):
 
-    def __call__(self, pop, icurrent):
+    def __call__(self, pop: np.ndarray, icurrent: int) -> np.ndarray:
         r1, r2, r3, r4, r5 = self.init(5)
-        trial = numpy.array(pop[icurrent][:])
+        trial = np.array(pop[icurrent][:])
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
             if random.random(self.rng) < self.xprob or \
@@ -237,14 +257,41 @@ class Strategy9(Strategy):
 
 
 class MyDifEvo(Opt):
+    """
 
-    def __init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob, step,
-                 seed, rng=None):
-        Opt.__init__(self, func, xmin, xmax)
+    .. versionchanged:: 4.17.1
+       Calling the object now requires named arguments: maxnfev and
+       ftol.
+
+    """
+
+    def __init__(self,
+                 func: OptimizerFunc,
+                 xpar: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 npop: int,
+                 sfactor: float,
+                 xprob: float,
+                 step,
+                 seed: int,
+                 rng: random.RandomType | None = None
+                 ) -> None:
+        super().__init__(func, xmin, xmax)
+
         self.ncores_nm = ncoresNelderMead()
         self.key2 = Key2()
         self.npop = min(npop, 4096)
+
         self.seed = seed
+        if rng is None:
+            # Create the RNG if not set. For now use the seed, but
+            # perhaps it should be called with no argument.
+            #
+            self.rng = np.random.default_rng(seed)
+
+        else:
+            self.rng = rng
 
         # Create separate RNGs for the strategy elements, following
         # https://numpy.org/doc/stable/reference/random/parallel.html,
@@ -255,35 +302,43 @@ class MyDifEvo(Opt):
         #
         strats = [Strategy0, Strategy1, Strategy2, Strategy3, Strategy4,
                   Strategy5, Strategy6, Strategy7, Strategy8, Strategy9]
-        sseeds = numpy.random.SeedSequence(seed).spawn(len(strats))
+
+        # See also sherpa.utils.parallel.create_seeds.
+        #
+        # Should the seed for SeedSequence be created from the RNG
+        # (so, use create_seeds) rather than using a hard-coded value?
+        #
+        sseeds = np.random.SeedSequence(seed).spawn(len(strats))
         self.strategies = [strat(self.func, self.npar, npop, sfactor, xprob,
-                                 rng=numpy.random.default_rng(sseed))
+                                 rng=np.random.default_rng(sseed))
                            for strat, sseed in zip(strats, sseeds)]
 
-        xpar = numpy.asarray(xpar)
+        xpar_np = np.asarray(xpar)
+        xmin_np = np.asarray(xmin)
+        xmax_np = np.asarray(xmax)
         if step is None:
-            step = xpar * 1.2 + 1.2
+            step = xpar_np * 1.2 + 1.2
+
         factor = 10
-        self.rng = rng
-        self.polytope = SimplexRandom(func=func, npop=npop, xpar=xpar,
-                                      xmin=xmin, xmax=xmax, step=step,
-                                      seed=seed, factor=factor, rng=rng)
+
+        # TODO: should this create a separate rng from self.rng?
+        self.polytope = SimplexRandom(func=func, npop=npop,
+                                      xpar=xpar_np, xmin=xmin_np,
+                                      xmax=xmax_np, step=step,
+                                      seed=seed, factor=factor,
+                                      rng=self.rng)
         self.local_opt = self.ncores_nm.algo
 
-    def __call__(self, maxnfev, ftol):
-
-        # Set the seed if RNG is not sent in. This used to change
-        # random.seed but now changes the NumPy version.
-        #
-        if self.rng is None:
-            numpy.random.seed(self.seed)
-
+    def __call__(self,
+                 *,
+                 maxnfev: int,
+                 ftol: float
+                 ) -> MyOptOutput:
         mypop = self.polytope
         npop_1 = self.npop - 1
         while self.nfev < maxnfev:
             for pop_index in range(self.npop):
                 key = self.calc_key([pop_index])
-                # trial = self.all_strategies(pop_index)
                 trial = self.all_strategies(key[0])
                 if trial[-1] < mypop[npop_1][-1]:
                     mypop[npop_1] = trial[1:]
@@ -297,17 +352,8 @@ class MyDifEvo(Opt):
         best_val = best_vertex[-1]
         return self.nfev, best_val, best_par
 
-    def all_strategies(self, key):
+    def all_strategies(self, key: int) -> np.ndarray:
         rand, index = self.key2.parse(key)
-
-        # Set the seed if RNG is not sent in. This used to change
-        # random.seed but now changes the NumPy version. It is not
-        # clear if the int is needed but leave in for now (Python 3.11
-        # needed it when it was random.seed).
-        #
-        if self.rng is None:
-            numpy.random.seed(int(self.seed))
-
         mypop = self.polytope
         best_trial = self.strategies[0](mypop, index)
         for ii in range(1, len(self.strategies)):
@@ -319,41 +365,64 @@ class MyDifEvo(Opt):
             best_trial = self.apply_local_opt(best_trial, index)
         return best_trial
 
-    def apply_local_opt(self, arg, index):
+    def apply_local_opt(self,
+                        arg: np.ndarray,
+                        index: int
+                        ) -> np.ndarray:
         local_opt = self.local_opt[index % len(self.local_opt)]
-        result = local_opt(self.func, arg[1:-1], self.xmin, self.xmax)
-        tmp = numpy.append(result[0], result[2])
-        result = numpy.append(tmp, result[1])
+        result = local_opt(self.func, arg[1:-1], self.xmin, self.xmax,
+                           rng=self.rng)
+        tmp = np.append(result[0], result[2])
+        result = np.append(tmp, result[1])
         return result
 
-    def calc_key(self, indices, start=0, end=65536):
-        result = numpy.empty(len(indices), dtype=numpy.int64)
+    def calc_key(self,
+                 indices,
+                 start: int = 0,
+                 end: int = 65536
+                 ) -> np.ndarray:
+        result = np.empty(len(indices), dtype=np.int64)
         for ii, index in enumerate(indices):
             # want to generate [start, end)
             rand = random.integers(self.rng, end - start) + start
             result[ii] = self.key2.calc(rand, index)
         return result
 
-    def check_convergence(self, mypop, ftol, npar):
-        fval_std = numpy.std([col[-1] for col in mypop])
-        if fval_std < ftol:
-            return True
-        return False
+    def check_convergence(self,
+                          mypop: np.ndarray,
+                          ftol: float,
+                          npar: Any  # unused
+                          ) -> bool:
+        fval_std = np.std([col[-1] for col in mypop])
+        return bool(fval_std < ftol)
 
 
 class ncoresMyDifEvo(MyDifEvo):
+    """
 
-    def __call__(self, tol, maxnfev, numcores=ncpus):
+    .. versionchanged:: 4.17.1
+       Calling the object now requires named arguments and the
+       ordering has been changed to match the superclass.
+
+    """
+
+    def __call__(self,
+                 *,
+                 maxnfev: int,
+                 ftol: float,
+                 numcores: int | None = ncpus
+                 ) -> MyOptOutput:
+
         nfev = 0
 
         # Set the seed if RNG is not sent in. This used to change
         # random.seed but now changes the NumPy version.
         #
         if self.rng is None:
-            numpy.random.seed(self.seed)
+            np.random.seed(self.seed)
 
         mypop = self.polytope
-        old_fval = numpy.inf
+        old_fval = np.inf
         while nfev < maxnfev:
 
             # all_strategies has been set up so that each strategy has
@@ -370,7 +439,7 @@ class ncoresMyDifEvo(MyDifEvo):
                     mypop[index] = result[1:]
 
             self.polytope.sort()
-            if self.polytope.check_convergence(tol, 0):
+            if self.polytope.check_convergence(ftol, 0):
                 break
 
             best = mypop[0]
@@ -379,10 +448,10 @@ class ncoresMyDifEvo(MyDifEvo):
                 best_par = best[:-1]
                 tmp_nfev, tmp_fval, tmp_par = \
                     self.ncores_nm(self.func, best_par, self.xmin, self.xmax,
-                                   tol)
+                                   ftol)
                 nfev += tmp_nfev
                 if tmp_fval < best_fval:
-                    best_par = numpy.append(tmp_par, tmp_fval)
+                    best_par = np.append(tmp_par, tmp_fval)
                     mypop[1] = best_par[:]
                     self.polytope.sort()
                     old_fval = tmp_fval
@@ -400,11 +469,25 @@ class DifEvo:
     # The classes tend to take rng as an argument when constructing the
     # object, so follow that approach here.
     #
-    def __init__(self, rng=None):
+    def __init__(self,
+                 rng: random.RandomType | None = None
+                 ) -> None:
         self.rng = rng
 
-    def __call__(self, fcn, x, xmin, xmax, step=None, maxnfev=None, tol=1.0e-6,
-                 npop=None, seed=45, sfactor=0.85, xprob=0.7, verbose=0):
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 x: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 step=None,
+                 maxnfev: int | None = None,
+                 tol: float = 1.0e-6,
+                 npop: int | None = None,
+                 seed: int = 45,
+                 sfactor: float = 0.85,
+                 xprob: float = 0.7,
+                 verbose: Any = 0  # unused
+                 ) -> MyOptOutput:
 
         npar = len(x)
         if npop is None:
@@ -417,20 +500,34 @@ class DifEvo:
         seed = 123
         mydifevo = MyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob, step,
                             seed, rng=self.rng)
-        return mydifevo(maxnfev, tol)
+        return mydifevo(maxnfev=maxnfev, ftol=tol)
 
 
 class ncoresDifEvo:
+    """
 
-    # The classes tend to take rng as an argument when constructing the
-    # object, so follow that approach here.
-    #
-    def __init__(self, rng=None):
-        self.rng = rng
+    .. versionchanged:: 4.17.1
+       The rng argument is now set when calling the class, not when
+       creating it.
 
-    def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6, maxnfev=None, step=None,
-                 numcores=None, npop=None, seed=23, sfactor=0.85, xprob=0.7,
-                 verbose=0):
+    """
+
+    def __call__(self,
+                 fcn: OptimizerFunc,
+                 x: np.ndarray,
+                 xmin: np.ndarray,
+                 xmax: np.ndarray,
+                 tol: float = 1.0e-6,
+                 maxnfev: int | None = None,
+                 step=None,
+                 numcores: int | None = None,
+                 npop: int | None = None,
+                 seed: int = 23,
+                 sfactor: float = 0.85,
+                 xprob: float = 0.7,
+                 verbose: Any = 0,  # unused
+                 rng: random.RandomType | None = None
+                 ) -> MyOptOutput:
 
         npar = len(x)
         if npop is None:
@@ -440,50 +537,53 @@ class ncoresDifEvo:
             maxnfev = 8192 * npar
 
         mydifevo = ncoresMyDifEvo(fcn, x, xmin, xmax, npop, sfactor, xprob,
-                                  step, seed, rng=self.rng)
-        return mydifevo(tol, maxnfev, numcores)
+                                  step, seed, rng=rng)
+        return mydifevo(ftol=tol, maxnfev=maxnfev, numcores=numcores)
 
 
-class ncoresDifEvoNelderMead:
-
-    def __init__(self, rng=None):
-        self.ncores_nm = ncoresNelderMead()
-        self.rng = rng
-
-    def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6, maxnfev=None, step=None,
-                 numcores=None, npop=None, seed=23, sfactor=0.85, xprob=0.7,
-                 verbose=0):
-
-        nfev, nm_fmin, nm_par = \
-            self.ncores_nm(fcn, x, xmin, xmax, tol, maxnfev, numcores)
-
-        npar = len(x)
-        if npop is None:
-            npop = 12 * npar
-        npop = max(npop, npar * 32)
-        if maxnfev is None:
-            maxnfev = 8192 * npar
-
-        # TODO: the seed argument is not sent in
-        mydifevo = \
-            ncoresMyDifEvo(fcn, nm_par, xmin, xmax, npop, sfactor, xprob,
-                           step, rng=self.rng)
-        de_nfev, de_fmin, de_par = \
-            mydifevo(tol, maxnfev - nfev, step, seed, numcores)
-        nfev += de_nfev
-
-        if nm_fmin < de_fmin:
-            my_fmin = nm_fmin
-            my_par = nm_par
-        else:
-            my_fmin = de_fmin
-            my_par = de_par
-        nm_nfev, nm_fmin, nm_par = self.ncores_nm(fcn, my_par, xmin, xmax, tol,
-                                                  maxnfev - nfev, numcores)
-        nfev += nm_nfev
-
-        if nm_fmin < my_fmin:
-            my_fmin = nm_fmin
-            my_par = nm_par
-
-        return nfev, my_fmin, my_par
+# This is only used by tests/test_opt_original.py when run directly,
+# not via pytest. The code fails so has been commented out.
+#
+# class ncoresDifEvoNelderMead:
+#
+#     def __init__(self, rng=None):
+#         self.ncores_nm = ncoresNelderMead()
+#         self.rng = rng
+#
+#     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6, maxnfev=None, step=None# ,
+#                  numcores=None, npop=None, seed=23, sfactor=0.85, xprob=0.7,
+#                  verbose=0):
+#
+#         nfev, nm_fmin, nm_par = \
+#             self.ncores_nm(fcn, x, xmin, xmax, tol, maxnfev, numcores)
+#
+#         npar = len(x)
+#         if npop is None:
+#             npop = 12 * npar
+#         npop = max(npop, npar * 32)
+#         if maxnfev is None:
+#             maxnfev = 8192 * npar
+#
+#         # TODO: the seed argument is not sent in
+#         mydifevo = \
+#             ncoresMyDifEvo(fcn, nm_par, xmin, xmax, npop, sfactor, xprob,
+#                            step, rng=self.rng)
+#         de_nfev, de_fmin, de_par = \
+#             mydifevo(tol, maxnfev - nfev, step, seed, numcores)
+#         nfev += de_nfev
+#
+#         if nm_fmin < de_fmin:
+#             my_fmin = nm_fmin
+#             my_par = nm_par
+#         else:
+#             my_fmin = de_fmin
+#             my_par = de_par
+#         nm_nfev, nm_fmin, nm_par = self.ncores_nm(fcn, my_par, xmin, xmax, tol# ,
+#                                                   maxnfev - nfev, numcores)
+#         nfev += nm_nfev
+#
+#         if nm_fmin < my_fmin:
+#             my_fmin = nm_fmin
+#             my_par = nm_par
+#
+#         return nfev, my_fmin, my_par

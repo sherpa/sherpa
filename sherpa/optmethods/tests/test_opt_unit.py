@@ -37,9 +37,12 @@ def rosenbrock(x):
 SEED = 2354
 
 
-@pytest.mark.parametrize("rng", [None,
-                                 np.random.RandomState(2354)])
-def test_is_simplexbase_repeatable(rng):
+@pytest.mark.parametrize("kwargs",
+                         [{"seed": SEED, "rng": None},
+                          {"seed": SEED, "rng": np.random.default_rng(SEED)},
+                          {"seed": None, "rng": np.random.default_rng(SEED)},
+                          ])
+def test_is_simplexbase_repeatable(kwargs):
     """The SimplexBase* classes uses RNG, so can we make it repeatable?
 
     This is based on the 'if __name__ == "__main__"' section of
@@ -56,8 +59,8 @@ def test_is_simplexbase_repeatable(rng):
     xmin = [-1000, -1000]
     xmax = [1000, 1000]
     simp = SimplexRandom(func=rosenbrock, npop=4, xpar=x0, xmin=xmin,
-                         xmax=xmax, step=x0 + 1.2, seed=SEED,
-                         factor=10, rng=rng)
+                         xmax=xmax, step=x0 + 1.2, factor=10,
+                         **kwargs)
 
     # After the first line, which is the x0 array + function value,
     # the next three rows have 2 random numbers and then the function
@@ -65,9 +68,9 @@ def test_is_simplexbase_repeatable(rng):
     # So this tests how repeatable the RNG is.
     #
     expected = np.asarray([[-1.2, 1.0, 24.2],
-                           [-3.35073356, 10.0887400, 148.587036],
-                           [-4.81446429, -5.89369307, 8.45563422e+04],
-                           [6.25720004, 2.32379451, 1.35663379e+05]])
+                           [-1.56818621, -3.88919619,  4.03681915e+03],
+                           [ 4.48924317, -0.376121880, 4.21579083e+04],
+                           [-8.84949593,  9.70166152,  4.70856524e+05]])
     assert simp.simplex == pytest.approx(expected)
 
 
