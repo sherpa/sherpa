@@ -155,7 +155,7 @@ SizeType = int | Sequence[int] | np.ndarray
 def uniform(rng: RandomType | None,
             low: float,
             high: float,
-            size: Literal[None]
+            size: Literal[None] = None
             ) -> float:
     ...
 

@@ -19,12 +19,12 @@
 #
 
 from collections.abc import Callable, Sequence
-from typing import Concatenate, ParamSpec, SupportsFloat
 
 import numpy as np
 
 from sherpa.utils import Knuth_close, FuncCounter
-from sherpa.utils.parallel import multi, context, run_tasks
+from sherpa.utils.parallel import SupportsQueue, \
+    multi, context, run_tasks
 from sherpa.utils.random import RandomType, uniform
 from sherpa.utils.types import ArrayType
 
@@ -33,19 +33,43 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
            'SimplexStep')
 
 
-P = ParamSpec("P")
+FUNC_MAX = float(np.finfo(np.float64).max)
+
+# Some code assumes the first argument is an ndarray, but is this always
+# the case? For now assume that the data is always sent as an ndarray.
+#
+# sherpa.stats.StatCallback converts a StatFunc into an OptimizerFunc.
+#
+OptimizerFunc = Callable[[np.ndarray], float]
+
+MyOptOutput = tuple[int, float, np.ndarray]
+WorkerFunc = Callable[[OptimizerFunc,
+                       np.ndarray,
+                       np.ndarray,
+                       np.ndarray,
+                       float,
+                       int | None],
+                      MyOptOutput]
 
 
 class MyNcores:
+    """Support distributed processing."""
 
     def __init__(self) -> None:
         if multi is False:
             raise TypeError("multicores not available")
 
     def calc(self,
-             funcs: Sequence[Callable],
+             funcs: Sequence[WorkerFunc],
              numcores: int,  # TODO: this is currently unused
-             *args, **kwargs) -> list:
+             fcn: OptimizerFunc,
+             x: np.ndarray,
+             xmin: np.ndarray,
+             xmax: np.ndarray,
+             tol: float,
+             maxnfev: int | None
+             ) -> list[MyOptOutput]:
+        """Apply each function to the arguments, running in parallel."""
 
         for func in funcs:
             if not callable(func):
@@ -55,22 +79,32 @@ class MyNcores:
         # At this point we can assume that context is not None,
         # since multi is True.
         #
+        # Should this shard by numcores?
+        #
         assert context is not None
         manager = context.Manager()
         out_q = manager.Queue()
         err_q = manager.Queue()
         procs = [context.Process(target=self.my_worker,
-                                 args=(func, ii, out_q, err_q) + args)
+                                 args=(func, ii, out_q, err_q,
+                                       fcn, x, xmin, xmax, tol, maxnfev)
+                                 )
                  for ii, func in enumerate(funcs)]
 
         return run_tasks(procs, err_q, out_q)
 
     def my_worker(self,
-                  opt: Callable,
+                  opt: WorkerFunc,
                   idval: int,
-                  out_q,
-                  err_q,
-                  *args):
+                  out_q: SupportsQueue[tuple[int, list[MyOptOutput]]],
+                  err_q: SupportsQueue[Exception],
+                  fcn: OptimizerFunc,
+                  x: np.ndarray,
+                  xmin: np.ndarray,
+                  xmax: np.ndarray,
+                  tol: float,
+                  maxnfev: int | None
+                  ) -> None:
         raise NotImplementedError("my_worker has not been implemented")
 
 
@@ -84,19 +118,31 @@ class Opt:
     """
 
     def __init__(self,
-                 func: Callable[Concatenate[ArrayType, P],
-                                SupportsFloat],
+                 func: OptimizerFunc,
                  xmin: ArrayType,
                  xmax: ArrayType
                  ) -> None:
-        self.npar = len(xmin)
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
+        self.npar = len(self.xmin)
+        if len(self.xmax) != self.npar:
+            raise ValueError("xmin and xmax must be the same size")
+
+        # The function count should only be done on "valid" ranges,
+        # hence the ordering here.
+        #
         self.func_count = FuncCounter(func)
-        self.func = self.func_bounds(self.func_count, self.npar, xmin, xmax)
+        self.func = self.func_bounds(self.func_count, self.npar,
+                                     self.xmin, self.xmax)
 
     @property
     def nfev(self) -> int:
+        """How many evaluations of the function have been made?
+
+        This does not count proposed values which were outside the
+        parameter limits.
+
+        """
         return self.func_count.nfev
 
     def _outside_limits(self,
@@ -110,12 +156,11 @@ class Opt:
     # re-write this logic.
     #
     def func_bounds(self,
-                    func: Callable[Concatenate[ArrayType, P],
-                                   SupportsFloat],
+                    func: OptimizerFunc,
                     npar: int,
                     xmin: ArrayType | None = None,
                     xmax: ArrayType | None = None
-                    ) -> Callable:
+                    ) -> OptimizerFunc:
         """In order to keep the current number of function evaluations:
         func_counter should be called before func_bounds. For example,
         the following code
@@ -140,10 +185,10 @@ class Opt:
             xmin = np.asarray([- np.inf for ii in range(npar)])
             xmax = np.asarray([np.inf for ii in range(npar)])
 
-        def func_bounds_wrapper(x, *args):
+        def func_bounds_wrapper(x):
             if self._outside_limits(x, xmin, xmax):
-                return np.finfo(np.float64).max
-            return func(x, *args)
+                return FUNC_MAX
+            return func(x)
 
         return func_bounds_wrapper
 
@@ -151,14 +196,14 @@ class Opt:
 class SimplexBase:
 
     def __init__(self,
-                 func: Callable,
+                 func: OptimizerFunc,
                  npop: int,
                  xpar: ArrayType,
                  xmin: ArrayType,
                  xmax: ArrayType,
                  step,
-                 seed: int,
-                 factor: float,
+                 seed: int | None,
+                 factor: float | None,
                  rng: RandomType | None = None
                  ) -> None:
         self.func = func
@@ -175,11 +220,11 @@ class SimplexBase:
     def __setitem__(self, index, val):
         self.simplex[index] = val
 
-    def calc_centroid(self) -> SupportsFloat:
+    def calc_centroid(self) -> np.ndarray:
         return np.mean(self.simplex[:-1, :], 0)
 
     def check_convergence(self,
-                          ftol: SupportsFloat,
+                          ftol: float,
                           method: int
                           ) -> bool:
 
@@ -257,8 +302,8 @@ class SimplexBase:
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int,
-             factor: float
+             seed: int | None,
+             factor: float | None
              ) -> np.ndarray:
         raise NotImplementedError("init has not been implemented")
 
@@ -267,8 +312,8 @@ class SimplexBase:
                             simplex: np.ndarray,
                             start: int,
                             npop: int,
-                            seed: int,
-                            factor: float
+                            seed: int | None,
+                            factor: float | None
                             ) -> np.ndarray:
         # Set the seed when there is no RNG set, otherwise the RNG
         # determines the state.
@@ -282,6 +327,9 @@ class SimplexBase:
         if start >= npop:
             return simplex
 
+        # At this point it is assumed the caller has set factor.
+        #
+        assert factor is not None, "caller did not set factor"
         deltas = factor * np.abs(np.asarray(xpar))
         for ii in range(start, npop):
             simplex[ii][:-1] = \
@@ -324,8 +372,8 @@ class SimplexNoStep(SimplexBase):
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int,
-             factor: float
+             seed: int | None,
+             factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -350,8 +398,8 @@ class SimplexStep(SimplexBase):
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int,
-             factor: float
+             seed: int | None,
+             factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -371,8 +419,8 @@ class SimplexRandom(SimplexBase):
              npop: int,
              xpar: np.ndarray,
              step,
-             seed: int,
-             factor: float
+             seed: int | None,
+             factor: float | None
              ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
