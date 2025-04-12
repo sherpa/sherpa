@@ -220,17 +220,17 @@ import types
 
 from sherpa.astro import ui
 from sherpa.utils.logging import config_logger
-from sherpa.utils import public
 from sherpa.astro.datastack.ds import DataStack
 
 from .utils import set_template_id
 
 logger = config_logger(__name__)
 
-__all__ = ['set_template_id', 'DataStack']
+__all__ = ['set_template_id', 'DataStack',
+           'clean', 'set_stack_verbosity', 'set_stack_verbose',
+           ]
 
 
-@public
 def set_stack_verbosity(level):
     """Change the logging level.
 
@@ -256,7 +256,6 @@ def set_stack_verbosity(level):
     logger.setLevel(level)
 
 
-@public
 def set_stack_verbose(verbose=True):
     """Should stack functions print informational messages?
 
@@ -354,15 +353,15 @@ _module = sys.modules[__name__]
 for attr in dir(ui):
     func = getattr(ui, attr)
     if isinstance(func, types.FunctionType):
-        setattr(_module, attr, public(_sherpa_ui_wrap(func)))
+        setattr(_module, attr, _sherpa_ui_wrap(func))
+        __all__.append(attr)
 
 for funcname in ['clear_stack', 'show_stack', 'get_stack_ids',
                  'query', 'query_by_header_keyword', 'query_by_obsid']:
-    setattr(_module, funcname, public(
-        _datastack_wrap(getattr(DataStack, funcname))))
+    setattr(_module, funcname, _datastack_wrap(getattr(DataStack, funcname)))
+    __all__.append(funcname)
 
 
-@public
 def clean():
     """Remove the models and data from the data stack and Sherpa.
 

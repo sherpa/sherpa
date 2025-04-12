@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2015, 2016, 2020  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015-2016, 2020, 2025
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +20,6 @@
 
 import re
 
-from sherpa.utils import public
 from sherpa.utils.logging import config_logger
 import sherpa
 from sherpa import plot as shplot
@@ -28,13 +28,16 @@ logger = config_logger(__name__)
 
 ID_STR = '__ID'
 
+__all__ = ['model_wrapper', 'load_wrapper', 'simple_wrapper',
+           'fit_wrapper', 'plot_wrapper', 'set_template_id',
+           'load_error_msg', 'create_stack_model']
+
 try:
     import stk
 except:
     logger.warning("could not import stk library. CIAO stack files and syntax will be disabled")
 
 
-@public
 def model_wrapper(func):
     def wrapfunc(self, model):
         """Run a model-setting function for each of the datasets."""
@@ -61,7 +64,6 @@ def model_wrapper(func):
     return wrapfunc
 
 
-@public
 def create_stack_model(model, id_):
     """Create any model components for the given data set.
 
@@ -149,7 +151,6 @@ def _create_stack_model(model, model_id, model_components=None):
     return model, model_comps
 
 
-@public
 def load_wrapper(load_func):
     """Override a native Sherpa data loading function."""
 
@@ -182,7 +183,6 @@ def load_wrapper(load_func):
     return _load
 
 
-@public
 def simple_wrapper(func):
     def wrapfunc(self, *args, **kwargs):
         """Apply an arbitrary Sherpa function to each of the datasets.
@@ -202,7 +202,6 @@ def simple_wrapper(func):
     return wrapfunc
 
 
-@public
 def fit_wrapper(func):
     def _fit(self, *args, **kwargs):
         """Fit or error analysis for all the datasets in the stack.
@@ -221,7 +220,6 @@ def fit_wrapper(func):
     return _fit
 
 
-@public
 def plot_wrapper(func):
     def plot(self, *args, **kwargs):
         """Call the Sherpa plot ``func`` for each dataset.
@@ -244,7 +242,6 @@ def plot_wrapper(func):
     return plot
 
 
-@public
 def set_template_id(newid):
     """Change the template used for model components.
 
@@ -280,7 +277,6 @@ def set_template_id(newid):
     ID_STR = newid
 
 
-@public
 def load_error_msg(id_):
     """The error message when an invalid id is given."""
     return "When called from a datastack instance, an ID cannot be " + \
