@@ -1689,8 +1689,12 @@ class XSTableModel(XSModel):
                 raise ParameterErr('edge', self.name, 'maximum', param._hard_max)
 
         tabtype = 'add' if self.addmodel else 'exp' if self.etable else 'mul'
-        return _xspec.tabint(p, *args,
-                             filename=self.filename, tabtype=tabtype)
+        if not self.addmodel:
+            return _xspec.tabint(p, *args,
+                                 filename=self.filename, tabtype=tabtype)
+
+        return p[-1] * _xspec.tabint(p[:-1], *args,
+                                     filename=self.filename, tabtype=tabtype)
 
 
 def mknorm(name: str, **kwargs) -> Parameter:
@@ -1757,6 +1761,10 @@ class XSAdditiveModel(XSModel):
 
     The XSPEC additive models are listed at [1]_.
 
+    .. versionchanged:: 4.17.1
+       The "norm" parameter is now handled in the `calc` method rather
+       than in the compiled code.
+
     .. versionchanged:: 4.16.1
        If the last parameter sent during initialization is not named
        "norm" then one will now be automatically added.
@@ -1773,11 +1781,80 @@ class XSAdditiveModel(XSModel):
             if hasattr(self, "norm"):
                 raise ParameterErr("norm is set but not included in pars")
 
-            # Add in the norm parameter if needed
             self.norm = mknorm(name)
             pars = tuple(list(pars) + [self.norm])
 
         XSModel.__init__(self, name, pars)
+
+    @modelCacher1d
+    def calc(self, p, *args, **kwargs):
+        """Calculate the model given the parameters and grid.
+
+        .. versionchanged:: 4.17.1
+           The `norm` parameter is now handled here rather than in
+           the compiled code (from the `_xspec` module).
+
+        Notes
+        -----
+        XSPEC models must always be evaluated with low and high bin
+        edges. Although supported by the XSPEC model interface the
+        ability to evaluate using an XSPEC-style grid (n+1 values for
+        n bins which we pad with a 0), we do not allow this here since
+        it complicates the handling of the regrid method.
+
+        Keyword arguments are ignored.
+        """
+
+        nargs = 1 + len(args)
+        if nargs != 3:
+            emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
+            warnings.warn(emsg, FutureWarning)
+            # raise TypeError(emsg)
+
+        # Ensure output is finite (Keith Arnaud mentioned that XSPEC
+        # does this as a check). This is done at this level (Python)
+        # rather than in the C++ interface since:
+        #  - it is easier
+        #  - it allows for the user to find out what bins are bad,
+        #    by directly calling the _calc function of a model
+        #
+        # If the call raises an error, add the model name and parameter
+        # values (the name is surprisingly tricky to add in the C++
+        # binding).
+        #
+        try:
+            out = p[-1] * self._calc(p[:-1], *args, **kwargs)
+        except ValueError as ve:
+            # Always add the extra information:
+            #   - model class
+            #   - model name
+            #   - parameter list
+            #   - any kwargs
+            #
+            msg = f"{ve}: {self.type}.{self.name}"
+            for par, val in zip(self.pars, p):
+                msg += f" {par.name}={val}"
+
+            if kwargs:
+                msg += " KEYWORDS "
+                for k, v in kwargs.items():
+                    msg += f"{k}={v}"
+
+            raise ValueError(msg) from None
+
+        # This check is being skipped in the 4.8.0 release as it
+        # has had un-intended consequences. It should be re-evaluated
+        # once we have had more experience with the issue.
+        #
+        # if not numpy.isfinite(out).all():
+        #     # TODO: Should this be using a "Sherpa error class"?
+        #     # I am not convinced that FloatingPointError is the best
+        #     # type.
+        #     msg = "model {} has created NaN or +/-Inf value".format(
+        #           self.name)
+        #     raise FloatingPointError(msg)
+
+        return out
 
     def guess(self, dep, *args, **kwargs):
         """Set an initial guess for the normalization.

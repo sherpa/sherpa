@@ -292,10 +292,12 @@ def test_evaluate_model():
     import sherpa.astro.xspec as xs
     mdl = xs.XSbbody()
     out = mdl([1, 2, 3, 4], [2, 3, 4, 5])
-    if mdl.calc.__name__.startswith('C_'):
-        otype = numpy.float64
-    else:
-        otype = numpy.float32
+
+    # This gets converted to float64, thanks to the multiplication by
+    # the norm parameter, no matter what the "type" of the actual
+    # model.
+    #
+    otype = numpy.float64
 
     assert out.dtype.type == otype
     # check all values are > 0
@@ -312,18 +314,20 @@ BASIC_MODELS = ['powerlaw', 'gaussian',
 
 @requires_xspec
 @pytest.mark.parametrize('model', BASIC_MODELS)
-def test_lowlevel(model):
+def test_lowlevel(model, xsmodel):
     """The XSPEC class interface requires lo,hi but the low-level allows just x
 
     Pick a few additive and multiplicative models.
     """
 
-    import sherpa.astro.xspec as xs
+    mdl = xsmodel(model)
 
-    cls = getattr(xs, 'XS{}'.format(model))
-    mdl = cls()
-
+    # Drop the norm parameter for additive models; this could check
+    # on the model type but it is easier just to check on the name.
+    #
     pars = [p.val for p in mdl.pars]
+    if mdl.pars[-1].name == "norm":
+        pars = pars[:-1]
 
     # grid chosen to match XSgaussian's default parameter setting
     # (to make sure evaluates to > 0).
