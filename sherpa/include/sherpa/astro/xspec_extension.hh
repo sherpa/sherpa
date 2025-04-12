@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2015, 2017, 2020 - 2024
+//  Copyright (C) 2009, 2015, 2017, 2020 - 2025
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -548,8 +548,8 @@ static void create_output(int nbins, T &a, T &b) {
 
         virtual ~xspecModelFctBase( ) { }
 
-        xspecModelFctBase( PyObject* arg, PyObject* kwargs, npy_intp numpars, bool hasnorm )
-          : args(arg), kwargs(kwargs), ifl(1), NumPars(numpars), HasNorm(hasnorm) { }
+        xspecModelFctBase( PyObject* arg, PyObject* kwargs, npy_intp numpars )
+          : args(arg), kwargs(kwargs), ifl(1), NumPars(numpars) { }
 
         virtual void call_xspec( RealArray& result ) { }
 
@@ -579,18 +579,10 @@ static void create_output(int nbins, T &a, T &b) {
             finalize_grid(nelem, result, gaps_index);
           }
 
-          // Apply normalization if required
-          if ( HasNorm )
-            for (int i = 0; i < nelem; i++)
-              result[i] *= pars[NumPars - 1];
-
         } // eval
 
 	const char* get_err_msg( ) {
-	  if (HasNorm)
-	    return "XSPEC additive model evaluation failed";
-	  else
-	    return "XSPEC multiplicative model evaluation failed";
+	  return "XSPEC model evaluation failed";
 	}
 
       protected:
@@ -603,7 +595,7 @@ static void create_output(int nbins, T &a, T &b) {
 
       private:
 
-        int NumPars, HasNorm, nelem;
+        int NumPars, nelem;
         std::vector<int> gaps_index;
         DoubleArray xlo, xhi;
 
@@ -613,8 +605,8 @@ static void create_output(int nbins, T &a, T &b) {
       class xspecModelFctC : public xspecModelFctBase<Real, RealArray>  {
       public:
 
-        xspecModelFctC( PyObject* args, PyObject *kwargs, npy_intp NumPars, bool HasNorm )
-          : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars, HasNorm ) { }
+        xspecModelFctC( PyObject* args, PyObject *kwargs, npy_intp NumPars )
+          : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars ) { }
 
         void call_xspec( RealArray& result ) {
           XSpecFunc( &this->ear[0], this->npts, &this->pars[0], this->ifl,
@@ -628,8 +620,8 @@ static void create_output(int nbins, T &a, T &b) {
       class xspecModelFctF : public xspecModelFctBase<Real, RealArray>  {
       public:
 
-        xspecModelFctF( PyObject* args, PyObject *kwargs, npy_intp NumPars, bool HasNorm )
-          : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars, HasNorm ) { }
+        xspecModelFctF( PyObject* args, PyObject *kwargs, npy_intp NumPars )
+          : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars ) { }
 
         void call_xspec( RealArray& result ) {
           // convert to 32-byte float
@@ -647,8 +639,8 @@ static void create_output(int nbins, T &a, T &b) {
       class xspecModelFctFD : public xspecModelFctBase<Real, RealArray>  {
       public:
 
-        xspecModelFctFD( PyObject* args, PyObject *kwargs, npy_intp NumPars, bool HasNorm )
-          : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars, HasNorm ) { }
+        xspecModelFctFD( PyObject* args, PyObject *kwargs, npy_intp NumPars )
+          : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars ) { }
 
         void call_xspec( RealArray& result ) {
           XSpecFunc( &this->ear[0], this->npts, &this->pars[0], this->ifl,
@@ -719,7 +711,7 @@ static void create_output(int nbins, T &a, T &b) {
 
       private:
 
-        int NumPars, HasNorm, nelem;
+        int NumPars, nelem;
         std::vector<int> gaps_index;
         DoubleArray xlo, xhi;
         RealArray fluxes;
@@ -771,7 +763,7 @@ static void create_output(int nbins, T &a, T &b) {
                                  char* filename, char*tabtype,
                                  FloatArray& result ) { }
 
-        void eval( bool HasNorm, DoubleArray& xlo, DoubleArray& xhi,
+        void eval( DoubleArray& xlo, DoubleArray& xhi,
                    npy_intp npars, FloatArray& pars, char* filename,
                    char* tabtype, FloatArray& result ) {
 
@@ -852,11 +844,11 @@ static void create_output(int nbins, T &a, T &b) {
       // }; // class xspecTableModel
 
 
-template <npy_intp NumPars, bool HasNorm, xsf77Call XSpecFunc>
+template <npy_intp NumPars, xsf77Call XSpecFunc>
 PyObject* xspecmodelfct( PyObject* self, PyObject* args, PyObject* kwargs ) {
 
   xspecModelFctF<float, FloatArray, XSpecFunc> xspec_model =
-    xspecModelFctF<float, FloatArray, XSpecFunc>( args, kwargs, NumPars, HasNorm );
+    xspecModelFctF<float, FloatArray, XSpecFunc>( args, kwargs, NumPars );
   try {
     FloatArray result;
     xspec_model.eval( result );
@@ -878,11 +870,11 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args, PyObject* kwargs ) {
 
 }
 
-template <npy_intp NumPars, bool HasNorm, xsF77Call XSpecFunc>
+template <npy_intp NumPars, xsF77Call XSpecFunc>
 PyObject* xspecmodelfct_dbl( PyObject* self, PyObject* args, PyObject *kwargs ) {
 
   xspecModelFctFD<double, DoubleArray, XSpecFunc> xspec_model =
-    xspecModelFctFD<double, DoubleArray, XSpecFunc>( args, kwargs, NumPars, HasNorm );
+    xspecModelFctFD<double, DoubleArray, XSpecFunc>( args, kwargs, NumPars );
   try {
     DoubleArray result;
     xspec_model.eval( result );
@@ -904,11 +896,11 @@ PyObject* xspecmodelfct_dbl( PyObject* self, PyObject* args, PyObject *kwargs ) 
 
 }
 
-template <npy_intp NumPars, bool HasNorm, xsccCall XSpecFunc>
+template <npy_intp NumPars, xsccCall XSpecFunc>
 PyObject* xspecmodelfct_C( PyObject* self, PyObject* args, PyObject *kwargs ) {
 
   xspecModelFctC<double, DoubleArray, XSpecFunc> xspec_model =
-    xspecModelFctC<double, DoubleArray, XSpecFunc>( args, kwargs, NumPars, HasNorm );
+    xspecModelFctC<double, DoubleArray, XSpecFunc>( args, kwargs, NumPars );
   try {
     DoubleArray result;
     xspec_model.eval( result );
@@ -1027,25 +1019,11 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
                                            &tabtype) )
           return NULL;
 
-        // This used to be specified at compile time, but with XSPEC 12.10.1
-        // it has been changed to run time.
-        bool HasNorm = strcmp(tabtype, "add") == 0;
-
-        // Remove the final parameter if this is an additive model
         npy_intp npars = pars.get_size();
-        if (HasNorm) { npars -= 1; }
-
         xspecTableModelTabint xspec_model = xspecTableModelTabint( );
         try {
           FloatArray result;
-          xspec_model.eval(HasNorm, xlo, xhi, npars, pars, filename, tabtype, result);
-          // Apply normalization if required (note that npars
-          // has been reduced by 1 if HasNorm is true, so it is
-          // correct to use npars and not 'npars - 1' here).
-          //
-          if ( HasNorm )
-            for (int i = 0; i < xlo.get_size(); i++)
-              result[i] *= pars[npars];
+          xspec_model.eval(xlo, xhi, npars, pars, filename, tabtype, result);
           return result.return_new_ref();
 	} catch(const NoError& re) {
 	  return NULL;
@@ -1071,9 +1049,7 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 // Fortran models
 //
 #define XSPECMODELFCT(name, npars) \
-   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, false, name##_ >))
-#define XSPECMODELFCT_NORM(name, npars) \
-   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, true, name##_ >))
+   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, name##_ >))
 
 #define XSPECMODELFCT_CON_F77(name, npars) \
    KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con_f77< npars, name##_ >))
@@ -1081,12 +1057,10 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 // C/C++ models
 //
 #define XSPECMODELFCT_DBL(name, npars) \
-   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_dbl< npars, false, name##_ >))
+   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_dbl< npars, name##_ >))
 
 #define XSPECMODELFCT_C(name, npars) \
-   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, false, name >))
-#define XSPECMODELFCT_C_NORM(name, npars) \
-   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, true, name >))
+   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, name >))
 
 #define XSPECMODELFCT_CON(name, npars) \
    KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con< npars, name >))

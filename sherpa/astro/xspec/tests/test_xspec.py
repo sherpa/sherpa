@@ -295,11 +295,13 @@ def test_evaluate_model():
     mdl = xs.XSbbody()
     out = mdl([1, 2, 3, 4], [2, 3, 4, 5])
 
-    # The result type apparently depends on the OS with
-    # 32-bit for Linux and 64-bit for MacOSX/ARM.
-    # It might be different again for MacOSX/Intel, so we just check that it
-    # is either of the expected types.
-    assert out.dtype.type == numpy.float64 or (out.dtype.type == numpy.float32)
+    # This gets converted to float64, thanks to the multiplication by
+    # the norm parameter, no matter what the "type" of the actual
+    # model.
+    #
+    otype = numpy.float64
+    assert out.dtype.type == otype
+
     # check all values are > 0
     assert (out > 0).all()
 
@@ -314,18 +316,20 @@ BASIC_MODELS = ['powerlaw', 'gaussian',
 
 @requires_xspec
 @pytest.mark.parametrize('model', BASIC_MODELS)
-def test_lowlevel(model):
+def test_lowlevel(model, xsmodel):
     """The XSPEC class interface requires lo,hi but the low-level allows just x
 
     Pick a few additive and multiplicative models.
     """
 
-    import sherpa.astro.xspec as xs
+    mdl = xsmodel(model)
 
-    cls = getattr(xs, 'XS{}'.format(model))
-    mdl = cls()
-
+    # Drop the norm parameter for additive models; this could check
+    # on the model type but it is easier just to check on the name.
+    #
     pars = [p.val for p in mdl.pars]
+    if mdl.pars[-1].name == "norm":
+        pars = pars[:-1]
 
     # grid chosen to match XSgaussian's default parameter setting
     # (to make sure evaluates to > 0).
@@ -776,19 +780,17 @@ def test_evaluate_xspec_model(modelcls):
 
     assert wvals == pytest.approx(evals)
 
-    # 2) Now, modify the model to remove
-    # `sherpa.astro.xspec.eval_xspec_with_fixed_norm` decorator.
     if not isinstance(mdl, xspec.XSAdditiveModel):
         return
-    mdl.calc = types.MethodType(inspect.unwrap(mdl.calc), mdl)
 
-    # In theory, this should not be necessary, because
-    # eval_xspec_with_fixed_norm will evaluate with norm = 1
-    # instead of the current value so the cache will not be hit.
-    # However, we want this test to still work if the decorator is modified in
-    # the future.
-    mdl.cache_clear()
-    evals_no_wrapper = mdl(elo, ehi)
+    # 2) Now, modify the model to remove
+    # `sherpa.astro.xspec.eval_xspec_with_fixed_norm` decorator.
+    #
+    # This turns out to be hard to do, so instead just call the
+    # compiled function directly, which also avoids the cache code.
+    #
+    pars = [p.val for p in mdl.pars]
+    evals_no_wrapper = pars[-1] * mdl._calc(pars[:-1], elo, ehi)
 
     assert evals == pytest.approx(evals_no_wrapper)
 
