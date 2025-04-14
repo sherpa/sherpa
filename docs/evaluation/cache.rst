@@ -3,9 +3,9 @@ Caching model evaluations
 =========================
 
 Sherpa contains a rudimentary system for caching the results
-of 1D model evaluations in order to speed up the time to evaluate
-models, at the expense of using more memory.
-The :py:func:`~sherpa.models.model.modelCacher1d`
+of model evaluations on one or more dimensions in order to speed up the
+time to evaluate models, at the expense of using more memory.
+The :py:func:`~sherpa.models.model.modelCacher`
 function decorator is applied to the
 :py:meth:`~sherpa.models.model.ArithmeticModel.calc` method of
 :py:class:`~sherpa.models.model.ArithmeticModel` models, and this then
@@ -21,14 +21,14 @@ What models are cached?
 
 There is unfortunately no easy way to determine whether a model
 uses the cache without either viewing the model definition - looking
-for the application of ``@modelCacher1d`` to the ``calc`` method - or
+for the application of ``@modelCacher`` to the ``calc`` method - or
 by running a test as shown below,
-:ref:`in the example section <example-modelcacher1d>`.
+:ref:`in the example section <example-modelcacher>`.
 
 When is the cache useful?
 =========================
 
-At present most 1D models use the cache by default.
+At present most models use the cache by default.
 It is intended to improve fit performance, but the actual
 time saved depends on the model and the data being fit.
 Compared to most built-in sherpa models, models in the optional XSPEC model
@@ -71,7 +71,7 @@ default value for this attribute is 5).
 Examples
 ========
 
-.. _example-modelcacher1d:
+.. _example-modelcacher:
 
 Checking the cache
 ------------------
