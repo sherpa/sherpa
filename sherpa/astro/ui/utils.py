@@ -48,6 +48,7 @@ from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model
+from sherpa.models.regrid import Axis, IntegratedAxis, PointAxis
 from sherpa.astro import fake
 from sherpa.astro.data import DataIMG, DataIMGInt, DataPHA
 import sherpa.astro.instrument
@@ -15816,7 +15817,7 @@ class Session(sherpa.ui.utils.Session):
     def calc_model(self,
                    id: Optional[IdType] = None,
                    bkg_id: Optional[IdType] = None
-                   ) -> tuple[tuple[np.ndarray, ...], np.ndarray]:
+                   ) -> tuple[tuple[Axis, ...], np.ndarray]:
         """Calculate the per-bin model values.
 
         The values are filtered and grouped based on the data and will
@@ -15837,12 +15838,12 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        xvals, yvals: tuple of ndarray, ndarray
-           The independent axis, which uses a tuple as the number of
-           elements depends on the dimensionality and type of data.
-           The units depends on the data type: for PHA data the
-           X axis will be in the analysis units and Y axis will
-           generally be counts.
+        xvals, yvals: tuple of Axis, ndarray
+           The independent axis, where the size matches the data
+           dimentionality and the values are Axis objects (so point or
+           integrated).  The units depends on the data type: for PHA
+           data the X axis will be in the analysis units and Y axis
+           will generally be counts.
 
         See Also
         --------
@@ -15864,8 +15865,8 @@ class Session(sherpa.ui.utils.Session):
         >>> pl.gamma = 1.7
         >>> pl.ampl = 2e-4
         >>> xvals, yvals = calc_model()
-        >>> xlo = xvals[0]
-        >>> xhi = xvals[1]
+        >>> xlo = xvals[0].lo
+        >>> xhi = xvals[0].hi
 
         The results can be compared to the model output in plot_fit to
         show agreement (note that calc_model returns grouped values,
@@ -15876,7 +15877,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_fit()
         >>> plot_model(overplot=True, color="black", alpha=0.4)
         >>> xvals, yvals = calc_model()
-        >>> elo, ehi = xvals
+        >>> elo, ehi = xvals[0].lo, xvals[0].hi
         >>> exposure = get_exposure()
         >>> plt.plot((elo + ehi) / 2, yvals / (ehi - elo) / exposure)
 
@@ -15896,7 +15897,7 @@ class Session(sherpa.ui.utils.Session):
         >>> gline.fwhm = 3
         >>> gline.ampl = 12
         >>> xvals, yvals = calc_model(2)
-        >>> x = xvals[0]
+        >>> x = xvals[0].x
         >>> x
         array([1, 4, 7])
         >>> yvals
@@ -15909,20 +15910,35 @@ class Session(sherpa.ui.utils.Session):
         idval = self._fix_id(id)
         data = self._get_data_or_bkg(idval, bkg_id)
 
+        if data.size is None:
+            raise DataErr("sizenotset", idval)
+
         if isinstance(data, DataPHA):
-            # Returning the grid that this model represents is not as easy
-            # as it should be, since there is no obvious API.
+            # Returning the grid that this model represents is not as
+            # easy as it should be, since there is no obvious API.
             #
             bins = sherpa.astro.plot.calc_x(data)
         else:
             bins = data.get_indep(filter=True)
 
-        # Safety check, to ensure we have data. This could be done
-        # by checking whether data.size is None but it is easier
-        # for type checkers if the return value is checked.
+        # There should be a better way to get at this data. This only
+        # works because for now there is no data class with a mix of
+        # integrated and point axes.
         #
-        if bins[0] is None:
-            raise DataErr("sizenotset", idval)
+        axis = []
+        nbins = len(bins)
+        if nbins == data.ndim:
+            for i in range(data.ndim):
+                axis.append(PointAxis(bins[i]))
+
+        elif nbins == 2 * data.ndim:
+            for i in range(data.ndim):
+                axis.append(IntegratedAxis(bins[2 * i],
+                                           bins[2 * i + 1]))
+
+        else:
+            # This is an internal error
+            raise DataErr("incorrect number of axes")
 
         if bkg_id is None:
             model = self.get_model(idval)
@@ -15933,7 +15949,7 @@ class Session(sherpa.ui.utils.Session):
         #
         mvals = data.eval_model_to_fit(model)
 
-        return bins, mvals
+        return tuple(axis), mvals
 
     # This could also be done in the sherpa.ui version but for now
     # leave here.
@@ -15989,8 +16005,8 @@ class Session(sherpa.ui.utils.Session):
         >>> pl.gamma = 1.7
         >>> pl.ampl = 2e-4
         >>> xvals, yvals = calc_source()
-        >>> xlo = xvals[0]
-        >>> xhi = xvals[1]
+        >>> xlo = xvals[0].lo
+        >>> xhi = xvals[0].hi
 
         The results can be compared to the output of plot_source to
         show agreement:
@@ -15998,7 +16014,7 @@ class Session(sherpa.ui.utils.Session):
         >>> set_analysis("energy", type="rate", factor=0)
         >>> plot_source()
         >>> xvals, yvals = calc_source()
-        >>> elo, ehi = xvals
+        >>> elo, ehi = xvals[0].lo, xvals[0].hi
         >>> plt.plot((elo + ehi) / 2, yvals / (ehi - elo))
 
         Changing the analysis setting changes the x values, as xvals2
@@ -16017,7 +16033,7 @@ class Session(sherpa.ui.utils.Session):
         >>> gline.fwhm = 3
         >>> gline.ampl = 12
         >>> xvals, yvals = calc_source(2)
-        >>> x = xvals[0]
+        >>> x = xvals[0].x
         >>> x
         array([1, 4, 7])
         >>> yvals
@@ -16028,20 +16044,35 @@ class Session(sherpa.ui.utils.Session):
         idval = self._fix_id(id)
         data = self._get_data_or_bkg(idval, bkg_id)
 
+        if data.size is None:
+            raise DataErr("sizenotset", idval)
+
         if isinstance(data, DataPHA):
-            # Returning the grid that this model represents is not as easy
-            # as it should be, since there is no obvious API.
+            # Returning the grid that this model represents is not as
+            # easy as it should be, since there is no obvious API.
             #
             bins = data._get_indep(filter=False)
         else:
             bins = data.get_indep(filter=False)
 
-        # Safety check, to ensure we have data. This could be done
-        # by checking whether data.size is None but it is easier
-        # for type checkers if the return value is checked.
+        # There should be a better way to get at this data. This only
+        # works because for now there is no data class with a mix of
+        # integrated and point axes.
         #
-        if bins[0] is None:
-            raise DataErr("sizenotset", idval)
+        axis = []
+        nbins = len(bins)
+        if nbins == data.ndim:
+            for i in range(data.ndim):
+                axis.append(PointAxis(bins[i]))
+
+        elif nbins == 2 * data.ndim:
+            for i in range(data.ndim):
+                axis.append(IntegratedAxis(bins[2 * i],
+                                           bins[2 * i + 1]))
+
+        else:
+            # This is an internal error
+            raise DataErr("incorrect number of axes")
 
         if bkg_id is None:
             model = self.get_source(idval)
@@ -16053,7 +16084,7 @@ class Session(sherpa.ui.utils.Session):
         #
         mvals = model(*bins)
 
-        return bins, mvals
+        return tuple(axis), mvals
 
     # DOC-TODO: better comparison of calc_source_sum and calc_model_sum
     # needed (e.g. integration or results in PHA case?)
