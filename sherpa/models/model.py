@@ -341,7 +341,8 @@ warning = logging.getLogger(__name__).warning
 
 __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
            'ArithmeticConstantModel', 'ArithmeticModel', 'RegriddableModel1D', 'RegriddableModel2D',
-           'UnaryOpModel', 'BinaryOpModel',  'modelCacher1d',
+           'UnaryOpModel', 'BinaryOpModel',
+           'modelCacher1d', 'modelCacher',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 
 
@@ -374,12 +375,17 @@ def boolean_to_byte(boolean_value: bool) -> bytes:
 
 
 def modelCacher1d(func: Callable) -> Callable:
-    """A decorator to cache 1D ArithmeticModel evaluations.
+    """A decorator to cache ArithmeticModel evaluations.
 
-    Apply to the `calc` method of a 1D model to allow the model
+    Apply to the `calc` method of a model to allow the model
     evaluation to be cached. The decision is based on the `integrate`
     setting, the evaluation grid, parameter values, and the keywords
     sent to the model.
+
+    For historic reasons, this decorator was implemented for 1D models
+    first. However, it is general enough that it works in higher dimensions,
+    too. It can be used as either ``@modelCacher1d`` or ``@modelCacher``;
+    the names are aliases for each other.
 
     Notes
     -----
@@ -472,6 +478,8 @@ def modelCacher1d(func: Callable) -> Callable:
 
     return cache_model
 
+
+modelCacher = modelCacher1d
 
 # It is tempting to convert the explicit class names below into calls
 # to super(), but this is problematic since it ends up breaking a

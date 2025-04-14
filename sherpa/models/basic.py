@@ -30,8 +30,11 @@ from sherpa.utils.guess import get_position, guess_amplitude, \
     guess_fwhm, guess_position, guess_reference, param_apply_limits
 
 from .parameter import Parameter, tinyval
-from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
-    ArithmeticFunctionModel, RegriddableModel2D, RegriddableModel1D
+from .model import (ArithmeticModel,
+                    modelCacher1d, modelCacher,
+                    CompositeModel, ArithmeticFunctionModel,
+                    RegriddableModel2D, RegriddableModel1D,
+)
 from . import _modelfcts  # type: ignore
 
 warning = logging.getLogger(__name__).warning
@@ -1536,7 +1539,6 @@ class Gauss2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl))
-        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1554,6 +1556,7 @@ class Gauss2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(fwhm, self.fwhm, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.gauss2d(p, *args, **kwargs)
@@ -1623,7 +1626,6 @@ class SigmaGauss2D(Gauss2D):
         ArithmeticModel.__init__(self, name,
                                  (self.sigma_a, self.sigma_b, self.xpos,
                                   self.ypos, self.theta, self.ampl))
-        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         xpos, ypos = guess_position(dep, *args)
@@ -1635,6 +1637,7 @@ class SigmaGauss2D(Gauss2D):
         param_apply_limits(fwhm, self.sigma_b, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.sigmagauss2d(p, *args, **kwargs)
@@ -1710,7 +1713,6 @@ class NormGauss2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl))
-        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1735,6 +1737,7 @@ class NormGauss2D(RegriddableModel2D):
                 ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.ngauss2d(p, *args, **kwargs)
@@ -1799,7 +1802,6 @@ class Polynom2D(RegriddableModel2D):
                                  (self.c, self.cy1, self.cy2, self.cx1,
                                   self.cx1y1, self.cx1y2, self.cx2,
                                   self.cx2y1, self.cx2y2))
-        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         x0min = args[0].min()
@@ -1845,6 +1847,7 @@ class Polynom2D(RegriddableModel2D):
         param_apply_limits(c22, self.cx2y1, **kwargs)
         param_apply_limits(c22, self.cx2y2, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.poly2d(p, *args, **kwargs)

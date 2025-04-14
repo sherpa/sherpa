@@ -23,7 +23,11 @@ import numpy
 
 from sherpa.models.basic import clean_kwargs1d, clean_kwargs2d
 from sherpa.models.parameter import Parameter, tinyval
-from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, modelCacher1d
+from sherpa.models.model import (ArithmeticModel,
+                                 RegriddableModel2D, RegriddableModel1D,
+                                 modelCacher,
+                                 )
+
 from sherpa.astro.utils import apply_pileup
 from sherpa.utils import bool_cast, lgam
 from sherpa.utils.err import ModelErr
@@ -95,7 +99,7 @@ class Atten(RegriddableModel1D):
                                  (self.hcol, self.heiRatio, self.heiiRatio))
         self.cache = 0
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         # atten should act like xsphabs, never integrate.
@@ -178,7 +182,7 @@ class BBody(RegriddableModel1D):
                'max': modampl * _guess_ampl_scale}
         param_apply_limits(mod, self.ampl, **kwargs)
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.bbody(p, *args, **kwargs)
@@ -236,7 +240,7 @@ class BBodyFreq(RegriddableModel1D):
         param_apply_limits(mod, self.ampl, **kwargs)
         param_apply_limits(t, self.t, **kwargs)
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.bbodyfreq(p, *args, **kwargs)
@@ -306,7 +310,7 @@ class Beta1D(RegriddableModel1D):
         norm = guess_amplitude_at_ref(self.r0.val, dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.beta1d(p, *args, **kwargs)
@@ -367,7 +371,7 @@ class BPL1D(RegriddableModel1D):
         norm = guess_amplitude_at_ref(self.ref.val, dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.bpl1d(p, *args, **kwargs)
@@ -433,7 +437,7 @@ class Dered(RegriddableModel1D):
         ArithmeticModel.__init__(self, name, (self.rv, self.nhgal))
         self.cache = 0
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.dered(p, *args, **kwargs)
@@ -485,7 +489,7 @@ class Edge(RegriddableModel1D):
                                  (self.space, self.thresh, self.abs))
         self.cache = 0
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.edge(p, *args, **kwargs)
@@ -550,7 +554,7 @@ class LineBroad(RegriddableModel1D):
                'max': modampl * _guess_ampl_scale}
         param_apply_limits(mod, self.ampl, **kwargs)
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.linebroad(p, *args, **kwargs)
@@ -618,7 +622,7 @@ class Lorentz1D(RegriddableModel1D):
         else:
             param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.lorentz1d(p, *args, **kwargs)
@@ -734,7 +738,7 @@ class Voigt1D(RegriddableModel1D):
                 'max': aprime * _guess_ampl_scale}
         param_apply_limits(ampl, self.ampl, **kwargs)
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.wofz(p, *args, **kwargs)
@@ -821,7 +825,7 @@ class PseudoVoigt1D(RegriddableModel1D):
                 'max': aprime * _guess_ampl_scale}
         param_apply_limits(ampl, self.ampl, **kwargs)
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
 
@@ -898,7 +902,7 @@ class NormBeta1D(RegriddableModel1D):
             ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.nbeta1d(p, *args, **kwargs)
@@ -944,7 +948,7 @@ class Schechter(RegriddableModel1D):
         norm = guess_amplitude(dep, *args)
         param_apply_limits(norm, self.norm, **kwargs)
 
-    @modelCacher1d
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         if not self.integrate:
             raise ModelErr('alwaysint', self.name)
@@ -1021,7 +1025,6 @@ class Beta2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.r0, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl, self.alpha))
-        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1039,6 +1042,7 @@ class Beta2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.beta2d(p, *args, **kwargs)
@@ -1103,7 +1107,6 @@ class DeVaucouleurs2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.r0, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl))
-        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1121,6 +1124,7 @@ class DeVaucouleurs2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.devau(p, *args, **kwargs)
@@ -1189,7 +1193,6 @@ class HubbleReynolds(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.r0, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl))
-        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1207,6 +1210,7 @@ class HubbleReynolds(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.hr(p, *args, **kwargs)
@@ -1265,7 +1269,6 @@ class Lorentz2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl))
-        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1281,6 +1284,7 @@ class Lorentz2D(RegriddableModel2D):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.lorentz2d(p, *args, **kwargs)
@@ -1480,7 +1484,6 @@ class Sersic2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.r0, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl, self.n))
-        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1498,6 +1501,7 @@ class Sersic2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.sersic(p, *args, **kwargs)
@@ -1603,6 +1607,7 @@ class Shell2D(RegriddableModel2D):
         self.width = Parameter(name, 'width', 0.1, 0)
         ArithmeticModel.__init__(self, name, (self.xpos, self.ypos, self.ampl, self.r0, self.width))
 
+    @modelCacher
     def calc(self, p, x, y, *args, **kwargs):
         """Homogeneously emitting spherical shell,
         projected along the z-direction
