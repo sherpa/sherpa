@@ -357,7 +357,7 @@ def check_compiled(got, suffix):
     #
     idx = got.find("\n#define XSPEC_")
     if idx == -1:
-        assert False, f"No #define XSPEC fragment found."
+        assert False, "No #define XSPEC fragment found."
 
     prefix = '''// Includes
 
@@ -636,6 +636,83 @@ PyMODINIT_FUNC PyInit__models(void) {
 
 
 @requires_xspec
+def test_create_model_multiplicative_xspec(caplog):
+    """Fake up a multplicative model for XSPEC"""
+
+    model = StringIO("""abcd           1  0.         1.e20           foos    mul  0
+nH      cm^-3   1.0   1.e-6  1.e-5  1.e19  1.e20   -0.01
+
+""")
+    parsed = xspec.parse_xspec_model_description(model)
+
+    converted = xspec.create_xspec_code(parsed, internal=(3, 4, 0))
+
+    expected = '''
+@version_at_least("3.4.0")
+class XSabcd(XSMultiplicativeModel):
+    """The XSPEC abcd model:  TBD
+
+    The model is described at [1]_.
+
+    .. versionadded:: ???
+       This model requires XSPEC 3.4.0 or later.
+
+    Parameters
+    ----------
+    nH
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelAbcd.html
+
+    """
+
+    __function__ = "foos"
+
+    def __init__(self, name='abcd'):
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+
+        pars = (self.nH,)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+'''
+    assert converted.python == expected
+
+    check_compiled(converted.compiled,
+                   '''// Defines
+
+extern "C" {
+  xsf77Call foos_;
+}
+
+// Wrapper
+
+static PyMethodDef Wrappers[] = {
+  XSPECMODELFCT(foos, 1),
+  { NULL, NULL, 0, NULL }
+};
+
+// Module
+
+static struct PyModuleDef wrapper_module = {
+  PyModuleDef_HEAD_INIT,
+  "_models",
+  NULL,
+  -1,
+  Wrappers,
+};
+
+PyMODINIT_FUNC PyInit__models(void) {
+  import_array();
+  return PyModule_Create(&wrapper_module);
+}
+''')
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
 def test_create_model_convolution(caplog):
     """Fake up a convolution model
 
@@ -661,6 +738,86 @@ class XSrgsxsrc(XSConvolutionKernel):
     """
 
     _calc = _models.rgsxsrc
+
+    def __init__(self, name='rgsxsrc'):
+        self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)
+
+        pars = (self.order,)
+        XSConvolutionKernel.__init__(self, name, pars)
+
+'''
+    assert converted.python == expected
+
+    check_compiled(converted.compiled,
+                   '''// Defines
+
+extern "C" {
+  xsf77Call rgsxsrc_;
+}
+
+// Wrapper
+
+static PyMethodDef Wrappers[] = {
+  XSPECMODELFCT_CON_F77(rgsxsrc, 1),
+  { NULL, NULL, 0, NULL }
+};
+
+// Module
+
+static struct PyModuleDef wrapper_module = {
+  PyModuleDef_HEAD_INIT,
+  "_models",
+  NULL,
+  -1,
+  Wrappers,
+};
+
+PyMODINIT_FUNC PyInit__models(void) {
+  import_array();
+  return PyModule_Create(&wrapper_module);
+}
+''')
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+def test_create_model_convolution_xspec(caplog):
+    """Fake up a convolution model for XSPEC
+
+    Also checks case handling
+    """
+
+    model = StringIO("""rgsxsrc        1  0.         1.e20           rgsxSRC   con  0
+order    " "  -1.   -3.    -3.      -1.       -1.       -1
+
+""")
+    parsed = xspec.parse_xspec_model_description(model)
+
+    converted = xspec.create_xspec_code(parsed, internal=(11, 0, 4))
+
+    expected = '''
+@version_at_least("11.0.4")
+class XSrgsxsrc(XSConvolutionKernel):
+    """The XSPEC rgsxsrc model:  TBD
+
+    The model is described at [1]_.
+
+    .. versionadded:: ???
+       This model requires XSPEC 11.0.4 or later.
+
+    Parameters
+    ----------
+    order
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRgsxsrc.html
+
+    """
+
+    __function__ = "rgsxsrc"
 
     def __init__(self, name='rgsxsrc'):
         self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)
