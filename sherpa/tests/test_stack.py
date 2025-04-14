@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -34,7 +35,11 @@ def get_name(name):
 @requires_stk
 def test_build_stack():
     """We can use @+ syntax to read from a file"""
-    import stk
+
+    try:
+        from sherpa import stk
+    except ImportError:
+        import stk
 
     names = ['a', 'a1', 'a2', 'b', 'b1', 'b2']
     expected = [get_name(n) for n in names]
@@ -49,7 +54,11 @@ def test_build_stack():
 @requires_stk
 def test_build_stack2():
     """We can use @- syntax to read from a file"""
-    import stk
+
+    try:
+        from sherpa import stk
+    except ImportError:
+        import stk
 
     names = ['a', 'a1', 'a2', '@b.lis']
 
@@ -64,7 +73,11 @@ def test_build_stack2():
 @pytest.mark.parametrize('sep', [',', ' '])
 def test_build_stack_separator(sep):
     """We can use commas/spaces to separate entries"""
-    import stk
+
+    try:
+        from sherpa import stk
+    except ImportError:
+        import stk
 
     expected = ['a', 'a1', 'a2', 'b', 'b1', 'b2']
 
@@ -81,7 +94,11 @@ def test_build_stack_lgrid():
 
     We assume rgrid, pgrid, and igrid work if this does.
     """
-    import stk
+
+    try:
+        from sherpa import stk
+    except ImportError:
+        import stk
 
     names = [10, 12, 14, 16, 18, 20]
     expected = [str(n) for n in names]
