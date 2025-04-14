@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections.abc import Sequence
+
 import numpy as np
 
 from sherpa.utils.parallel import ncpus
@@ -33,7 +35,8 @@ EPSILON = np.float64(np.finfo(np.float32).eps)
 class MyNelderMead(Opt):
 
     def __init__(self, fcn, xmin, xmax):
-        Opt.__init__(self, fcn, xmin, xmax)
+        super().__init__(fcn, xmin, xmax)
+
         self.expansion_coef = 2.0          # chi
         self.contraction_coef = 0.5          # gamma
         self.reflection_coef = 1.0          # rho
@@ -325,12 +328,23 @@ class nmNcores(MyNcores):
 
 
 class ncoresNelderMead:
+    """
 
-    # TODO: using a list as an argument triggers pylint dangerous-default-value check
-    def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
-                             NelderMead3(), NelderMead4(), NelderMead5()]):
-        # NelderMead6(), NelderMead7()]):
-        self.algo = algo
+    .. versionchanged:: 4.17.1
+       The default for the algo parameter is now None.
+
+    """
+
+    def __init__(self,
+                 algo: Sequence[NelderMeadBase] | None = None
+                 ) -> None:
+        if algo is None:
+            self.algo = [NelderMead0(), NelderMead1(), NelderMead2(),
+                         NelderMead3(), NelderMead4(), NelderMead5()]
+            # NelderMead6(), NelderMead7()]):
+
+        else:
+            self.algo = algo
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
                  numcores=ncpus):
@@ -367,15 +381,6 @@ class ncoresNelderMead:
 #     reflect the progress of the algorithm: either the function values at the
 #     vertices are close, or the simplex has become very small. """
 #
-#     # TODO: using a list as an argument triggers pylint dangerous-default-value check
-#     #
-#     # algo is the same as used in ncoresNelderMead but leave as is in case
-#     # there is a need to have a different set of classes.
-#     #
-#     def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
-#                              NelderMead3(), NelderMead4(), NelderMead5()]):
-#         ncoresNelderMead.__init__(self, algo)
-#
 #     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
 #                  numcores=ncpus):
 #
@@ -389,7 +394,6 @@ class ncoresNelderMead:
 #         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin, xmax, tol, maxnfev)
 #         tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
 #         nfev += tmp_nfev
-#         # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
 #         if fmin < fval:
 #             return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
 #
