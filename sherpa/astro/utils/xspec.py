@@ -41,7 +41,7 @@ from dataclasses import dataclass
 import logging
 import re
 import string
-from typing import Callable, Optional, Union
+from typing import Callable
 
 
 __all__ = ("parse_xspec_model_description", "create_xspec_code")
@@ -103,7 +103,7 @@ class ModelDefinition:
     def __init__(self, name: str, clname: str, funcname: str,
                  flags: list[int], elo: float, ehi: float,
                  pars: list["ParameterDefinition"],
-                 initString: Optional[str] = None) -> None:
+                 initString: str | None = None) -> None:
         assert self.modeltype is not None, \
             "ModelDefinition should not be directly created."
         self.name = name
@@ -262,14 +262,17 @@ class ParameterDefinition:
 
     paramtype: str
 
-    def __init__(self, name: str, default: Union[float, int],
-                 units: Optional[str] = None,
+    def __init__(self,
+                 name: str,
+                 default: float | int,
+                 units: str | None = None,
                  *,
-                 softmin: Optional[float] = None,
-                 softmax: Optional[float] = None,
-                 hardmin: Optional[float] = None,
-                 hardmax: Optional[float] = None,
-                 delta: Optional[float] = None) -> None:
+                 softmin: float | None = None,
+                 softmax: float | None = None,
+                 hardmin: float | None = None,
+                 hardmax: float | None = None,
+                 delta: float | None = None
+                 ) -> None:
         assert self.paramtype is not None, \
             'ParameterDefinition should not be directly created'
 
@@ -338,10 +341,10 @@ class BasicParameterDefinition(ParameterDefinition):
 
     paramtype = "Basic"
 
-    def __init__(self, name: str, default: float, units: Optional[str],
+    def __init__(self, name: str, default: float, units: str | None,
                  *,
                  softmin: float, softmax: float,
-                 hardmin: Optional[float], hardmax: Optional[float],
+                 hardmin: float | None, hardmax: float | None,
                  delta: float) -> None:
 
         self.name = name
@@ -408,7 +411,9 @@ class BasicParameterDefinition(ParameterDefinition):
         return out
 
 
-def read_model_definition(fh, namefunc: Callable[[str], str]) -> Optional[ModelDefinition]:
+def read_model_definition(fh,
+                          namefunc: Callable[[str], str]
+                          ) -> ModelDefinition | None:
     """Parse the next model definition.
 
     The code attempts to handle the wide variety of model definitions
@@ -485,7 +490,7 @@ def read_model_definition(fh, namefunc: Callable[[str], str]) -> Optional[ModelD
         pars.append(process_parameter_definition(pline, model=name))
 
     # Need to define this type for mypy, so make it optional
-    factory: Optional[type[ModelDefinition]] = None
+    factory: type[ModelDefinition] | None = None
 
     if modeltype == "add":
         nstr = 'norm " " 1.0 0.0 0.0 1.0e24 1.0e24 0.1'
@@ -526,7 +531,7 @@ def read_model_definition(fh, namefunc: Callable[[str], str]) -> Optional[ModelD
                    initString=initString)
 
 
-def mpop(array: list[str]) -> Optional[float]:
+def mpop(array: list[str]) -> float | None:
     """Pop first element from array (converting to float),
     returning defval if empty.
     """
@@ -663,7 +668,7 @@ def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
         raise NotImplementedError("(switch) model={} pline=\n{}".format(model, pline))
 
     # Handle units
-    units: Optional[str] = None
+    units: str | None = None
 
     val = toks.pop(0)
     if val.startswith('"'):
@@ -734,7 +739,8 @@ def add_xs_prefix(inval: str) -> str:
 
 
 def parse_xspec_model_description(modelfile,
-                                  namefunc: Callable[[str], str] = add_xs_prefix) -> list[ModelDefinition]:
+                                  namefunc: Callable[[str], str] = add_xs_prefix
+                                  ) -> list[ModelDefinition]:
     """Given an XSPEC model file - e.g. the lmodel.dat file -
     return information about the models it contains.
 
@@ -841,7 +847,7 @@ def simple_wrap(modelname: str,
         out += f'@version_at_least("{internal[0]}.{internal[1]}.{internal[2]}")\n'
 
         label = f"The XSPEC {mdl.name}"
-        if isinstance(modelname, ConModelDefinition):
+        if isinstance(mdl, ConModelDefinition):
             label += " convolution"
 
         label += " model:  TBD"
@@ -1275,6 +1281,7 @@ def create_xspec_code(models: list[ModelDefinition],
     #
     mdls = []
     langs = set()
+    requires_warnings = False
     for mdl in models:
         if mdl.modeltype in ['Mix', 'Acn']:
             warning(f"Skipping {mdl.name} as model type = {mdl.modeltype}")
@@ -1288,7 +1295,6 @@ def create_xspec_code(models: list[ModelDefinition],
             continue
 
         nflags = len(mdl.flags)
-        requires_warnings = False
         if nflags > 0:
             if mdl.flags[0] == 1:
                 warning(f"{mdl.name} calculates model variances; this is untested/unsupported in Sherpa")

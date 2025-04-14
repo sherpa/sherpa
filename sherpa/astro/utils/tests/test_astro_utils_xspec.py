@@ -799,7 +799,7 @@ order    " "  -1.   -3.    -3.      -1.       -1.       -1
     expected = '''
 @version_at_least("11.0.4")
 class XSrgsxsrc(XSConvolutionKernel):
-    """The XSPEC rgsxsrc model:  TBD
+    """The XSPEC rgsxsrc convolution model:  TBD
 
     The model is described at [1]_.
 
