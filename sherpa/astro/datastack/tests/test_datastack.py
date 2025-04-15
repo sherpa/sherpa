@@ -812,12 +812,9 @@ def test_operations_datastack_group(ds_setup, ds_datadir):
 def test_wrapped_funcs_in_all():
     """This is a regression test for #2270
 
-    Before #2270 several convenience functions using different
-    types of magic were used and interacted such that not every
-    wrapped function was added to __all__, in particular when one of them
-    is an alias for another. It's very unlikely that that same failure
-    mode will happen again, so this is a very rudamentary test where we are
-    just checking that both functions exisit.
+    Check that aliased routines (here set_model/set_source) are present
+    both in the module and are exported by it. It is not worth checking every
+    possible symbol.
     """
     func = datastack.set_model
     func = datastack.set_source
