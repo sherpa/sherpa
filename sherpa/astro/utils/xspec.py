@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012 - 2016, 2020 - 2025
+#  Copyright (C) 2012-2016, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
