@@ -20,10 +20,10 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.14.1, 12.14.0, 12.13.1, 12.13.0, 12.12.1, and
-12.12.0 of XSPEC [1]_, and can be built against the model library or
-the full application.  There is no guarantee of support for older or
-newer versions of XSPEC.
+Sherpa supports versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, 12.13.0,
+12.12.1, and 12.12.0 of XSPEC [1]_, and can be built against the model
+library or the full application.  There is no guarantee of support for
+older or newer versions of XSPEC.
 
 To be able to use most routines from this module, the HEADAS environment
 variable must be set. The `get_xsversion` function can be used to return the
@@ -8157,6 +8157,40 @@ class XSezdiskbb(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.T_max, ))
 
 
+@version_at_least("12.15.0")
+class XSfeklor(XSAdditiveModel):
+    """The XSPEC feklor model: Fe K fluourescence line at high resolution
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    norm
+       The total emission (in photom/cm^2/s) in the line.
+
+    See Also
+    --------
+    XSzfeklor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelFeklor.html
+
+    """
+
+    __function__ = "C_FeKfromSevenLorentzians"
+
+    def __init__(self, name='feklor'):
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = ()
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSgaussian(XSAdditiveModel):
     """The XSPEC gaussian model: gaussian line profile.
 
@@ -9234,7 +9268,7 @@ class XSlorentz(XSAdditiveModel):
 
     See Also
     --------
-    XSgaussian, XSvoigt
+    XSgaussian, XSvlorentz, XSvoigt, XSzlorentz
 
     References
     ----------
@@ -12117,6 +12151,46 @@ class XSvgnei(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
+@version_at_least("12.15.0")
+class XSvlorentz(XSAdditiveModel):
+    """The XSPEC vlorentz model: lorentz line profile with width in velocity.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       Line energy in keV
+    Width
+       FWHM of line in km/s
+    norm
+       The flux, in photon/cm^2/s, in the line.
+
+    See Also
+    --------
+    XSlorentz, XSzvlorentz
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVlorentz.html
+
+    """
+
+    __function__ = "C_vlorentzianLine"
+
+    def __init__(self, name='vlorentz'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1000000.0, hard_min=0.0, hard_max=1000000.0, units='keV')
+        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='km/s')
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.LineE, self.Width)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSvmeka(XSAdditiveModel):
     """The XSPEC vmeka model: emission, hot diffuse gas (Mewe-Gronenschild).
 
@@ -12457,7 +12531,7 @@ class XSvoigt(XSAdditiveModel):
 
     See Also
     --------
-    XSgauss, XSlorentz
+    XSgauss, XSlorentz, XSvvoigt, XSzvoigt
 
     References
     ----------
@@ -13308,6 +13382,49 @@ class XSvvnpshock(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
+@version_at_least("12.15.0")
+class XSvvoigt(XSAdditiveModel):
+    """The XSPEC vvoigt model: Voigt line profile with widths in km/s
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       Line energy in keV.
+    Sigma
+       Gaussian line width in km/s.
+    Gamma
+       Lorentzian FWHM in km/s.
+    norm
+       The total emission (in photom/cm^2/s) in the line.
+
+    See Also
+    --------
+    XSvoigt, XSzvvoigt
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVvoigt.html
+
+    """
+
+    __function__ = "C_vvoigtLine"
+
+    def __init__(self, name='vvoigt'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1000000.0, hard_min=0.0, hard_max=1000000.0, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 10.0, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Gamma = XSParameter(name, 'Gamma', 10.0, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='km/s')
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.LineE, self.Sigma, self.Gamma)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSvvpshock(XSAdditiveModel):
     """The XSPEC vvpshock model: plane-parallel shocked plasma, constant temperature.
 
@@ -14074,6 +14191,42 @@ class XSzcutoffpl(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
+@version_at_least("12.15.0")
+class XSzfeklor(XSAdditiveModel):
+    """The XSPEC zfeklor model: Fe K fluourescence line at high resolution
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    Redshift
+    norm
+       The total emission (in photom/cm^2/s) in the line.
+
+    See Also
+    --------
+    XSfeklor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelFeklor.html
+
+    """
+
+    __function__ = "C_zFeKfromSevenLorentzians"
+
+    def __init__(self, name='zfeklor'):
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.Redshift,)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSzgauss(XSAdditiveModel):
     """The XSPEC zgauss model: gaussian line profile.
 
@@ -14238,6 +14391,52 @@ class XSzlogpar(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
+@version_at_least("12.15.0")
+class XSzlorentz(XSAdditiveModel):
+    """The XSPEC zlorentz model: lorentz line profile.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+        The line energy, in keV.
+    Width
+        The FWHM of the line, in keV.
+    Redshift
+        The redshift of the line.
+    norm
+        The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSlorentz, XSzvlorentz
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLorentz.html
+
+    """
+
+    __function__ = "C_zlorentzianLine"
+
+    def __init__(self, name='zlorentz'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1e6,
+                                 hard_min=0.0, hard_max=1e6, units='keV')
+        self.Width = XSParameter(name, 'Width', 0.01, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='keV')
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                    hard_min=-0.999, hard_max=10.0, frozen=True)
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.LineE, self.Width, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSzpowerlw(XSAdditiveModel):
     """The XSPEC zpowerlw model: redshifted power law photon spectrum.
 
@@ -14362,6 +14561,153 @@ class XSzvgaussian(XSAdditiveModel):
         self.Redshift = mkRedshift(name)
 
         pars = (self.LineE, self.Sigma, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.0")
+class XSzvlorentz(XSAdditiveModel):
+    """The XSPEC zvlorentz model: lorentz line profile with width in velocity.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       Line energy in keV
+    Width
+       FWHM of line in km/s
+    Redshift
+       The redshift of the line.
+    norm
+       The flux, in photon/cm^2/s, in the line.
+
+    See Also
+    --------
+    XSvlorentz, XSzlorentz
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVlorentz.html
+
+    """
+
+    __function__ = "C_zvlorentzianLine"
+
+    def __init__(self, name='zvlorentz'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1e6,
+                                 hard_min=0.0, hard_max=1e6, units='keV')
+        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                    hard_min=-0.999, hard_max=10.0, frozen=True)
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.LineE, self.Width, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+
+@version_at_least("12.15.0")
+class XSzvoigt(XSAdditiveModel):
+    """The XSPEC zvoigt model: Voigt line profile.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy, in keV.
+    Sigma
+       The gaussian line width, in keV.
+    Gamma
+       The lorentzian FWHM line width, in keV.
+    Redshift
+       The redshift of the line.
+    norm
+       The flux in the line, in units of photon/cm^2/s.
+
+    See Also
+    --------
+    XSvoigt, XSzvvoigt
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVoigt.html
+
+    """
+
+    __function__ = "C_zvoigtLine"
+
+    def __init__(self, name='zvoigt'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1e6,
+                                 hard_min=0.0, hard_max=1e6, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 0.01, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='keV')
+        self.Gamma = XSParameter(name, 'Gamma', 0.01, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='keV')
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                    hard_min=-0.999, hard_max=10.0, frozen=True)
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.LineE, self.Sigma, self.Gamma, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.0")
+class XSzvvoigt(XSAdditiveModel):
+    """The XSPEC zvvoigt model: Voigt line profile with widths in km/s.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       Line energy in keV.
+    Sigma
+       Gaussian line width in km/s.
+    Gamma
+       Lorentzian FWHM in km/s.
+    Redshift
+       The line redshift.
+    norm
+       The total emission (in photom/cm^2/s) in the line.
+
+    See Also
+    --------
+    XSvvoigt, XSzvoigt
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVvoigt.html
+
+    """
+
+    __function__ = "C_zvvoigtLine"
+
+    def __init__(self, name='zvvoigt'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1e6,
+                                 hard_min=0.0, hard_max=1e6, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 10.0, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Gamma = XSParameter(name, 'Gamma', 10.0, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                    hard_min=-0.999, hard_max=10.0, frozen=True)
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.LineE, self.Sigma, self.Gamma, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -15053,6 +15399,49 @@ class XSlog10con(XSMultiplicativeModel):
     def __init__(self, name='log10con'):
         self.log10fac = XSParameter(name, 'log10fac', 0.0, -20.0, 20, -20, 20)
         XSMultiplicativeModel.__init__(self, name, (self.log10fac, ))
+
+
+@version_at_least("12.15.0")
+class XSlorabs(XSMultiplicativeModel):
+    """The XSPEC lorabs model: lorentzian absorption line.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Width
+       The line width (FWHM) in keV.
+    Strength
+       The line depth in keV.
+
+    See Also
+    --------
+    XSvlorabs, XSzlorabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLorabs.html
+
+    """
+
+    __function__ = "C_lorentzianAbsorptionLine"
+
+    def __init__(self, name='lorabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
+                                 hard_min=0.0, hard_max=1e6, units='keV')
+        self.Width = XSParameter(name, 'Width', 0.01, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='keV')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0,
+                                    max=1e6, hard_min=0.0, hard_max=1e6, units='keV')
+
+        pars = (self.LineE, self.Width, self.Strength)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSlyman(XSMultiplicativeModel):
@@ -16065,6 +16454,93 @@ class XSvgabs(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, pars)
 
 
+@version_at_least("12.15.0")
+class XSvlorabs(XSMultiplicativeModel):
+    """The XSPEC vlorabs model: lorentzian absorption line with width in km/s.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Width
+       The line width (FWHM) in km/s.
+    Strength
+       The line depth in keV.
+
+    See Also
+    --------
+    XSlorabs, XSzvlorabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVlorabs.html
+
+    """
+
+    __function__ = "C_vlorentzianAbsorptionLine"
+
+    def __init__(self, name='vlorabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6, hard_min=0.0, hard_max=1e6, units='km/s')
+        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6, hard_min=0.0, hard_max=1e6, units='keV')
+
+        pars = (self.LineE, self.Width, self.Strength)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.0")
+class XSvoigtabs(XSMultiplicativeModel):
+    """The XSPEC voigtabs model: voigt absorption line.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Sigma
+       The gaussian line width in keV.
+    Width
+       The lorentzian line width (FWHM) in keV.
+    Strength
+       The line depth in keV.
+
+    See Also
+    --------
+    XSvvoigtabs, XSzvoigtabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVoigtabs.html
+
+    """
+
+    __function__ = "C_voigtAbsorptionLine"
+
+    def __init__(self, name='voigtabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
+                                 hard_min=0.0, hard_max=1e6, units='km/s')
+        self.Sigma = XSParameter(name, 'Sigma', 0.01, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='keV')
+        self.Width = XSParameter(name, 'Width', 0.01, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='keV')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6,
+                                    hard_min=0.0, hard_max=1e6, units='keV')
+
+        pars = (self.LineE, self.Sigma, self.Width, self.Strength)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
 class XSvphabs(XSMultiplicativeModel):
     """The XSPEC vphabs model: photoelectric absorption.
 
@@ -16116,6 +16592,53 @@ class XSvphabs(XSMultiplicativeModel):
         self.Co = XSParameter(name, 'Co', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         XSMultiplicativeModel.__init__(self, name, (self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni))
+
+
+@version_at_least("12.15.0")
+class XSvvoigtabs(XSMultiplicativeModel):
+    """The XSPEC vvoigtabs model: voigt absorption line with widths in km/s.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Sigma
+       The gaussian line width in km/s.
+    Width
+       The lorentzian line width (FWHM) in km/s.
+    Strength
+       The line depth in keV.
+
+    See Also
+    --------
+    XSvoigtabs, XSzvvoigtabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVvoigtabs.html
+
+    """
+
+    __function__ = "C_vvoigtAbsorptionLine"
+
+    def __init__(self, name='vvoigtabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
+                                 hard_min=0.0, hard_max=1e6, units='km/s')
+        self.Sigma = XSParameter(name, 'Sigma', 10.0, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6,
+                                    hard_min=0.0, hard_max=1e6, units='keV')
+
+        pars = (self.LineE, self.Sigma, self.Width, self.Strength)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSwabs(XSMultiplicativeModel):
@@ -16579,6 +17102,49 @@ class XSzigm(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.redshift, self.model, self.lyman_limit))
 
 
+@version_at_least("12.15.0")
+class XSzlorabs(XSMultiplicativeModel):
+    """The XSPEC zlorabs model: lorentzian absorption line.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Width
+       The line width (FWHM) in keV.
+    Strength
+       The line depth in keV.
+    Redshift
+       The line redshift.
+
+    See Also
+    --------
+    XSlorabs, XSzvlorabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelLorabs.html
+
+    """
+
+    __function__ = "C_zlorentzianAbsorptionLine"
+
+    def __init__(self, name='zlorabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6, hard_min=0.0, hard_max=1e6, units='km/s')
+        self.Width = XSParameter(name, 'Width', 0.01, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='keV')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6, hard_min=0.0, hard_max=1e6, units='keV')
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+
+        pars = (self.LineE, self.Width, self.Strength, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
 class XSzpcfabs(XSMultiplicativeModel):
     """The XSPEC zpcfabs model: partial covering fraction absorption.
 
@@ -16651,6 +17217,155 @@ class XSzphabs(XSMultiplicativeModel):
         self.Redshift = mkRedshift(name)
 
         pars = (self.nH, self.redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.0")
+class XSzvlorabs(XSMultiplicativeModel):
+    """The XSPEC zvlorabs model: lorentzian absorption line with width in km/s.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Width
+       The line width (FWHM) in km/s.
+    Strength
+       The line depth in keV.
+    Redshift
+       The line redshift.
+
+    See Also
+    --------
+    XSvlorabs, XSzlorabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVlorabs.html
+
+    """
+
+    __function__ = "C_zvlorentzianAbsorptionLine"
+
+    def __init__(self, name='zvlorabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
+                                 hard_min=0.0, hard_max=1e6, units='km/s')
+        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6,
+                                    hard_min=0.0, hard_max=1e6, units='keV')
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                    hard_min=-0.999, hard_max=10.0, frozen=True)
+
+        pars = (self.LineE, self.Width, self.Strength, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.0")
+class XSzvoigtabs(XSMultiplicativeModel):
+    """The XSPEC zvoigtabs model: voigt absorption line.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Sigma
+       The gaussian line width in keV.
+    Width
+       The lorentzian line width (FWHM) in keV.
+    Strength
+       The line depth in keV.
+    Redshift
+       The redshift of the line.
+
+    See Also
+    --------
+    XSvoigtabs, XSzvvoigtabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVoigtabs.html
+
+    """
+
+    __function__ = "C_zvoigtAbsorptionLine"
+
+    def __init__(self, name='zvoigtabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
+                                 hard_min=0.0, hard_max=1e6, units='km/s')
+        self.Sigma = XSParameter(name, 'Sigma', 0.01, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='keV')
+        self.Width = XSParameter(name, 'Width', 0.01, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='keV')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6,
+                                    hard_min=0.0, hard_max=1e6, units='keV')
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                    hard_min=-0.999, hard_max=10.0, frozen=True)
+
+        pars = (self.LineE, self.Sigma, self.Width, self.Strength, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.0")
+class XSzvvoigtabs(XSMultiplicativeModel):
+    """The XSPEC zvvoigtabs model: voigt absorption line with widths in km/s.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Sigma
+       The gaussian line width in km/s.
+    Width
+       The lorentzian line width (FWHM) in km/s.
+    Strength
+       The line depth in keV.
+    Redshift
+       The line redshift.
+
+    See Also
+    --------
+    XSvvoigtabs, XSzvoigtabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVvoigtabs.html
+
+    """
+
+    __function__ = "C_zvvoigtAbsorptionLine"
+
+    def __init__(self, name='zvvoigtabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
+                                 hard_min=0.0, hard_max=1e6, units='km/s')
+        self.Sigma = XSParameter(name, 'Sigma', 10.0, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0,
+                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6,
+                                    hard_min=0.0, hard_max=1e6, units='keV')
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
+                                    hard_min=-0.999, hard_max=10.0, frozen=True)
+
+        pars = (self.LineE, self.Sigma, self.Width, self.Strength, self.Redshift)
         XSMultiplicativeModel.__init__(self, name, pars)
 
 
@@ -17931,6 +18646,52 @@ class XSrfxconv(XSConvolutionKernel):
         XSConvolutionKernel.__init__(self, name, pars)
 
 
+@version_at_least("12.15.0")
+class XSrgsext(XSConvolutionKernel):
+    """The XSPEC rgsext convolution model: convolve an RGS spectrum for extended emission
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Parameters
+    ----------
+    order
+        The order, which must be -1 to -3 inclusive.
+    factor
+        additional smoothing factor (1 means no change)
+
+    See Also
+    --------
+    XSrgsxsrc
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather than using the multiplication symbol.
+
+    The ``set_xsxset`` function must be used to set the RGS_XSOURCE_FILE
+    value to point to a file as described in [1]_. There is currently no
+    support for reading in data from the XFLT keywords.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRgsext.html
+
+    """
+
+    __function__ = "C_rgsExtendedSource"
+
+    def __init__(self, name='rgsext'):
+        self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)
+        self.factor = XSParameter(name, 'factor', 1.0, min=1e-06, max=1000000.0, hard_min=1e-06, hard_max=1000000.0, frozen=True)
+
+        pars = (self.order, self.factor)
+        XSConvolutionKernel.__init__(self, name, pars)
+
+
 class XSrgsxsrc(XSConvolutionKernel):
     """The XSPEC rgsxsrc convolution model: convolve an RGS spectrum for extended emission.
 
@@ -17943,13 +18704,18 @@ class XSrgsxsrc(XSConvolutionKernel):
     order
         The order, which must be -1 to -3 inclusive.
 
+    See Also
+    --------
+    XSrgsext
+
     Notes
     -----
     Unlike XSPEC, the convolution model is applied directly to the model, or
     models, rather than using the multiplication symbol.
 
     The ``set_xsxset`` function must be used to set the RGS_XSOURCE_FILE
-    value to point to a file as described in [1]_.
+    value to point to a file as described in [1]_. There is currently no
+    support for reading in data from the XFLT keywords.
 
     References
     ----------
@@ -17958,7 +18724,7 @@ class XSrgsxsrc(XSConvolutionKernel):
 
     """
 
-    _calc = _xspec.rgsxsrc
+    __function__ = "C_rgsxsrc" if equal_or_greater_than("12.15.0") else "rgsxsrc"
 
     def __init__(self, name='xsrgsxsrc'):
         self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1,

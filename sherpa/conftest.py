@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 - 2024
+#  Copyright (C) 2016-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -849,6 +849,25 @@ def xsmodel():
         return cls(mname)
 
     return func
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_xspec_atomdb_version():
+    """Ensure the AtomDB abundance is 3.0.9 if XSPEC is enabled."""
+
+    if not has_xspec:
+        return
+
+    # XSPEC 12.15.0 switches the AtomDB version from 3.0.9 to 3.1.2
+    # and this can cause tests to fail. The tolerances could be
+    # changed but instead try setting the AtomDB
+    # version. Unfortunately the current interface is rather limited
+    # (see #2216), so this is done globally. Eventually this will
+    # (hopefully) be removed, or the settings updated.
+    #
+    xspec.set_xsxset("APECROOT", "3.0.9")
+    xspec.set_xsxset("NEIAPECROOT", "3.0.9")
+    xspec.set_xsxset("NEIVERS", "3.0.4")
 
 
 # Fixtures that control access to the tests, based on the availability

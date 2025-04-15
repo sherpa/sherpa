@@ -41,7 +41,7 @@ from dataclasses import dataclass
 import logging
 import re
 import string
-from typing import Callable, Optional, Union
+from typing import Callable
 
 
 __all__ = ("parse_xspec_model_description", "create_xspec_code")
@@ -49,6 +49,8 @@ __all__ = ("parse_xspec_model_description", "create_xspec_code")
 
 warning = logging.getLogger(__name__).warning
 
+# Represent the XSPEC version (without a patch level).
+Version = tuple[int, int, int]
 
 @dataclass
 class XSPECcode:
@@ -101,7 +103,7 @@ class ModelDefinition:
     def __init__(self, name: str, clname: str, funcname: str,
                  flags: list[int], elo: float, ehi: float,
                  pars: list["ParameterDefinition"],
-                 initString: Optional[str] = None) -> None:
+                 initString: str | None = None) -> None:
         assert self.modeltype is not None, \
             "ModelDefinition should not be directly created."
         self.name = name
@@ -260,14 +262,17 @@ class ParameterDefinition:
 
     paramtype: str
 
-    def __init__(self, name: str, default: Union[float, int],
-                 units: Optional[str] = None,
+    def __init__(self,
+                 name: str,
+                 default: float | int,
+                 units: str | None = None,
                  *,
-                 softmin: Optional[float] = None,
-                 softmax: Optional[float] = None,
-                 hardmin: Optional[float] = None,
-                 hardmax: Optional[float] = None,
-                 delta: Optional[float] = None) -> None:
+                 softmin: float | None = None,
+                 softmax: float | None = None,
+                 hardmin: float | None = None,
+                 hardmax: float | None = None,
+                 delta: float | None = None
+                 ) -> None:
         assert self.paramtype is not None, \
             'ParameterDefinition should not be directly created'
 
@@ -336,10 +341,10 @@ class BasicParameterDefinition(ParameterDefinition):
 
     paramtype = "Basic"
 
-    def __init__(self, name: str, default: float, units: Optional[str],
+    def __init__(self, name: str, default: float, units: str | None,
                  *,
                  softmin: float, softmax: float,
-                 hardmin: Optional[float], hardmax: Optional[float],
+                 hardmin: float | None, hardmax: float | None,
                  delta: float) -> None:
 
         self.name = name
@@ -406,7 +411,9 @@ class BasicParameterDefinition(ParameterDefinition):
         return out
 
 
-def read_model_definition(fh, namefunc: Callable[[str], str]) -> Optional[ModelDefinition]:
+def read_model_definition(fh,
+                          namefunc: Callable[[str], str]
+                          ) -> ModelDefinition | None:
     """Parse the next model definition.
 
     The code attempts to handle the wide variety of model definitions
@@ -483,7 +490,7 @@ def read_model_definition(fh, namefunc: Callable[[str], str]) -> Optional[ModelD
         pars.append(process_parameter_definition(pline, model=name))
 
     # Need to define this type for mypy, so make it optional
-    factory: Optional[type[ModelDefinition]] = None
+    factory: type[ModelDefinition] | None = None
 
     if modeltype == "add":
         nstr = 'norm " " 1.0 0.0 0.0 1.0e24 1.0e24 0.1'
@@ -524,7 +531,7 @@ def read_model_definition(fh, namefunc: Callable[[str], str]) -> Optional[ModelD
                    initString=initString)
 
 
-def mpop(array: list[str]) -> Optional[float]:
+def mpop(array: list[str]) -> float | None:
     """Pop first element from array (converting to float),
     returning None if empty.
     """
@@ -661,7 +668,7 @@ def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
         raise NotImplementedError("(switch) model={} pline=\n{}".format(model, pline))
 
     # Handle units
-    units: Optional[str] = None
+    units: str | None = None
 
     val = toks.pop(0)
     if val.startswith('"'):
@@ -732,7 +739,8 @@ def add_xs_prefix(inval: str) -> str:
 
 
 def parse_xspec_model_description(modelfile,
-                                  namefunc: Callable[[str], str] = add_xs_prefix) -> list[ModelDefinition]:
+                                  namefunc: Callable[[str], str] = add_xs_prefix
+                                  ) -> list[ModelDefinition]:
     """Given an XSPEC model file - e.g. the lmodel.dat file -
     return information about the models it contains.
 
@@ -803,7 +811,10 @@ def parse_xspec_model_description(modelfile,
     return out
 
 
-def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
+def simple_wrap(modelname: str,
+                mdl: ModelDefinition,
+                internal: Version | None = None
+                ) -> str:
     """Create the Python class wrapping this model.
 
     This creates the "starting point" for the user (it can be used
@@ -815,6 +826,8 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
         The XSPEC parent model class (without the leading 'XS').
     mdl : ModelDefinition
         The model.
+    internal
+        Is this for sherpa.astro.xspec?
 
     Returns
     -------
@@ -825,21 +838,58 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
 
     t1 = ' ' * 4
     t2 = ' ' * 8
-    out = f"\nclass {mdl.clname}(XS{modelname}):\n"
-    out += f'{t1}"""XSPEC {modelname}: {mdl.name}\n\n'
+    out = "\n"
+
+    if internal is None:
+        label = f"XSPEC {modelname}: {mdl.name}"
+
+    else:
+        out += f'@version_at_least("{internal[0]}.{internal[1]}.{internal[2]}")\n'
+
+        label = f"The XSPEC {mdl.name}"
+        if isinstance(mdl, ConModelDefinition):
+            label += " convolution"
+
+        label += " model:  TBD"
+
+    out += f"class {mdl.clname}(XS{modelname}):\n"
+    out += f'{t1}"""{label}\n\n'
+
+    if internal is not None:
+        # NOTE: the Sherpa version could be guessed at, but better to
+        # make it obvious that it needs replacing.
+        #
+        out += f'{t1}The model is described at [1]_.\n\n'
+        out += f'{t1}.. versionadded:: ???\n'
+        out += f'{t1}   This model requires XSPEC ' + \
+            f'{internal[0]}.{internal[1]}.{internal[2]} or later.\n\n'
+
     out += f'{t1}Parameters\n'
     out += f'{t1}----------\n'
     for par in mdl.pars:
         out += f'{t1}{par.name}\n'
 
-    out += f'\n{t1}"""\n'
+    if internal is not None:
+        # This may not be the correct URL, such as the redshift variant, but
+        # but it should be close.
+        cname = mdl.name.capitalize()
+
+        out += '\n'
+        out += f'{t1}References\n'
+        out += f'{t1}----------\n\n'
+        out += f'{t1}.. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodel{cname}.html\n'
+
+    out += f'\n{t1}"""\n\n'
 
     if mdl.language == 'C++ style':
         funcname = f"C_{mdl.funcname}"
     else:
         funcname = mdl.funcname
 
-    out += f"{t1}_calc = _models.{funcname}\n"
+    if internal is None:
+        out += f"{t1}_calc = _models.{funcname}\n"
+    else:
+        out += f'{t1}__function__ = "{funcname}"\n'
 
     out += "\n"
     out += f"{t1}def __init__(self, name='{mdl.name}'):\n"
@@ -891,37 +941,45 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     return out
 
 
-def additive_wrap(mdl: ModelDefinition) -> str:
+def additive_wrap(mdl: ModelDefinition,
+                  internal: Version | None = None) -> str:
     """Return a string representing the Python code used to wrap
     up access to an Additive user model.
     """
 
-    return simple_wrap('AdditiveModel', mdl)
+    return simple_wrap('AdditiveModel', mdl, internal=internal)
 
 
-def multiplicative_wrap(mdl: ModelDefinition) -> str:
+def multiplicative_wrap(mdl: ModelDefinition,
+                        internal: Version | None = None
+                        ) -> str:
     """Return a string representing the Python code used to wrap
     up access to an Multiplicative user model.
     """
 
-    return simple_wrap('MultiplicativeModel', mdl)
+    return simple_wrap('MultiplicativeModel', mdl, internal=internal)
 
 
-def convolution_wrap(mdl: ModelDefinition) -> str:
+def convolution_wrap(mdl: ModelDefinition,
+                     internal: Version | None = None
+                     ) -> str:
     """Return a string representing the Python code used to wrap
     up access to a Convolution user model.
     """
 
-    return simple_wrap('ConvolutionKernel', mdl)
+    return simple_wrap('ConvolutionKernel', mdl, internal=internal)
 
 
-def model_to_python(mdl: ModelDefinition) -> str:
+def model_to_python(mdl: ModelDefinition,
+                    internal: Version | None = None) -> str:
     """Return a string representing the Python code used to wrap
     up access to the given user model.
 
     Parameters
     ----------
     mdl : ModelDefinition
+    internal : optional
+       If set then this is for sherpa.astro.xspec.
 
     Returns
     -------
@@ -936,13 +994,13 @@ def model_to_python(mdl: ModelDefinition) -> str:
     """
 
     if mdl.modeltype == "Add":
-        return additive_wrap(mdl)
+        return additive_wrap(mdl, internal=internal)
 
     elif mdl.modeltype == "Mul":
-        return multiplicative_wrap(mdl)
+        return multiplicative_wrap(mdl, internal=internal)
 
     elif mdl.modeltype == "Con":
-        return convolution_wrap(mdl)
+        return convolution_wrap(mdl, internal=internal)
 
     else:
         raise ValueError("No wrapper for model={} type={}".format(mdl.name, mdl.modeltype))
@@ -1115,7 +1173,8 @@ def models_to_compiled(mdls: list[ModelDefinition],
     #
     SUPPORTED_VERSIONS = [(12, 12, 0), (12, 12, 1),
                           (12, 13, 0), (12, 13, 1),
-                          (12, 14, 0), (12, 14, 1)]
+                          (12, 14, 0), (12, 14, 1),
+                          (12, 15, 0)]
 
     xspec_version = (int(match[1]), int(match[2]), int(match[3]))
     for version in SUPPORTED_VERSIONS:
@@ -1169,7 +1228,9 @@ def models_to_compiled(mdls: list[ModelDefinition],
 
 
 def create_xspec_code(models: list[ModelDefinition],
-                      name: str = "_models") -> XSPECcode:
+                      name: str = "_models",
+                      internal: Version | None = None
+                      ) -> XSPECcode:
     """Create the Python classes and C++ code for the models.
 
     Create the code fragments needed to build the XSPEC interface
@@ -1180,6 +1241,9 @@ def create_xspec_code(models: list[ModelDefinition],
     models : list of ModelDefiniton
     name : str, optional
         The name of the module.
+    internal : optional
+        If this is for sherpa.astro.xspec then what version of XSPEC
+        is it for? If used it assumes the model is new to this version.
 
     Returns
     -------
@@ -1216,6 +1280,7 @@ def create_xspec_code(models: list[ModelDefinition],
     #
     mdls = []
     langs = set()
+    requires_warnings = False
     for mdl in models:
         if mdl.modeltype in ['Mix', 'Acn']:
             warning(f"Skipping {mdl.name} as model type = {mdl.modeltype}")
@@ -1229,7 +1294,6 @@ def create_xspec_code(models: list[ModelDefinition],
             continue
 
         nflags = len(mdl.flags)
-        requires_warnings = False
         if nflags > 0:
             if mdl.flags[0] == 1:
                 warning(f"{mdl.name} calculates model variances; this is untested/unsupported in Sherpa")
@@ -1251,6 +1315,6 @@ def create_xspec_code(models: list[ModelDefinition],
     else:
         python = ""
 
-    python += "\n\n".join([model_to_python(mdl) for mdl in mdls])
+    python += "\n\n".join([model_to_python(mdl, internal=internal) for mdl in mdls])
     compiled = models_to_compiled(mdls, name=name)
     return XSPECcode(python=python, compiled=compiled)
