@@ -571,7 +571,7 @@ PyMODINIT_FUNC PyInit__models(void) {
 
 @requires_xspec
 def test_create_model_multiplicative(caplog):
-    """Fake up a multplicative model"""
+    """Fake up a multiplicative  model"""
 
     model = StringIO("""abcd           1  0.         1.e20           foos    mul  0
 nH      cm^-3   1.0   1.e-6  1.e-5  1.e19  1.e20   -0.01
@@ -637,7 +637,7 @@ PyMODINIT_FUNC PyInit__models(void) {
 
 @requires_xspec
 def test_create_model_multiplicative_xspec(caplog):
-    """Fake up a multplicative model for XSPEC"""
+    """Fake up a multiplicative model for XSPEC"""
 
     model = StringIO("""abcd           1  0.         1.e20           foos    mul  0
 nH      cm^-3   1.0   1.e-6  1.e-5  1.e19  1.e20   -0.01

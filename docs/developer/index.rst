@@ -405,7 +405,7 @@ version then you can use four helper scripts:
    the compiled code (``sherpa/astro/xspec/src/_xspec.cc``) and
    Python (``sherpa/astro/xspec/__init__.py``). The Python code
    lacks documentation and some values either need adding (e.g.
-   the Sherpa version) or lnks checked and possibly updated (due
+   the Sherpa version) or links checked and possibly updated (due
    to the way that XSPEC models are documented). The compiled code
    can likely be ignored since `update_xspec_functions.py` should
    be all that is needed, but it is displayed as a safety check.
