@@ -19,6 +19,7 @@
 #
 
 from collections.abc import Callable, Sequence
+import operator
 from typing import Concatenate, ParamSpec
 
 import numpy as np
@@ -192,6 +193,13 @@ class Opt:
         return func_bounds_wrapper
 
 
+# The simplex field is a npop by (npar + 1) array, where each row
+# contains the parameter values and then the corresponding statistic
+# value for that set of parameters.
+#
+# The __get/setitem__ calls allow the object to index into the "pars +
+# statistic array" by number (the pop argument).
+#
 class SimplexBase:
 
     def __init__(self,
@@ -210,6 +218,7 @@ class SimplexBase:
         self.xmax = xmax
         self.npar = len(xpar)
         self.rng = rng
+
         self.simplex = self.init(npop=npop, xpar=np.asarray(xpar),
                                  step=step, seed=seed, factor=factor)
 
@@ -361,11 +370,12 @@ class SimplexBase:
                 (self.simplex[ii] - self.simplex[0])
             self.simplex[ii, -1] = self.func(self.simplex[ii, :-1])
 
-    def sort_me(self,
-                simp: np.ndarray
+    @staticmethod
+    def sort_me(simp: np.ndarray
                 ) -> np.ndarray:
+        """Reorder the simplex by the statistic value (low to high)"""
         myshape = simp.shape
-        tmp = np.array(sorted(simp, key=lambda arg: arg[-1]))
+        tmp = np.array(sorted(simp, key=operator.itemgetter(-1)))
         tmp.reshape(myshape)
         return tmp
 
