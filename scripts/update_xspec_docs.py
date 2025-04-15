@@ -122,8 +122,8 @@ if __name__ == "__main__":
         sys.stderr.write(f"Usage: {sys.argv[0]} infile\n")
         sys.exit(1)
 
-    # The script coud instead process sherpa/astro/xspec/__init__.py
-    # but let's indicate what we expect.
+    # The script could instead process sherpa/astro/xspec/__init__.py
+    # but it is better to be explicit here.
     #
     mdefs = xspec.parse_xspec_model_description(sys.argv[1])
     report_docs(mdefs)
