@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2015, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2014-2016, 2018-2021, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -807,3 +807,16 @@ def test_operations_datastack_group(ds_setup, ds_datadir):
     assert np.allclose(d1.get_dep(filter=True)[15:20], [5., 5., 6., 7., 10.])
     datastack.ungroup('myid')
     assert np.all(d1.get_dep(filter=True)[15:20] == [3., 7., 1., 6., 4.])
+
+
+def test_wrapped_funcs_in_all():
+    """This is a regression test for #2270
+
+    Check that aliased routines (here set_model/set_source) are present
+    both in the module and are exported by it. It is not worth checking every
+    possible symbol.
+    """
+    func = datastack.set_model
+    func = datastack.set_source
+    assert 'set_model' in datastack.__all__
+    assert 'set_source' in datastack.__all__

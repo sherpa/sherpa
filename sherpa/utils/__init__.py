@@ -3618,23 +3618,6 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
         return [[xb, fb], [[xa, fa], [xc, fc]], myfcn.nfev]
 
 
-def public(f):
-    """Use a decorator to avoid retyping function/class names.
-
-    * Based on an idea by Duncan Booth:
-    http://groups.google.com/group/comp.lang.python/msg/11cbb03e09611b8a
-    * Improved via a suggestion by Dave Angel:
-    http://groups.google.com/group/comp.lang.python/msg/3d400fb22d8a42e1
-
-    See also https://bugs.python.org/issue26632
-
-    """
-    _all = sys.modules[f.__module__].__dict__.setdefault('__all__', [])
-    if f.__name__ not in _all:  # Prevent duplicates if run from an IDE.
-        _all.append(f.__name__)
-    return f
-
-
 def send_to_pager(txt: str, filename=None, clobber: bool = False) -> None:
     """Write out the given string, using pagination if supported.
 
