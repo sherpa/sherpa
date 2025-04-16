@@ -883,6 +883,14 @@ available.
    The ``sherpa/astro/xspec/__init__.py`` file also lists the supported
    XSPEC versions.
 
+#. Should new XSPEC models use caching?
+
+   By default, the generated code does not say anything special about caching, so new
+   models will be cached as usual. Once the models are added, you can run
+   ``pytest --run-speed sherpa/astro/xspec/tests/test_xspec_caching_performance.py``
+   to see if the models are cached. If caching slows down the run, the test may fail.
+   See notes in ``sherpa/astro/xspec/tests/test_xspec_caching_performance.py`` for details.
+
 Never forget to update the year of the copyright notice?
 --------------------------------------------------------
 

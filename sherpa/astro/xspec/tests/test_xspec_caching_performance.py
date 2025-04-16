@@ -33,13 +33,7 @@ operating system that can affect the runtime of the tests.
 (Of course, one could be more sophisticated and run the tests multiple times,
 but the runtime is already > 2 min on my machine, so I don't want to do that.)
 
-Instead, the idea of this file is that is it easy for developers to switch the
-test on and watch what happens when they work on any relevant code change.
-Simply rename the test from
-`do_not_test_evaluate_additive_xspec_model_normwrapper` to
-`test_evaluate_additive_xspec_model_normwrapper` and run pytest watching the
-results (possibly with a different number of points in `make_grid_dense`).
-
+To run tests in this file use `pytest --runspeed`.
 
 In tests on a Mac M1 system on Sherpa 4.17 we find the following models
 are consistently faster without the decorator:
@@ -51,7 +45,6 @@ are consistently faster without the decorator:
 - optxagn, optxagnf
 - pregpwrlw
 - redge, refsch
-
 
 For larger grids also: xposm
 but in ns-type models, it's only nsa, nsagrav, not the other two.
@@ -96,9 +89,10 @@ def make_grid_dense():
     return elo, ehi, wlo, whi
 
 
+@pytest.mark.speed
 @requires_xspec
 @pytest.mark.parametrize("modelcls", get_xspec_models())
-def do_not_test_evaluate_additive_xspec_model_normwrapper(modelcls):
+def test_evaluate_additive_xspec_model_normwrapper(modelcls):
     """Does the `sherpa.astro.xspec.eval_xspec_with_fixed_norm`
     wrapper change the results?
 

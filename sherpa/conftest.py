@@ -115,12 +115,15 @@ def pytest_addoption(parser):
     parser.addoption("--runzenodo", action="store_true", default=False,
                      help="run tests that query Zenodo (requires internet)")
 
+    parser.addoption("--runspeed", action="store_true", default=False,
+                     help="run tests check speed and caching choices (results can vary randomly)")
+
 
 def pytest_collection_modifyitems(config, items):
 
     # Skip tests unless --runxxx given in cli
     #
-    for label in ["slow", "zenodo"]:
+    for label in ["slow", "zenodo", "speed"]:
         opt = "--run{}".format(label)
         if config.getoption(opt):
             continue
@@ -131,7 +134,7 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip)
 
 
-# Whilelist of known warnings. One can associate different warning messages
+# Whitelist of known warnings. One can associate different warning messages
 # to the same warning class
 known_warnings = {
     DeprecationWarning:
