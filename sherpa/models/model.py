@@ -733,7 +733,7 @@ class Model(NoNewAttributesAfterInit):
 
     def get_parts(self,
                   include_composites : bool = True,
-                  remove_duplicates : bool = False) -> Sequence[Model]:
+                  remove_duplicates : bool = False) -> list[Model]:
         """Return the parts of the model.
 
         Parameters
@@ -766,13 +766,19 @@ class Model(NoNewAttributesAfterInit):
 
         Returns
         -------
-        modellist : list
+        parts : list
             The components of the model with the given name.
         """
         parts = [p for p in self.get_parts(remove_duplicates=True) if p.name == name]
         if len(parts) == 0:
             raise KeyError(f"No components found with name '{name}'")
         return parts
+
+    @staticmethod
+    def _checkfunc(p: Model,  cls: type, subclass_ok: bool = True) -> bool:
+        if subclass_ok:
+            return isinstance(p, cls)
+        return type(p) is cls
 
     def get_components_by_class(self, cls: type, subclass_ok: bool = True) -> list[Model]:
         """Return the components of the model with the given type.
@@ -788,13 +794,11 @@ class Model(NoNewAttributesAfterInit):
 
         Returns
         -------
-        list[Model]
+        parts: list
             The components of the model with the given type.
         """
-        if subclass_ok:
-            parts = [p for p in self.get_parts(remove_duplicates=True) if isinstance(p, cls)]
-        else:
-            parts = [p for p in self.get_parts(remove_duplicates=True) if type(p) is cls]
+        parts = [p for p in self.get_parts(remove_duplicates=True) if self._checkfunc(p, cls, subclass_ok)]
+
         if len(parts) == 0:
             raise KeyError(f"No components found with type '{cls}'")
         return parts
@@ -802,6 +806,10 @@ class Model(NoNewAttributesAfterInit):
 
     def __getitem__(self, key: Model | str) -> Model | list[Model]:
         """Return the components of the model with the given name or type.
+
+        .. versionchanged:: 4.17.1
+           Parameter access is now possible with either a string (the name of a model)
+           or a type.
 
         Parameters
         ----------
@@ -1227,9 +1235,9 @@ class CompositeModel(Model):
 
     def get_parts(self,
                   include_composites : bool = True,
-                  remove_duplicates : bool = False) -> Sequence[Model]:
+                  remove_duplicates : bool = False) -> list[Model]:
         # Docstring inherited from base class
-        parts = []
+        parts : list[Model] = []
 
         # Including itself seems a bit strange if it's a CompositeModel
         # but is used by sherpa.astro.instrument.has_pha_instance (and

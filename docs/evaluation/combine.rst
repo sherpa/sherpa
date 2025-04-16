@@ -340,7 +340,7 @@ has many separate emissions lines::
 
     >>> spectral_lines = {'[O I]': 6300, 'Hα': 6563, '[N II]': 6586, '[S II]': 6716, '[S II]': 6731}
     >>> jetlines = [models.Gauss1D(line) for line in spectral_lines.keys()]
-    >>> jetemission = models.Const1D('background') + sum(jetlines)
+    >>> jetemission = models.Const1D('background') + np.sum(jetlines)
     >>> for line, wave in spectral_lines.items():
     ...     jetemission[line].pos = wave
     ...     jetemission[line].fwhm = 0.1
