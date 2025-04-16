@@ -112,7 +112,9 @@ class Strategy0(Strategy):
                  pop: SimplexRandom,
                  icurrent: int
                  ) -> np.ndarray:
-        r1, r2, r3 = self.init(3)
+        # Although only two numbers are needed, leave as is since the
+        # code has been tested using this call.
+        _, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
@@ -130,7 +132,9 @@ class Strategy1(Strategy):
                  pop: SimplexRandom,
                  icurrent: int
                  ) -> np.ndarray:
-        r1, r2, r3 = self.init(3)
+        # Although only two numbers are needed, leave as is since the
+        # code has been tested using this call.
+        _, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for _ in range(self.npar):
@@ -207,7 +211,9 @@ class Strategy5(Strategy):
                  pop: SimplexRandom,
                  icurrent: int
                  ) -> np.ndarray:
-        r1, r2, r3 = self.init(3)
+        # Although only two numbers are needed, leave as is since the
+        # code has been tested using this call.
+        _, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
@@ -264,7 +270,9 @@ class Strategy8(Strategy):
                  pop: SimplexRandom,
                  icurrent: int
                  ) -> np.ndarray:
-        r1, r2, r3, r4 = self.init(4)
+        # Although only three numbers are needed, leave as is since the
+        # code has been tested using this call.
+        _, r2, r3, r4 = self.init(4)
         trial = pop[icurrent].copy()
         n = random.integers(self.rng, self.npar)
         for counter in range(self.npar):
