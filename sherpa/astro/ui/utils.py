@@ -227,7 +227,7 @@ def _save_errorcol(session: Session,
 
     d = session._get_data_or_bkg(idval, bkg_id)
     if isinstance(d, DataPHA):
-        x = d._get_ebins(group=True)[0]
+        x = d.get_indep_transform(group=True, filter=False)[0]
     else:
         x = d.get_indep(filter=False)[0]
 
@@ -1326,7 +1326,6 @@ class Session(sherpa.ui.utils.Session):
         +------------+-----------------+--------------------+
         | DataPHA    | channel, counts | statistical error, |
         |            |                 | systematic error,  |
-        |            |                 | bin_lo, bin_hi,    |
         |            |                 | grouping, quality  |
         +------------+-----------------+--------------------+
         | DataIMG    | x0, x1, y       | shape,             |
@@ -3845,7 +3844,7 @@ class Session(sherpa.ui.utils.Session):
 
         d = self._get_data_or_bkg(id, bkg_id)
         if isinstance(d, DataPHA):
-            return d._get_ebins(group=False)
+            return d.get_indep_transform(group=False, filter=False)
 
         if isinstance(d, (Data2D, DataIMG)):
             return d.get_axes()
@@ -4917,7 +4916,7 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('nomask', idval)
 
         if isinstance(d, DataPHA):
-            x = d._get_ebins(group=True)[0]
+            x = d.get_indep_transform(group=True, filter=False)[0]
         else:
             x = d.get_indep(filter=False)[0]
 

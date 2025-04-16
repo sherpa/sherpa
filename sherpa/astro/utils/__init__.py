@@ -24,7 +24,7 @@
 
 """
 
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -99,7 +99,11 @@ def get_xspec_norm(y: np.ndarray, mdl: np.ndarray) -> ValueAndRange:
             'max': r * guess._guess_ampl_scale}
 
 
-def compile_energy_grid(arglist):
+def compile_energy_grid(arglist: Sequence[tuple[np.ndarray, np.ndarray]]
+                        ) -> list[np.ndarray,
+                                  np.ndarray,
+                                  list[tuple[np.ndarray, np.ndarray]]
+                                  ]:
     '''Combine several grids (energy, channel, wavelength) into one.
 
     This function combines several grids into one, such that the model
@@ -1029,14 +1033,14 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
 
     if hasattr(data, 'get_response'):
         arf, rmf = data.get_response()
-        elo = data.bin_lo
-        ehi = data.bin_hi
-        if arf is not None:
-            elo = arf.energ_lo
-            ehi = arf.energ_hi
-        elif rmf is not None:
+        if rmf is not None:
             elo = rmf.energ_lo
             ehi = rmf.energ_hi
+        elif arf is not None:
+            elo = arf.energ_lo
+            ehi = arf.energ_hi
+        else:
+            raise DataErr('norsp', data.name)
     else:
         elo, ehi = data.get_indep()
 

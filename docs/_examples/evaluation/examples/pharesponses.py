@@ -48,8 +48,7 @@ dump("pha.channel.size")
 
 pha.set_analysis('energy')
 pha.notice(0.3, 7)
-tabs = ~pha.mask
-pha.group_counts(20, tabStops=tabs)
+pha.group_counts(20)
 
 # You can use sherpa.plot.DataPlot but this is better
 from sherpa.astro.plot import DataPHAPlot
@@ -85,6 +84,7 @@ wplot = DataPHAPlot()
 wplot.prepare(pha)
 wplot.plot(linestyle='solid', xlog=True, ylog=True)
 savefig('pha_data_wave.png')
+
 pha.set_analysis('energy')
 
 from sherpa.models.basic import PowLaw1D

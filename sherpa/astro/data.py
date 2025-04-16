@@ -53,9 +53,7 @@ reducing the number of values in a data set - and adds an extra way
 to filter the data with the quality array. The class extends
 `~sherpa.data.Data1D`, since the primary data is channels and
 counts, but it also has to act like an integrated data set
-(`~sherpa.data.Data1DInt`) in some cases. In an extension to
-OGIP support, there is limited support for the ``BIN_LO`` and
-``BIN_HI`` fields provided with Chandra grating data.
+(`~sherpa.data.Data1DInt`) in some cases.
 
 The `DataIMG` class extends 2D support for "gridded" data, with
 multiple possible coordinate systems (e.g. ``logical``, ``physical``,
@@ -67,6 +65,10 @@ Notes
 
 Some functionality depends on the presence of the region and grouping
 Sherpa modules, which are optional components of Sherpa.
+
+Prior to 4.17.1 there was limited support for the ``BIN_LO`` and
+``BIN_HI`` fields provided with Chandra grating data, but this has now
+been removed.
 
 Notebook support
 ----------------
@@ -176,7 +178,7 @@ RateType = Literal["counts", "rate"]
 
 # can arf/rmf be sent ARF1D/RMF1D too?
 #
-def _notice_resp(chans: np.ndarray,
+def _notice_resp(chans: np.ndarray | None,
                  arf: DataARF | None,
                  rmf: DataRMF | None
                  ) -> None:
@@ -519,7 +521,7 @@ def html_arf(arf):
 
     # Unlike the string representation, this provides extra
     # information (e.g. energy range covered). Should it include
-    # any filters or masks? How about bin_lo/hi values?
+    # any filters or masks?
     #
     # It also assumes the units are keV/cm^2 which is not
     # guaranteed.
@@ -554,12 +556,6 @@ def html_arf(arf):
 
     erange = _calc_erange(arf.energ_lo, arf.energ_hi)
     meta.append(('Energy range', erange))
-
-    # repeat for wavelengths (without the energy threshold)
-    #
-    if arf.bin_lo is not None and arf.bin_hi is not None:
-        wrange = _calc_wrange(arf.bin_lo, arf.bin_hi)
-        meta.append(('Wavelength range', wrange))
 
     a1 = np.min(arf.specresp)
     a2 = np.max(arf.specresp)
@@ -898,6 +894,9 @@ class DataARF(DataOgipResponse):
     The ARF format is described in OGIP documents [CAL_92_002]_ and
     [CAL_92_002a]_.
 
+    .. versionchanged:: 4.17.1
+       The bin_lo and bin_hi columns are now ignored.
+
     Parameters
     ----------
     name : str
@@ -909,6 +908,7 @@ class DataARF(DataOgipResponse):
         ENERG_LO values for each bin, and the energy arrays must be
         in increasing or decreasing order.
     bin_lo, bin_hi : array or None, optional
+        These should not be set.
     exposure : number or None, optional
         The exposure time for the ARF, in seconds.
     header : dict or None, optional
@@ -930,7 +930,7 @@ class DataARF(DataOgipResponse):
 
     """
     _ui_name = "ARF"
-    _fields = ("name", "energ_lo", "energ_hi", "specresp", "bin_lo", "bin_hi")
+    _fields = ("name", "energ_lo", "energ_hi", "specresp")
     _extra_fields = ("exposure", "ethresh")
 
     def _get_specresp(self):
@@ -945,8 +945,9 @@ class DataARF(DataOgipResponse):
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
                  bin_hi=None, exposure=None, header=None, ethresh=None):
         self.specresp = specresp
-        self.bin_lo = bin_lo
-        self.bin_hi = bin_hi
+        # Keep these fields for now, but they are unused.
+        self.bin_lo = None
+        self.bin_hi = None
         self.exposure = exposure
         self.header = {} if header is None else header
         self.ethresh = ethresh
@@ -999,7 +1000,9 @@ class DataARF(DataOgipResponse):
             self._lo = self.energ_lo[bin_mask]
             self._hi = self.energ_hi[bin_mask]
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ) -> tuple[np.ndarray, ...] | tuple[None, ...]:
         return (self._lo, self._hi)
 
     def get_dep(self, filter=False):
@@ -1225,7 +1228,9 @@ class DataRMF(DataOgipResponse):
         self._hi = self.energ_hi[bin_mask]
         return bin_mask
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ) -> tuple[np.ndarray, ...] | tuple[None, ...]:
         return (self._lo, self._hi)
 
     def get_dep(self, filter=False):
@@ -1242,7 +1247,11 @@ class DataRosatRMF(DataRMF):
         return energy_lo, energy_hi
 
 
-def validate_wavelength_limits(wlo, whi, emax):
+def validate_wavelength_limits(wlo: int | float | None,
+                               whi: int | float | None,
+                               emax: float
+                               ) -> tuple[int | float | None,
+                                          int | float | None] | None:
     """Check that the wavelength limits are sensible.
 
     This is used by DataPHA.notice to ensure that the wavelength
@@ -1271,6 +1280,9 @@ def validate_wavelength_limits(wlo, whi, emax):
     None in certain circumstances, not all cases).
 
     """
+
+    lo: int | float | None
+    hi: int | float | None
 
     # As we allow wlo and whi to be 0 we need to handle this here,
     # otherwise we'd have try hc / 0. We can either replace 0 by a
@@ -1476,6 +1488,10 @@ class DataPHA(Data1D):
     The PHA format is described in an OGIP document [OGIP_92_007]_ and
     [OGIP_92_007a]_.
 
+    .. versionchanged:: 4.17.1
+       The bin_lo and bin_hi columns are now ignored. A diagonal RMF
+       can be added to represent the mapping if needed.
+
     Parameters
     ----------
     name : str
@@ -1487,8 +1503,7 @@ class DataPHA(Data1D):
         The statistical and systematic errors for the data, if
         defined.
     bin_lo, bin_hi : array or None, optional
-        The wavelength ranges for the channels. This is intended to support
-        Chandra grating spectra.
+        These should not be set.
     grouping : array of int or None, optional
     quality : array of int or None, optional
     exposure : number or None, optional
@@ -1548,11 +1563,11 @@ class DataPHA(Data1D):
     discontinuities where the area-scaling factor changes strongly).
 
     """
-    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality')
+    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'grouping', 'quality')
     _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
                      'plot_fac', 'response_ids', 'background_ids')
 
-    _related_fields = Data1D._related_fields + ("bin_lo", "bin_hi", "counts", "grouping", "quality",
+    _related_fields = Data1D._related_fields + ("counts", "grouping", "quality",
                                                 "backscal", "areascal")
 
     def __init__(self,
@@ -1585,14 +1600,12 @@ class DataPHA(Data1D):
 
         # Assert types: is there a better way to do this?
         #
-        self._bin_lo: np.ndarray | None
-        self._bin_hi: np.ndarray | None
         self._grouping: np.ndarray | None
         self._quality: np.ndarray | None
         self._quality_filter: np.ndarray | None
 
-        self.bin_lo = _check(bin_lo)
-        self.bin_hi = _check(bin_hi)
+        self.bin_lo = None
+        self.bin_hi = None
         self.quality = _check(quality)
         self.grouping = _check(grouping)
         self.exposure = exposure
@@ -1703,11 +1716,35 @@ class DataPHA(Data1D):
         else:
             raise DataErr('bad', 'quantity', val)
 
+        # Check that the units setting is valid.
+        #
+        if units != "channel":
+            arf, rmf = self.get_response()
+            if arf is None and rmf is None:
+                raise DataErr("norsp", self.name)
+
+            # Does it make sense to check the ARF and RMF are compatible
+            # here? Shouldn't it be done when setting the response.
+            #
+            if rmf is not None:
+                if rmf.detchans != len(self.channel):
+                    raise DataErr("incompatibleresp", rmf.name, self.name)
+
+            elif arf is not None and len(arf.energ_lo) != len(self.channel):
+                raise DataErr("incompleteresp", self.name)
+
+        # Set the units for any associated background if we can.
+        # Since the setting only really matters if fitting the
+        # background then hide any errors (e.g. if there is no
+        # response and units is not 'channel').
+        #
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if bkg.get_response() != (None, None) or \
-               (bkg.bin_lo is not None and bkg.bin_hi is not None):
+            assert bkg is not None  # Need a better way to do this
+            try:
                 bkg.units = units
+            except DataErr:
+                pass
 
         self._units = units
 
@@ -1715,7 +1752,19 @@ class DataPHA(Data1D):
         return cast(AnalysisType, self._units)
 
     units = property(_get_units, _set_units,
-                     doc="Units of the independent axis: one of 'channel', 'energy', 'wavelength'.")
+                     doc="""Units of the independent axis.
+
+    Values are one of: 'channel', 'energy', or 'wavelength'.
+
+    .. versionchanged:: 4.17.1
+       The units can only be set to 'energy' or 'wavelength' after
+       a response has been added.
+
+    See Also
+    --------
+    get_analysis, get_indep_transform, set_analysis
+
+""")
 
     def _get_rate(self) -> bool:
         return self._rate
@@ -1912,28 +1961,37 @@ will be removed. The identifiers can be integers or strings.
     def bin_lo(self) -> np.ndarray | None:
         """The lower edge of each channel, in Angstroms, or None.
 
-        The values are expected to be in descending order. This is
-        only expected to be set for Chandra grating data.
+        .. versionchanged:: 4.17.1
+           This field is no-longer used. A diagonal RMF can be added
+           to represent the mapping between channel and bin_lo/hi
+           values.
+
         """
-        return self._bin_lo
+        return None
 
     @bin_lo.setter
     def bin_lo(self, val: ArrayType | None) -> None:
-        self._set_related("bin_lo", val)
+        if val is None:
+            return
+
+        warnings.warn("The bin_lo/hi fields are no-longer used: a diagonal RMF can badded to represent the mapping.", FutureWarning)
 
     @property
     def bin_hi(self) -> np.ndarray | None:
         """The upper edge of each channel, in Angstroms, or None.
 
-        The values are expected to be in descending order, with the
-        bin_hi value larger than the corresponding bin_lo element.
-        This is only expected to be set for Chandra grating data.
+        .. versionchanged:: 4.17.1
+           This field is no-longer used.
+
         """
-        return self._bin_hi
+        return None
 
     @bin_hi.setter
     def bin_hi(self, val: ArrayType | None) -> None:
-        self._set_related("bin_hi", val)
+        # Assume that bin_lo will also have been set so there's no
+        # need to add a warning here.
+        #
+        pass
 
     @property
     def grouping(self) -> np.ndarray | None:
@@ -2108,12 +2166,15 @@ will be removed. The identifiers can be integers or strings.
         return html_pha(self)
 
     def __getstate__(self):
-        state = self.__dict__.copy()
-        return state
+        return self.__dict__.copy()
 
     def __setstate__(self, state):
+        # Why do this?
         self._background_ids = state['_background_ids']
         self._backgrounds = state['_backgrounds']
+        self._responses = state['_responses']
+        self._data_space = state['_data_space']
+
         self._set_units(state['_units'])
 
         if 'header' not in state:
@@ -2147,7 +2208,7 @@ will be removed. The identifiers can be integers or strings.
 
         See Also
         --------
-        get_analysis
+        get_analysis, units
 
         Examples
         --------
@@ -2172,19 +2233,6 @@ will be removed. The identifiers can be integers or strings.
 
         self.rate = type == "rate"
 
-        arf, rmf = self.get_response()
-        if rmf is not None and rmf.detchans != len(self.channel):
-            raise DataErr("incompatibleresp", rmf.name, self.name)
-
-        if (rmf is None and arf is None) and \
-           (self.bin_lo is None and self.bin_hi is None) and \
-           quantity != "channel":
-            raise DataErr("norsp", self.name)
-
-        if rmf is None and arf is not None and quantity != "channel" and \
-           len(arf.energ_lo) != len(self.channel):
-            raise DataErr("incompleteresp", self.name)
-
         self.units = quantity
 
     def get_analysis(self) -> AnalysisType:
@@ -2204,7 +2252,7 @@ will be removed. The identifiers can be integers or strings.
 
         See Also
         --------
-        set_analysis
+        set_analysis, units
 
         Examples
         --------
@@ -2433,7 +2481,14 @@ will be removed. The identifiers can be integers or strings.
     def get_specresp(self,
                      filter: bool = False
                      ) -> np.ndarray | None:
-        """Return the effective area values for the data set.
+        """Return the effective area values for the data set in channel space.
+
+        The ARF is interpolated onto the approximate energy grid of
+        the channels.
+
+        .. versionchanged:: 4.17.1
+           The interpolated data now uses 0 rather than 1 if the
+           results of the bin were negative.
 
         Parameters
         ----------
@@ -2460,27 +2515,37 @@ will be removed. The identifiers can be integers or strings.
 
         """
         self.notice_response(False)
-        arf, rmf = self.get_response()
+        arf, rmf = self.get_response()  # TODO: response_id?
 
-        # It's not clear why we do interpolation below, why we replace
-        # with 1 rather than 0, or how it is even meant to work, since
-        # the current code returns different values depending on the
-        # units setting - see issue #1582
+        # Technically this could support a ARF-only analysis, but for
+        # now require both responses.
         #
         if arf is None or rmf is None:
             return None
 
         specresp = arf.get_dep()
-        elo, ehi = arf.get_indep()
-        lo, hi = self._get_ebins(group=False)
+        slo, _ = arf.get_indep()
 
-        newarf = interpolate(lo, elo, specresp)
-        newarf[newarf <= 0] = 1.
+        units = self.units
+        try:
+            self.units = "energy"
+            elo, _ = self.get_indep_transform(filter=False, group=False)
+        finally:
+            self.units = units
 
-        if bool_cast(filter):
-            newarf = self.apply_filter(newarf, self._middle)
+        # Interpolate (rather than rebin) onto the "channel" grid.
+        # Should this use left edge, center of bin, right edge?
+        #
+        # Ensure the results of the interpolation are physically
+        # meaningful.
+        #
+        out = interpolate(elo, slo, specresp)
+        out[out < 0] = 0
 
-        return newarf
+        if filter:
+            return self.apply_filter(out, groupfunc=self._middle)
+
+        return out
 
     def get_full_response(self, pileup_model=None):
         """Calculate the response for the dataset.
@@ -2532,6 +2597,9 @@ will be removed. The identifiers can be integers or strings.
         E_MAX columns from the RMF EBOUNDS block rather than from the
         ENERG_LO and ENERG_HI columns from the MATRIX block.
 
+        .. deprecated:: 4.17.1
+           Use get_indep(transform=True, ...) instead.
+
         Parameters
         ----------
         response_id : int, str, or None, optional
@@ -2555,41 +2623,10 @@ will be removed. The identifiers can be integers or strings.
         --------
         _get_indep
 
-        Examples
-        --------
-
-        >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha(data_3c273 + '3c273.pi')
-        >>> pha.ungroup()
-        >>> pha.units = 'channel'
-        >>> clo, chi = pha._get_ebins()
-        >>> print((clo == pha.channel).all())
-        True
-        >>> print((chi == clo + 1).all())
-        True
-
-        >>> pha.units = 'energy'
-        >>> elo, ehi = pha._get_ebins()
-        >>> elo.size == pha.channel.size
-        True
-        >>> elo[0:5]
-        array([0.00146, 0.0146 , 0.0292 , 0.0438 , 0.0584 ])
-        >>> print((elo[1:] == ehi[:-1]).all())
-        True
-
-        >>> pha.group()
-        >>> glo, ghi = pha._get_ebins()
-        >>> glo[0:5]
-        array([0.00146   , 0.2482    , 0.3066    , 0.46720001, 0.56940001])
-
-        Note that the returned units are energy even if units is set
-        to "wavelength":
-
-        >>> pha.units = 'wave'
-        >>> wlo, whi = pha._get_ebins()
-        >>> print((wlo == glo).all())
-        True
         """
+
+        warnings.warn("Use get_indep(transform=True, ...) instead",
+                      category=DeprecationWarning)
 
         if self.size is None:
             raise DataErr("sizenotset", self.name)
@@ -2603,13 +2640,6 @@ will be removed. The identifiers can be integers or strings.
         if self.units == 'channel':
             elo = self.channel
             ehi = self.channel + 1
-        elif (self.bin_lo is not None) and (self.bin_hi is not None):
-            # TODO: review whether bin_lo/hi should over-ride the response
-            elo = self.bin_lo
-            ehi = self.bin_hi
-            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                elo = hc / self.bin_hi
-                ehi = hc / self.bin_lo
         else:
             arf, rmf = self.get_response(response_id)
             if rmf is not None:
@@ -2639,8 +2669,66 @@ will be removed. The identifiers can be integers or strings.
         return (elo, ehi)
 
     def get_indep(self,
-                  filter: bool = True
+                  filter: bool = True,  # superclass defaults to False
+                  group: bool = True
                   ) -> tuple[np.ndarray, ...] | tuple[None, ...]:
+        """Return the independent axis of the PHA in channel units.
+
+        .. versionchanged:: 4.17.1
+           The get_indep_transform routine returns access to the
+           transformed values for the independent axis.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not.
+        group : bool, optional
+           Should the grouping attached to the data set be applied to
+           the return value or not. This is only used when transform
+           is True.
+
+        Returns
+        -------
+        axis: (array, )
+           A single-element tuple giving the channel values.
+
+        See Also
+        --------
+        get_dep, get_indep_transform, set_analysis
+
+        Examples
+        --------
+
+        The return values are in channels, no matter the units
+        setting:
+
+        >>> from sherpa.astro.io import read_pha
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
+        >>> print(pha.grouped)
+        True
+        >>> print(pha.units)
+        energy
+        >>> chans, = pha.get_indep()
+        >>> print(chans)
+        [1.000e+00 2.000e+00 3.000e+00 ... 1.022e+03 1.023e+03 1.024e+03]
+
+        The channels will be filtered (by default) but never
+        grouped:
+
+        >>> print(pha.get_filter(format='%.4f'))
+        0.0015:14.9504
+        >>> pha.notice(0.5, 6)
+        >>> print(pha.get_filter(format='%.4f'))
+        0.4672:6.5700
+        >>> chan_filtered, = pha.get_indep()
+        >>> chan_all, = pha.get_indep(filter=False)
+        >>> print(chan_filtered)
+        [ 33.  34.  35. ... 448. 449. 450.]
+        >>> print(chan_all)
+        [1.000e+00 2.000e+00 3.000e+00 ... 1.022e+03 1.023e+03 1.024e+03]
+
+        """
 
         # short-cut if no data
         if self.size is None:
@@ -2651,15 +2739,152 @@ will be removed. The identifiers can be integers or strings.
 
         return (self.channel,)
 
+    # TODO: should this allow response_id be set?
+    #
+    def get_indep_transform(self,
+                            # What should the defaults be?
+                            filter: bool = True,
+                            group: bool = True,
+                            **kwargs
+                            ) -> tuple[np.ndarray, ...]:
+        """Return the independent axis of the PHA in the units setting.
+
+        .. versionadded:: 4.17.1
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not.
+        group : bool, optional
+           Should the grouping attached to the data set be applied to
+           the return value or not. This is only used when transform
+           is True.
+
+        Returns
+        -------
+        axis: (array, array)
+           The low and high edges of each bin using the units setting.
+           The values will be filtered or grouped, depending on the
+           filter and group settings.
+
+        See Also
+        --------
+        get_dep, get_indep, set_analysis, units
+
+        Notes
+        -----
+        Energy values of 0 are replaced by hc / tiny, where tiny is
+        the smallest value stored in a 32-bit float.
+
+        Examples
+        --------
+
+        >>> from sherpa.astro.io import read_pha
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
+        >>> print(pha.grouped)
+        True
+        >>> print(pha.units)
+        energy
+        >>> elo, ehi = pha.get_indep_transform()
+        >>> print(elo)
+        [1.46000006e-03 2.48199999e-01 ... 9.86960030e+00]
+        >>> print(ehi)
+        [ 0.2482      0.3066      ... 14.95040035]
+
+        >>> pha.set_analysis("wave")
+        >>> wlo, whi = pha.get_indep_transform()
+        >>> print(wlo)
+        [49.95333914 40.4384167  ... 1.25622298  0.82930346]
+        >>> print(whi)
+        [8.49206729e+03 4.99533391e+01 ... 1.88712609e+00 1.25622298e+00]
+
+        >>> pha.set_analysis("channel")
+        >>> clo, chi = pha.get_indep_transform()
+        >>> print(clo)
+        [  1  18  22  ... 405 451 677]
+        >>> print(chi)
+        [  18  22  33 ... 451 677 1025]
+
+        >>> pha.set_analysis("energy")
+        >>> pha.notice(0.5, 6)
+        >>> elo2, ehi2 = pha.get_indep_transform()
+        >>> print(elo2)
+        [0.46720001 0.56940001 0.64240003 ... 5.0223999  5.37279987 5.89839983]
+        >>> print(ehi2)
+        [0.56940001 0.64240003 0.7008     ... 5.37279987 5.89839983 6.57000017]
+
+        """
+
+        # This will error out if there's no data, but it doesn't
+        # really make sense to return something.
+        #
+        if self.size is None:
+            raise DataErr("sizenotset", self.name)
+
+        if self.units == 'channel':
+            lo = self.channel
+            hi = self.channel + 1
+
+        else:
+            arf, rmf = self.get_response()
+            if rmf is not None:
+                if (rmf.e_min is None) or (rmf.e_max is None):
+                    raise DataErr('noenergybins', 'RMF')
+
+                lo = rmf.e_min
+                hi = rmf.e_max
+            elif arf is not None:
+                lo = arf.energ_lo
+                hi = arf.energ_hi
+            else:
+                lo = self.channel
+                hi = self.channel + 1
+
+        if self.units == 'wavelength':
+            tiny = np.finfo(np.float32).tiny
+
+            # Swap the edges
+            lo, hi = hi, lo
+
+            # The "lo" value is now the upper edge, so we do not
+            # expect it to have any values with energy=0.
+            #
+            # lo[lo <= 0] = tiny
+            hi[hi <= 0] = tiny
+
+            lo = hc / lo
+            hi = hc / hi
+
+        # We don't have a nice way to filter but no group.
+        #
+        if filter and group:
+            lo = self.apply_filter(lo, groupfunc=self._min)
+            hi = self.apply_filter(hi, groupfunc=self._max)
+        elif group:
+            lo = self.apply_grouping(lo, groupfunc=self._min)
+            hi = self.apply_grouping(hi, groupfunc=self._max)
+        elif filter:
+            lo = super().apply_filter(lo)
+            hi = super().apply_filter(hi)
+
+        # Ensure the channels are integers.
+        #
+        if self.units == 'channel':
+            lo = lo.astype(int)
+            hi = hi.astype(int)
+
+        return (lo, hi)
+
     def _get_indep(self,
                    filter: bool = False
                    ) -> tuple[np.ndarray, np.ndarray]:
         """Return the low and high edges of the independent axis.
 
-        Unlike _get_ebins, this returns values in the "native" space
-        of the response - i.e. for a RMF, it returns the bounds from
-        the MATRIX rather than EBOUNDS extension of the RMF - and not
-        the approximation used in _get_ebins.
+        Unlike get_indep(transform=True), this returns values in the
+        "native" space of the response - i.e. for a RMF, it returns
+        the bounds from the MATRIX rather than EBOUNDS extension of
+        the RMF - and not the approximation used in get_indep.
 
         Parameters
         ----------
@@ -2679,7 +2904,7 @@ will be removed. The identifiers can be integers or strings.
 
         See Also
         --------
-        _get_ebins
+        get_indep
 
         Notes
         -----
@@ -2715,47 +2940,34 @@ will be removed. The identifiers can be integers or strings.
 
         """
 
-        if (self.bin_lo is not None) and (self.bin_hi is not None):
-            elo = self.bin_lo
-            ehi = self.bin_hi
-            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                if self.units == 'wavelength':
-                    return (elo, ehi)
-
-                elo = hc / self.bin_hi
-                ehi = hc / self.bin_lo
-
-        else:
-            energylist = []
-            for resp_id in self.response_ids:
-                arf, rmf = self.get_response(resp_id)
+        # It is not clear what the filter flag is meant to do and
+        # there is no test that can be used to identify what it is
+        # meant to do. The RMF and ARF get_indep calls ignore the
+        # filter flag they are sent.
+        #
+        energylist = []
+        for resp_id in self.response_ids:
+            arf, rmf = self.get_response(resp_id)
+            if rmf is not None:
+                lo, hi = rmf.get_indep(filter=filter)
+            elif arf is not None:
+                lo, hi = arf.get_indep(filter=filter)
+            else:
                 lo = None
                 hi = None
 
-                if rmf is not None:
-                    lo = rmf.energ_lo
-                    hi = rmf.energ_hi
-                    if filter:
-                        lo, hi = rmf.get_indep()
+            energylist.append((lo, hi))
 
-                elif arf is not None:
-                    lo = arf.energ_lo
-                    hi = arf.energ_hi
-                    if filter:
-                        lo, hi = arf.get_indep()
-
-                energylist.append((lo, hi))
-
-            if len(energylist) > 1:
-                # TODO: This is only tested by test_eval_multi_xxx and not with
-                # actual (i.e. real world) data
-                elo, ehi, lookuptable = compile_energy_grid(energylist)
-            elif (not energylist or
-                  (len(energylist) == 1 and
-                      np.equal(energylist[0], None).any())):
-                raise DataErr('noenergybins', 'Response')
-            else:
-                elo, ehi = energylist[0]
+        if len(energylist) > 1:
+            # TODO: This is only tested by test_eval_multi_xxx and not with
+            # actual (i.e. real world) data
+            elo, ehi, _ = compile_energy_grid(energylist)
+        elif (not energylist or
+              (len(energylist) == 1 and
+                  np.equal(energylist[0], None).any())):
+            raise DataErr('noenergybins', 'Response')
+        else:
+            elo, ehi = energylist[0]
 
         lo, hi = elo, ehi
         if self.units == 'wavelength':
@@ -4328,6 +4540,48 @@ It is an integer or string.
               filter: bool = False,
               response_id: IdType | None = None
               ) -> np.ndarray | None:
+        """Return the x axis values.
+
+        .. versionchanged:: 4.17.1
+           The get_indep method can now be used to get the low and
+           high bin edges to match the current analysis setting.
+
+        Parameters
+        ----------
+        filter
+           This parameter is ignored.
+        response_id
+           This parameter is ignored.
+
+        Returns
+        -------
+        answer
+           None if the channel axis is not set, or an array of
+           the mid-point of each bin.
+
+        See Also
+        --------
+        get_indep
+
+        Notes
+        -----
+        When elo and ehi give the energy values of the low and high
+        edges, then the mid-point is calculated as
+
+            (elo + ehi) / 2
+
+        when units="energy" and
+
+            hc * 2 / (elo + ehi)
+
+        rather than
+
+            (hc / elo + hc / ehi) / 2
+
+        for units="wavelength".
+
+        """
+
         if self.channel is None:
             return None
 
@@ -4336,17 +4590,29 @@ It is an integer or string.
         if self.units == "channel":
             return self.channel
 
-        elo, ehi = self._get_ebins(response_id=response_id, group=False)
-        emid = (elo + ehi) / 2
-
-        if self.units == "energy":
-            return emid
-
-        # The units must be wavelength.
+        # When using wavelength units, do we want to take the
+        # mid-point in energy units and convert that, or use the
+        # actual edges (in wavelength units), since it's not a linear
+        # transform.  It might make sense to use the bin edges in
+        # Angstrom, but to match the pre-4.17.1 behaviour the
+        # conversion is done via the mid-point in energy.
         #
-        tiny = np.finfo(np.float32).tiny
-        # In case there are any 0-energy bins replace them
-        emid[emid == 0.0] = tiny
+        if self.units == "energy":
+            elo, ehi = self.get_indep_transform(group=False,
+                                                filter=False)
+            return (elo + ehi) / 2
+
+        try:
+            self.units = "energy"
+            elo, ehi = self.get_indep_transform(group=False,
+                                                filter=False)
+        finally:
+            self.units = "wavelength"
+
+        # This should not need the "check energies are 0" check, as
+        # this check is done in get_indep.
+        #
+        emid = (elo + ehi) / 2
         return hc / emid
 
     def get_xlabel(self) -> str:
@@ -4430,53 +4696,22 @@ It is an integer or string.
             areascal = self._check_scale(self.areascal, filter=filter)
             val /= areascal
 
-        # Should this be a user-callable method?
-        #
-        def get_bin_edges():
-            if self.units != 'channel':
-                xlo, xhi = self._get_ebins(response_id, group=False)
-            else:
-                xlo, xhi = (self.channel, self.channel + 1.)
-
-            if filter:
-                # If we apply a filter, make sure that
-                # ebins are ungrouped before applying
-                # the filter.
-                xlo = self.apply_filter(xlo, self._min)
-                xhi = self.apply_filter(xhi, self._max)
-            elif self.grouped:
-                xlo = self.apply_grouping(xlo, self._min)
-                xhi = self.apply_grouping(xhi, self._max)
-
-            return xlo, xhi
-
         if self.grouped or self.rate:
-            xlo, xhi = get_bin_edges()
-            if self.units == 'wavelength':
-                dx = hc / xlo - hc / xhi
-            else:  # Could be "energy" or "channel"
-                dx = xhi - xlo
-
-            val /= np.abs(dx)
+            xlo, xhi = self.get_indep_transform(filter=filter,
+                                                group=True)
+            dx = xhi - xlo
+            val /= dx
 
         # The final step is to multiply by the X axis self.plot_fac
         # times.
         if self.plot_fac <= 0:
             return val
 
-        # Get the bin edges so we can calculate the center of
-        # each bin. This used to use
+        # This uses the center of the bin in the axis units (so it is
+        # not hc / emid for wavelength units.
         #
-        # xvals = self.get_x(response_id=response_id)
-        # if filter:
-        #     xvals = self.apply_filter(xvals, self._middle)
-        # elif self.grouped:
-        #     xvals = self.apply_grouping(xvals, self._middle)
-        #
-        # but this uses the center of each channel and then
-        # averages them, which doesn't quite match the following.
-        #
-        xlo, xhi = get_bin_edges()
+        xlo, xhi = self.get_indep_transform(filter=filter,
+                                            group=True)
         xmid = (xlo + xhi) / 2
         val *= np.power(xmid, self.plot_fac)
         return val
@@ -4559,31 +4794,14 @@ It is an integer or string.
            analysis units.
 
         """
-        if bool_cast(filter):
-            # If we apply a filter, make sure that
-            # ebins are ungrouped before applying
-            # the filter.
-            elo, ehi = self._get_ebins(response_id, group=False)
-            elo = self.apply_filter(elo, self._min)
-            ehi = self.apply_filter(ehi, self._max)
 
-        else:
-            try:
-                elo, ehi = self._get_ebins(response_id=response_id)
-            except DataErr:
-                # What should we do here? This indicates that all bins
-                # have been marked as bad (and grouping is present).
-                #
-                return np.asarray([])
+        try:
+            xlo, xhi = self.get_indep_transform(group=True,
+                                                filter=filter)
+        except DataErr:
+            return np.asarray([])
 
-        # Issue #748 #1817 noted we should return the half-width
-        # Issue #1985 notes that we need to support wavelength.
-        #
-        if self.units != "wavelength":
-            return (ehi - elo) / 2
-
-        dlam = hc / elo - hc / ehi
-        return dlam / 2
+        return (xhi - xlo) / 2
 
     def get_ylabel(self, yfunc=None) -> str:
         """The label for the dependent axis.
@@ -4666,6 +4884,7 @@ It is an integer or string.
             raise DataErr("sizenotset", self.name)
 
         chans = self.channel
+        assert chans is not None
 
         # get_mask returns None if all the data has been filtered.
         mask = self.get_mask()
@@ -4854,22 +5073,14 @@ It is an integer or string.
         # Special case all channels are selected.
         #
         if self.mask is True:
-            elo, ehi = self._get_ebins(group=False, response_id=None)
-            if self.units == 'energy':
-                loval = elo[0]
-                hival = ehi[-1]
-            elif self.units == 'wavelength':
-                loval = hc / ehi[-1]
-                hival = hc / elo[0]
-            else:
-                # Assume channel
-                loval = self.channel[0]
-                hival = self.channel[-1]
+            if self.units == 'channel':
+                loval = chans[0]
+                hival = chans[-1]
                 format = '%i'
-
-            # Check for inversion
-            if loval > hival:
-                loval, hival = hival, loval
+            else:
+                lo, hi = self.get_indep_transform(group=False)
+                loval = lo.min()
+                hival = hi.max()
 
             return f"{format % loval}{delim}{format % hival}"
 
@@ -4891,12 +5102,7 @@ It is an integer or string.
         if self.units == 'channel':
             return create_expr(chans, mask=mask, format='%i', delim=delim)
 
-        # Unfortunately we don't have a usable API for accessing the
-        # energy or wavelength ranges directly.
-        #
-        xlo, xhi = self._get_ebins(group=False)
-        if self.units == 'wavelength':
-            xlo, xhi = hc / xhi, hc / xlo
+        xlo, xhi = self.get_indep_transform(group=False, filter=False)
 
         # Ensure the data is in ascending order for create_expr_integrated.
         #
@@ -4925,8 +5131,8 @@ It is an integer or string.
             _notice_resp(noticed_chans, arf, rmf)
 
     def notice(self,
-               lo: float | None = None,
-               hi: float | None = None,
+               lo: int | float | None = None,
+               hi: int | float | None = None,
                ignore: bool = False,
                bkg_id: IdType | Sequence[IdType] | None = None
                ) -> None:
@@ -5102,6 +5308,11 @@ It is an integer or string.
                 # do nothing (other than display an INFO message).
                 #
                 bkg.notice(lo, hi, ignore)
+            except DataErr:
+                # If there is no response then ignore this filter.
+                # TODO: what is the best thing to do here?
+                #
+                pass
             finally:
                 bkg.units = old_bkg_units
 
@@ -5115,62 +5326,93 @@ It is an integer or string.
             self.quality_filter = None
             self.notice_response(False)
 
-        # elo and ehi will be in channel (units=channel) or energy
-        # (units=energy or units=wavelength).
+        # What are the lo and hi values to use? This depends on the
+        # current analysis setting.
         #
+        # xhi is the upper edge of the axis in either channel (in
+        # which case it's unused) or energy units (in which case it is
+        # only used if wavelength filtering is being used).
+        #
+        def check_limits(xhi):
+            outlo = lo
+            outhi = hi
+            if self.units == "channel":
+                if outhi is not None:
+                    # A channel range lo to hi is read as [lo, hi]
+                    # rather than [lo, hi), so we increase the upper
+                    # limit by 1 to work around this, as the filter
+                    # call checks for < hi and not <= hi.
+                    #
+                    outhi += 1
+
+            elif self.units == "wavelength":
+                # Convert to energy.
+                #
+                emax = max(xhi[[0, -1]])
+                lims = validate_wavelength_limits(outlo, outhi, emax)
+                if lims is None:
+                    # No useful filter to apply.
+                    return  None
+
+                outlo, outhi = lims
+
+            return outlo, outhi
+
+        # Evaluate the grid in channel or energy space.
+        #
+        orig_units = self.units
         try:
-            elo, ehi = self._get_ebins(group=self.grouped)
+            if orig_units == "wavelength":
+                self.units = "energy"
+
+            # The filter is applied to the grouped data.
+            #
+            xlo, xhi = self.get_indep_transform(filter=False,
+                                                group=self.grouped)
+
         except DataErr as de:
             info("Skipping dataset %s: %s", self.name, str(de))
             return
 
-        emin = min(elo[[0, -1]])
-        emax = max(ehi[[0, -1]])
+        finally:
+            if orig_units == "wavelength":
+                self.units = "wavelength"
 
-        # Convert wavelength limits to energy if necessary.
-        #
-        if self.units == 'wavelength':
-            lims = validate_wavelength_limits(lo, hi, emax)
-            if lims is None:
-                # No useful filter to apply
-                return
+        if len(xlo) == 0:
+            # Should get_indep raise this?
+            info("Skipping dataset %s: mask excludes all data", self.name)
+            return
 
-            lo, hi = lims
+        lims = check_limits(xhi)
+        if lims is None:
+            return
 
-        # safety check
-        assert lo is None or hi is None or lo <= hi, (lo, hi, self.name)
+        lolim, hilim = lims
 
-        if self.units == 'channel' and hi is not None:
-            # A channel range lo to hi is read as [lo, hi] rather than
-            # [lo, hi), so we increase the upper limit by 1 to
-            # work around this, as the filter call checks for < hi
-            # and not <= hi.
-            #
-            hi += 1
+can I move the grouping logic to the filter objcet, so here we
 
-        self._data_space.filter.notice((None, lo), (hi, None),
-                                       (elo, ehi), ignore=ignore,
+        self._data_space.filter.notice((None, lolim), (hilim, None),
+                                       (xlo, xhi), ignore=ignore,
                                        integrated=True)
 
-    def to_guess(self):
-        elo, ehi = self._get_ebins(group=False)
-        elo = self.apply_filter(elo, self._min)
-        ehi = self.apply_filter(ehi, self._max)
-        if self.units == "wavelength":
-            lo = hc / ehi
-            hi = hc / elo
-            elo = lo
-            ehi = hi
+    def to_guess(self) -> tuple[np.ndarray | None, ...]:
+
+        xlo, xhi = self.get_indep_transform(group=False, filter=False)
+        lo = self.apply_filter(xlo, groupfunc=self._min)
+        hi = self.apply_filter(xhi, groupfunc=self._max)
+
         cnt = self.get_dep(True)
         arf = self.get_specresp(filter=True)
 
-        y = cnt / (ehi - elo)
+        # Normalize, if set, by the bin width, exposure time, and ARF.
+        #
+        y = cnt / (hi - lo)
         if self.exposure is not None:
-            y /= self.exposure   # photons/keV/sec or photons/Ang/sec
-        # y = cnt/arf/self.exposure
+            y /= self.exposure
         if arf is not None:
-            y /= arf  # photons/keV/cm^2/sec or photons/Ang/cm^2/sec
-        return (y, elo, ehi)
+            y /= arf
+
+        return (y, lo, hi)
 
     def to_fit(self, staterrfunc=None):
         return (self.get_dep(True),
