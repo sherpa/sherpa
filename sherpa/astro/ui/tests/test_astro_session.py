@@ -4556,12 +4556,6 @@ def test_method_numcores_moncar(session, ncores):
 
     s.set_method_opt("numcores", ncores)
 
-    # The random state is taken from the rng parameter of the
-    # optimizer, which does not fit in well with the current design
-    # (Sherpa 4.16).
-    #
-    # rng = np.random.RandomState(8273)
-    # s.set_rng(rng)
     assert s.get_rng() is None  # Note if this changes
 
     rng = np.random.RandomState(8273)
