@@ -94,6 +94,14 @@ __all__ = ('NoNewAttributesAfterInit',
 ###############################################################################
 
 
+# With ParamSpec, added in Python 3.10, we might be able to annotate
+# this so that we can match the arguments that `func` uses are the
+# same as are sent to the __call__ method, although it might be easier
+# to do after the generics changes added in Python 3.12.
+#
+T = TypeVar("T")
+
+
 # This logic was found in several modules so centralize it. Note that
 # this is not added to __all__.
 #
@@ -1118,10 +1126,10 @@ def bool_cast(val):
 # the signature of the return value probably needs Python 3.10 for
 # ParamSpec and then maybe Python 3.12 for the generic support.
 #
-def export_method(meth: Callable,
+def export_method(meth: Callable[..., T],
                   name: str | None = None,
                   modname: str | None = None
-                  ) -> Callable:
+                  ) -> Callable[..., T]:
     """
     Given a bound instance method, return a simple function that wraps
     it.  The only difference between the interface of the original
@@ -2563,14 +2571,6 @@ def symmetric_to_low_triangle(matrix, num):
     # print_low_triangle( matrix, num )
     # print low_triangle
     return low_triangle
-
-
-# With ParamSpec, added in Python 3.10, we might be able to annotate
-# this so that we can match the arguments that `func` uses are the
-# same as are sent to the __call__ method, although it might be easier
-# to do after the generics changes added in Python 3.12.
-#
-T = TypeVar("T")
 
 
 class FuncCounter(Generic[T]):
