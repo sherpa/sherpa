@@ -7721,7 +7721,7 @@ class XSeebremss(XSAdditiveModel):
     def __init__(self, name='eebremss'):
         self.T = XSParameter(name, 'T', 1.0, min=0.05, max=10000000000.0, hard_min=0.05, hard_max=10000000000.0, units='keV')
         self.eperh = XSParameter(name, 'eperh', 1.2, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
-        self.Redshift = mkRedshift(0)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.T, self.eperh, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
