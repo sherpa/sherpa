@@ -31,6 +31,7 @@ for a general description of the ``sherpa.astro.xspec`` module.
    .. autosummary::
       :toctree: api
 
+      eval_xspec_with_fixed_norm
       get_xsabund
       get_xsabund_doc
       get_xsabundances
