@@ -13135,8 +13135,13 @@ class Session(NoNewAttributesAfterInit):
         get = getattr(self, f"get_{ctype}_contour")
         return get(id, recalc=False).contour_prefs
 
-    def get_data_contour_prefs(self):
+    def get_data_contour_prefs(self,
+                               id: IdType | None = None
+                               ) -> dict:
         """Return the preferences for contour_data.
+
+        .. versionchanged:: 4.17.1
+           The id argument has been added.
 
         Returns
         -------
@@ -13287,8 +13292,13 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    def get_model_contour_prefs(self):
+    def get_model_contour_prefs(self,
+                                id: IdType | None = None
+                                ) -> dict:
         """Return the preferences for contour_model.
+
+        .. versionchanged:: 4.17.1
+           The id argument has been added.
 
         Returns
         -------
