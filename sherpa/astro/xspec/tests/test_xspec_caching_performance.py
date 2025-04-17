@@ -116,9 +116,6 @@ def test_evaluate_additive_xspec_model_normwrapper(modelcls):
     mdl.norm = 1
     evals = mdl(elo, ehi)
 
-    # This test would be useless if run with a default norm=1
-    #mdl.norm = 0.123 * mdl.norm.val
-
     # The norm=1 case has been run for initialization.
     # So, this should pull the value from the cache and be very fast.
     start_time_decorated = time.perf_counter()

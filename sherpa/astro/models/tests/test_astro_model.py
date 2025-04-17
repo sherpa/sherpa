@@ -79,18 +79,12 @@ def test_create_and_evaluate(name, cls):
         assert out.shape == x.shape
 
 
-@pytest.mark.parametrize("cls", [models.Atten,
-                                 models.BBody,
-                                 models.BBodyFreq,
-                                 models.BPL1D,
+@pytest.mark.parametrize("cls", [
                                  models.Beta1D,
-                                 models.Edge,
                                  models.LineBroad,
                                  models.Lorentz1D,
-                                 models.NormBeta1D,
                                  models.PseudoVoigt1D,
-                                 models.Schechter,
-                                 models.Voigt1D])
+                                 ])
 def test_send_keyword_1d_with_cache(cls):
     """What happens if we use an un-supported keyword and use caching?"""
 

@@ -1,6 +1,6 @@
 # coding: utf-8
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2021 - 2024
+#  Copyright (C) 2007, 2016, 2018-2019, 2021-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -93,6 +93,7 @@ class Atten(RegriddableModel1D):
         self.heiiRatio = Parameter(name, 'heiiRatio', 0.01, 0, 1)
         ArithmeticModel.__init__(self, name,
                                  (self.hcol, self.heiRatio, self.heiiRatio))
+        self.cache = 0
 
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
@@ -157,6 +158,7 @@ class BBody(RegriddableModel1D):
         self.kT = Parameter(name, 'kT', 1, 0.1, 1000, 0, 1e+10, 'keV')
         self.ampl = Parameter(name, 'ampl', 1, 1e-20, 1e+20, 1e-20, 1e+20)
         ArithmeticModel.__init__(self, name, (self.space, self.kT, self.ampl))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         if args[0][0] > args[0][-1]:
@@ -215,6 +217,7 @@ class BBodyFreq(RegriddableModel1D):
         self.T = Parameter(name, 'T', 1e+06, 1000, 1e+10, 1000, 1e+10)
         self.ampl = Parameter(name, 'ampl', 1, 0, hard_min=0)
         ArithmeticModel.__init__(self, name, (self.T, self.ampl))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         vmax = get_peak(dep, *args)
@@ -352,6 +355,7 @@ class BPL1D(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.gamma1, self.gamma2,
                                   self.eb, self.ref, self.ampl))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         pos = get_position(dep, *args)
@@ -427,6 +431,7 @@ class Dered(RegriddableModel1D):
         self.rv = Parameter(name, 'rv', 10, 1e-10, 1000, tinyval)
         self.nhgal = Parameter(name, 'nhgal', 1e-07, 1e-07, 100000)
         ArithmeticModel.__init__(self, name, (self.rv, self.nhgal))
+        self.cache = 0
 
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
@@ -478,6 +483,7 @@ class Edge(RegriddableModel1D):
         self.abs = Parameter(name, 'abs', 1, 0)
         ArithmeticModel.__init__(self, name,
                                  (self.space, self.thresh, self.abs))
+        self.cache = 0
 
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
@@ -693,7 +699,7 @@ class Voigt1D(RegriddableModel1D):
         self.ampl = Parameter(name, 'ampl', 1.0)
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm_g, self.fwhm_l, self.pos, self.ampl))
-        return
+        self.cache = 0
 
     def get_center(self):
         return (self.pos.val,)
@@ -873,6 +879,7 @@ class NormBeta1D(RegriddableModel1D):
         self.ampl = Parameter(name, 'ampl', 1, 0)
         ArithmeticModel.__init__(self, name,
                                  (self.pos, self.width, self.index, self.ampl))
+        self.cache = 0
 
     def get_center(self):
         return (self.pos.val,)
@@ -931,6 +938,7 @@ class Schechter(RegriddableModel1D):
         self.ref = Parameter(name, 'ref', 1)
         self.norm = Parameter(name, 'norm', 1)
         ArithmeticModel.__init__(self, name, (self.alpha, self.ref, self.norm))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         norm = guess_amplitude(dep, *args)
