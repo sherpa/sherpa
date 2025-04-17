@@ -31,6 +31,7 @@ The sherpa.models.model module
    .. autosummary::
       :toctree: api
 
+      modelCacher
       modelCacher1d
 
 Class Inheritance Diagram
