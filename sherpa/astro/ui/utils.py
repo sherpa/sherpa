@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015 - 2025
+#  Copyright (C) 2010, 2015-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,11 +20,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 import logging
 import os
 import sys
-from typing import Callable, Optional, Sequence, Union
 import warnings
 
 import numpy as np
@@ -43,13 +43,15 @@ from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
+from sherpa.data import Data
 from sherpa.fit import Fit
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model
 from sherpa.astro import fake
-from sherpa.astro.data import DataIMG, DataIMGInt, DataPHA
+from sherpa.astro.data import DataIMG, DataIMGInt, DataPHA, \
+    DataARF, DataRMF
 import sherpa.astro.instrument
 
 warning = logging.getLogger(__name__).warning
@@ -99,8 +101,8 @@ def _get_image_filter(data: DataIMG) -> str:
 
 
 def _pha_report_filter_change(session: Session,
-                              idval: Optional[IdType],
-                              bkg_id: Optional[IdType],
+                              idval: IdType | None,
+                              bkg_id: IdType | None,
                               changefunc: Callable[[DataPHA], None]
                               ) -> None:
     """Change the PHA object and report the filter change
@@ -142,8 +144,8 @@ def _pha_report_filter_change(session: Session,
 
 
 def _check_pha_tabstops(data: DataPHA,
-                        tabStops: Optional[Union[str, list, np.ndarray]]
-                        ) -> Optional[np.ndarray]:
+                        tabStops: str | list | np.ndarray | None
+                        ) -> np.ndarray | None:
     """Validate the tabStops argument for the group_xxx calls.
 
     This converts from "nofilter" to numpy.zeros(nchan), where
@@ -182,9 +184,9 @@ def _check_pha_tabstops(data: DataPHA,
 
 
 def _save_errorcol(session: Session,
-                   idval: Optional[IdType],
+                   idval: IdType | None,
                    filename,
-                   bkg_id: Optional[IdType],
+                   bkg_id: IdType | None,
                    clobber,
                    asciiflag,
                    get_err,
@@ -259,8 +261,8 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     def _fix_background_id(self,
-                           id: Optional[IdType],
-                           bkg_id: Optional[IdType]
+                           id: IdType | None,
+                           bkg_id: IdType | None
                            ) -> IdType:
         """Validate the background id.
 
@@ -533,7 +535,7 @@ class Session(sherpa.ui.utils.Session):
                 sherpa.astro.xspec.set_xsstate(self._xspec_state)
                 self._xspec_state = None
 
-    def _get_show_data(self, id: Optional[IdType] = None) -> str:
+    def _get_show_data(self, id: IdType | None = None) -> str:
         """Show the data"""
 
         if id is None:
@@ -591,8 +593,8 @@ class Session(sherpa.ui.utils.Session):
         return data_str
 
     def _get_show_bkg(self,
-                      id: Optional[IdType] = None,
-                      bkg_id: Optional[IdType] = None
+                      id: IdType | None = None,
+                      bkg_id: IdType | None = None
                       ) -> str:
         """Show the background"""
 
@@ -633,8 +635,8 @@ class Session(sherpa.ui.utils.Session):
         return data_str
 
     def _get_show_bkg_model(self,
-                            id: Optional[IdType] = None,
-                            bkg_id: Optional[IdType] = None
+                            id: IdType | None = None,
+                            bkg_id: IdType | None = None
                             ) -> str:
         """Show the background model"""
 
@@ -659,8 +661,8 @@ class Session(sherpa.ui.utils.Session):
         return model_str
 
     def _get_show_bkg_source(self,
-                             id: Optional[IdType] = None,
-                             bkg_id: Optional[IdType] = None
+                             id: IdType | None = None,
+                             bkg_id: IdType | None = None
                              ) -> str:
         """Show the background source"""
 
@@ -683,8 +685,8 @@ class Session(sherpa.ui.utils.Session):
         return model_str
 
     def show_bkg(self,
-                 id: Optional[IdType] = None,
-                 bkg_id: Optional[IdType] = None,
+                 id: IdType | None = None,
+                 bkg_id: IdType | None = None,
                  outfile=None,
                  clobber: bool = False
                  ) -> None:
@@ -730,8 +732,8 @@ class Session(sherpa.ui.utils.Session):
         send_to_pager(txt, outfile, clobber)
 
     def show_bkg_source(self,
-                        id: Optional[IdType] = None,
-                        bkg_id: Optional[IdType] = None,
+                        id: IdType | None = None,
+                        bkg_id: IdType | None = None,
                         outfile=None,
                         clobber: bool = False
                         ) -> None:
@@ -779,8 +781,8 @@ class Session(sherpa.ui.utils.Session):
         send_to_pager(txt, outfile, clobber)
 
     def show_bkg_model(self,
-                       id: Optional[IdType] = None,
-                       bkg_id: Optional[IdType] = None,
+                       id: IdType | None = None,
+                       bkg_id: IdType | None = None,
                        outfile=None,
                        clobber: bool = False
                        ) -> None:
@@ -829,7 +831,7 @@ class Session(sherpa.ui.utils.Session):
         send_to_pager(txt, outfile, clobber)
 
     def calc_bkg_stat(self,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       *otherids: IdType):
         """Calculate the fit statistic for a background data set.
 
@@ -999,8 +1001,8 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def dataspace1d(self, start, stop, step=1, numbins=None,
-                    id: Optional[IdType] = None,
-                    bkg_id: Optional[IdType] = None,
+                    id: IdType | None = None,
+                    bkg_id: IdType | None = None,
                     dstype=sherpa.data.Data1DInt
                     ) -> None:
         """Create the independent axis for a 1D data set.
@@ -1149,7 +1151,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def dataspace2d(self, dims,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     dstype=DataIMG) -> None:
         """Create the independent axis for a 2D data set.
 
@@ -1816,7 +1818,7 @@ class Session(sherpa.ui.utils.Session):
                     return self.unpack_ascii(filename, *args, **kwargs)
 
     def load_ascii_with_errors(self, id, filename=None,
-                               colkeys: Optional[Sequence[str]] = None,
+                               colkeys: Sequence[str] | None = None,
                                sep: str = ' ',
                                comment: str = '#',
                                func: Callable = np.average,
@@ -1941,8 +1943,8 @@ class Session(sherpa.ui.utils.Session):
         data.staterror = staterror
 
     def _load_data(self,
-                   id: Optional[IdType],
-                   datasets: Union[Data, Sequence[Data]]
+                   id: IdType | None,
+                   datasets: Data | Sequence[Data]
                    ) -> None:
         """Load one or more datasets.
 
@@ -2463,8 +2465,8 @@ class Session(sherpa.ui.utils.Session):
         self._load_data(id, phasets)
 
     def _get_pha_data(self,
-                      id: Optional[IdType],
-                      bkg_id: Optional[IdType] = None
+                      id: IdType | None,
+                      bkg_id: IdType | None = None
                       ) -> DataPHA:
         """Ensure the dataset is a PHA.
 
@@ -2498,8 +2500,8 @@ class Session(sherpa.ui.utils.Session):
                             f'in PHA data set {idval} has not been set')
 
     def _get_data_or_bkg(self,
-                         id: Optional[IdType],
-                         bkg_id: Optional[IdType] = None
+                         id: IdType | None,
+                         bkg_id: IdType | None = None
                          ) -> sherpa.data.Data:
         """Return the given dataset (may be a background).
 
@@ -2525,7 +2527,7 @@ class Session(sherpa.ui.utils.Session):
 
         return self.get_bkg(id, bkg_id)
 
-    def _get_img_data(self, id: Optional[IdType]) -> DataIMG:
+    def _get_img_data(self, id: IdType | None) -> DataIMG:
         """Ensure the dataset is an image"""
         idval = self._fix_id(id)
         data = self.get_data(idval)
@@ -2556,7 +2558,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: does ncols make sense here? (have removed for now)
     #
     def load_filter(self, id, filename=None,
-                    bkg_id: Optional[IdType] = None,
+                    bkg_id: IdType | None = None,
                     ignore=False, ncols=2,
                     *args, **kwargs) -> None:
         # pylint: disable=W1113
@@ -2640,7 +2642,7 @@ class Session(sherpa.ui.utils.Session):
     # talks about 2 cols, but experimentation suggests 1 col.
     #
     def load_grouping(self, id, filename=None,
-                      bkg_id: Optional[IdType] = None,
+                      bkg_id: IdType | None = None,
                       *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Load the grouping scheme from a file and add to a PHA data set.
@@ -2729,7 +2731,7 @@ class Session(sherpa.ui.utils.Session):
         self.set_grouping(id, grouping, bkg_id=bkg_id)
 
     def load_quality(self, id, filename=None,
-                     bkg_id: Optional[IdType] = None,
+                     bkg_id: IdType | None = None,
                      *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Load the quality array from a file and add to a PHA data set.
@@ -2808,7 +2810,7 @@ class Session(sherpa.ui.utils.Session):
         self.set_quality(id, mdata[1], bkg_id=bkg_id)
 
     def set_filter(self, id, val=None,
-                   bkg_id: Optional[IdType] = None,
+                   bkg_id: IdType | None = None,
                    ignore=False
                    ) -> None:
         """Set the filter array of a data set.
@@ -2866,7 +2868,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
     def load_staterror(self, id, filename=None,
-                       bkg_id: Optional[IdType] = None,
+                       bkg_id: IdType | None = None,
                        *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Load the statistical errors from a file.
@@ -2953,7 +2955,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_syserror(self, id, filename=None,
-                      bkg_id: Optional[IdType] = None,
+                      bkg_id: IdType | None = None,
                       *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Load the systematic errors from a file.
@@ -3039,7 +3041,7 @@ class Session(sherpa.ui.utils.Session):
 
     # also in sherpa.utils
     def set_dep(self, id, val=None,
-                bkg_id: Optional[IdType] = None
+                bkg_id: IdType | None = None
                 ) -> None:
         """Set the dependent axis of a data set.
 
@@ -3097,7 +3099,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def set_staterror(self, id, val=None, fractional= False,
-                      bkg_id: Optional[IdType] = None
+                      bkg_id: IdType | None = None
                       ) -> None:
         """Set the statistical errors on the dependent axis of a data set.
 
@@ -3161,7 +3163,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def set_syserror(self, id, val=None, fractional=False,
-                     bkg_id: Optional[IdType] = None
+                     bkg_id: IdType | None = None
                      ) -> None:
         """Set the systematic errors on the dependent axis of a data set.
 
@@ -3221,7 +3223,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.ui.utils.set_error(d, "syserror", val, fractional=fractional)
 
     def set_exposure(self, id, exptime=None,
-                     bkg_id: Optional[IdType] = None
+                     bkg_id: IdType | None = None
                      ) -> None:
         """Change the exposure time of a PHA data set.
 
@@ -3288,7 +3290,7 @@ class Session(sherpa.ui.utils.Session):
         d.exposure = exptime
 
     def set_backscal(self, id, backscale=None,
-                     bkg_id: Optional[IdType] = None
+                     bkg_id: IdType | None = None
                      ) -> None:
         """Change the area scaling of a PHA data set.
 
@@ -3339,7 +3341,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: the description needs improving.
     def set_areascal(self, id, area=None,
-                     bkg_id: Optional[IdType] = None
+                     bkg_id: IdType | None = None
                      ) -> None:
         """Change the fractional area factor of a PHA data set.
 
@@ -3390,9 +3392,9 @@ class Session(sherpa.ui.utils.Session):
     #           the bkg_id parameter.
     #
     def get_staterror(self,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       filter=False,
-                      bkg_id: Optional[IdType] = None
+                      bkg_id: IdType | None = None
                       ):
         """Return the statistical error on the dependent axis of a data set.
 
@@ -3481,9 +3483,9 @@ class Session(sherpa.ui.utils.Session):
     #           the bkg_id parameter.
     #
     def get_syserror(self,
-                     id: Optional[IdType] = None,
+                     id: IdType | None = None,
                      filter=False,
-                     bkg_id: Optional[IdType] = None
+                     bkg_id: IdType | None = None
                      ):
         """Return the systematic error on the dependent axis of a data set.
 
@@ -3561,9 +3563,9 @@ class Session(sherpa.ui.utils.Session):
     #           the bkg_id parameter.
     #
     def get_error(self,
-                  id: Optional[IdType] = None,
+                  id: IdType | None = None,
                   filter=False,
-                  bkg_id: Optional[IdType] = None
+                  bkg_id: IdType | None = None
                   ):
         """Return the errors on the dependent axis of a data set.
 
@@ -3641,9 +3643,9 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def get_indep(self,
-                  id: Optional[IdType] = None,
+                  id: IdType | None = None,
                   filter=False,
-                  bkg_id: Optional[IdType] = None):
+                  bkg_id: IdType | None = None):
         """Return the independent axes of a data set.
 
         This function returns the coordinates of each point, or pixel,
@@ -3755,8 +3757,8 @@ class Session(sherpa.ui.utils.Session):
         return d.get_indep(filter=filter)
 
     def get_axes(self,
-                 id: Optional[IdType] = None,
-                 bkg_id: Optional[IdType] = None):
+                 id: IdType | None = None,
+                 bkg_id: IdType | None = None):
         """Return information about the independent axes of a data set.
 
         This function returns the coordinates of each point, or pixel,
@@ -3854,9 +3856,9 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def get_dep(self,
-                id: Optional[IdType] = None,
+                id: IdType | None = None,
                 filter=False,
-                bkg_id: Optional[IdType] = None):
+                bkg_id: IdType | None = None):
         """Return the dependent axis of a data set.
 
         This function returns the data values (the dependent axis)
@@ -3954,9 +3956,9 @@ class Session(sherpa.ui.utils.Session):
     get_counts = get_dep
 
     def get_rate(self,
-                 id: Optional[IdType] = None,
+                 id: IdType | None = None,
                  filter=False,
-                 bkg_id: Optional[IdType] = None):
+                 bkg_id: IdType | None = None):
         """Return the count rate of a PHA data set.
 
         Return an array of count-rate values for each bin in the
@@ -4057,9 +4059,9 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how to get the corresponding x bins for this data?
     # i.e. what are the X values for these points
     def get_specresp(self,
-                     id: Optional[IdType] = None,
+                     id: IdType | None = None,
                      filter=False,
-                     bkg_id: Optional[IdType] = None):
+                     bkg_id: IdType | None = None):
         """Return the effective area values for a PHA data set.
 
         Parameters
@@ -4098,8 +4100,8 @@ class Session(sherpa.ui.utils.Session):
         return d.get_specresp(filter)
 
     def get_exposure(self,
-                     id: Optional[IdType] = None,
-                     bkg_id: Optional[IdType] = None):
+                     id: IdType | None = None,
+                     bkg_id: IdType | None = None):
         """Return the exposure time of a PHA data set.
 
         The exposure time of a PHA data set is taken from the
@@ -4150,8 +4152,8 @@ class Session(sherpa.ui.utils.Session):
         return d.exposure
 
     def get_backscal(self,
-                     id: Optional[IdType] = None,
-                     bkg_id: Optional[IdType] = None):
+                     id: IdType | None = None,
+                     bkg_id: IdType | None = None):
         """Return the BACKSCAL scaling of a PHA data set.
 
         Return the BACKSCAL setting for the source or background
@@ -4209,7 +4211,7 @@ class Session(sherpa.ui.utils.Session):
         return d.backscal
 
     def get_bkg_scale(self,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       bkg_id: IdType = 1,
                       units='counts', group=True, filter=False):
         """Return the background scaling factor for a background data set.
@@ -4307,8 +4309,8 @@ class Session(sherpa.ui.utils.Session):
         return scale
 
     def get_areascal(self,
-                     id: Optional[IdType] = None,
-                     bkg_id: Optional[IdType] = None):
+                     id: IdType | None = None,
+                     bkg_id: IdType | None = None):
         """Return the fractional area factor of a PHA data set.
 
         Return the AREASCAL setting for the source or background
@@ -4364,7 +4366,7 @@ class Session(sherpa.ui.utils.Session):
         return d.areascal
 
     def _save_type(self, objtype, id, filename,
-                   bkg_id: Optional[IdType] = None,
+                   bkg_id: IdType | None = None,
                    **kwargs) -> None:
         if filename is None:
             id, filename = filename, id
@@ -4514,7 +4516,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different API
     def save_source(self, id, filename=None,
-                    bkg_id: Optional[IdType] = None,
+                    bkg_id: IdType | None = None,
                     ascii=False, clobber=False
                     ) -> None:
         """Save the model values to a file.
@@ -4600,7 +4602,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different API
     def save_model(self, id, filename=None,
-                   bkg_id: Optional[IdType] = None,
+                   bkg_id: IdType | None = None,
                    ascii=False, clobber=False
                    ) -> None:
         """Save the model values to a file.
@@ -4685,7 +4687,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different API
     def save_resid(self, id, filename=None,
-                   bkg_id: Optional[IdType] = None,
+                   bkg_id: IdType | None = None,
                    ascii=False, clobber=False
                    ) -> None:
         """Save the residuals (data-model) to a file.
@@ -4759,7 +4761,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different API
     def save_delchi(self, id, filename=None,
-                    bkg_id: Optional[IdType] = None,
+                    bkg_id: IdType | None = None,
                     ascii=True, clobber=False
                     ) -> None:
         """Save the ratio of residuals (data-model) to error to a file.
@@ -4833,7 +4835,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_filter(self, id, filename=None,
-                    bkg_id: Optional[IdType] = None,
+                    bkg_id: IdType | None = None,
                     ascii=True, clobber=False
                     ) -> None:
         """Save the filter array to a file.
@@ -4928,7 +4930,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_staterror(self, id, filename=None,
-                       bkg_id: Optional[IdType] = None,
+                       bkg_id: IdType | None = None,
                        ascii=True, clobber=False
                        ) -> None:
         """Save the statistical errors to a file.
@@ -5007,7 +5009,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_syserror(self, id, filename=None,
-                      bkg_id: Optional[IdType] = None,
+                      bkg_id: IdType | None = None,
                       ascii=True, clobber=False
                       ) -> None:
         """Save the systematic errors to a file.
@@ -5084,7 +5086,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_error(self, id, filename=None,
-                   bkg_id: Optional[IdType] = None,
+                   bkg_id: IdType | None = None,
                    ascii=True, clobber=False
                    ) -> None:
         """Save the errors to a file.
@@ -5167,7 +5169,7 @@ class Session(sherpa.ui.utils.Session):
                        self.get_error, 'ERR')
 
     def save_pha(self, id, filename=None,
-                 bkg_id: Optional[IdType] = None,
+                 bkg_id: IdType | None = None,
                  ascii=False, clobber=False
                  ) -> None:
         """Save a PHA data set to a file.
@@ -5251,7 +5253,7 @@ class Session(sherpa.ui.utils.Session):
     #
     def save_arf(self, id, filename=None,
                  resp_id=None,
-                 bkg_id: Optional[IdType] = None,
+                 bkg_id: IdType | None = None,
                  ascii=False, clobber=False
                  ) -> None:
         """Save an ARF data set to a file.
@@ -5351,7 +5353,7 @@ class Session(sherpa.ui.utils.Session):
     #
     def save_rmf(self, id, filename=None,
                  resp_id=None,
-                 bkg_id: Optional[IdType] = None,
+                 bkg_id: IdType | None = None,
                  clobber=False
                  ) -> None:
         """Save an RMF data set to a file.
@@ -5434,7 +5436,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_rmf(filename, rmf, clobber=clobber)
 
     def save_grouping(self, id, filename=None,
-                      bkg_id: Optional[IdType] = None,
+                      bkg_id: IdType | None = None,
                       ascii=True, clobber=False
                       ) -> None:
         """Save the grouping scheme to a file.
@@ -5519,7 +5521,7 @@ class Session(sherpa.ui.utils.Session):
                                      clobber=clobber)
 
     def save_quality(self, id, filename=None,
-                     bkg_id: Optional[IdType] = None,
+                     bkg_id: IdType | None = None,
                      ascii=True, clobber=False
                      ) -> None:
         """Save the quality array to a file.
@@ -5745,7 +5747,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def save_data(self, id, filename=None,
-                  bkg_id: Optional[IdType] = None,
+                  bkg_id: IdType | None = None,
                   ascii=True, clobber=False
                   ) -> None:
         """Save the data to a file.
@@ -5845,7 +5847,7 @@ class Session(sherpa.ui.utils.Session):
                     sherpa.io.write_data(filename, d, clobber=clobber)
 
     # TODO: could add bkg_id parameter
-    def pack_pha(self, id: Optional[IdType] = None):
+    def pack_pha(self, id: IdType | None = None):
         """Convert a PHA data set into a file structure.
 
         Parameters
@@ -5873,7 +5875,7 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_pha(self._get_pha_data(id))
 
-    def pack_image(self, id: Optional[IdType] = None):
+    def pack_image(self, id: IdType | None = None):
         """Convert a data set into an image structure.
 
         Parameters
@@ -5896,7 +5898,7 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_image(self.get_data(id))
 
-    def pack_table(self, id: Optional[IdType] = None):
+    def pack_table(self, id: IdType | None = None):
         """Convert a data set into a table structure.
 
         Parameters
@@ -6046,9 +6048,9 @@ class Session(sherpa.ui.utils.Session):
                                     name=name)
 
     def get_arf(self,
-                id: Optional[IdType] = None,
-                resp_id: Optional[IdType] = None,
-                bkg_id: Optional[IdType] = None):
+                id: IdType | None = None,
+                resp_id: IdType | None = None,
+                bkg_id: IdType | None = None):
         """Return the ARF associated with a PHA data set.
 
         Parameters
@@ -6125,8 +6127,8 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     def set_arf(self, id, arf=None,
-                resp_id: Optional[IdType] = None,
-                bkg_id: Optional[IdType] = None
+                resp_id: IdType | None = None,
+                bkg_id: IdType | None = None
                 ) -> None:
         """Set the ARF for use by a PHA data set.
 
@@ -6260,8 +6262,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
     def load_arf(self, id, arg=None,
-                 resp_id: Optional[IdType] = None,
-                 bkg_id: Optional[IdType] = None
+                 resp_id: IdType | None = None,
+                 bkg_id: IdType | None = None
                  ) -> None:
         """Load an ARF from a file and add it to a PHA data set.
 
@@ -6342,7 +6344,7 @@ class Session(sherpa.ui.utils.Session):
         self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
 
     def get_bkg_arf(self,
-                    id: Optional[IdType] = None):
+                    id: IdType | None = None):
         """Return the background ARF associated with a PHA data set.
 
         This is for the case when there is only one background
@@ -6529,9 +6531,9 @@ class Session(sherpa.ui.utils.Session):
             self.load_arf(id, filename, resp_id)
 
     def get_rmf(self,
-                id: Optional[IdType] = None,
-                resp_id: Optional[IdType] = None,
-                bkg_id: Optional[IdType] = None):
+                id: IdType | None = None,
+                resp_id: IdType | None = None,
+                bkg_id: IdType | None = None):
         """Return the RMF associated with a PHA data set.
 
         Parameters
@@ -6603,8 +6605,8 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     def set_rmf(self, id, rmf=None,
-                resp_id: Optional[IdType] = None,
-                bkg_id: Optional[IdType] = None
+                resp_id: IdType | None = None,
+                bkg_id: IdType | None = None
                 ) -> None:
         """Set the RMF for use by a PHA data set.
 
@@ -6743,8 +6745,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
     def load_rmf(self, id, arg=None,
-                 resp_id: Optional[IdType] = None,
-                 bkg_id: Optional[IdType] = None
+                 resp_id: IdType | None = None,
+                 bkg_id: IdType | None = None
                  ) -> None:
         """Load a RMF from a file and add it to a PHA data set.
 
@@ -6830,7 +6832,7 @@ class Session(sherpa.ui.utils.Session):
         self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
 
     def get_bkg_rmf(self,
-                    id: Optional[IdType] = None):
+                    id: IdType | None = None):
         """Return the background RMF associated with a PHA data set.
 
         This is for the case when there is only one background
@@ -7012,8 +7014,8 @@ class Session(sherpa.ui.utils.Session):
             self.load_rmf(id, filename, resp_id)
 
     def get_bkg(self,
-                id: Optional[IdType] = None,
-                bkg_id: Optional[IdType] = None
+                id: IdType | None = None,
+                bkg_id: IdType | None = None
                 ) -> DataPHA:
         """Return the background for a PHA data set.
 
@@ -7066,7 +7068,7 @@ class Session(sherpa.ui.utils.Session):
         return bkg
 
     def set_bkg(self, id, bkg=None,
-                bkg_id: Optional[IdType] = None
+                bkg_id: IdType | None = None
                 ) -> None:
         """Set the background for a PHA data set.
 
@@ -7132,7 +7134,7 @@ class Session(sherpa.ui.utils.Session):
         data.set_background(bkg, bkg_id)
 
     def list_bkg_ids(self,
-                     id: Optional[IdType] = None
+                     id: IdType | None = None
                      ) -> list[IdType]:
         """List all the background identifiers for a data set.
 
@@ -7161,8 +7163,8 @@ class Session(sherpa.ui.utils.Session):
         return list(self._get_pha_data(id)._backgrounds.keys())
 
     def list_response_ids(self,
-                          id: Optional[IdType] = None,
-                          bkg_id: Optional[IdType] = None
+                          id: IdType | None = None,
+                          bkg_id: IdType | None = None
                           ) -> list[IdType]:
         """List all the response identifiers of a data set.
 
@@ -7312,7 +7314,7 @@ class Session(sherpa.ui.utils.Session):
             info("dataset %s: %s", idval, fstring)
 
     def get_analysis(self,
-                     id: Optional[IdType] = None
+                     id: IdType | None = None
                      ) -> str:
         """Return the units used when fitting spectral data.
 
@@ -7443,7 +7445,7 @@ class Session(sherpa.ui.utils.Session):
             self._get_img_data(id).set_coord(coord)
 
     # DOC-TODO: docs need to be added to sherpa.astro.data.get_coord
-    def get_coord(self, id: Optional[IdType] = None) -> str:
+    def get_coord(self, id: IdType | None = None) -> str:
         """Get the coordinate system used for image analysis.
 
         Parameters
@@ -7472,8 +7474,8 @@ class Session(sherpa.ui.utils.Session):
         return self._get_img_data(id).coord
 
     def ignore_bad(self,
-                   id: Optional[IdType] = None,
-                   bkg_id: Optional[IdType] = None
+                   id: IdType | None = None,
+                   bkg_id: IdType | None = None
                    ) -> None:
         """Exclude channels marked as bad in a PHA data set.
 
@@ -7824,8 +7826,8 @@ class Session(sherpa.ui.utils.Session):
             sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def notice2d_id(self,
-                    ids: Union[IdType, Sequence[IdType]],
-                    val: Optional[str] = None
+                    ids: IdType | Sequence[IdType] | None,
+                    val: str | None = None
                     ) -> None:
         """Include a spatial region of a data set.
 
@@ -7909,8 +7911,8 @@ class Session(sherpa.ui.utils.Session):
             sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def ignore2d_id(self,
-                    ids: Union[IdType, Sequence[IdType]],
-                    val: Optional[str] = None
+                    ids: IdType | Sequence[IdType] | None,
+                    val: str | None = None
                     ) -> None:
         """Exclude a spatial region from a data set.
 
@@ -7987,7 +7989,7 @@ class Session(sherpa.ui.utils.Session):
             sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def notice2d_image(self,
-                       ids: Optional[Union[IdType, Sequence[IdType]]] = None
+                       ids: IdType | Sequence[IdType] | None = None
                        ) -> None:
         """Include pixels using the region defined in the image viewer.
 
@@ -8059,7 +8061,7 @@ class Session(sherpa.ui.utils.Session):
             self.notice2d_id(idval, regions)
 
     def ignore2d_image(self,
-                       ids: Optional[Union[IdType, Sequence[IdType]]] = None
+                       ids: IdType | Sequence[IdType] | None = None
                        ) -> None:
         """Exclude pixels using the region defined in the image viewer.
 
@@ -8136,7 +8138,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: how best to include datastack support? How is it handled here?
     def load_bkg(self, id, arg=None, use_errors=False,
-                 bkg_id: Optional[IdType] = None
+                 bkg_id: IdType | None = None
                  ) -> None:
         """Load the background from a file and add it to a PHA data set.
 
@@ -8212,8 +8214,8 @@ class Session(sherpa.ui.utils.Session):
             self.set_bkg(id, bkgsets, bkg_id)
 
     def group(self,
-              id: Optional[IdType] = None,
-              bkg_id: Optional[IdType] = None
+              id: IdType | None = None,
+              bkg_id: IdType | None = None
               ) -> None:
         """Turn on the grouping for a PHA data set.
 
@@ -8324,7 +8326,7 @@ class Session(sherpa.ui.utils.Session):
         _pha_report_filter_change(self, id, bkg_id, change)
 
     def set_grouping(self, id, val=None,
-                     bkg_id: Optional[IdType] = None
+                     bkg_id: IdType | None = None
                      ) -> None:
         """Apply a set of grouping flags to a PHA data set.
 
@@ -8417,8 +8419,8 @@ class Session(sherpa.ui.utils.Session):
         _pha_report_filter_change(self, id, bkg_id, change)
 
     def get_grouping(self,
-                     id: Optional[IdType] = None,
-                     bkg_id: Optional[IdType] = None):
+                     id: IdType | None = None,
+                     bkg_id: IdType | None = None):
         """Return the grouping array for a PHA data set.
 
         The function returns the grouping value for each channel in
@@ -8487,7 +8489,7 @@ class Session(sherpa.ui.utils.Session):
         return data.grouping
 
     def set_quality(self, id, val=None,
-                    bkg_id: Optional[IdType] = None
+                    bkg_id: IdType | None = None
                     ) -> None:
         """Apply a set of quality flags to a PHA data set.
 
@@ -8575,8 +8577,8 @@ class Session(sherpa.ui.utils.Session):
     # get_data().exposure [= ...]
 
     def get_quality(self,
-                    id: Optional[IdType] = None,
-                    bkg_id: Optional[IdType] = None):
+                    id: IdType | None = None,
+                    bkg_id: IdType | None = None):
         """Return the quality flags for a PHA data set.
 
         The function returns the quality value for each channel in
@@ -8655,8 +8657,8 @@ class Session(sherpa.ui.utils.Session):
         return data.quality
 
     def ungroup(self,
-                id: Optional[IdType] = None,
-                bkg_id: Optional[IdType] = None
+                id: IdType | None = None,
+                bkg_id: IdType | None = None
                 ) -> None:
         """Turn off the grouping for a PHA data set.
 
@@ -8752,7 +8754,7 @@ class Session(sherpa.ui.utils.Session):
     # "bad" channels, rather than ones to ignore
 
     def group_bins(self, id, num=None,
-                   bkg_id: Optional[IdType] = None,
+                   bkg_id: IdType | None = None,
                    tabStops=None) -> None:
         """Group into a fixed number of bins.
 
@@ -8883,7 +8885,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: should num= be renamed val= to better match
     # underlying code/differ from group_bins?
     def group_width(self, id, num=None,
-                    bkg_id: Optional[IdType] = None,
+                    bkg_id: IdType | None = None,
                     tabStops=None
                     ) -> None:
         """Group into a fixed bin width.
@@ -9012,7 +9014,7 @@ class Session(sherpa.ui.utils.Session):
         _pha_report_filter_change(self, id, bkg_id, change)
 
     def group_counts(self, id, num=None,
-                     bkg_id: Optional[IdType] = None,
+                     bkg_id: IdType | None = None,
                      maxLength=None,
                      tabStops=None
                      ) -> None:
@@ -9149,7 +9151,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: check the Poisson stats claim; I'm guessing it means
     #           gaussian (i.e. sqrt(n))
     def group_snr(self, id, snr=None,
-                  bkg_id: Optional[IdType] = None,
+                  bkg_id: IdType | None = None,
                   maxLength=None,
                   tabStops=None,
                   errorCol=None
@@ -9280,7 +9282,7 @@ class Session(sherpa.ui.utils.Session):
         _pha_report_filter_change(self, id, bkg_id, change)
 
     def group_adapt(self, id, min=None,
-                    bkg_id: Optional[IdType] = None,
+                    bkg_id: IdType | None = None,
                     maxLength=None,
                     tabStops=None
                     ) -> None:
@@ -9408,7 +9410,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: shouldn't this be snr=None rather than min=None
     def group_adapt_snr(self, id, min=None,
-                        bkg_id: Optional[IdType] = None,
+                        bkg_id: IdType | None = None,
                         maxLength=None,
                         tabStops=None,
                         errorCol=None
@@ -9542,7 +9544,7 @@ class Session(sherpa.ui.utils.Session):
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
-    def subtract(self, id: Optional[IdType] = None) -> None:
+    def subtract(self, id: IdType | None = None) -> None:
         """Subtract the background estimate from a data set.
 
         The ``subtract`` function performs a channel-by-channel
@@ -9625,7 +9627,7 @@ class Session(sherpa.ui.utils.Session):
         if not d.subtracted:
             d.subtract()
 
-    def unsubtract(self, id: Optional[IdType] = None) -> None:
+    def unsubtract(self, id: IdType | None = None) -> None:
         """Undo any background subtraction for the data set.
 
         The `unsubtract` function undoes any changes made by
@@ -10143,7 +10145,7 @@ class Session(sherpa.ui.utils.Session):
     set_full_model.__annotations__ = sherpa.ui.utils.Session.set_full_model.__annotations__
 
     def _add_convolution_models(self,
-                                id: Optional[IdType],
+                                id: IdType | None,
                                 data, model, is_source):
         """Add in "hidden" components to the model expression.
 
@@ -10194,8 +10196,8 @@ class Session(sherpa.ui.utils.Session):
         return pha.get_full_response(pileup_model)
 
     def get_response(self,
-                     id: Optional[IdType] = None,
-                     bkg_id: Optional[IdType] = None
+                     id: IdType | None = None,
+                     bkg_id: IdType | None = None
                      ):
         """Return the response information applied to a PHA data set.
 
@@ -10255,7 +10257,7 @@ class Session(sherpa.ui.utils.Session):
         pha = self._get_pha_data(idval, bkg_id)
         return self._get_response(idval, pha)
 
-    def get_pileup_model(self, id: Optional[IdType] = None):
+    def get_pileup_model(self, id: IdType | None = None):
         """Return the pile up model for a data set.
 
         Return the pile up model set by a call to `set_pileup_model`.
@@ -10296,7 +10298,7 @@ class Session(sherpa.ui.utils.Session):
         return self._get_item(id, self._pileup_models, 'pileup model',
                               'has not been set')
 
-    def delete_pileup_model(self, id: Optional[IdType] = None) -> None:
+    def delete_pileup_model(self, id: IdType | None = None) -> None:
         """Delete the pile up model for a data set.
 
         Remove the pile up model applied to a source model.
@@ -10413,8 +10415,8 @@ class Session(sherpa.ui.utils.Session):
                        'model', 'a model object or model expression string')
 
     def get_bkg_source(self,
-                       id: Optional[IdType] = None,
-                       bkg_id: Optional[IdType] = None
+                       id: IdType | None = None,
+                       bkg_id: IdType | None = None
                        ):
         """Return the model expression for the background of a PHA data set.
 
@@ -10467,8 +10469,8 @@ class Session(sherpa.ui.utils.Session):
         return model
 
     def get_bkg_model(self,
-                      id: Optional[IdType] = None,
-                      bkg_id: Optional[IdType] = None
+                      id: IdType | None = None,
+                      bkg_id: IdType | None = None
                       ):
         """Return the model expression for the background of a PHA data set.
 
@@ -10546,7 +10548,7 @@ class Session(sherpa.ui.utils.Session):
         return resp(src)
 
     def set_bkg_full_model(self, id, model=None,
-                           bkg_id: Optional[IdType] = None
+                           bkg_id: IdType | None = None
                            ) -> None:
         """Define the convolved background model expression for a PHA data set.
 
@@ -10657,7 +10659,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: should probably explain more about how backgrounds are fit?
     def set_bkg_model(self, id, model=None,
-                      bkg_id: Optional[IdType] = None
+                      bkg_id: IdType | None = None
                       ) -> None:
         """Set the background model expression for a PHA data set.
 
@@ -10762,8 +10764,8 @@ class Session(sherpa.ui.utils.Session):
     set_bkg_source = set_bkg_model
 
     def delete_bkg_model(self,
-                         id: Optional[IdType] = None,
-                         bkg_id: Optional[IdType] = None
+                         id: IdType | None = None,
+                         bkg_id: IdType | None = None
                          ) -> None:
         """Delete the background model expression for a data set.
 
@@ -11149,7 +11151,7 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     def _prepare_fit(self,
-                     id: Optional[IdType],
+                     id: IdType | None,
                      otherids: Sequence[IdType] = ()
                      ) -> list[sherpa.ui.utils.FitStore]:
         """Ensure we have all the requested ids, datasets, and models.
@@ -11222,7 +11224,7 @@ class Session(sherpa.ui.utils.Session):
         return out
 
     def _prepare_bkg_fit(self,
-                         id: Optional[IdType],
+                         id: IdType | None,
                          otherids: Sequence[IdType] = ()
                          ) -> list[BkgFitStore]:
         """Ensure we have all the requested background ids, datasets, and models.
@@ -11284,7 +11286,7 @@ class Session(sherpa.ui.utils.Session):
         return out
 
     def _get_bkg_fit(self,
-                     id: Optional[IdType],
+                     id: IdType | None,
                      otherids: Sequence[IdType] = (),
                      estmethod=None, numcores=1
                      ) -> tuple[tuple[IdType, ...], Fit]:
@@ -11329,7 +11331,7 @@ class Session(sherpa.ui.utils.Session):
     # at the code it is always set to False.
     #
     def fit(self,
-            id: Optional[IdType] = None,
+            id: IdType | None = None,
             *otherids: IdType,
             **kwargs
             ) -> None:
@@ -11438,7 +11440,7 @@ class Session(sherpa.ui.utils.Session):
         self._fit(id, *otherids, **kwargs)
 
     def fit_bkg(self,
-                id: Optional[IdType] = None,
+                id: IdType | None = None,
                 *otherids: IdType,
                 **kwargs
                 ) -> None:
@@ -11522,7 +11524,7 @@ class Session(sherpa.ui.utils.Session):
         self._fit(id, *otherids, **kwargs)
 
     def _fit(self,
-             id: Optional[IdType] = None,
+             id: IdType | None = None,
              *otherids: IdType,
              **kwargs
              ) -> None:
@@ -11592,7 +11594,7 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     def get_data_plot(self,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       recalc=True):
         if recalc:
             data = self.get_data(id)
@@ -11612,7 +11614,7 @@ class Session(sherpa.ui.utils.Session):
     get_data_plot.__annotations__ = sherpa.ui.utils.Session.get_data_plot.__annotations__
 
     def get_model_plot(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        recalc=True):
         if recalc:
             data = self.get_data(id)
@@ -11633,7 +11635,7 @@ class Session(sherpa.ui.utils.Session):
 
     # also in sherpa.utils, but without the lo/hi arguments
     def get_source_plot(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         lo=None, hi=None, recalc=True):
         """Return the data used by plot_source.
 
@@ -11724,7 +11726,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_source_plot(id, recalc=recalc)
 
     def get_fit_plot(self,
-                     id: Optional[IdType] = None,
+                     id: IdType | None = None,
                      recalc=True):
 
         plotobj = self._plot_types["fit"][0]
@@ -11874,7 +11876,7 @@ class Session(sherpa.ui.utils.Session):
     get_source_component_plot.__annotations__ = sherpa.ui.utils.Session.get_source_component_plot.__annotations__
 
     def get_ratio_plot(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        recalc=True):
         if recalc:
             data = self.get_data(id)
@@ -11894,7 +11896,7 @@ class Session(sherpa.ui.utils.Session):
     get_ratio_plot.__annotations__ = sherpa.ui.utils.Session.get_ratio_plot.__annotations__
 
     def get_resid_plot(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        recalc=True):
         if recalc:
             data = self.get_data(id)
@@ -11914,7 +11916,7 @@ class Session(sherpa.ui.utils.Session):
     get_resid_plot.__annotations__ = sherpa.ui.utils.Session.get_resid_plot.__annotations__
 
     def get_delchi_plot(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         recalc=True):
         if recalc:
             data = self.get_data(id)
@@ -11934,7 +11936,7 @@ class Session(sherpa.ui.utils.Session):
     get_delchi_plot.__annotations__ = sherpa.ui.utils.Session.get_delchi_plot.__annotations__
 
     def get_chisqr_plot(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         recalc=True):
         if recalc:
             data = self.get_data(id)
@@ -11972,7 +11974,7 @@ class Session(sherpa.ui.utils.Session):
     get_pvalue_plot.__annotations__ = sherpa.ui.utils.Session.get_pvalue_plot.__annotations__
 
     def get_order_plot(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        orders=None, recalc=True):
         """Return the data used by plot_order.
 
@@ -12027,8 +12029,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_arf_plot(self,
-                     id: Optional[IdType] = None,
-                     resp_id: Optional[IdType] = None,
+                     id: IdType | None = None,
+                     resp_id: IdType | None = None,
                      recalc=True):
         """Return the data used by plot_arf.
 
@@ -12091,8 +12093,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_rmf_plot(self,
-                     id: Optional[IdType] = None,
-                     resp_id: Optional[IdType] = None,
+                     id: IdType | None = None,
+                     resp_id: IdType | None = None,
                      recalc=True):
         """Return the data used by plot_rmf.
 
@@ -12155,8 +12157,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_bkg_fit_plot(self,
-                         id: Optional[IdType] = None,
-                         bkg_id: Optional[IdType] = None,
+                         id: IdType | None = None,
+                         bkg_id: IdType | None = None,
                          recalc=True):
         """Return the data used by plot_bkg_fit.
 
@@ -12248,8 +12250,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_bkg_model_plot(self,
-                           id: Optional[IdType] = None,
-                           bkg_id: Optional[IdType] = None,
+                           id: IdType | None = None,
+                           bkg_id: IdType | None = None,
                            recalc=True):
         """Return the data used by plot_bkg_model.
 
@@ -12308,8 +12310,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_bkg_plot(self,
-                     id: Optional[IdType] = None,
-                     bkg_id: Optional[IdType] = None,
+                     id: IdType | None = None,
+                     bkg_id: IdType | None = None,
                      recalc=True):
         """Return the data used by plot_bkg.
 
@@ -12376,7 +12378,7 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_bkg_source_plot(self, id=None, lo=None, hi=None,
-                            bkg_id: Optional[IdType] = None,
+                            bkg_id: IdType | None = None,
                             recalc=True):
         """Return the data used by plot_bkg_source.
 
@@ -12470,8 +12472,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_bkg_resid_plot(self,
-                           id: Optional[IdType] = None,
-                           bkg_id: Optional[IdType] = None,
+                           id: IdType | None = None,
+                           bkg_id: IdType | None = None,
                            recalc=True):
         """Return the data used by plot_bkg_resid.
 
@@ -12531,8 +12533,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_bkg_ratio_plot(self,
-                           id: Optional[IdType] = None,
-                           bkg_id: Optional[IdType] = None,
+                           id: IdType | None = None,
+                           bkg_id: IdType | None = None,
                            recalc=True):
         """Return the data used by plot_bkg_ratio.
 
@@ -12592,8 +12594,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_bkg_delchi_plot(self,
-                            id: Optional[IdType] = None,
-                            bkg_id: Optional[IdType] = None,
+                            id: IdType | None = None,
+                            bkg_id: IdType | None = None,
                             recalc=True):
         """Return the data used by plot_bkg_delchi.
 
@@ -12654,8 +12656,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_bkg_chisqr_plot(self,
-                            id: Optional[IdType] = None,
-                            bkg_id: Optional[IdType] = None,
+                            id: IdType | None = None,
+                            bkg_id: IdType | None = None,
                             recalc=True):
         """Return the data used by plot_bkg_chisqr.
 
@@ -12717,7 +12719,7 @@ class Session(sherpa.ui.utils.Session):
 
     def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins,
                                   correlated, numcores,
-                                  bkg_id: Optional[IdType],
+                                  bkg_id: IdType | None,
                                   scales=None, model=None,
                                   otherids: Sequence[IdType] = (),
                                   clip='hard'):
@@ -12732,7 +12734,7 @@ class Session(sherpa.ui.utils.Session):
 
     def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins,
                                   correlated, numcores,
-                                  bkg_id: Optional[IdType],
+                                  bkg_id: IdType | None,
                                   scales=None, model=None,
                                   otherids: Sequence[IdType]=(),
                                   clip='hard'):
@@ -12746,12 +12748,12 @@ class Session(sherpa.ui.utils.Session):
         return plot
 
     def get_energy_flux_hist(self, lo=None, hi=None,
-                             id: Optional[IdType] = None,
+                             id: IdType | None = None,
                              num=7500,
                              bins=75,
                              correlated=False,
                              numcores=None,
-                             bkg_id: Optional[IdType] = None,
+                             bkg_id: IdType | None = None,
                              scales=None,
                              model=None,
                              otherids: Sequence[IdType] = (),
@@ -12893,12 +12895,12 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_photon_flux_hist(self, lo=None, hi=None,
-                             id: Optional[IdType] = None,
+                             id: IdType | None = None,
                              num=7500,
                              bins=75,
                              correlated=False,
                              numcores=None,
-                             bkg_id: Optional[IdType] = None,
+                             bkg_id: IdType | None = None,
                              scales=None,
                              model=None,
                              otherids: Sequence[IdType] = (),
@@ -13039,8 +13041,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def plot_arf(self,
-                 id: Optional[IdType] = None,
-                 resp_id: Optional[IdType] = None,
+                 id: IdType | None = None,
+                 resp_id: IdType | None = None,
                  replot=False, overplot=False,
                  clearwindow=True,
                  **kwargs) -> None:
@@ -13114,8 +13116,8 @@ class Session(sherpa.ui.utils.Session):
 
 
     def plot_rmf(self,
-                 id: Optional[IdType] = None,
-                 resp_id: Optional[IdType] = None,
+                 id: IdType | None = None,
+                 resp_id: IdType | None = None,
                  replot=False, overplot=False,
                  clearwindow=True,
                  **kwargs) -> None:
@@ -13193,7 +13195,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     lo=None, hi=None,
                     replot=False, overplot=False, clearwindow=True,
                     **kwargs) -> None:
@@ -13275,7 +13277,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: is orders the same as resp_id?
     def plot_order(self,
-                   id: Optional[IdType] = None,
+                   id: IdType | None = None,
                    orders=None,
                    replot=False, overplot=False,
                    clearwindow=True,
@@ -13338,8 +13340,8 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_bkg(self,
-                 id: Optional[IdType] = None,
-                 bkg_id: Optional[IdType] = None,
+                 id: IdType | None = None,
+                 bkg_id: IdType | None = None,
                  replot=False, overplot=False, clearwindow=True,
                  **kwargs) -> None:
         """Plot the background values for a PHA data set.
@@ -13406,8 +13408,8 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_bkg_model(self,
-                       id: Optional[IdType] = None,
-                       bkg_id: Optional[IdType] = None,
+                       id: IdType | None = None,
+                       bkg_id: IdType | None = None,
                        replot=False, overplot=False, clearwindow=True,
                        **kwargs) -> None:
         """Plot the model for the background of a PHA data set.
@@ -13466,8 +13468,8 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_bkg_resid(self,
-                       id: Optional[IdType] = None,
-                       bkg_id: Optional[IdType] = None,
+                       id: IdType | None = None,
+                       bkg_id: IdType | None = None,
                        replot=False, overplot=False, clearwindow=True,
                        **kwargs) -> None:
         """Plot the residual (data-model) values for the background of a PHA data set.
@@ -13535,8 +13537,8 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_bkg_ratio(self,
-                       id: Optional[IdType] = None,
-                       bkg_id: Optional[IdType] = None,
+                       id: IdType | None = None,
+                       bkg_id: IdType | None = None,
                        replot=False, overplot=False, clearwindow=True,
                        **kwargs) -> None:
         """Plot the ratio of data to model values for the background of a PHA data set.
@@ -13604,8 +13606,8 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_bkg_delchi(self,
-                        id: Optional[IdType] = None,
-                        bkg_id: Optional[IdType] = None,
+                        id: IdType | None = None,
+                        bkg_id: IdType | None = None,
                         replot=False, overplot=False, clearwindow=True,
                         **kwargs) -> None:
         """Plot the ratio of residuals to error for the background of a PHA data set.
@@ -13673,8 +13675,8 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_bkg_chisqr(self,
-                        id: Optional[IdType] = None,
-                        bkg_id: Optional[IdType] = None,
+                        id: IdType | None = None,
+                        bkg_id: IdType | None = None,
                         replot=False, overplot=False, clearwindow=True,
                         **kwargs) -> None:
         """Plot the chi-squared value for each point of the background of a PHA data set.
@@ -13734,8 +13736,8 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_bkg_fit(self,
-                     id: Optional[IdType] = None,
-                     bkg_id: Optional[IdType] = None,
+                     id: IdType | None = None,
+                     bkg_id: IdType | None = None,
                      replot=False, overplot=False, clearwindow=True,
                      **kwargs) -> None:
         """Plot the fit results (data, model) for the background of a PHA data set.
@@ -13794,9 +13796,9 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_bkg_source(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         lo=None, hi=None,
-                        bkg_id: Optional[IdType] = None,
+                        bkg_id: IdType | None = None,
                         replot=False, overplot=False, clearwindow=True,
                         **kwargs) -> None:
         """Plot the model expression for the background of a PHA data set.
@@ -13859,10 +13861,10 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_energy_flux(self, lo=None, hi=None,
-                         id: Optional[IdType] = None,
+                         id: IdType | None = None,
                          num=7500, bins=75,
                          correlated=False, numcores=None,
-                         bkg_id: Optional[IdType] = None,
+                         bkg_id: IdType | None = None,
                          scales=None, model=None,
                          otherids: Sequence[IdType] = (),
                          recalc=True, clip='hard',
@@ -14018,10 +14020,10 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_photon_flux(self, lo=None, hi=None,
-                         id: Optional[IdType] = None,
+                         id: IdType | None = None,
                          num=7500, bins=75,
                          correlated=False, numcores=None,
-                         bkg_id: Optional[IdType] = None,
+                         bkg_id: IdType | None = None,
                          scales=None, model=None,
                          otherids: Sequence[IdType] = (),
                          recalc=True, clip='hard',
@@ -14219,8 +14221,8 @@ class Session(sherpa.ui.utils.Session):
             p2prefs['xlog'] = oldval
 
     def plot_bkg_fit_ratio(self,
-                           id: Optional[IdType] = None,
-                           bkg_id: Optional[IdType] = None,
+                           id: IdType | None = None,
+                           bkg_id: IdType | None = None,
                            replot=False, overplot=False, clearwindow=True,
                            **kwargs) -> None:
         """Plot the fit results, and the data/model ratio, for the background of
@@ -14298,8 +14300,8 @@ class Session(sherpa.ui.utils.Session):
                              **kwargs)
 
     def plot_bkg_fit_resid(self,
-                           id: Optional[IdType] = None,
-                           bkg_id: Optional[IdType] = None,
+                           id: IdType | None = None,
+                           bkg_id: IdType | None = None,
                            replot=False, overplot=False, clearwindow=True,
                            **kwargs) -> None:
         """Plot the fit results, and the residuals, for the background of
@@ -14378,8 +14380,8 @@ class Session(sherpa.ui.utils.Session):
                              **kwargs)
 
     def plot_bkg_fit_delchi(self,
-                            id: Optional[IdType] = None,
-                            bkg_id: Optional[IdType] = None,
+                            id: IdType | None = None,
+                            bkg_id: IdType | None = None,
                             replot=False, overplot=False, clearwindow=True,
                             **kwargs) -> None:
         """Plot the fit results, and the residuals, for the background of
@@ -14463,9 +14465,9 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     def resample_data(self,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       niter: int = 1000,
-                      seed: Optional[int] = None
+                      seed: int | None = None
                       ) -> dict[str, np.ndarray]:
         """Resample data with asymmetric error bars.
 
@@ -14577,11 +14579,11 @@ class Session(sherpa.ui.utils.Session):
                             rng=self.get_rng())
 
     def sample_photon_flux(self, lo=None, hi=None,
-                           id: Optional[IdType] = None,
+                           id: IdType | None = None,
                            num=1,
                            scales=None, correlated=False,
                            numcores=None,
-                           bkg_id: Optional[IdType] = None,
+                           bkg_id: IdType | None = None,
                            model=None,
                            otherids: Sequence[IdType] = (),
                            clip='hard'):
@@ -14818,11 +14820,11 @@ class Session(sherpa.ui.utils.Session):
                                              rng=self.get_rng())
 
     def sample_energy_flux(self, lo=None, hi=None,
-                           id: Optional[IdType] = None,
+                           id: IdType | None = None,
                            num=1,
                            scales=None, correlated=False,
                            numcores=None,
-                           bkg_id: Optional[IdType] = None,
+                           bkg_id: IdType | None = None,
                            model=None,
                            otherids: Sequence[IdType] = (),
                            clip='hard'):
@@ -15059,10 +15061,10 @@ class Session(sherpa.ui.utils.Session):
                                              rng=self.get_rng())
 
     def sample_flux(self, modelcomponent=None, lo=None, hi=None,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     num=1, scales=None, correlated=False,
                     numcores=None,
-                    bkg_id: Optional[IdType] = None,
+                    bkg_id: IdType | None = None,
                     Xrays=True, confidence=68):
         """Return the flux distribution of a model.
 
@@ -15284,9 +15286,9 @@ class Session(sherpa.ui.utils.Session):
                                                   confidence=confidence)
 
     def eqwidth(self, src, combo,
-                id: Optional[IdType] = None,
+                id: IdType | None = None,
                 lo=None, hi=None,
-                bkg_id: Optional[IdType] = None,
+                bkg_id: IdType | None = None,
                 error=False, params=None,
                 otherids: Sequence[IdType] = (),
                 niter=1000,
@@ -15479,8 +15481,8 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
     def calc_photon_flux(self, lo=None, hi=None,
-                         id: Optional[IdType] = None,
-                         bkg_id: Optional[IdType] = None,
+                         id: IdType | None = None,
+                         bkg_id: IdType | None = None,
                          model=None):
         """Integrate the unconvolved source model over a pass band.
 
@@ -15600,8 +15602,8 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
 
     def calc_energy_flux(self, lo=None, hi=None,
-                         id: Optional[IdType] = None,
-                         bkg_id: Optional[IdType] = None,
+                         id: IdType | None = None,
+                         bkg_id: IdType | None = None,
                          model=None):
         """Integrate the unconvolved source model over a pass band.
 
@@ -15720,8 +15722,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how do lo/hi limits interact with bin edges;
     # is it all in or partially in or ...
     def calc_data_sum(self, lo=None, hi=None,
-                      id: Optional[IdType] = None,
-                      bkg_id: Optional[IdType] = None):
+                      id: IdType | None = None,
+                      bkg_id: IdType | None = None):
         """Sum up the data values over a pass band.
 
         This function is for one-dimensional data sets: use
@@ -15814,8 +15816,8 @@ class Session(sherpa.ui.utils.Session):
     # leave here.
     #
     def calc_model(self,
-                   id: Optional[IdType] = None,
-                   bkg_id: Optional[IdType] = None
+                   id: IdType | None = None,
+                   bkg_id: IdType | None = None
                    ) -> tuple[tuple[np.ndarray, ...], np.ndarray]:
         """Calculate the per-bin model values.
 
@@ -15939,8 +15941,8 @@ class Session(sherpa.ui.utils.Session):
     # leave here.
     #
     def calc_source(self,
-                   id: Optional[IdType] = None,
-                   bkg_id: Optional[IdType] = None
+                   id: IdType | None = None,
+                   bkg_id: IdType | None = None
                    ) -> tuple[tuple[np.ndarray, ...], np.ndarray]:
         """Calculate the per-bin source values.
 
@@ -16063,8 +16065,8 @@ class Session(sherpa.ui.utils.Session):
     #           calc_source_sum
     #
     def calc_model_sum(self, lo=None, hi=None,
-                       id: Optional[IdType] = None,
-                       bkg_id: Optional[IdType] = None):
+                       id: IdType | None = None,
+                       bkg_id: IdType | None = None):
         """Sum up the fitted model over a pass band.
 
         Sum up M(E) over a range of bins, where M(E) is the per-bin model
@@ -16169,7 +16171,7 @@ class Session(sherpa.ui.utils.Session):
 
     def calc_data_sum2d(self,
                         reg=None,
-                        id: Optional[IdType] = None):
+                        id: IdType | None = None):
         """Sum up the data values of a 2D data set.
 
         This function is for two-dimensional data sets: use
@@ -16247,7 +16249,7 @@ class Session(sherpa.ui.utils.Session):
     #           the PSF doesn't really help)
     # DOC-TODO: this needs testing as doesn't seem to be working for me
     def calc_model_sum2d(self, reg=None,
-                         id: Optional[IdType] = None):
+                         id: IdType | None = None):
         """Sum up the convolved model for a 2D data set.
 
         This function is for two-dimensional data sets: use
@@ -16326,7 +16328,7 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_model_sum2d(data, model, reg)
 
     def calc_source_sum2d(self, reg=None,
-                          id: Optional[IdType] = None):
+                          id: IdType | None = None):
         """Sum up the unconvolved model for a 2D data set.
 
         This function is for two-dimensional data sets: use
@@ -16405,8 +16407,8 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_model_sum2d(data, src, reg)
 
     def calc_source_sum(self, lo=None, hi=None,
-                        id: Optional[IdType] = None,
-                        bkg_id: Optional[IdType] = None):
+                        id: IdType | None = None,
+                        bkg_id: IdType | None = None):
         """Sum up the source model over a pass band.
 
         Sum up S(E) over a range of bins, where S(E) is the per-bin model
@@ -16517,8 +16519,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: no reason can't k-correct wavelength range,
     # but need to work out how to identify the units
     def calc_kcorr(self, z, obslo, obshi, restlo=None, resthi=None,
-                   id: Optional[IdType] = None,
-                   bkg_id: Optional[IdType] = None):
+                   id: IdType | None = None,
+                   bkg_id: IdType | None = None):
         """Calculate the K correction for a model.
 
         The K correction ([1], [2], [3], [4]) is the numeric

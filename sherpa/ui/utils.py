@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015 - 2024
+#  Copyright (C) 2010, 2015-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,6 +20,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from configparser import ConfigParser
 import copy
 import copyreg as copy_reg
@@ -29,8 +30,7 @@ import logging
 import os
 import pickle
 import sys
-from typing import Any, Callable, Literal, Optional, Sequence, \
-    TypeVar, Union, overload
+from typing import Any, Literal, TypeVar, overload
 
 import numpy as np
 
@@ -71,7 +71,7 @@ BUILTINS = sys.modules["builtins"]
 _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 
 
-ModelType = Union[Model, str]
+ModelType = Model | str
 T = TypeVar("T")
 
 
@@ -192,9 +192,9 @@ def _get_filter(data):
 
 
 def report_filter_change(idstr: str,
-                         ofilter: Optional[str],
-                         nfilter: Optional[str],
-                         xlabel: Optional[str] = None
+                         ofilter: str | None,
+                         nfilter: str | None,
+                         xlabel: str | None = None
                          ) -> None:
     """Report the filter change for ignore/filter.
 
@@ -328,13 +328,13 @@ def notice_data_range(get_data: Callable[[IdType], Data],
 
 @overload
 def calc_multiplot_size(rows: int,
-                        cols: Optional[int],
+                        cols: int | None,
                         nplots: int
                         ) -> tuple[int, int]:
     ...
 
 @overload
-def calc_multiplot_size(rows: Optional[int],
+def calc_multiplot_size(rows: int | None,
                         cols: int,
                         nplots: int
                         ) -> tuple[int, int]:
@@ -1102,7 +1102,7 @@ class Session(NoNewAttributesAfterInit):
             'source_component': sherpa.image.ComponentSourceImage()
         }
 
-    def get_rng(self) -> Optional[RandomType]:
+    def get_rng(self) -> RandomType | None:
         """Return the RNG generator in use.
 
         The return can be None, which means that the routines in
@@ -1122,7 +1122,7 @@ class Session(NoNewAttributesAfterInit):
 
         return self._rng
 
-    def set_rng(self, rng: Optional[RandomType]) -> None:
+    def set_rng(self, rng: RandomType | None) -> None:
         """Set the RNG generator.
 
         .. versionadded:: 4.16.0
@@ -1311,7 +1311,7 @@ class Session(NoNewAttributesAfterInit):
             for name, cmpt in self._model_components.items():
                 self._model_autoassign_func(name, cmpt)
 
-    def _get_show_data(self, id: Optional[IdType] = None) -> str:
+    def _get_show_data(self, id: IdType | None = None) -> str:
         data_str = ''
         ids = self.list_data_ids()
         if id is not None:
@@ -1321,7 +1321,7 @@ class Session(NoNewAttributesAfterInit):
             data_str += str(self.get_data(id)) + '\n\n'
         return data_str
 
-    def _get_show_filter(self, id: Optional[IdType] = None) -> str:
+    def _get_show_filter(self, id: IdType | None = None) -> str:
         filt_str = ''
         ids = self.list_data_ids()
         if id is not None:
@@ -1331,7 +1331,7 @@ class Session(NoNewAttributesAfterInit):
             filt_str += self.get_data(id).get_filter_expr() + '\n\n'
         return filt_str
 
-    def _get_show_model(self, id: Optional[IdType] = None) -> str:
+    def _get_show_model(self, id: IdType | None = None) -> str:
         model_str = ''
         ids = self.list_data_ids()
         mdl_ids = self.list_model_ids()
@@ -1343,7 +1343,7 @@ class Session(NoNewAttributesAfterInit):
                 model_str += str(self.get_model(id)) + '\n\n'
         return model_str
 
-    def _get_show_source(self, id: Optional[IdType] = None) -> str:
+    def _get_show_source(self, id: IdType | None = None) -> str:
         model_str = ''
         ids = self.list_data_ids()
         src_ids = self._sources.keys()
@@ -1355,7 +1355,7 @@ class Session(NoNewAttributesAfterInit):
                 model_str += str(self.get_source(id)) + '\n\n'
         return model_str
 
-    def _get_show_kernel(self, id: Optional[IdType] = None) -> str:
+    def _get_show_kernel(self, id: IdType | None = None) -> str:
         kernel_str = ''
         ids = self.list_data_ids()
         if id is not None:
@@ -1367,7 +1367,7 @@ class Session(NoNewAttributesAfterInit):
                 kernel_str += str(self.get_psf(id)) + '\n\n'
         return kernel_str
 
-    def _get_show_psf(self, id: Optional[IdType] = None) -> str:
+    def _get_show_psf(self, id: IdType | None = None) -> str:
         psf_str = ''
         ids = self.list_data_ids()
         if id is not None:
@@ -1547,7 +1547,7 @@ class Session(NoNewAttributesAfterInit):
         send_to_pager(txt, outfile, clobber)
 
     def show_data(self,
-                  id: Optional[IdType] = None,
+                  id: IdType | None = None,
                   outfile=None, clobber=False) -> None:
         """Summarize the available data sets.
 
@@ -1585,7 +1585,7 @@ class Session(NoNewAttributesAfterInit):
         send_to_pager(txt, outfile, clobber)
 
     def show_filter(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     outfile=None, clobber=False) -> None:
         """Show any filters applied to a data set.
 
@@ -1626,7 +1626,7 @@ class Session(NoNewAttributesAfterInit):
         send_to_pager(txt, outfile, clobber)
 
     def show_model(self,
-                   id: Optional[IdType] = None,
+                   id: IdType | None = None,
                    outfile=None, clobber=False) -> None:
         """Display the model expression used to fit a data set.
 
@@ -1670,7 +1670,7 @@ class Session(NoNewAttributesAfterInit):
         send_to_pager(txt, outfile, clobber)
 
     def show_source(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     outfile=None, clobber=False) -> None:
         """Display the source model expression for a data set.
 
@@ -1714,7 +1714,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how and where to describe the PSF/kernel difference
     # as the Notes section below is inadequate
     def show_kernel(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     outfile=None, clobber=False) -> None:
         """Display any kernel applied to a data set.
 
@@ -1771,7 +1771,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how and where to describe the PSF/kernel difference
     # as the Notes section below is inadequate
     def show_psf(self,
-                 id: Optional[IdType] = None,
+                 id: IdType | None = None,
                  outfile=None, clobber=False) -> None:
         """Display any PSF model applied to a data set.
 
@@ -1925,7 +1925,7 @@ class Session(NoNewAttributesAfterInit):
         send_to_pager(txt, outfile, clobber)
 
     def show_all(self,
-                 id: Optional[IdType] = None,
+                 id: IdType | None = None,
                  outfile=None, clobber=False) -> None:
         """Report the current state of the Sherpa session.
 
@@ -2052,7 +2052,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return (_is_integer(id) or _is_str(id))
 
-    def _fix_id(self, id: Optional[IdType]) -> IdType:
+    def _fix_id(self, id: IdType | None) -> IdType:
         """Validate the dataset id.
 
         The identifier can be any string or integer except for the
@@ -2170,7 +2170,7 @@ class Session(NoNewAttributesAfterInit):
     # values.
     #
     def _get_item(self,
-                  id: Optional[IdType],
+                  id: IdType | None,
                   itemdict: dict[IdType, T],
                   itemdesc: str,
                   errdesc: str
@@ -2182,7 +2182,7 @@ class Session(NoNewAttributesAfterInit):
         return item
 
     def _set_item(self,
-                  id: Optional[IdType],
+                  id: IdType | None,
                   item: T,
                   itemdict: dict[IdType, T],
                   itemtype,
@@ -2309,7 +2309,7 @@ class Session(NoNewAttributesAfterInit):
         return meth
 
     def get_method(self,
-                   name: Optional[str] = None
+                   name: str | None = None
                    ) -> OptMethod:
         """Return an optimization method.
 
@@ -2401,7 +2401,7 @@ class Session(NoNewAttributesAfterInit):
     # relevant documentation has been updated.
     #
     def set_method(self,
-                   meth: Union[OptMethod, str]
+                   meth: OptMethod | str
                    ) -> None:
         """Set the optimization method.
 
@@ -2501,7 +2501,7 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr('badopt', optname, self.get_method_name())
 
     def get_method_opt(self,
-                       optname: Optional[str] = None
+                       optname: str | None = None
                        ) -> Any:
         """Return one or all of the options for the current optimization
         method.
@@ -2607,7 +2607,7 @@ class Session(NoNewAttributesAfterInit):
         return self._current_itermethod['name']
 
     def get_iter_method_opt(self,
-                            optname: Optional[str] = None
+                            optname: str | None = None
                             ) -> Any:
         """Return one or all options for the iterative-fitting scheme.
 
@@ -3122,7 +3122,7 @@ class Session(NoNewAttributesAfterInit):
         keys.sort(key=str)  # always sort by string value.
         return keys
 
-    def get_data(self, id: Optional[IdType] = None) -> Data:
+    def get_data(self, id: IdType | None = None) -> Data:
         """Return the data set by identifier.
 
         The object returned by the call can be used to query and
@@ -3169,7 +3169,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_item(id, self._data, 'data set', 'has not been set')
 
-    def _get_data(self, id: Optional[IdType]) -> Optional[Data]:
+    def _get_data(self, id: IdType | None) -> Data | None:
         """Return a data set or None.
 
         The same as get_data except that it returns None if the
@@ -3665,7 +3665,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     def get_staterror(self,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       filter=False):
         """Return the statistical error on the dependent axis of a data set.
 
@@ -3746,7 +3746,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     def get_syserror(self,
-                     id: Optional[IdType] = None,
+                     id: IdType | None = None,
                      filter=False):
         """Return the systematic error on the dependent axis of a data set.
 
@@ -3819,7 +3819,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     def get_error(self,
-                  id: Optional[IdType] = None,
+                  id: IdType | None = None,
                   filter=False):
         """Return the errors on the dependent axis of a data set.
 
@@ -3891,7 +3891,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-NOTE: shouldn't this expose a filter parameter?
     def get_indep(self,
-                  id: Optional[IdType] = None):
+                  id: IdType | None = None):
         """Return the independent axes of a data set.
 
         This function returns the coordinates of each point, or pixel,
@@ -3943,7 +3943,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     def get_dep(self,
-                id: Optional[IdType] = None,
+                id: IdType | None = None,
                 filter=False):
         """Return the dependent axis of a data set.
 
@@ -4005,7 +4005,7 @@ class Session(NoNewAttributesAfterInit):
         return self.get_data(id).get_y(filter)
 
     def get_dims(self,
-                 id: Optional[IdType] = None,
+                 id: IdType | None = None,
                  filter=False):
         """Return the dimensions of the data set.
 
@@ -4048,9 +4048,9 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: should there be a version in sherpa.astro.utils with a bkg_id
     # parameter?
     def get_filter(self,
-                   id: Optional[IdType] = None,
-                   format: Optional[str] = None,
-                   delim: Optional[str] = None
+                   id: IdType | None = None,
+                   format: str | None = None,
+                   delim: str | None = None
                    ) -> str:
         """Return the filter expression for a data set.
 
@@ -4221,7 +4221,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: this does not delete the source expression;
     # is this intended or a bug?
-    def delete_data(self, id: Optional[IdType] = None) -> None:
+    def delete_data(self, id: IdType | None = None) -> None:
         """Delete a data set by identifier.
 
         The data set, and any associated structures - such as the ARF
@@ -4262,7 +4262,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     def dataspace1d(self, start, stop, step=1, numbins=None,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     dstype=sherpa.data.Data1DInt
                     ) -> None:
         """Create the independent axis for a 1D data set.
@@ -4350,7 +4350,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     def dataspace2d(self, dims,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     dstype=sherpa.data.Data2D
                     ) -> None:
         """Create the independent axis for a 2D data set.
@@ -4404,7 +4404,7 @@ class Session(NoNewAttributesAfterInit):
         self.set_data(id, dataset)
 
     def fake(self,
-             id: Optional[IdType] = None,
+             id: IdType | None = None,
              method=sherpa.utils.poisson_noise
              ) -> None:
         """Simulate a data set.
@@ -5598,15 +5598,15 @@ class Session(NoNewAttributesAfterInit):
                          linebreak=linebreak, format=format)
 
     def _notice_expr(self,
-                     expr: Optional[str] = None,
+                     expr: str | None = None,
                      **kwargs) -> None:
         ids = self.list_data_ids()
         for vals in sherpa.utils.parse_expr(expr):
             self.notice_id(ids, *vals, **kwargs)
 
     def _notice_expr_id(self,
-                        ids: Union[IdType, Sequence[IdType]],
-                        expr: Optional[str] = None,
+                        ids: IdType | Sequence[IdType],
+                        expr: str | None = None,
                         **kwargs) -> None:
         for vals in sherpa.utils.parse_expr(expr):
             self.notice_id(ids, *vals, **kwargs)
@@ -5859,7 +5859,7 @@ class Session(NoNewAttributesAfterInit):
     # worth creating a copy of the routine just for this.
     #
     def notice_id(self,
-                  ids: Union[IdType, Sequence[IdType]],
+                  ids: IdType | Sequence[IdType],
                   lo=None, hi=None, **kwargs
                   ) -> None:
         """Include data from the fit for a data set.
@@ -5973,7 +5973,7 @@ class Session(NoNewAttributesAfterInit):
     # worth creating a copy of the routine just for this.
     #
     def ignore_id(self,
-                  ids: Union[IdType, Sequence[IdType]],
+                  ids: IdType | Sequence[IdType],
                   lo=None, hi=None, **kwargs
                   ) -> None:
         """Exclude data from the fit for a data set.
@@ -6239,7 +6239,7 @@ class Session(NoNewAttributesAfterInit):
     # fails with AttributeError: 'Session' object attribute
     # '_model_autoassign_func' cannot be replaced with a non-callable attribute
     def set_model_autoassign_func(self,
-                                  func: Optional[Callable[[str, Model], None]] = None
+                                  func: Callable[[str, Model], None] | None = None
                                   ) -> None:
         """Set the method used to create model component identifiers.
 
@@ -6421,7 +6421,7 @@ class Session(NoNewAttributesAfterInit):
     def _get_model_component(self,
                              name: str,
                              require: Literal[False]
-                             ) -> Optional[Model]:
+                             ) -> Model | None:
         ...
 
     @overload
@@ -6431,7 +6431,10 @@ class Session(NoNewAttributesAfterInit):
                              ) -> Model:
         ...
 
-    def _get_model_component(self, name, require=False):
+    def _get_model_component(self,
+                             name: str,
+                             require: bool = False
+                             ) -> Model | None:
         """Access the model component by name.
 
         Parameters
@@ -6603,7 +6606,7 @@ class Session(NoNewAttributesAfterInit):
         return model
 
     def reset(self, model=None,
-              id: Optional[IdType] = None
+              id: IdType | None = None
               ) -> None:
         """Reset the model parameters to their default settings.
 
@@ -6767,7 +6770,7 @@ class Session(NoNewAttributesAfterInit):
     # Return full model for fitting, plotting, etc.  Expects a corresponding
     # data set to be available.
     def _get_model_status(self,
-                          id: Optional[IdType] = None):
+                          id: IdType | None = None):
         id = self._fix_id(id)
         src = self._sources.get(id)
         mdl = self._models.get(id)
@@ -6785,7 +6788,7 @@ class Session(NoNewAttributesAfterInit):
         return (model, is_source)
 
     def _add_convolution_models(self,
-                                id: Optional[IdType],
+                                id: IdType | None,
                                 data, model, is_source):
         """Add in "hidden" components to the model expression.
 
@@ -6809,7 +6812,7 @@ class Session(NoNewAttributesAfterInit):
         return model
 
     def get_source(self,
-                   id: Optional[IdType] = None
+                   id: IdType | None = None
                    ) -> Model:
         """Return the source model expression for a data set.
 
@@ -6872,7 +6875,7 @@ class Session(NoNewAttributesAfterInit):
                               'set_source() or set_model()')
 
     def get_model(self,
-                  id: Optional[IdType] = None
+                  id: IdType | None = None
                   ) -> Model:
         """Return the model expression for a data set.
 
@@ -7176,7 +7179,7 @@ class Session(NoNewAttributesAfterInit):
     set_source = set_model
 
     def delete_model(self,
-                     id: Optional[IdType] = None
+                     id: IdType | None = None
                      ) -> None:
         """Delete the model expression for a data set.
 
@@ -7348,7 +7351,7 @@ class Session(NoNewAttributesAfterInit):
         names.extend(p.name for p in mdl.lpars)
         return names
 
-    def get_num_par(self, id: Optional[IdType] = None) -> int:
+    def get_num_par(self, id: IdType | None = None) -> int:
         """Return the number of parameters in a model expression.
 
         The `get_num_par` function returns the number of parameters,
@@ -7400,7 +7403,7 @@ class Session(NoNewAttributesAfterInit):
         mdl = self.get_source(id)
         return len(mdl.pars) + len(mdl.lpars)
 
-    def get_num_par_thawed(self, id: Optional[IdType] = None) -> int:
+    def get_num_par_thawed(self, id: IdType | None = None) -> int:
         """Return the number of thawed parameters in a model expression.
 
         The `get_num_par_thawed` function returns the number of
@@ -7452,7 +7455,7 @@ class Session(NoNewAttributesAfterInit):
         mdl = self.get_source(id)
         return len(mdl.thawedpars)
 
-    def get_num_par_frozen(self, id: Optional[IdType] = None) -> int:
+    def get_num_par_frozen(self, id: IdType | None = None) -> int:
         """Return the number of frozen parameters in a model expression.
 
         The `get_num_par_frozen` function returns the number of
@@ -8366,7 +8369,7 @@ class Session(NoNewAttributesAfterInit):
             except NotImplementedError:
                 pass
 
-    def get_psf(self, id: Optional[IdType] = None):
+    def get_psf(self, id: IdType | None = None):
         """Return the PSF model defined for a data set.
 
         Return the parameter settings for the PSF model assigned to
@@ -8408,7 +8411,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_item(id, self._psf, 'psf model', 'has not been set')
 
-    def delete_psf(self, id: Optional[IdType] = None) -> None:
+    def delete_psf(self, id: IdType | None = None) -> None:
         """Delete the PSF model for a data set.
 
         Remove the PSF convolution applied to a source model.
@@ -8458,7 +8461,7 @@ class Session(NoNewAttributesAfterInit):
         keys = list(self._psf.keys())
         return sorted(keys, key=str)
 
-    def _add_psf(self, id: Optional[IdType], data, model):
+    def _add_psf(self, id: IdType | None, data, model):
         idval = self._fix_id(id)
         psf = self._psf.get(idval, None)
 
@@ -8810,8 +8813,8 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
     def _get_fit_ids(self,
-                     id: Optional[IdType],
-                     otherids: Optional[Sequence[IdType]] = None
+                     id: IdType | None,
+                     otherids: Sequence[IdType] | None = None
                      ) -> list[IdType]:
         """Return the identifiers that will be used for a fit.
 
@@ -8890,7 +8893,7 @@ class Session(NoNewAttributesAfterInit):
 
         # Data and DataSimulFit do not have a common base class.
         #
-        d: Union[Data, DataSimulFit]
+        d: Data | DataSimulFit
         if len(store) == 1:
             d = store[0].data
             m = store[0].model
@@ -8914,7 +8917,7 @@ class Session(NoNewAttributesAfterInit):
                                   estmethod, self._current_itermethod)
 
     def _prepare_fit(self,
-                     id: Optional[IdType],
+                     id: IdType | None,
                      otherids: Sequence[IdType] = ()
                      ) -> list[FitStore]:
         """Ensure we have all the requested ids, datasets, and models.
@@ -8967,7 +8970,7 @@ class Session(NoNewAttributesAfterInit):
         return out
 
     def _get_fit(self,
-                 id: Optional[IdType],
+                 id: IdType | None,
                  otherids: Sequence[IdType] = (),
                  estmethod=None, numcores=1
                  ) -> tuple[tuple[IdType, ...], Fit]:
@@ -9443,7 +9446,7 @@ class Session(NoNewAttributesAfterInit):
             warning('No guess found for %s', self.get_model(idval).name)
 
     def calc_stat(self,
-                  id: Optional[IdType] = None,
+                  id: IdType | None = None,
                   *otherids: IdType):
         """Calculate the fit statistic for a data set.
 
@@ -9502,7 +9505,7 @@ class Session(NoNewAttributesAfterInit):
         return f.calc_stat()
 
     def calc_chisqr(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     *otherids: IdType):
         """Calculate the per-bin chi-squared statistic.
 
@@ -9564,7 +9567,7 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils
     def fit(self,
-            id: Optional[IdType] = None,
+            id: IdType | None = None,
             *otherids: IdType,
             **kwargs
             ) -> None:
@@ -9997,7 +10000,7 @@ class Session(NoNewAttributesAfterInit):
     # to see how to do
 
     def normal_sample(self, num=1, sigma=1, correlate=True,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       otherids: Sequence[IdType] = (),
                       numcores=None):
         """Sample the fit statistic by taking the parameter values
@@ -10069,7 +10072,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: improve the description of factor parameter
     def uniform_sample(self, num=1, factor=4,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        otherids: Sequence[IdType] = (),
                        numcores=None):
         """Sample the fit statistic by taking the parameter values
@@ -10126,7 +10129,7 @@ class Session(NoNewAttributesAfterInit):
         return sherpa.sim.uniform_sample(fit, num, factor, numcores)
 
     def t_sample(self, num=1, dof=None,
-                 id: Optional[IdType] = None,
+                 id: IdType | None = None,
                  otherids: Sequence[IdType] = (),
                  numcores=None):
         """Sample the fit statistic by taking the parameter values from
@@ -11846,7 +11849,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: add pointers on what to do with the return values
     def get_draws(self,
-                  id: Optional[IdType] = None,
+                  id: IdType | None = None,
                   otherids: Sequence[IdType] = (),
                   niter=1000, covar_matrix=None):
         """Run the pyBLoCXS MCMC algorithm.
@@ -11997,7 +12000,7 @@ class Session(NoNewAttributesAfterInit):
         return self._splitplot
 
     def get_data_plot(self,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       recalc=True):
         """Return the data used by plot_data.
 
@@ -12054,7 +12057,7 @@ class Session(NoNewAttributesAfterInit):
     #
     def get_plot_prefs(self,
                        plottype: str,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        **kwargs):
         """Return the preferences for the given plot type.
 
@@ -12125,7 +12128,7 @@ class Session(NoNewAttributesAfterInit):
         return get_plot_prefs(plotobj)
 
     def get_data_plot_prefs(self,
-                            id: Optional[IdType] = None):
+                            id: IdType | None = None):
         """Return the preferences for plot_data.
 
         The plot preferences may depend on the data set,
@@ -12231,7 +12234,7 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        recalc=True):
         """Return the data used to create the model plot.
 
@@ -12279,7 +12282,7 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils (does not copy this docstring)
     def get_source_plot(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         recalc=True):
         """Return the data used to create the source plot.
 
@@ -12424,7 +12427,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_model_components_plot(self,
-                                  id: Optional[IdType] = None
+                                  id: IdType | None = None
                                   ) -> MultiPlot:
         """Return the data used by plot_model_components.
 
@@ -12548,7 +12551,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_source_components_plot(self,
-                                   id: Optional[IdType] = None
+                                   id: IdType | None = None
                                    ) -> MultiPlot:
         """Return the data used by plot_source_components.
 
@@ -12593,7 +12596,7 @@ class Session(NoNewAttributesAfterInit):
         return get_components_helper(self.get_source_component_plot,
                                      model=model, idval=idval)
 
-    def get_model_plot_prefs(self, id: Optional[IdType] = None):
+    def get_model_plot_prefs(self, id: IdType | None = None):
         """Return the preferences for plot_model.
 
         The plot preferences may depend on the data set,
@@ -12647,7 +12650,7 @@ class Session(NoNewAttributesAfterInit):
         return get_plot_prefs(plotobj)
 
     def get_fit_plot(self,
-                     id: Optional[IdType] = None,
+                     id: IdType | None = None,
                      recalc=True):
         """Return the data used to create the fit plot.
 
@@ -12716,7 +12719,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_resid_plot(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        recalc=True):
         """Return the data used by plot_resid.
 
@@ -12792,7 +12795,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_delchi_plot(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         recalc=True):
         """Return the data used by plot_delchi.
 
@@ -12869,7 +12872,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_chisqr_plot(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         recalc=True):
         """Return the data used by plot_chisqr.
 
@@ -12946,7 +12949,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_ratio_plot(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        recalc=True):
         """Return the data used by plot_ratio.
 
@@ -13023,7 +13026,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_data_contour(self,
-                         id: Optional[IdType] = None,
+                         id: IdType | None = None,
                          recalc=True):
         """Return the data used by contour_data.
 
@@ -13075,7 +13078,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_contour_prefs(self,
                           contourtype: str,
-                          id: Optional[IdType] = None):
+                          id: IdType | None = None):
         """Return the preferences for the given contour type.
 
         .. versionadded:: 4.16.0
@@ -13186,7 +13189,7 @@ class Session(NoNewAttributesAfterInit):
         return self.get_data_contour(id, recalc=False).contour_prefs
 
     def get_model_contour(self,
-                          id: Optional[IdType] = None,
+                          id: IdType | None = None,
                           recalc=True):
         """Return the data used by contour_model.
 
@@ -13237,7 +13240,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_source_contour(self,
-                           id: Optional[IdType] = None,
+                           id: IdType | None = None,
                            recalc=True):
         """Return the data used by contour_source.
 
@@ -13338,7 +13341,7 @@ class Session(NoNewAttributesAfterInit):
         return self.get_model_contour(id, recalc=False).contour_prefs
 
     def get_fit_contour(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         recalc=True):
         """Return the data used by contour_fit.
 
@@ -13395,7 +13398,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_resid_contour(self,
-                          id: Optional[IdType] = None,
+                          id: IdType | None = None,
                           recalc=True):
         """Return the data used by contour_resid.
 
@@ -13447,7 +13450,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_ratio_contour(self,
-                          id: Optional[IdType] = None,
+                          id: IdType | None = None,
                           recalc=True):
         """Return the data used by contour_ratio.
 
@@ -13499,7 +13502,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_psf_contour(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         recalc=True):
         """Return the data used by contour_psf.
 
@@ -13546,7 +13549,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_kernel_contour(self,
-                           id: Optional[IdType] = None,
+                           id: IdType | None = None,
                            recalc=True):
         """Return the data used by contour_kernel.
 
@@ -13594,7 +13597,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_psf_plot(self,
-                     id: Optional[IdType] = None,
+                     id: IdType | None = None,
                      recalc=True):
         """Return the data used by plot_psf.
 
@@ -13640,7 +13643,7 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_kernel_plot(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         recalc=True):
         """Return the data used by plot_kernel.
 
@@ -13691,8 +13694,8 @@ class Session(NoNewAttributesAfterInit):
     def _multi_plot(self,
                     args: Sequence[IdType],
                     plotmeth: Literal["plot", "contour"] = "plot",
-                    rows: Optional[int] = None,
-                    cols: Optional[int] = None,
+                    rows: int | None = None,
+                    cols: int | None = None,
                     **kwargs) -> None:
         """Handle the plot() or contour() call.
 
@@ -14084,8 +14087,8 @@ class Session(NoNewAttributesAfterInit):
     def plot(self,
              *args,
              # At present export_method does not support this
-             # rows: Optional[int] = None,
-             # cols: Optional[int] = None,
+             # rows: int | None = None,
+             # cols: int | None = None,
              **kwargs) -> None:
         """Create one or more plot types.
 
@@ -14324,7 +14327,7 @@ class Session(NoNewAttributesAfterInit):
         self._multi_plot(args, rows=rows, cols=cols, **kwargs)
 
     def plot_data(self,
-                  id: Optional[IdType] = None,
+                  id: IdType | None = None,
                   replot=False, overplot=False,
                   clearwindow=True, **kwargs) -> None:
         r"""Plot the data values.
@@ -14440,7 +14443,7 @@ class Session(NoNewAttributesAfterInit):
     #    even though its only relevant to sherpa.astro.ui
     #
     def plot_model(self,
-                   id: Optional[IdType] = None,
+                   id: IdType | None = None,
                    replot=False, overplot=False,
                    clearwindow=True, **kwargs) -> None:
         """Plot the model for a data set.
@@ -14597,7 +14600,7 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def plot_source_components(self,
-                               id: Optional[IdType] = None,
+                               id: IdType | None = None,
                                overplot=False,
                                clearwindow=True,
                                **kwargs) -> None:
@@ -14751,7 +14754,7 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def plot_model_components(self,
-                              id: Optional[IdType] = None,
+                              id: IdType | None = None,
                               overplot=False,
                               clearwindow=True,
                               **kwargs) -> None:
@@ -14815,7 +14818,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
     def plot_source(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     replot=False,
                     overplot=False, clearwindow=True,
                     **kwargs) -> None:
@@ -14897,7 +14900,7 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def plot_fit(self,
-                 id: Optional[IdType] = None,
+                 id: IdType | None = None,
                  replot=False, overplot=False,
                  clearwindow=True,
                  **kwargs) -> None:
@@ -14987,7 +14990,7 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def plot_resid(self,
-                   id: Optional[IdType] = None,
+                   id: IdType | None = None,
                    replot=False, overplot=False,
                    clearwindow=True,
                    **kwargs) -> None:
@@ -15072,7 +15075,7 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def plot_chisqr(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     replot=False, overplot=False,
                     clearwindow=True,
                     **kwargs) -> None:
@@ -15136,7 +15139,7 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def plot_delchi(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     replot=False, overplot=False,
                     clearwindow=True,
                     **kwargs) -> None:
@@ -15217,7 +15220,7 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def plot_ratio(self,
-                   id: Optional[IdType] = None,
+                   id: IdType | None = None,
                    replot=False, overplot=False,
                    clearwindow=True,
                    **kwargs) -> None:
@@ -15296,7 +15299,7 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def plot_psf(self,
-                 id: Optional[IdType] = None,
+                 id: IdType | None = None,
                  replot=False, overplot=False,
                  clearwindow=True,
                  **kwargs) -> None:
@@ -15358,7 +15361,7 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def plot_kernel(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     replot=False, overplot=False,
                     clearwindow=True,
                     **kwargs) -> None:
@@ -15473,7 +15476,7 @@ class Session(NoNewAttributesAfterInit):
             p2prefs['xlog'] = oldval
 
     def plot_fit_resid(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        replot=False, overplot=False,
                        clearwindow=True,
                        **kwargs) -> None:
@@ -15567,7 +15570,7 @@ class Session(NoNewAttributesAfterInit):
                          **kwargs)
 
     def plot_fit_ratio(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        replot=False, overplot=False,
                        clearwindow=True,
                        **kwargs) -> None:
@@ -15659,7 +15662,7 @@ class Session(NoNewAttributesAfterInit):
                          **kwargs)
 
     def plot_fit_delchi(self,
-                        id: Optional[IdType] = None,
+                        id: IdType | None = None,
                         replot=False, overplot=False,
                         clearwindow=True,
                         **kwargs) -> None:
@@ -16071,8 +16074,8 @@ class Session(NoNewAttributesAfterInit):
     def contour(self,
                 *args,
                 # At present export_method does not support this
-                # rows: Optional[int] = None,
-                # cols: Optional[int] = None,
+                # rows: int | None = None,
+                # cols: int | None = None,
                 **kwargs) -> None:
         """Create a contour plot for an image data set.
 
@@ -16181,7 +16184,7 @@ class Session(NoNewAttributesAfterInit):
                          cols=cols, **kwargs)
 
     def contour_data(self,
-                     id: Optional[IdType] = None,
+                     id: IdType | None = None,
                      replot=False, overcontour=False,
                      **kwargs) -> None:
         """Contour the values of an image data set.
@@ -16225,7 +16228,7 @@ class Session(NoNewAttributesAfterInit):
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_model(self,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       replot=False, overcontour=False,
                       **kwargs) -> None:
         """Create a contour plot of the model.
@@ -16275,7 +16278,7 @@ class Session(NoNewAttributesAfterInit):
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_source(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        replot=False, overcontour=False,
                        **kwargs) -> None:
         """Create a contour plot of the unconvolved spatial model.
@@ -16324,7 +16327,7 @@ class Session(NoNewAttributesAfterInit):
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_fit(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     replot=False, overcontour=False,
                     **kwargs) -> None:
         """Contour the fit to a data set.
@@ -16372,7 +16375,7 @@ class Session(NoNewAttributesAfterInit):
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_resid(self,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       replot=False, overcontour=False,
                       **kwargs) -> None:
         """Contour the residuals of the fit.
@@ -16419,7 +16422,7 @@ class Session(NoNewAttributesAfterInit):
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_ratio(self,
-                      id: Optional[IdType] = None,
+                      id: IdType | None = None,
                       replot=False, overcontour=False,
                       **kwargs) -> None:
         """Contour the ratio of data to model.
@@ -16466,7 +16469,7 @@ class Session(NoNewAttributesAfterInit):
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_psf(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     replot=False, overcontour=False,
                     **kwargs) -> None:
         """Contour the PSF applied to the model of an image data set.
@@ -16501,7 +16504,7 @@ class Session(NoNewAttributesAfterInit):
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_kernel(self,
-                       id: Optional[IdType] = None,
+                       id: IdType | None = None,
                        replot=False, overcontour=False,
                        **kwargs) -> None:
         """Contour the kernel applied to the model of an image data set.
@@ -16536,7 +16539,7 @@ class Session(NoNewAttributesAfterInit):
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_fit_resid(self,
-                          id: Optional[IdType] = None,
+                          id: IdType | None = None,
                           replot=False, overcontour=False,
                           **kwargs) -> None:
         """Contour the fit and the residuals to a data set.
@@ -16597,8 +16600,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: I am not convinced that this code is working when recalc=True
     # DOC-NOTE: needs to support the fast option of int_proj
     def get_int_proj(self, par=None,
-                     id: Optional[IdType] = None,
-                     otherids: Optional[Sequence[IdType]] = None,
+                     id: IdType | None = None,
+                     otherids: Sequence[IdType] | None = None,
                      recalc=False,
                      fast=True, min=None, max=None, nloop=20, delv=None, fac=1,
                      log=False, numcores=None):
@@ -16715,8 +16718,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: Check that this works (since get_int_proj may not) when
     # recalc=True
     def get_int_unc(self, par=None,
-                    id: Optional[IdType] = None,
-                    otherids: Optional[Sequence[IdType]] = None,
+                    id: IdType | None = None,
+                    otherids: Sequence[IdType] | None = None,
                     recalc=False,
                     min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                     numcores=None):
@@ -16828,8 +16831,8 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_reg_proj(self, par0=None, par1=None,
-                     id: Optional[IdType] = None,
-                     otherids: Optional[Sequence[IdType]] = None,
+                     id: IdType | None = None,
+                     otherids: Sequence[IdType] | None = None,
                      recalc=False, fast=True, min=None, max=None,
                      nloop=(10, 10), delv=None, fac=4, log=(False, False),
                      sigma=(1, 2, 3), levels=None, numcores=None):
@@ -16960,8 +16963,8 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_reg_unc(self, par0=None, par1=None,
-                    id: Optional[IdType] = None,
-                    otherids: Optional[Sequence[IdType]] = None,
+                    id: IdType | None = None,
+                    otherids: Sequence[IdType] | None = None,
                     recalc=False, min=None, max=None, nloop=(10, 10),
                     delv=None, fac=4, log=(False, False), sigma=(1, 2, 3),
                     levels=None, numcores=None):
@@ -17095,8 +17098,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: I am not convinced I have fac described correctly
     # DOC-NOTE: same synopsis as int_unc
     def int_proj(self, par,
-                 id: Optional[IdType] = None,
-                 otherids: Optional[Sequence[IdType]] = None,
+                 id: IdType | None = None,
+                 otherids: Sequence[IdType] | None = None,
                  replot=False, fast=True,
                  min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                  numcores=None,
@@ -17221,8 +17224,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: I am not convinced I have fac described correctly
     # DOC-NOTE: same synopsis as int_proj
     def int_unc(self, par,
-                id: Optional[IdType] = None,
-                otherids: Optional[Sequence[IdType]] = None,
+                id: IdType | None = None,
+                otherids: Sequence[IdType] | None = None,
                 replot=False, min=None,
                 max=None, nloop=20, delv=None, fac=1, log=False,
                 numcores=None,
@@ -17344,8 +17347,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self, par0, par1,
-                 id: Optional[IdType] = None,
-                 otherids: Optional[Sequence[IdType]] = None,
+                 id: IdType | None = None,
+                 otherids: Sequence[IdType] | None = None,
                  replot=False,
                  fast=True, min=None, max=None, nloop=(10, 10), delv=None,
                  fac=4, log=(False, False), sigma=(1, 2, 3), levels=None,
@@ -17480,8 +17483,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_unc(self, par0, par1,
-                id: Optional[IdType] = None,
-                otherids: Optional[Sequence[IdType]] = None,
+                id: IdType | None = None,
+                otherids: Sequence[IdType] | None = None,
                 replot=False,
                 min=None, max=None, nloop=(10, 10), delv=None, fac=4,
                 log=(False, False), sigma=(1, 2, 3), levels=None,
@@ -17631,7 +17634,7 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def get_data_image(self,
-                       id: Optional[IdType] = None):
+                       id: IdType | None = None):
         """Return the data used by image_data.
 
         Parameters
@@ -17675,7 +17678,7 @@ class Session(NoNewAttributesAfterInit):
         return imageobj
 
     def get_model_image(self,
-                        id: Optional[IdType] = None):
+                        id: IdType | None = None):
         """Return the data used by image_model.
 
         Evaluate the source expression for the image pixels -
@@ -17728,7 +17731,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: it looks like get_source_image doesn't raise DataErr with
     # a non-2D data set
     def get_source_image(self,
-                         id: Optional[IdType] = None):
+                         id: IdType | None = None):
         """Return the data used by image_source.
 
         Evaluate the source expression for the image pixels - without
@@ -17900,7 +17903,7 @@ class Session(NoNewAttributesAfterInit):
         return imageobj
 
     def get_ratio_image(self,
-                        id: Optional[IdType] = None):
+                        id: IdType | None = None):
         """Return the data used by image_ratio.
 
         Parameters
@@ -17944,7 +17947,7 @@ class Session(NoNewAttributesAfterInit):
         return imageobj
 
     def get_resid_image(self,
-                        id: Optional[IdType] = None):
+                        id: IdType | None = None):
         """Return the data used by image_resid.
 
         Parameters
@@ -17988,7 +17991,7 @@ class Session(NoNewAttributesAfterInit):
         return imageobj
 
     def get_psf_image(self,
-                      id: Optional[IdType] = None):
+                      id: IdType | None = None):
         """Return the data used by image_psf.
 
         Parameters
@@ -18029,7 +18032,7 @@ class Session(NoNewAttributesAfterInit):
         return imageobj
 
     def get_kernel_image(self,
-                         id: Optional[IdType] = None):
+                         id: IdType | None = None):
         """Return the data used by image_kernel.
 
         Parameters
@@ -18074,7 +18077,7 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def image_data(self,
-                   id: Optional[IdType] = None,
+                   id: IdType | None = None,
                    newframe=False,
                    tile=False) -> None:
         """Display a data set in the image viewer.
@@ -18135,7 +18138,7 @@ class Session(NoNewAttributesAfterInit):
         imageobj.image(newframe=newframe, tile=tile)
 
     def image_model(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     newframe=False,
                     tile=False) -> None:
         """Display the model for a data set in the image viewer.
@@ -18352,7 +18355,7 @@ class Session(NoNewAttributesAfterInit):
         imageobj.image(newframe=newframe, tile=tile)
 
     def image_source(self,
-                     id: Optional[IdType] = None,
+                     id: IdType | None = None,
                      newframe=False,
                      tile=False) -> None:
         """Display the source expression for a data set in the image viewer.
@@ -18422,7 +18425,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: does newframe make sense here?
     def image_fit(self,
-                  id: Optional[IdType] = None,
+                  id: IdType | None = None,
                   newframe=True, tile=True,
                   deleteframes=True) -> None:
         """Display the data, model, and residuals for a data set in the image viewer.
@@ -18495,7 +18498,7 @@ class Session(NoNewAttributesAfterInit):
         resid.image(None, newframe, tile)
 
     def image_resid(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     newframe=False,
                     tile=False) -> None:
         """Display the residuals (data - model) for a data set in the image viewer.
@@ -18565,7 +18568,7 @@ class Session(NoNewAttributesAfterInit):
         imageobj.image(newframe=newframe, tile=tile)
 
     def image_ratio(self,
-                    id: Optional[IdType] = None,
+                    id: IdType | None = None,
                     newframe=False,
                     tile=False) -> None:
         """Display the ratio (data/model) for a data set in the image viewer.
@@ -18623,7 +18626,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: what gets displayed when there is no PSF?
     def image_psf(self,
-                  id: Optional[IdType] = None,
+                  id: IdType | None = None,
                   newframe=False,
                   tile=False) -> None:
         """Display the 2D PSF model for a data set in the image viewer.
@@ -18679,7 +18682,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: where to point to for PSF/kernel discussion/description
     # (as it appears in a number of places)?
     def image_kernel(self,
-                     id: Optional[IdType] = None,
+                     id: IdType | None = None,
                      newframe=False,
                      tile=False) -> None:
         """Display the 2D kernel for a data set in the image viewer.
