@@ -37,9 +37,12 @@ def rosenbrock(x):
 SEED = 2354
 
 
-@pytest.mark.parametrize("rng", [None,
-                                 np.random.RandomState(2354)])
-def test_is_simplexbase_repeatable(rng):
+@pytest.mark.parametrize("kwargs",
+                         [{"seed": SEED, "rng": None},
+                          {"seed": SEED, "rng": np.random.RandomState(SEED)},
+                          {"seed": None, "rng": np.random.RandomState(SEED)},
+                          ])
+def test_is_simplexbase_repeatable(kwargs):
     """The SimplexBase* classes uses RNG, so can we make it repeatable?
 
     This is based on the 'if __name__ == "__main__"' section of
@@ -56,8 +59,8 @@ def test_is_simplexbase_repeatable(rng):
     xmin = [-1000, -1000]
     xmax = [1000, 1000]
     simp = SimplexRandom(func=rosenbrock, npop=4, xpar=x0, xmin=xmin,
-                         xmax=xmax, step=x0 + 1.2, seed=SEED,
-                         factor=10, rng=rng)
+                         xmax=xmax, step=x0 + 1.2, factor=10,
+                         **kwargs)
 
     # After the first line, which is the x0 array + function value,
     # the next three rows have 2 random numbers and then the function
@@ -72,7 +75,7 @@ def test_is_simplexbase_repeatable(rng):
 
 
 def test_is_simplexbase_repeatable_post_117():
-    """test_is_simplese_repeatable with a post NumPy 1.17 RNG.
+    """test_is_simplexbase_repeatable with a post NumPy 1.17 RNG.
 
     It's not clear how "repeatable" this will be (i.e. using
     a fixed seed is not guaranteed to give the same results
