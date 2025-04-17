@@ -2616,6 +2616,8 @@ def func_counter(func):
     warnings.warn("func_counter is deprecated in 4.17.0: use FuncCounter instead",
                   FutureWarning)
 
+    nfev = [0]
+
     def func_counter_wrapper(x, *args):
         nfev[0] += 1
         return func(x, *args)
