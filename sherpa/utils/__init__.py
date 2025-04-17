@@ -25,7 +25,7 @@ moved, changed, or removed.
 
 """
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 import inspect
 import logging
 import operator
@@ -34,8 +34,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Any, Callable, Generic, Optional, Sequence, \
-    TypeVar
+from typing import Any, Generic, Sequence, TypeVar
 import warnings
 
 import numpy as np
@@ -976,11 +975,11 @@ def pad_bounding_box(kernel, mask):
 eps = np.finfo(np.float32).eps
 
 
-def filter_bins(mins: Sequence[Optional[float]],
-                maxes: Sequence[Optional[float]],
+def filter_bins(mins: Sequence[float | None],
+                maxes: Sequence[float | None],
                 axislist: Sequence[Sequence[float]],
                 integrated: bool = False
-                ) -> Optional[np.ndarray]:
+                ) -> np.ndarray | None:
     """What mask represents the given set of filters?
 
     The ranges are treated as inclusive at both ends if integrated is
