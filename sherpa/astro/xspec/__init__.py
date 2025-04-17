@@ -108,11 +108,12 @@ import logging
 from pathlib import Path
 import string
 import tempfile
-from typing import Any, overload
+from typing import Any, Literal, overload
 import warnings
 
 import numpy as np
 
+from sherpa.astro.data import DataPHA
 from sherpa.astro.utils import get_xspec_norm, get_xspec_position
 from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
     CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
@@ -136,14 +137,15 @@ warning = logging.getLogger(__name__).warning
 # a structured type (e.g. a dataclass), but it's not clear how we want
 # this to evolve, so leave as a dict.
 #
-# The idea is that we do not always want to rely on the XSPEC model
-# library - since it doesn't always let you ask "what has the user
-# set", with the interface currently available to Sherpa - so we
-# record these settings manually.
+# We only want to note any changes the user has made to the paths or
+# versions, rather than storing in the state the default settings
+# (which may change with system or version).
 #
 xsstate: dict[str, Any] = {
-    "modelstrings": {},
+    "abundances": None,
     "paths": {},
+    "versions": {},
+    "xfltnums": set()
 }
 
 
@@ -233,16 +235,25 @@ def get_xsabund(element: str | None = None) -> str | float:
     return _xspec.get_xsabund(element)
 
 
-def get_xsabundances() -> dict[str, float]:
+def get_xsabundances(table: str | None = None) -> dict[str, float]:
     """Return the abundance settings used by X-Spec.
 
+    .. versionchanged:: 4.17.1
+       The optional table argument was added.
+
     .. versionadded:: 4.17.0
+
+    Parameter
+    ---------
+    table : optional
+        The table to use. Leave as None to use the selected abundance
+        table.
 
     Returns
     -------
     abundances : dict
-        The current set of abundances. The keys are the element names
-        (e.g. 'Fe') and the values are the abundances.
+        The keys are the element names (e.g. 'Fe') and the values are
+        the abundances.
 
     See Also
     --------
@@ -254,9 +265,16 @@ def get_xsabundances() -> dict[str, float]:
     >>> get_xsabundances()
     {'H': 1.0, 'He': ...}
 
+    >>> set_xsabud("angr")
+    >>> get_xsabundances()["Cu"]
+    1.619999956403717e-08
+    >>> get_xsabundances("felc")["Cu"]
+    0.0
+
     """
 
-    return {name: _xspec.get_xsabund(name)
+    tbl = get_xsabund() if table is None else table
+    return {name: _xspec.get_xsabund_table(tbl, name)
             for name in get_xselements().keys()}
 
 
@@ -292,11 +310,6 @@ def get_xsabund_doc(name: str | None = None) -> str:
     return _xspec.get_xsabund_doc(aname).strip()
 
 
-# The current interface to the XSPEC model library makes this awkward
-# to write. Once the interface switches to using the FunctionUtility
-# interface this code will be a lot simpler internally, without
-# changing the API.
-#
 def set_xsabundances(abundances: dict[str, float]) -> None:
     """Set the abundances used by X-Spec.
 
@@ -339,22 +352,8 @@ def set_xsabundances(abundances: dict[str, float]) -> None:
 
         out[z - 1] = abund
 
-    # Write them to a file and then load them.
-    #
-    # This should set delete_on_close=False but that
-    # requires Python 3.12.
-    #
-    with tempfile.NamedTemporaryFile(encoding="ascii", mode="w",
-                                     delete=False) as fh:
-        for elem in out:
-            fh.write(f"{elem}\n")
-
-        # Make sure data is written to disk. Could this just
-        # be fh.flush() and avoid closing the file?
-        #
-        fh.close()
-
-        set_xsabund(fh.name)
+    _xspec.set_xsabund_vector(out)
+    xsstate["abundances"] = get_xsabundances()
 
 
 # This function is not added to __all__ as it is very specialized.
@@ -397,6 +396,38 @@ def get_xselements() -> dict[str, int]:
         out[elem] = idx
 
     return out
+
+
+# This function is not added to __all__ as it is very specialized.
+#
+def get_xsabundances_path() -> Path:
+    """Return the path to the abundances file used by X-Spec.
+
+    This file is used by X-Spec to determine the different
+    abundance-table settings used by set_xsabund and get_xsabund.
+
+    .. versionadded:: 4.17.1
+
+    Returns
+    -------
+    path : pathlib.Path
+        The full path to the abundances file.
+
+    See Also
+    --------
+    get_xsabund, set_xsabund
+
+    Examples
+    --------
+
+    >>> get_xsabundances_path()
+    PosixPath('/path/to/spectral/manager/abundances.dat')
+
+    """
+
+    out = Path(_xspec.get_xspath_abundance())
+    out /= Path(_xspec.get_abundance_file())
+    return out.resolve()
 
 
 def get_xschatter() -> int:
@@ -444,27 +475,106 @@ def get_xscosmo() -> tuple[float, float, float]:
     return _xspec.get_xscosmo()
 
 
-def get_xsversion() -> str:
+VersionType = Literal["atomdb"] | Literal["nei"]
+
+
+def get_xsversion(name: VersionType | None = None) -> str:
     """Return the version of the X-Spec model library in use.
+
+    .. versionchanged:: 4.17.1
+       The routine can now return the atomdb or nei versions in use
+       when given the optional name argument.
+
+    Parameters
+    ----------
+    name : {"atomdb", "nei"}, optional
+       If not set, the XSPEC version is returned, otherwise it must be
+       one of "atomdb" or "nei", in which case the version in use for
+       the given database is returned.
 
     Returns
     -------
     version : str
-       The version of the X-Spec model library used by Sherpa [1]_.
+       The version of the X-Spec model library or database.
 
-    References
-    ----------
-
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/
+    See Also
+    --------
+    set_xsversion
 
     Examples
     --------
 
     >>> get_xsversion()
-    '12.11.0m'
+    '12.14.0i'
+
+    >>> get_xsversion("atomdb")
+    '3.0.9'
+
+    >>> get_xsversion("nei")
+    '3.0.4'
+
     """
 
-    return _xspec.get_xsversion()
+    match name:
+        case None:
+            return _xspec.get_xsversion()
+
+        case "atomdb":
+            return _xspec.get_xsversion_atomdb()
+
+        case "nei":
+            return _xspec.get_xsversion_nei()
+
+        case _:
+            raise ValueError("name must be one of None, 'atomdb', or 'nei', "
+                             f"not '{name}'")
+
+
+def set_xsversion(name: VersionType,
+                  version: str) -> None:
+    """Set the version of the libraries library used by X-Spec.
+
+    .. versionadded:: 4.17.1
+
+    Parameters
+    ----------
+    name : {"atomdb", "nei"}
+       The library version to set.
+    version : str
+       The version of the library to use.
+
+    See Also
+    --------
+    get_xsversion
+
+    Examples
+    --------
+
+    >>> set_xsversion('atomdb', '3.0.9')
+
+    >>> set_xsversion('nei', '3.0.4')
+
+    """
+
+    match name:
+        case "atomdb":
+            setfn = _xspec.set_xsversion_atomdb
+            getfn = _xspec.get_xsversion_atomdb
+
+        case "nei":
+            setfn = _xspec.set_xsversion_nei
+            getfn = _xspec.get_xsversion_nei
+
+        case _:
+            raise ValueError("name must be 'atomdb' or 'nei', "
+                             f"not '{name}'")
+
+    # We store whatever XSPEC converts the version to, rather than the
+    # version the user sent in, just in case there is any validation
+    # done by the XSPEC code.
+    #
+    setfn(version)
+    xsstate["versions"][name] = getfn()
 
 
 def get_xsxsect() -> str:
@@ -584,6 +694,13 @@ def set_xsabund(abundance: str) -> None:
     """
 
     _xspec.set_xsabund(abundance)
+
+    # Ensure the abundances state setting is created or deleted.
+    #
+    if get_xsabund() == "file":
+        xsstate["abundances"] = get_xsabundances()
+    else:
+        xsstate["abundances"] = None
 
 
 def set_xschatter(level: int) -> None:
@@ -723,24 +840,71 @@ def set_xsxsect(name: str) -> None:
     _xspec.set_xsxsect(name)
 
 
+def clear_xsxset() -> None:
+    """Remove all existing X-Spec model settings.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    get_xsxset, set_xsxset
+
+    Examples
+    --------
+
+    >>> set_xsxset("POW_EMIN", "0.5")
+    >>> get_xsxset()
+    {'POW_EMIN': '0.5'}
+    >>> clear_xsxset()
+    >>> get_xsxset()
+    {}
+
+    """
+    return _xspec.clear_xsxset()
+
+
+@overload
+def get_xsxset() -> dict[str, str]:
+    ...
+
+@overload
+def get_xsxset(name: None) -> dict[str, str]:
+    ...
+
+@overload
 def get_xsxset(name: str) -> str:
-    """Return the X-Spec model setting.
+    ...
+
+def get_xsxset(name: str | None = None) -> str | dict[str, str]:
+    """Return the X-Spec model setting or settings.
+
+    .. versionchanged:: 4.17.1
+       This routine can now be called with no argument, which means
+       that a dictionary containing all the settings is returned.
+       Asking for an unset keyword now raises a KeyError rather than
+       returning the empty string.
 
     Parameters
     ----------
-    name : str
+    name : str or None, optional
        The name of the setting (converted to upper case before being
        sent to X-Spec). There is no check that the name is valid.
 
     Returns
     -------
-    val : str
-       Returns the value set by a previous call to `set_xsxset` or the
-       empty string, if the value has not been previously set.
+    val : str or dict
+       When name is set, returns the value set by a previous call to
+       `set_xsxset`. When name is not set a dictionary of all the
+       settings is returned.
+
+    Raises
+    ------
+    KeyError
+       When the name has not been set.
 
     See Also
     --------
-    set_xsxset
+    clear_xsxset, set_xsxset
 
     Notes
     -----
@@ -756,9 +920,14 @@ def get_xsxset(name: str) -> str:
     >>> get_xsxset("pow_emin")
     '0.5'
 
+    >>> get_xsxset()
+    {'POW_EMIN': '0.5'}
+
     """
-    name = name.upper()
-    return _xspec.get_xsxset(name)
+    if name is None:
+        return _xspec.get_xsxset()
+
+    return _xspec.get_xsxset(name.upper())
 
 
 def set_xsxset(name: str, value: str) -> None:
@@ -775,12 +944,14 @@ def set_xsxset(name: str, value: str) -> None:
        The name of the setting. It is converted to upper case before
        being used. There is no check that the name is valid.
     value : str
-       The new value of the setting. It must be given as a string.
+       The new value of the setting. It must be given as a string.  If
+       it is the empty string then the name is removed from the model
+       settings.
 
     See Also
     --------
-    get_xsxset, get_xsversion, set_xsabund, set_xschatter, set_xscosmo,
-    set_xsxsect
+    clear_xsxset, get_xsxset, get_xsversion, set_xsabund, set_xschatter,
+    set_xscosmo, set_xsxsect
 
     Notes
     -----
@@ -792,6 +963,10 @@ def set_xsxset(name: str, value: str) -> None:
 
     The model settings are stored so that they can be included in the
     output of `sherpa.astro.ui.save_all`.
+
+    Setting the name argument to "INITIALIZE" will clear the settings,
+    but this is deprecated and the `clear_xsxset` routine must be used
+    instead.
 
     References
     ----------
@@ -812,11 +987,334 @@ def set_xsxset(name: str, value: str) -> None:
     >>> set_xsxset('POW_EMAX', '2.0')
 
     """
-    name = name.upper()
-    _xspec.set_xsxset(name, value)
-    nval = get_xsxset(name)
-    if nval != "":
-        xsstate["modelstrings"][name] = nval
+    _xspec.set_xsxset(name.upper(), value)
+
+
+def clear_xsxflt(spectrumNumber: int | None = None) -> None:
+    """Clear out the XFLT database for one or all spectra.
+
+    .. versionadded:: 4.17.1
+
+    Parameters
+    ----------
+    spectrumNumber
+       If None then delete all the XFLT keywords, otherwise
+       just those for the given spectrum.
+
+    See Also
+    --------
+    get_xsxflt, set_xsxflt
+
+    Examples
+    --------
+
+    >>> clear_xsxflt()
+
+    """
+
+    if spectrumNumber is None:
+        _xspec.clear_xflt()
+        xsstate["xfltnums"].clear()
+        return
+
+    # Clear out the given spectrum
+    #
+    set_xsxflt(spectrumNumber, {})
+
+
+def get_xsxflt(spectrumNumber: int) -> dict[str, float]:
+    """Return the XFLT values stored for a spectrum.
+
+    .. versionadded:: 4.17.1
+
+    Parameters
+    ----------
+    spectrumNumber : int
+        The spectrum number (as used by XSPEC).
+
+    Returns
+    -------
+    xflt : dict
+        The current keywords (strings) and values (numbers) associated
+        with the current spectrumNumber. It may be empty.
+
+    See Also
+    --------
+    clear_xsxflt, set_xsxflt
+
+    Examples
+    --------
+
+    >>> get_xsxflt(1)
+    {}
+
+    >>> set_xsxflt(2, {"inner": 0.2, "outer": 2, "width": 360})
+    >>> get_xsxflt(2)
+    {'inner': 0.2, 'outer': 2.0, 'width': 360.0}
+
+    """
+    # We could check xsstate["xfltnums"] but pass through to XSPEC to
+    # check instead.
+    #
+    return _xspec.get_xflt(spectrumNumber)
+
+
+def set_xsxflt(spectrumNumber: int, xflt: dict[str, float]) -> None:
+    """Set the XFLT values stored for a spectrum.
+
+    .. versionadded:: 4.17.1
+
+    Parameters
+    ----------
+    spectrumNumber : int
+        The spectrum number (as used by XSPEC).
+    xflt : dict
+        The keywords (strings) and values (numbers) for the current
+        spectrumNumber. These values over-ride any existing
+        values. Using an empty dictionary will remove the settings for
+        this spectrumNumber.
+
+    See Also
+    --------
+    clear_xsxflt, get_xsxflt, load_xsxflt
+
+    Notes
+    -----
+
+    There is no check that the spectrumNumber argument matches any
+    existing model expression.
+
+    Examples
+    --------
+
+    >>> set_xsxflt(2, {"inner": 0.2, "outer": 2})
+    >>> set_xsxflt(2, {"width": 360})
+    >>> get_xsxflt(2)
+    {'width': 360.0}
+
+    """
+
+    # We store the spectrumNumber values that have data, so that we
+    # can query the database when it comes to calling get_xsstate.
+    #
+    _xspec.set_xflt(spectrumNumber, xflt)
+
+    if len(xflt) == 0:
+        # If we don't know about this number then it's okay.
+        #
+        with suppress(KeyError):
+            xsstate["xfltnums"].remove(spectrumNumber)
+    else:
+        xsstate["xfltnums"].add(spectrumNumber)
+
+
+def load_xsxflt(data: DataPHA,
+                spectrumNumber: int
+                ) -> None:
+    """Load the XFLT keywords from the header of the PHA.
+
+    This takes all the XFLTnnnn keywords from the header of
+    the PHA and associates them with the given spectrum.
+
+    .. versionadded:: 4.17.1
+
+    Parameters
+    ----------
+    data : DataPHA
+       The PHA datset with XFLT0001, ... keywords.
+    spectrum : int
+       The spectrum number, which is expected to be 1 or larger.
+       This will over-write any existing data for the spectrum.
+
+    See Also
+    --------
+    clear_xsxflt, get_xsxflt, set_xsxflt
+
+    Notes
+    -----
+    This does not support reading in values from columns, just from
+    header keywords. The cards XFLT0001, XFLT0002, ... are read in and
+    processed. The values can be a number, which is set to have a
+    keyname of "key<n>" for card XFLT<n>, or are the string
+    "keyname:value" which are used to get both the keyname and numeric
+    value.
+
+    Examples
+    --------
+
+    >>> load_xsxflt(pha, 1)
+
+    """
+
+    # Process XFLXT keywords from the PHA header.
+    #
+    i = 0
+    store = {}
+    while True:
+        i += 1
+        key = f"XFLT{i:04d}"
+        try:
+            vals = data.header[key]
+        except KeyError:
+            # key does not exist so stop the loop.
+            #
+            break
+
+        # The value can be
+        #     floating-point
+        #     string-name:floating-point
+        # and anything else is skipped (with a note to the caller)
+        #
+        elems = vals.split(":")
+        if len(elems) == 1:
+            # This is how XSPEC seems to store it
+            keyname = f"key{i}"
+            value = elems[0]
+        elif len(elems) == 2:
+            keyname = elems[0]
+            value = elems[1]
+        else:
+            # Note that we do not end the processing here.
+            #
+            info("Unable to recognize header keyword: %s = '%s'",
+                 key, vals)
+            continue
+
+        try:
+            fval = float(value)
+        except ValueError as ve:
+            # I think XSPEC just converts fval to 0 in this case.
+            #
+            warning("Skipping header keyword: %s = '%s'", key, vals)
+            continue
+
+        store[keyname] = fval
+
+    set_xsxflt(spectrumNumber, store)
+    if len(store) == 0:
+        return
+
+    # Display the newly-added keys.
+    #
+    info("XSPEC filtering keys for spectrumNumber %d:", spectrumNumber)
+    for keyname, fval in store:
+        info("  %s = %g", keyname, fval)
+
+
+def clear_xsdb() -> None:
+    """Clear out the XSPEC database.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    get_xsdb, set_xsdb
+
+    Examples
+    --------
+
+    >>> clear_xsdb()
+
+    """
+    return _xspec.clear_db()
+
+
+def get_xsdb() -> dict[str, float]:
+    """Return the XSPEC database values.
+
+    .. versionadded:: 4.17.1
+
+    Returns
+    -------
+    db : dict
+        The current keywords (strings) and values (numbers) associated
+        with the XSPEC database. It may be empty.
+
+    See Also
+    --------
+    clear_xsdb, set_xsdb
+
+    Notes
+    -----
+
+    XSPEC provides an internal database to which any model can add
+    a keyword. This is intended for models which want to save useful
+    information during a calculation.
+
+    Examples
+    --------
+
+    >>> get_xsdb()
+    {}
+
+    >>> set_db("inner", 0.2)
+    >>> set_db("outer", 2)
+    >>> get_db()
+    {'inner': 0.2, 'outer': 2.0}
+
+    """
+    return _xspec.get_db()
+
+
+def set_xsdb(key: str, value: float) -> None:
+    """Set a XSPEC database value.
+
+    .. versionadded:: 4.17.1
+
+    Parameters
+    ----------
+    key : str
+        The keyword to set (it is converted to lower case).
+    value : number
+        The number to set.
+
+    See Also
+    --------
+    clear_db, get_db
+
+    Examples
+    --------
+
+    >>> set_xsdb("inner", 0.2)
+    >>> set_xsdb("outer", 2)
+    >>> get_xsdb()
+
+    """
+    _xspec.set_db(key, value)
+
+
+# This function is not added to __all__ as it is very specialized
+# and we need more experience as to how it will be used.
+#
+def get_xsDEM() -> tuple[np.ndarray, np.ndarray]:
+    """The relative contributions of plasma at different temperatures.
+
+    Returns
+    -------
+    temp, dem
+       The distribution of plasma at different temperatures for
+       multi-temperature models (the dem array will sum to 1). These
+       arrays may be empty.
+
+    Notes
+    -----
+    The XSPEC model library provides very-limited access to this
+    data. It is only for the last plasma model calculated, so be
+    careful if the model expression contains multiple plasma models.
+
+    Examples
+    --------
+
+    Ensure the model has been evaluated and then plot the
+    distribution:
+
+    >>> plot_model()
+    >>> t, d = get_xsDEM()
+    >>> plot_scatter(t, d, name="DEM", xlabel="Temperature", ylabel="DEM")
+
+    """
+
+    return _xspec.get_xsDEM()
 
 
 def get_xspath_manager() -> str:
@@ -853,7 +1351,7 @@ def get_xspath_model() -> str:
 
     See Also
     --------
-    get_xspath_manager
+    get_xspath_manager, set_xspath_model
 
     Examples
     --------
@@ -865,71 +1363,112 @@ def get_xspath_model() -> str:
     return _xspec.get_xspath_model()
 
 
-def set_xspath_manager(path: str) -> None:
+def set_xspath_manager(path: Path | str) -> None:
     """Set the path to the files describing the XSPEC models.
+
+    .. versionchanged:: 4.17.1
+       The argument can now be sent in as a Path object.
 
     Parameters
     ----------
-    path : str
+    path : str or Path
         The new path.
 
     See Also
     --------
-    get_xspath_manager : Return the path to the files describing the XSPEC models.
+    get_xspath_manager, set_xspath_model
 
     Examples
     --------
     >>> set_xspath_manager('/data/xspec/spectral/manager')
     """
 
-    _xspec.set_xspath_manager(path)
-    spath = get_xspath_manager()
-    if spath != path:
+    spath = str(path)
+    _xspec.set_xspath_manager(spath)
+    got = get_xspath_manager()
+    if got != spath:
         raise IOError("Unable to set the XSPEC manager path "
-                      f"to '{path}'")
+                      f"to '{spath}'")
 
-    xsstate["paths"]["manager"] = path
+    # Inform the state that the manager path has been changed.
+    xsstate["paths"]["manager"] = spath
 
 
-# Provide XSPEC module state as a dictionary.  The "cosmo" state is
-# a 3-tuple, and "modelstrings" is a dictionary of model strings
-# applicable to certain models.  The abund and xsect settings are
-# strings.  The chatter setting is an integer.  Please see the
-# XSPEC manual concerning the following commands: abund, chatter,
-# cosmo, xsect, and xset.
-# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Control.html
-# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Setting.html
-#
-# The path dictionary contains the manager path, which can be
-# explicitly set. It could also contain the model path, but there
-# is no XSPEC routine to change that; instead a user would set the
-# XSPEC_MDATA_DIR environment variable before starting XSPEC.
-# Should this path be included?
-#
+def set_xspath_model(path: Path | str) -> None:
+    """Set the path to the XSPEC model data files.
+
+    .. versionadded:: 4.17.1
+
+    Parameters
+    ----------
+    path : str or Path
+        The new path.
+
+    See Also
+    --------
+    get_xspath_model, set_xspath_manager
+
+    Examples
+    --------
+    >>> set_xspath_model('/data/xspec/spectral/modelData/')
+    """
+
+    spath = str(path)
+    _xspec.set_xspath_model(spath)
+    got = get_xspath_model()
+    if got != spath:
+        raise IOError(f"Unable to set the XSPEC model path to '{spath}'")
+
+    # Inform the state that the model path has been changed.
+    xsstate["paths"]["model"] = spath
+
+
 def get_xsstate() -> dict[str, Any]:
     """Return the state of the XSPEC module.
+
+    .. versionchanged:: 4.17.1
+       More XSPEC settings are now saved.
 
     Returns
     -------
     state : dict
         The current settings for the XSPEC module, including but not
-        limited to: the abundance and cross-section settings, parameters
-        for the cosmological model, any XSET parameters that have been
-        set, and changes to the paths used by the model library.
+        limited to: the abundance and cross-section settings,
+        parameters for the cosmological model, any XSET and XFLT
+        parameters that have been set, versions changed, and changes
+        to the paths used by the model library.
 
     See Also
     --------
-    get_xsabund, get_xschatter, get_xscosmo, get_xsxsect, get_xsxset,
-    set_xsstate
+    get_xsabund, get_xschatter, get_xscosmo, get_xsdb, get_xsxflt,
+    get_xsxsect, get_xsxset, set_xsstate
+
     """
 
-    # Do not return the internal dictionary but a copy of it.
+
+    abundances = xsstate["abundances"]
+    if abundances is not None:
+        abundances = abundances.copy()
+
+    # We don't keep the current XFLT database, just a list of those
+    # spectrmNumber cases that have data.
+    #
+    xflt = {}
+    for spectrumNumber in xsstate["xfltnums"]:
+        store = get_xsxflt(spectrumNumber)
+        if len(store) > 0:
+            xflt[spectrumNumber] = store
+
     return {"abund": get_xsabund(),
+            "abundances": abundances,
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
-            "modelstrings": xsstate["modelstrings"].copy(),
-            "paths": xsstate["paths"].copy()
+            "modelstrings": get_xsxset(),
+            "paths": xsstate["paths"].copy(),
+            "versions": xsstate["versions"].copy(),
+            "db": get_xsdb(),
+            "xflt": xflt
             }
 
 
@@ -937,8 +1476,8 @@ def set_xsstate(state: dict[str, Any]) -> None:
     """Restore the state of the XSPEC module.
 
     .. versionchanged:: 4.17.1
-       The input state no-longer requires all the keys to be
-       present.
+       The input state no-longer requires all the keys to be present
+       and more XSPEC settings are now restored, if set.
 
     Parameters
     ----------
@@ -946,8 +1485,8 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        and 'paths'. If a keyword is missing then that setting will
-        not be changed.
+        'xflt', 'db', 'abundances', 'versions', and 'paths'. If a
+        keyword is missing then that setting will not be changed.
 
     See Also
     --------
@@ -968,8 +1507,18 @@ def set_xsstate(state: dict[str, Any]) -> None:
             # Assume state is not a dictionary, so return.
             return
 
-    with suppress(KeyError):
-        set_xsabund(state["abund"])
+    # If a manually-set up table has been loaded then we use that
+    # (this is given by the "abundances" value being set), otherwise
+    # we use the abundance table (the "abund" value).
+    #
+    abundances = state.get("abundances", None)
+    if abundances is None:
+        with suppress(KeyError):
+            set_xsabund(state["abund"])
+
+    else:
+        # This is expected to be a dict of abundance names and values.
+        set_xsabundances(abundances)
 
     with suppress(KeyError):
         set_xsxsect(state["xsect"])
@@ -978,15 +1527,41 @@ def set_xsstate(state: dict[str, Any]) -> None:
         h0, q0, l0 = state["cosmo"]
         set_xscosmo(h0, q0, l0)
 
+    # We clear out the XSET settings if modelstrings is present, even
+    # if it is empty (since that means there are no keys).
+    #
     with suppress(KeyError):
-        # Should this remove any old keys? With the current API this
-        # is hard to do reliably.
-        #
-        for name, value in state["modelstrings"].items():
+        # Assume it is a dictionary.
+        modelstrings = state["modelstrings"]
+        clear_xsxset()
+        for name, value in modelstrings.items():
             set_xsxset(name, value)
 
+    db = state.get("db", None)
+    if db is not None:
+        clear_xsdb()
+        for name, value in db.items():
+            set_xsdb(name, value)
+
+    xflt = state.get("xflt", None)
+    if xflt is not None:
+        clear_xsxflt()
+        for spectrumNumber, values in xflt.items():
+            set_xsxflt(spectrumNumber, values)
+
+    paths = state.get("paths", {})
     with suppress(KeyError):
-        set_xspath_manager(state["paths"]["manager"])
+        set_xspath_manager(paths["manager"])
+
+    with suppress(KeyError):
+        set_xspath_model(paths["model"])
+
+    versions = state.get("versions", {})
+    with suppress(KeyError):
+        set_xsversion("atomdb", versions["atomdb"])
+
+    with suppress(KeyError):
+        set_xsversion("nei", versions["nei"])
 
 
 def read_xstable_model(modelname: str,
@@ -1143,8 +1718,12 @@ def read_xstable_model(modelname: str,
 __all__ : tuple[str, ...]
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
-           'get_xsversion', 'set_xsxset', 'get_xsxset', 'set_xsstate',
-           'get_xsstate', 'get_xsabundances', 'set_xsabundances')
+           'get_xsversion', 'set_xsversion',
+           'set_xsxset', 'get_xsxset', 'clear_xsxset',
+           'set_xsstate', 'get_xsstate',
+           'get_xsxflt', 'set_xsxflt', 'clear_xsxflt',
+           'clear_xsdb', 'get_xsdb', 'set_xsdb', 'clear_xsdb',
+           'get_xsabundances', 'set_xsabundances')
 
 
 class XSBaseParameter(Parameter):
