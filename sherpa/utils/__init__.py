@@ -2565,17 +2565,6 @@ def symmetric_to_low_triangle(matrix, num):
     return low_triangle
 
 
-############################### Root of all evil ##############################
-
-
-def printf(format, *args):
-    """Format args with the first argument as format string, and write.
-    Return the last arg, or format itself if there are no args."""
-    sys.stdout.write(str(format) % args)
-    # WARNING: where is if_ meant to be defined?
-    return if_(args, args[-1], format)
-
-
 # With ParamSpec, added in Python 3.10, we might be able to annotate
 # this so that we can match the arguments that `func` uses are the
 # same as are sent to the __call__ method, although it might be easier
