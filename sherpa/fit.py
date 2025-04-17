@@ -221,6 +221,10 @@ class FitResults(NoNewAttributesAfterInit):
        and now contains the covariance matrix estimated at the
        best-fit location, if provided by the optimiser.
 
+    .. versionchanged:: 4.17.1
+       The `record_steps` attribute has been added to the class.
+       If the fit recorded the parameter values of each step in the optimization,
+       this attribute will contain an array with the data.
     """
 
     # The fields to include in the __str__ output.
@@ -1307,6 +1311,11 @@ class Fit(NoNewAttributesAfterInit):
         .. versionchanged:: 4.17.0
            The outfile parameter can now be sent a Path object or a
            file handle instead of a string.
+
+        .. versionchanged:: 4.17.1
+           The parameters ``record_steps`` was added to keep parameter
+           values of each iteration in the `FitResults` object that is
+           returned.
 
         Parameters
         ----------
