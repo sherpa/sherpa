@@ -71,7 +71,7 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.random import RandomType
-from sherpa.utils.types import IdType
+from sherpa.utils.types import IdType, PrefsType
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -125,7 +125,7 @@ def _is_str(val):
     return isinstance(val, (str, ))
 
 
-def get_plot_prefs(plotobj):
+def get_plot_prefs(plotobj) -> PrefsType:
     """Return the preferences for the plot object.
 
     The current preference design has the attribute name be different
@@ -12154,7 +12154,7 @@ class Session(NoNewAttributesAfterInit):
     def get_plot_prefs(self,
                        plottype: str,
                        id: IdType | None = None,
-                       **kwargs):
+                       **kwargs) -> PrefsType:
         """Return the preferences for the given plot type.
 
         .. versionadded:: 4.16.0
@@ -12224,7 +12224,7 @@ class Session(NoNewAttributesAfterInit):
         return get_plot_prefs(plotobj)
 
     def get_data_plot_prefs(self,
-                            id: IdType | None = None):
+                            id: IdType | None = None) -> PrefsType:
         """Return the preferences for plot_data.
 
         The plot preferences may depend on the data set,
@@ -12692,7 +12692,7 @@ class Session(NoNewAttributesAfterInit):
         return get_components_helper(self.get_source_component_plot,
                                      model=model, idval=idval)
 
-    def get_model_plot_prefs(self, id: IdType | None = None):
+    def get_model_plot_prefs(self, id: IdType | None = None) -> PrefsType:
         """Return the preferences for plot_model.
 
         The plot preferences may depend on the data set,
@@ -13174,7 +13174,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_contour_prefs(self,
                           contourtype: str,
-                          id: IdType | None = None):
+                          id: IdType | None = None) -> PrefsType:
         """Return the preferences for the given contour type.
 
         .. versionadded:: 4.16.0
@@ -13234,7 +13234,7 @@ class Session(NoNewAttributesAfterInit):
         get = getattr(self, f"get_{ctype}_contour")
         return get(id, recalc=False).contour_prefs
 
-    def get_data_contour_prefs(self) -> dict:
+    def get_data_contour_prefs(self) -> PrefsType:
         """Return the preferences for contour_data.
 
         Returns
@@ -13386,7 +13386,7 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    def get_model_contour_prefs(self) -> dict:
+    def get_model_contour_prefs(self) -> PrefsType:
         """Return the preferences for contour_model.
 
         Returns

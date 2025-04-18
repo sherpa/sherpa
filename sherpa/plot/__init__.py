@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018 - 2024
+#  Copyright (C) 2009, 2015, 2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -90,6 +90,7 @@ from sherpa.utils import NoNewAttributesAfterInit, erf, \
 from sherpa.utils.err import ArgumentTypeErr, ConfidenceErr, \
     IdentifierErr, PlotErr, StatErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.types import ArrayType, PrefsType
 
 # PLOT_BACKENDS only contains backends in modules that are imported successfully
 # but modules are not discovered by itself. Entrypoints would solve this problem
@@ -487,7 +488,7 @@ def display_fields(obj,  # hard to provide an accurate type
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
 
-    plot_prefs = basicbackend.get_plot_defaults()
+    plot_prefs: PrefsType = basicbackend.get_plot_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -582,7 +583,7 @@ class Plot(NoNewAttributesAfterInit):
 class Contour(NoNewAttributesAfterInit):
     "Base class for contour plots"
 
-    contour_prefs = basicbackend.get_contour_defaults()
+    contour_prefs: PrefsType = basicbackend.get_contour_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -619,7 +620,7 @@ class Contour(NoNewAttributesAfterInit):
 class Point(NoNewAttributesAfterInit):
     "Base class for point plots"
 
-    point_prefs = basicbackend.get_point_defaults()
+    point_prefs: PrefsType = basicbackend.get_point_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -672,7 +673,7 @@ class Image(NoNewAttributesAfterInit):
         Currently, is is only used within _repr_html_ methods.
     """
 
-    image_prefs = basicbackend.get_image_defaults()
+    image_prefs: PrefsType = basicbackend.get_image_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -719,7 +720,7 @@ class Image(NoNewAttributesAfterInit):
 class Histogram(NoNewAttributesAfterInit):
     "Base class for histogram plots"
 
-    histo_prefs = basicbackend.get_histo_defaults()
+    histo_prefs: PrefsType = basicbackend.get_histo_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -877,7 +878,7 @@ class HistogramPlot(Histogram):
 # I think we want slightly different histogram preferences
 # than most (mark by point rather than line).
 #
-def get_data_hist_prefs():
+def get_data_hist_prefs() -> PrefsType:
     """Copy the data preferences to the histogram class"""
 
     hprefs = basicbackend.get_model_histo_defaults()
