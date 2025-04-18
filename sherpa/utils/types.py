@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2024, 2025
+#  Copyright (C) 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -105,3 +105,7 @@ class FitFunc(Protocol):
                  statkwargs: Mapping[str, Any] | None = None
                  ) -> OptReturn:
         ...
+
+# Represent "preferences" as a dictionary of string keywords.
+#
+PrefsType = dict[str, Any]
