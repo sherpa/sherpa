@@ -777,8 +777,8 @@ class IterFit:
                  pars: ArrayType,
                  parmins: ArrayType,
                  parmaxes: ArrayType,
-                 statargs: Sequence[Any] = (),
-                 statkwargs: Mapping[str, Any] | None = None,
+                 statargs: Any = None,
+                 statkwargs: Any = None,
                  cache: bool = True
                  ) -> OptReturn:
         """Exclude points that are significately far away from the best fit.
@@ -790,6 +790,9 @@ class IterFit:
         has converged or a maximum number of iterations has been reached.
         The error removal can be asymmetric, since there are separate
         options for the lower and upper limits.
+
+        .. versionchanged:: 4.17.1
+           The statargs and statkwargs arguments are now ignored.
 
         Raises
         ------
@@ -819,8 +822,9 @@ class IterFit:
         .. [3] http://iraf.net/irafhelp.php?val=sfit
 
         """
-        if statkwargs is None:
-            statkwargs = {}
+
+        if statargs is not None or statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
 
         # Sigma-rejection can only be used with chi-squared;
         # raise exception if it is attempted with least-squares,
@@ -897,9 +901,9 @@ class IterFit:
                     self.stat.calc_staterror)
                 self.model.startup(cache)
                 final_fit_results = self.method.fit(statfunc,
-                                                    self.model.thawedpars,
-                                                    parmins, parmaxes,
-                                                    statargs, statkwargs)
+                                                    pars=self.model.thawedpars,
+                                                    parmins=parmins,
+                                                    parmaxes=parmaxes)
                 model_iterator = iter(self.model())
                 rejected = False
 
@@ -995,19 +999,25 @@ class IterFit:
             pars: ArrayType,
             parmins: ArrayType,
             parmaxes: ArrayType,
-            statargs: Sequence[Any] = (),
-            statkwargs: Mapping[str, Any] | None = None
+            statargs: Any = None,
+            statkwargs: Any = None
             ) -> OptReturn:
+        """
 
-        if statkwargs is None:
-            statkwargs = {}
+        .. versionchanged:: 4.17.1
+           The statargs and statkwargs arguments are now ignored.
+
+        """
+
+        if statargs is not None or statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
 
         if self.current_func is None:
-            return self.method.fit(statfunc, pars, parmins, parmaxes,
-                                   statargs, statkwargs)
+            return self.method.fit(statfunc, pars=pars,
+                                   parmins=parmins, parmaxes=parmaxes)
 
-        return self.current_func(statfunc, pars, parmins, parmaxes,
-                                 statargs, statkwargs)
+        return self.current_func(statfunc, pars=pars, parmins=parmins,
+                                 parmaxes=parmaxes)
 
 
 # What is the best way to annotate the return value here?
@@ -1415,7 +1425,7 @@ class Fit(NoNewAttributesAfterInit):
             # have the case that self.stat and self._iterfit.stat were
             # not guaranteed to be the same).
             #
-            # Could we skip this if newpars is them same as thawedpars?
+            # Could we skip this if newpars is the same as thawedpars?
             #
             fval_new, _ = cb(newpars)
 
