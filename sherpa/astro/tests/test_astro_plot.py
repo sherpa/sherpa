@@ -27,7 +27,7 @@ import pytest
 from sherpa.utils.testing import requires_data, requires_fits
 
 from sherpa.astro.data import DataARF, DataPHA
-from sherpa.astro.instrument import create_delta_rmf
+from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro.plot import SourcePlot, ComponentSourcePlot, \
     DataPHAPlot, ModelPHAHistogram, ModelHistogram, OrderPlot, \
     _check_hist_bins, \
@@ -669,6 +669,10 @@ def test_pha_data_with_gaps_977():
     "precision"). At the moment this is only done for PHA
     data and model plots, not for generic histogram plots.
     See issue #977
+
+    After dropping support for bin_lo/hi - issue #1564 - it is not
+    clear whether this is still a useful test, but keep in for now.
+
     """
 
     chans = np.arange(1, 6)
@@ -676,9 +680,17 @@ def test_pha_data_with_gaps_977():
 
     blo = np.asarray([100, 99, 98, 97, 96])
     bhi = np.asarray([101, 100.0000000001, 99, 98, 97])
+    elo = hc / bhi
+    ehi = hc / blo
 
-    d = DataPHA('x', chans, vals, bin_lo=blo, bin_hi=bhi)
-    d.set_analysis('wave')
+    d = DataPHA('x', chans, vals)
+
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    arf = create_arf(elo, ehi)
+    d.set_rmf(rmf)
+    d.set_arf(arf)
+
+    d.set_analysis("wave")
 
     p = aplot.DataPHAPlot()
     p.prepare(d)
@@ -713,8 +725,16 @@ def test_pha_model_with_gaps_977():
 
     blo = np.asarray([100, 99, 98, 97, 96])
     bhi = np.asarray([101, 100.0000000001, 99, 98, 97])
+    elo = hc / bhi
+    ehi = hc / blo
 
-    d = DataPHA('x', chans, vals, bin_lo=blo, bin_hi=bhi)
+    d = DataPHA('x', chans, vals)
+
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    arf = create_arf(elo, ehi)
+    d.set_rmf(rmf)
+    d.set_arf(arf)
+
     d.set_analysis('wave')
 
     mdl = Polynom1D()

@@ -53,9 +53,7 @@ reducing the number of values in a data set - and adds an extra way
 to filter the data with the quality array. The class extends
 `~sherpa.data.Data1D`, since the primary data is channels and
 counts, but it also has to act like an integrated data set
-(`~sherpa.data.Data1DInt`) in some cases. In an extension to
-OGIP support, there is limited support for the ``BIN_LO`` and
-``BIN_HI`` fields provided with Chandra grating data.
+(`~sherpa.data.Data1DInt`) in some cases.
 
 The `DataIMG` class extends 2D support for "gridded" data, with
 multiple possible coordinate systems (e.g. ``logical``, ``physical``,
@@ -67,6 +65,10 @@ Notes
 
 Some functionality depends on the presence of the region and grouping
 Sherpa modules, which are optional components of Sherpa.
+
+Prior to 4.17.1 there was limited support for the ``BIN_LO`` and
+``BIN_HI`` fields provided with Chandra grating data, but this has now
+been removed.
 
 Notebook support
 ----------------
@@ -519,7 +521,7 @@ def html_arf(arf):
 
     # Unlike the string representation, this provides extra
     # information (e.g. energy range covered). Should it include
-    # any filters or masks? How about bin_lo/hi values?
+    # any filters or masks?
     #
     # It also assumes the units are keV/cm^2 which is not
     # guaranteed.
@@ -554,12 +556,6 @@ def html_arf(arf):
 
     erange = _calc_erange(arf.energ_lo, arf.energ_hi)
     meta.append(('Energy range', erange))
-
-    # repeat for wavelengths (without the energy threshold)
-    #
-    if arf.bin_lo is not None and arf.bin_hi is not None:
-        wrange = _calc_wrange(arf.bin_lo, arf.bin_hi)
-        meta.append(('Wavelength range', wrange))
 
     a1 = np.min(arf.specresp)
     a2 = np.max(arf.specresp)
@@ -898,6 +894,9 @@ class DataARF(DataOgipResponse):
     The ARF format is described in OGIP documents [CAL_92_002]_ and
     [CAL_92_002a]_.
 
+    .. versionchanged:: 4.17.1
+       The bin_lo and bin_hi columns are now ignored.
+
     Parameters
     ----------
     name : str
@@ -909,6 +908,7 @@ class DataARF(DataOgipResponse):
         ENERG_LO values for each bin, and the energy arrays must be
         in increasing or decreasing order.
     bin_lo, bin_hi : array or None, optional
+        These should not be set.
     exposure : number or None, optional
         The exposure time for the ARF, in seconds.
     header : dict or None, optional
@@ -930,7 +930,7 @@ class DataARF(DataOgipResponse):
 
     """
     _ui_name = "ARF"
-    _fields = ("name", "energ_lo", "energ_hi", "specresp", "bin_lo", "bin_hi")
+    _fields = ("name", "energ_lo", "energ_hi", "specresp")
     _extra_fields = ("exposure", "ethresh")
 
     def _get_specresp(self):
@@ -945,8 +945,9 @@ class DataARF(DataOgipResponse):
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
                  bin_hi=None, exposure=None, header=None, ethresh=None):
         self.specresp = specresp
-        self.bin_lo = bin_lo
-        self.bin_hi = bin_hi
+        # Keep these fields for now, but they are unused.
+        self.bin_lo = None
+        self.bin_hi = None
         self.exposure = exposure
         self.header = {} if header is None else header
         self.ethresh = ethresh
@@ -1476,6 +1477,10 @@ class DataPHA(Data1D):
     The PHA format is described in an OGIP document [OGIP_92_007]_ and
     [OGIP_92_007a]_.
 
+    .. versionchanged:: 4.17.1
+       The bin_lo and bin_hi columns are now ignored. A diagonal RMF
+       can be added to represent the mapping if needed.
+
     Parameters
     ----------
     name : str
@@ -1487,8 +1492,7 @@ class DataPHA(Data1D):
         The statistical and systematic errors for the data, if
         defined.
     bin_lo, bin_hi : array or None, optional
-        The wavelength ranges for the channels. This is intended to support
-        Chandra grating spectra.
+        These should not be set.
     grouping : array of int or None, optional
     quality : array of int or None, optional
     exposure : number or None, optional
@@ -1548,11 +1552,11 @@ class DataPHA(Data1D):
     discontinuities where the area-scaling factor changes strongly).
 
     """
-    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality')
+    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'grouping', 'quality')
     _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
                      'plot_fac', 'response_ids', 'background_ids')
 
-    _related_fields = Data1D._related_fields + ("bin_lo", "bin_hi", "counts", "grouping", "quality",
+    _related_fields = Data1D._related_fields + ("counts", "grouping", "quality",
                                                 "backscal", "areascal")
 
     def __init__(self,
@@ -1585,14 +1589,12 @@ class DataPHA(Data1D):
 
         # Assert types: is there a better way to do this?
         #
-        self._bin_lo: np.ndarray | None
-        self._bin_hi: np.ndarray | None
         self._grouping: np.ndarray | None
         self._quality: np.ndarray | None
         self._quality_filter: np.ndarray | None
 
-        self.bin_lo = _check(bin_lo)
-        self.bin_hi = _check(bin_hi)
+        self.bin_lo = None
+        self.bin_hi = None
         self.quality = _check(quality)
         self.grouping = _check(grouping)
         self.exposure = exposure
@@ -1703,11 +1705,35 @@ class DataPHA(Data1D):
         else:
             raise DataErr('bad', 'quantity', val)
 
+        # Check that the units setting is valid.
+        #
+        if units != "channel":
+            arf, rmf = self.get_response()
+            if arf is None and rmf is None:
+                raise DataErr("norsp", self.name)
+
+            # Does it make sense to check the ARF and RMF are compatible
+            # here? Shouldn't it be done when setting the response.
+            #
+            if rmf is not None:
+                if rmf.detchans != len(self.channel):
+                    raise DataErr("incompatibleresp", rmf.name, self.name)
+
+            elif arf is not None and len(arf.energ_lo) != len(self.channel):
+                raise DataErr("incompleteresp", self.name)
+
+        # Set the units for any associated background if we can.
+        # Since the setting only really matters if fitting the
+        # background then hide any errors (e.g. if there is no
+        # response and units is not 'channel').
+        #
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if bkg.get_response() != (None, None) or \
-               (bkg.bin_lo is not None and bkg.bin_hi is not None):
+            assert bkg is not None  # Need a better way to do this
+            try:
                 bkg.units = units
+            except DataErr:
+                pass
 
         self._units = units
 
@@ -1715,7 +1741,19 @@ class DataPHA(Data1D):
         return cast(AnalysisType, self._units)
 
     units = property(_get_units, _set_units,
-                     doc="Units of the independent axis: one of 'channel', 'energy', 'wavelength'.")
+                     doc="""Units of the independent axis.
+
+    Values are one of: 'channel', 'energy', or 'wavelength'.
+
+    .. versionchanged:: 4.17.1
+       The units can only be set to 'energy' or 'wavelength' after
+       a response has been added.
+
+    See Also
+    --------
+    set_analysis
+
+""")
 
     def _get_rate(self) -> bool:
         return self._rate
@@ -1912,28 +1950,37 @@ will be removed. The identifiers can be integers or strings.
     def bin_lo(self) -> np.ndarray | None:
         """The lower edge of each channel, in Angstroms, or None.
 
-        The values are expected to be in descending order. This is
-        only expected to be set for Chandra grating data.
+        .. versionchanged:: 4.17.1
+           This field is no-longer used. A diagonal RMF can be added
+           to represent the mapping between channel and bin_lo/hi
+           values.
+
         """
-        return self._bin_lo
+        return None
 
     @bin_lo.setter
     def bin_lo(self, val: ArrayType | None) -> None:
-        self._set_related("bin_lo", val)
+        if val is None:
+            return
+
+        warnings.warn("The bin_lo/hi fields are no-longer used: a diagonal RMF can badded to represent the mapping.", FutureWarning)
 
     @property
     def bin_hi(self) -> np.ndarray | None:
         """The upper edge of each channel, in Angstroms, or None.
 
-        The values are expected to be in descending order, with the
-        bin_hi value larger than the corresponding bin_lo element.
-        This is only expected to be set for Chandra grating data.
+        .. versionchanged:: 4.17.1
+           This field is no-longer used.
+
         """
-        return self._bin_hi
+        return None
 
     @bin_hi.setter
     def bin_hi(self, val: ArrayType | None) -> None:
-        self._set_related("bin_hi", val)
+        # Assume that bin_lo will also have been set so there's no
+        # need to add a warning here.
+        #
+        pass
 
     @property
     def grouping(self) -> np.ndarray | None:
@@ -2108,12 +2155,15 @@ will be removed. The identifiers can be integers or strings.
         return html_pha(self)
 
     def __getstate__(self):
-        state = self.__dict__.copy()
-        return state
+        return self.__dict__.copy()
 
     def __setstate__(self, state):
+        # Why do this?
         self._background_ids = state['_background_ids']
         self._backgrounds = state['_backgrounds']
+        self._responses = state['_responses']
+        self._data_space = state['_data_space']
+
         self._set_units(state['_units'])
 
         if 'header' not in state:
@@ -2147,7 +2197,7 @@ will be removed. The identifiers can be integers or strings.
 
         See Also
         --------
-        get_analysis
+        get_analysis, units
 
         Examples
         --------
@@ -2172,19 +2222,6 @@ will be removed. The identifiers can be integers or strings.
 
         self.rate = type == "rate"
 
-        arf, rmf = self.get_response()
-        if rmf is not None and rmf.detchans != len(self.channel):
-            raise DataErr("incompatibleresp", rmf.name, self.name)
-
-        if (rmf is None and arf is None) and \
-           (self.bin_lo is None and self.bin_hi is None) and \
-           quantity != "channel":
-            raise DataErr("norsp", self.name)
-
-        if rmf is None and arf is not None and quantity != "channel" and \
-           len(arf.energ_lo) != len(self.channel):
-            raise DataErr("incompleteresp", self.name)
-
         self.units = quantity
 
     def get_analysis(self) -> AnalysisType:
@@ -2204,7 +2241,7 @@ will be removed. The identifiers can be integers or strings.
 
         See Also
         --------
-        set_analysis
+        set_analysis, units
 
         Examples
         --------
@@ -2603,13 +2640,6 @@ will be removed. The identifiers can be integers or strings.
         if self.units == 'channel':
             elo = self.channel
             ehi = self.channel + 1
-        elif (self.bin_lo is not None) and (self.bin_hi is not None):
-            # TODO: review whether bin_lo/hi should over-ride the response
-            elo = self.bin_lo
-            ehi = self.bin_hi
-            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                elo = hc / self.bin_hi
-                ehi = hc / self.bin_lo
         else:
             arf, rmf = self.get_response(response_id)
             if rmf is not None:
@@ -2715,47 +2745,34 @@ will be removed. The identifiers can be integers or strings.
 
         """
 
-        if (self.bin_lo is not None) and (self.bin_hi is not None):
-            elo = self.bin_lo
-            ehi = self.bin_hi
-            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                if self.units == 'wavelength':
-                    return (elo, ehi)
-
-                elo = hc / self.bin_hi
-                ehi = hc / self.bin_lo
-
-        else:
-            energylist = []
-            for resp_id in self.response_ids:
-                arf, rmf = self.get_response(resp_id)
+        # It is not clear what the filter flag is meant to do and
+        # there is no test that can be used to identify what it is
+        # meant to do. The RMF and ARF get_indep calls ignore the
+        # filter flag they are sent.
+        #
+        energylist = []
+        for resp_id in self.response_ids:
+            arf, rmf = self.get_response(resp_id)
+            if rmf is not None:
+                lo, hi = rmf.get_indep(filter=filter)
+            elif arf is not None:
+                lo, hi = arf.get_indep(filter=filter)
+            else:
                 lo = None
                 hi = None
 
-                if rmf is not None:
-                    lo = rmf.energ_lo
-                    hi = rmf.energ_hi
-                    if filter:
-                        lo, hi = rmf.get_indep()
+            energylist.append((lo, hi))
 
-                elif arf is not None:
-                    lo = arf.energ_lo
-                    hi = arf.energ_hi
-                    if filter:
-                        lo, hi = arf.get_indep()
-
-                energylist.append((lo, hi))
-
-            if len(energylist) > 1:
-                # TODO: This is only tested by test_eval_multi_xxx and not with
-                # actual (i.e. real world) data
-                elo, ehi, lookuptable = compile_energy_grid(energylist)
-            elif (not energylist or
-                  (len(energylist) == 1 and
-                      np.equal(energylist[0], None).any())):
-                raise DataErr('noenergybins', 'Response')
-            else:
-                elo, ehi = energylist[0]
+        if len(energylist) > 1:
+            # TODO: This is only tested by test_eval_multi_xxx and not with
+            # actual (i.e. real world) data
+            elo, ehi, _ = compile_energy_grid(energylist)
+        elif (not energylist or
+              (len(energylist) == 1 and
+                  np.equal(energylist[0], None).any())):
+            raise DataErr('noenergybins', 'Response')
+        else:
+            elo, ehi = energylist[0]
 
         lo, hi = elo, ehi
         if self.units == 'wavelength':
@@ -5102,6 +5119,11 @@ It is an integer or string.
                 # do nothing (other than display an INFO message).
                 #
                 bkg.notice(lo, hi, ignore)
+            except DataErr:
+                # If there is no response then ignore this filter.
+                # TODO: what is the best thing to do here?
+                #
+                pass
             finally:
                 bkg.units = old_bkg_units
 
