@@ -818,7 +818,7 @@ def get_xsxset(name: str | None = None) -> str | dict[str, str]:
     Raises
     ------
     KeyError
-       When the name has not been set.
+       When the name passed is not set in X-Spec.
 
     See Also
     --------

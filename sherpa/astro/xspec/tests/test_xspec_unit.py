@@ -702,7 +702,7 @@ def test_get_xsabundances_table_name():
 def test_get_xsabundances_table_name_file():
     """Check we can get a different abundance table to the default.
 
-    Unlike test_get_xsabundances_table_name we load our own abnudances
+    Unlike test_get_xsabundances_table_name we load our own abundances
     so we can definitely check they are being used.
 
     """
