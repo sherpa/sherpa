@@ -1619,6 +1619,40 @@ class DataSimulFit(NoNewAttributesAfterInit):
             all_model.append(data.apply_filter(model))
         return np.concatenate(all_model)
 
+    def to_guess(self) -> tuple[np.ndarray | None, ...]:
+        """Return the data used for the guess routine.
+
+        Is is assumed that all the data elements have the same number
+        of independent axes, and that there are no "None" values.
+
+        .. versionadded:: 4.17.1
+
+        """
+
+        # This should be true by construction.
+        assert len(self.datasets) > 0
+
+        def combine(a: np.ndarray, b: np.ndarray | None) -> np.ndarray:
+            if b is None:
+                raise DataErr("axis is not set")
+            return np.append(a, b)
+
+        out = self.datasets[0].to_guess()
+        for axis in out:
+            if axis is None:
+                raise DataErr("axis is not set")
+
+        for data in self.datasets[1:]:
+            # The assumption here is that each dataset has the same
+            # number of independent axes as the first dataset.
+            dout = data.to_guess()
+            if len(dout) != len(out):
+                raise DataErr("Unable to create guess when number of independent axes varies")
+
+            out = (combine(a, b) for a, b in zip(out, dout))
+
+        return out
+
     def to_fit(self,
                staterrfunc: StatErrFunc | None = None
                ) -> tuple[np.ndarray,
