@@ -313,7 +313,6 @@ def test_guess_single_dataset(caplog, clean_ui):
     assert len(caplog.records) == 0
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("id1,id2", [(10, 20), (20, 10)])
 def test_guess_multiple_datasets(id1, id2, caplog, clean_ui):
     """Do the different datasets change the guess?"""
@@ -342,7 +341,6 @@ def test_guess_multiple_datasets(id1, id2, caplog, clean_ui):
     assert len(caplog.records) == 0
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("id1,id2", [(10, 20), (20, 10)])
 def test_guess_multiple_datasets_single_component(id1, id2, caplog, clean_ui):
     """Guess a single component?"""

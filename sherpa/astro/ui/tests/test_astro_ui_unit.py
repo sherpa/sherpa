@@ -3430,7 +3430,6 @@ def test_pha_group_filter_ignore_bad_group(caplog, clean_astro_ui):
     assert r.getMessage() == "dataset 1: 1:4 -> 1:5 Channel"
 
 
-@pytest.mark.xfail
 @requires_data
 @requires_fits
 def test_multi_id_guess_pha(clean_astro_ui, make_data_path):

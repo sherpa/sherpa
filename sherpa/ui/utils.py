@@ -9349,7 +9349,13 @@ class Session(NoNewAttributesAfterInit):
 
         return self._fit_results
 
-    def guess(self, id=None, model=None, limits=True, values=True):
+    def guess(self,
+              id=None,
+              model=None,
+              limits: bool = True,
+              values: bool = True,
+              otherids: Sequence[IdType] = ()
+              ) -> None:
         """Estimate the parameter values and ranges given the loaded data.
 
         The guess function can change the parameter values and
@@ -9357,6 +9363,9 @@ class Session(NoNewAttributesAfterInit):
         changing the amplitude and position parameters (sometimes just
         the values and sometimes just the limits). The parameters that
         are changed depend on the type of model.
+
+        .. versionchanged:: 4.18.0
+           Added the otherids argument.
 
         .. versionchanged:: 4.17.0
            The guess routine will now work with composite models and
@@ -9379,6 +9388,8 @@ class Session(NoNewAttributesAfterInit):
         values : bool
            Should the parameter values be changed? The default is
            ``True``.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
 
         See Also
         --------
@@ -9463,22 +9474,36 @@ class Session(NoNewAttributesAfterInit):
             if id not in self.list_data_ids():
                 id, model = model, id
 
-        idval = self._fix_id(id)
+        ids = [self._fix_id(id)]
+        for oid in otherids:
+            idval = self._fix_id(oid)
+            if idval not in ids:
+                ids.append(idval)
+
         kwargs = {'limits': limits, 'values': values}
 
+        data: Data | DataSimulFit
         if model is not None:
             model = self._check_model(model)
+
+            dsets = [self.get_data(idval) for idval in ids]
+            if len(ids) == 1:
+                data = dsets[0]
+            else:
+                data = DataSimulFit('simulfit data', dsets, numcores=1)
+
             try:
-                model.guess(*self.get_data(idval).to_guess(), **kwargs)
+                model.guess(*data.to_guess(), **kwargs)
             except NotImplementedError:
                 warning('No guess found for %s', model.name)
             return
 
-        ids, f = self._get_fit(idval)
+        _, f = self._get_fit(ids[0], ids[1:])
         try:
             f.guess(**kwargs)
         except NotImplementedError:
-            warning('No guess found for %s', self.get_model(idval).name)
+            # What is the best model to use here?
+            warning('No guess found for %s', self.get_model(ids[0]).name)
 
     def calc_stat(self,
                   id: IdType | None = None,

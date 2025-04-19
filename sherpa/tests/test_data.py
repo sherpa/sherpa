@@ -2762,7 +2762,6 @@ def test_get_filter_when_empty_1d(data_class, args):
         _ = data.get_filter()
 
 
-@pytest.mark.xfail
 def test_datasimulfit_to_guess_axis_difference():
     """Very basic check that this fails"""
 
@@ -2776,7 +2775,6 @@ def test_datasimulfit_to_guess_axis_difference():
         _ = d.to_guess()
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("d1,d2,emsg",
                          [ # First dataset has no data
                            (Data1D("d1", None, [3, 4, 5]),
@@ -2807,7 +2805,6 @@ def test_datasimulfit_to_guess_missing_axis(d1, d2, emsg):
         _ = d.to_guess()
 
 
-@pytest.mark.xfail
 def test_datasimulfit_to_guess():
     """Very basic check"""
 
