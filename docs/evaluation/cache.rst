@@ -13,16 +13,17 @@ uses the parameter values, evaluation grid, and integrate setting to
 look for a value from that model's cache. If found the value is returned,
 otherwise the model is evaluated and the result is added to the cache.
 
-Unfortunately it is not always obvious if a model uses caching, or how
-effective it is.
+It is hard to predict how effective caching is so
+the defaults are set for typical Sherpa use cases, based on some benchmarking,
+but your performance might be improved with different settings.
 
 What models are cached?
 =======================
 
-There is unfortunately no easy way to determine whether a model
-uses the cache without either viewing the model definition - looking
-for the application of ``@modelCacher1d`` to the ``calc`` method - or
-by running a test as shown below,
+A model uses the cache if ``@modelCacher1d`` is applied to the ``calc`` method
+**and** `model.cache` is set to a positive integer.
+Unfortunately it is not easy to check weather ``@modelCacher1d`` is applied without
+looking at the source codeb- or by running a test as shown below,
 :ref:`in the example section <example-modelcacher1d>`.
 
 When is the cache useful?
@@ -35,8 +36,15 @@ Compared to most built-in sherpa models, models in the optional XSPEC model
 library (:py:mod:`sherpa.astro.xspec`) tend to be more complex and
 thus benefit more from caching.
 
-Can I turn off this behavior?
-=============================
+By default, the cache is switched off (`mdl.cache=0`) for simple models where the model
+evaluation is fast, sometimes even faster than the hashing that is needed to look up
+a value in the cache. An obvious example is a scale or constant model
+(`sherpa.models.basic.Scale1D` or `sherpa.models.basic.Constant1D`),
+but this also applies to some fast analytical
+models such as an XSPEC black body (`sherpa.astro.xspec.XSbbody`).
+
+Can I turn off this behavior for other models?
+==============================================
 
 The size of the cache for a specific model component called ``mdl`` can
 be set to zero (``mdl.cache=0``) to turn off the cache behavior.
@@ -54,6 +62,40 @@ leaves it at the previous setting. This is because some models may not work with
 caching at all and need to stay at ``cache=0`` at all times.
 The cache has to be manually set to a positive number for all models that should use the cache
 to allow caching again.
+
+How do I set the default in my own models to use or not use the cache?
+======================================================================
+
+In order to be cacheable at all, a model must have the ``@modelCacher1d`` decorator
+applied to the ``calc`` method. The default for an `~sherpa.models.model.ArithmeticModel`
+is a cache size of 5, but this can be changed by setting the
+``cache`` attribute in the model's
+constructor. For example, here we deactivate the cache by default by setting the value to 0,
+but we still decorate the ``calc`` method so that a user can switch if back on for
+individual instances of the model::
+
+    >>> from sherpa.models.model import ArithmeticModel, modelCacher1d, Parameter
+    >>> class MyModel(ArithmeticModel):
+    ...     def __init__(self, name='mymodel'):
+    ...         self.xpos = Parameter(name, 'offset', 0)
+    ...         super().__init__(name, (self.offset,))
+    ...         self.cache = 0
+    ...
+    ...     @modelCacher1d
+    ...     def calc(self, p, *args, **kwargs):
+    ...         # do something
+    ...         return p[0] + args[0]
+    >>> m = MyModel()
+    >>> m.cache = 3  # use the cache in models instance m
+
+Do **not** set `cache = 0` as a class attribute. If you use `~sherpa.models.model.modelCacher1d`
+``cache`` is actually a property that does other things when the cache is set (e.g. reset the
+cache content). Setting a class attribute will lead to errors when the decorated ``calc`` method
+is called, i.e. the following will not work::
+
+    >>> class MyModel(ArithmeticModel):
+    ...     cache = 0  # DO NOT DO THIS!
+
 
 How does the cache work?
 ========================
@@ -99,15 +141,19 @@ case it isn't worth it!). First we set up the data::
 
     >>> import numpy as np
     >>> from sherpa.data import Data1D
-    >>> x = np.arange(1, 4)
-    >>> y = [4, 5, 2]
+    >>> x = np.arange(0, 3)
+    >>> y = [2, 0.3, 0.02]
     >>> data = Data1D('example', x, y)
 
 A simple model is used::
 
-    >>> from sherpa.models.basic import Const1D
-    >>> mdl = Const1D()
-    >>> print(mdl.c0.val)
+    >>> from sherpa.models.basic import Exp10
+    >>> mdl = Exp10()
+    >>> mdl.offset.frozen = True
+    >>> mdl.offset = 1.0
+    >>> mdl.coeff.frozen = True
+    >>> mdl.coeff = -1.0
+    >>> print(mdl.ampl.val)
     1.0
     >>> print(mdl._cache)
     {}
@@ -122,26 +168,23 @@ the `startup` and `teardown` methods are called automatically by
     >>> print(result.format())
     Method                = levmar
     Statistic             = chi2gehrels
-    Initial fit statistic = 2.4176
-    Final fit statistic   = 0.534697 at function evaluation 4
+    Initial fit statistic = 9.178
+    Final fit statistic   = 0.00239806 at function evaluation 4
     Data points           = 3
     Degrees of freedom    = 2
-    Probability [Q-value] = 0.765406
-    Reduced statistic     = 0.267349
-    Change in statistic   = 1.8829
-       const1d.c0     3.39944      +/- 1.74862
+    Probability [Q-value] = 0.998802
+    Reduced statistic     = 0.00119903
+    Change in statistic   = 9.1756
+       exp10.ampl     0.201694     +/- 0.263543
 
 The cache contains 4 elements which we can display::
 
-    >>> print(mdl.c0.val)
-    3.399441714533379
     >>> print(len(mdl._cache))
     4
     >>> for v in mdl._cache.values():
     ...     print(v)
     ...
-    [1. 1. 1.]
-    [1.00034527 1.00034527 1.00034527]
-    [3.39944171 3.39944171 3.39944171]
-    [3.40061543 3.40061543 3.40061543]
-
+    [10.   1.   0.1]
+    [10.00345267  1.00034527  0.10003453]
+    [2.01694277 0.20169428 0.02016943]
+    [2.01763916 0.20176392 0.02017639]

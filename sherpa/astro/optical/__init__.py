@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2017, 2018, 2019, 2020, 2021, 2023
+#  Copyright (C) 2011, 2016-2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -43,6 +43,7 @@ from sherpa.models.model import ArithmeticModel, RegriddableModel1D
 from sherpa.utils import sao_fcmp
 from sherpa.utils.err import ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.models.model import modelCacher1d
 
 _tol = numpy.finfo(numpy.float32).eps
 
@@ -171,7 +172,7 @@ class AbsorptionEdge(RegriddableModel1D):
 
     # We can turn on model caching with this commented-out feature,
     # if we find we need it.
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         y = numpy.ones_like(x)
@@ -224,7 +225,7 @@ class AccretionDisk(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.ref, self.beta, self.ampl, self.norm))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
 
@@ -298,7 +299,7 @@ class AbsorptionGaussian(RegriddableModel1D):
         ArithmeticModel.__init__(self, name, (self.fwhm, self.pos,
                                               self.ewidth, self.limit))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
 
@@ -371,7 +372,7 @@ class AbsorptionLorentz(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.pos, self.ewidth))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
 
@@ -441,7 +442,7 @@ class EmissionLorentz(RegriddableModel1D):
         ArithmeticModel.__init__(self, name, (self.fwhm, self.pos,
                                               self.flux, self.kurt))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
 
@@ -521,7 +522,7 @@ class OpticalGaussian(RegriddableModel1D):
         ArithmeticModel.__init__(self, name, (self.fwhm, self.pos,
                                               self.tau, self.limit))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
 
@@ -613,7 +614,7 @@ class EmissionGaussian(RegriddableModel1D):
                                  (self.fwhm, self.pos, self.flux,
                                   self.skew, self.limit))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
 
@@ -700,7 +701,7 @@ class BlackBody(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.refer, self.ampl, self.temperature))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         c1 = 1.438786e8
@@ -777,7 +778,7 @@ class Bremsstrahlung(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.refer, self.ampl, self.temperature))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         if 0.0 == p[0]:
@@ -836,7 +837,7 @@ class BrokenPowerlaw(RegriddableModel1D):
                                  (self.refer, self.ampl, self.index1,
                                   self.index2))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         if 0.0 == p[0]:
             raise ValueError('model evaluation failed, ' +
@@ -891,7 +892,7 @@ class CCM(RegriddableModel1D):
 
         ArithmeticModel.__init__(self, name, (self.ebv, self.r))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         y = numpy.zeros_like(x)
@@ -1023,7 +1024,7 @@ class LogAbsorption(RegriddableModel1D):
         ArithmeticModel.__init__(self, name, (self.fwhm, self.pos,
                                               self.tau))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
 
@@ -1115,8 +1116,9 @@ class LogEmission(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.pos, self.flux,
                                   self.skew))
+        self.cache = 0
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
 
@@ -1210,7 +1212,7 @@ class Polynomial(RegriddableModel1D):
         pars.append(self.offset)
         ArithmeticModel.__init__(self, name, pars)
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         y = numpy.zeros_like(x)
@@ -1262,7 +1264,7 @@ class Powerlaw(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.refer, self.ampl, self.index))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         if 0.0 == p[0]:
             raise ValueError('model evaluation failed, ' +
@@ -1329,7 +1331,7 @@ class Recombination(RegriddableModel1D):
                                  (self.refer, self.ampl,
                                   self.temperature, self.fwhm))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         if 0.0 == p[0]:
             raise ValueError('model evaluation failed, ' +
@@ -1384,7 +1386,7 @@ class XGal(RegriddableModel1D):
 
         ArithmeticModel.__init__(self, name, (self.ebv,))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
 
@@ -1462,7 +1464,7 @@ class FM(RegriddableModel1D):
                                               self.width, self.c1, self.c2,
                                               self.c3, self.c4))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         x = 10000. / x
@@ -1515,7 +1517,7 @@ class LMC(RegriddableModel1D):
 
         ArithmeticModel.__init__(self, name, (self.ebv,))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         # convert from wavelength in Angstroms to 1/microns
@@ -1594,7 +1596,7 @@ class SM(RegriddableModel1D):
 
         ArithmeticModel.__init__(self, name, (self.ebv,))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         # convert from wavelength in Angstroms to 1/microns
@@ -1655,7 +1657,7 @@ class SMC(RegriddableModel1D):
 
         ArithmeticModel.__init__(self, name, (self.ebv,))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         # convert from wavelength in Angstroms to 1/microns
@@ -1756,7 +1758,7 @@ class Seaton(RegriddableModel1D):
 
         ArithmeticModel.__init__(self, name, (self.ebv,))
 
-    # @modelCacher1d
+    @modelCacher1d
     def calc(self, p, x, xhi=None, **kwargs):
         x = numpy.asarray(x, dtype=SherpaFloat)
         # convert from wavelength in Angstroms to 1/microns
