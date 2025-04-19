@@ -9314,7 +9314,13 @@ class Session(NoNewAttributesAfterInit):
 
         return self._fit_results
 
-    def guess(self, id=None, model=None, limits=True, values=True):
+    def guess(self,
+              id=None,
+              model=None,
+              limits: bool = True,
+              values: bool = True,
+              otherids: Sequence[IdType] = ()
+              ) -> None:
         """Estimate the parameter values and ranges given the loaded data.
 
         The guess function can change the parameter values and
@@ -9322,6 +9328,9 @@ class Session(NoNewAttributesAfterInit):
         changing the amplitude and position parameters (sometimes just
         the values and sometimes just the limits). The parameters that
         are changed depend on the type of model.
+
+        .. versionchanged:: 4.17.1
+           Added the otherids argument.
 
         .. versionchanged:: 4.17.0
            The guess routine will now work with composite models and
@@ -9344,6 +9353,8 @@ class Session(NoNewAttributesAfterInit):
         values : bool
            Should the parameter values be changed? The default is
            ``True``.
+        otherids : sequence of int or str, optional
+           Other data sets to use in the calculation.
 
         See Also
         --------
@@ -9432,6 +9443,7 @@ class Session(NoNewAttributesAfterInit):
         kwargs = {'limits': limits, 'values': values}
 
         if model is not None:
+            if len(otherids) != 0: assert False  # TODO: FIX
             model = self._check_model(model)
             try:
                 model.guess(*self.get_data(idval).to_guess(), **kwargs)
@@ -9439,7 +9451,7 @@ class Session(NoNewAttributesAfterInit):
                 warning('No guess found for %s', model.name)
             return
 
-        ids, f = self._get_fit(idval)
+        ids, f = self._get_fit(idval, otherids)
         try:
             f.guess(**kwargs)
         except NotImplementedError:

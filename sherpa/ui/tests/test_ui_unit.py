@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020 - 2025
+#  Copyright (C) 2017, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -284,6 +284,56 @@ def test_guess_multiple_model_multiple(caplog, clean_ui):
     assert bmdl.ampl.val == pytest.approx(7)
     assert bmdl.ampl.min == pytest.approx(0.007)
     assert bmdl.ampl.max == pytest.approx(7000)
+
+    assert len(caplog.records) == 0
+
+
+def test_guess_single_dataset(caplog, clean_ui):
+    """Check the data used in test_guess_multiple_datasets as a single dataset"""
+
+    ui.load_arrays("foo", [10, 15, 20, 22, 30, 40, 45], [5, 8, 7, 9, 20, 3, 6])
+
+    # Same model as test_guess_multiple_model_xxx
+    mdl = ui.scale1d.smdl + ui.box1d.bmdl
+    ui.set_source("foo", mdl)
+
+    ui.guess(id="foo")
+
+    assert smdl.c0.val == pytest.approx(11.5)
+    assert smdl.c0.min == pytest.approx(0.03)
+    assert smdl.c0.max == pytest.approx(2000)
+
+    assert bmdl.ampl.val == pytest.approx(20)
+    assert bmdl.ampl.min == pytest.approx(0.02)
+    assert bmdl.ampl.max == pytest.approx(20000)
+
+    assert len(caplog.records) == 0
+
+
+@pytest.mark.xfail  # issue 2284
+@pytest.mark.parametrize("id1,id2", [(10, 20), (20, 10)])
+def test_guess_multiple_datasets(id1, id2, caplog, clean_ui):
+    """Do the different datasets change the guess?"""
+
+    ui.load_arrays(10, [10, 20, 40], [5, 7, 3])
+    ui.load_arrays(20, [15, 22, 30, 45], [8, 9, 20, 6])
+
+    mdl = ui.scale1d.smdl + ui.box1d.bmdl
+    ui.set_source(10, mdl)
+    ui.set_source(20, mdl)
+
+    bound = 100000
+
+    # The guess should not care about the dataset order
+    ui.guess(id=id1, otherids=[id2])
+
+    assert smdl.c0.val == pytest.approx(11.5)
+    assert smdl.c0.min == pytest.approx(0.03)
+    assert smdl.c0.max == pytest.approx(2000)
+
+    assert bmdl.ampl.val == pytest.approx(20)
+    assert bmdl.ampl.min == pytest.approx(0.02)
+    assert bmdl.ampl.max == pytest.approx(20000)
 
     assert len(caplog.records) == 0
 
