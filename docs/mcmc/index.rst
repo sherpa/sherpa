@@ -131,7 +131,7 @@ Simulate the data
     Create a simulated data set:
 
     >>> import numpy as np
-    >>> np.random.seed(2)  # For reproducibility of this example
+    >>> rng = np.random.RandomState(2)  # For reproducibility of this example
     >>> x0low, x0high = 3000, 4000
     >>> x1low, x1high = 4000, 4800
     >>> dx = 15
@@ -156,7 +156,7 @@ Simulate the data
 
     Create the simulated data by adding in Poisson-distributed noise:
   
-    >>> msim = np.random.poisson(mexp)
+    >>> msim = rng.poisson(mexp)
 
 What does the data look like?
 -----------------------------
@@ -170,10 +170,12 @@ Use an arcsinh transform to view the data, based on the work of
     :context:
 
     >>> import matplotlib.pyplot as plt
-    >>> plt.imshow(np.arcsinh(msim), origin='lower', cmap='viridis',
+    >>> # plt.image returns an image object. We don't need it any further for
+    >>> # this example, so we just put it in a throwaway variable to avoid extra screen output.
+    >>> _ = plt.imshow(np.arcsinh(msim), origin='lower', cmap='viridis',
     ...            extent=(x0low, x0high, x1low, x1high),
     ...            interpolation='nearest', aspect='auto')
-    >>> plt.title('Simulated image')
+    >>> _ = plt.title('Simulated image')
 
 
 Find the starting point for the MCMC
@@ -216,7 +218,6 @@ starting place for the MCMC analysis:
     >>> eres = f.est_errors()
     >>> print(eres.format())
     Confidence Method     = covariance
-    Iterative Fit Method  = None
     Fitting Method        = neldermead
     Statistic             = cash
     covariance 1-sigma (68.2689%) bounds:
@@ -232,10 +233,10 @@ starting place for the MCMC analysis:
   
     >>> cmatrix = eres.extra_output
     >>> pnames = [p.split('.')[1] for p in eres.parnames]
-    >>> plt.imshow(cmatrix, interpolation='nearest', cmap='viridis')
-    >>> plt.xticks(np.arange(5), pnames)
-    >>> plt.yticks(np.arange(5), pnames)
-    >>> plt.colorbar()
+    >>> _= plt.imshow(cmatrix, interpolation='nearest', cmap='viridis')
+    >>> _= plt.xticks(np.arange(5), pnames)
+    >>> _ = plt.yticks(np.arange(5), pnames)
+    >>> _ = plt.colorbar()
 
 
 Run the chain
@@ -252,12 +253,13 @@ Run the chain
     >>> from sherpa.sim import MCMC
     >>> mcmc = MCMC()
     >>> mcmc.get_sampler_name()
-    >>> draws = mcmc.get_draws(f, cmatrix, niter=1000)
+    'MetropolisMH'
+    >>> draws = mcmc.get_draws(f, cmatrix, niter=1000, rng=rng)
     >>> svals, accept, pvals = draws
     >>> pvals.shape
     (5, 1001)
     >>> accept.sum() * 1.0 / 1000
-    0.48499999999999999
+    0.486
 
 Trace plots
 -----------
@@ -266,9 +268,9 @@ Trace plots
     :include-source:
     :context: close-figs
    
-    >>> plt.plot(pvals[0, :])
-    >>> plt.xlabel('Iteration')
-    >>> plt.ylabel('r0')
+    >>> _ = plt.plot(pvals[0, :])
+    >>> _ = plt.xlabel('Iteration')
+    >>> _ = plt.ylabel('r0')
 
 Or using the :py:mod:`sherpa.plot` module:
 
@@ -294,29 +296,31 @@ PDF of a parameter
 
     And adding in the covariance estimate using `matplotlib.pyplot.annotate`:
 
-    >>> xlo, xhi = eres.parmins[1] + eres.parvals[1], eres.parmaxes[1] + eres.parvals[1]
-    >>> plt.annotate('', (xlo, 90), (xhi, 90), arrowprops={'arrowstyle': '<->'})
-    >>> plt.plot([eres.parvals[1]], [90], 'ok')
+    >>> xlo= eres.parmins[1] + eres.parvals[1]
+    >>> xhi = eres.parmaxes[1] + eres.parvals[1]
+    >>> _ = plt.annotate('', (xlo, 90), (xhi, 90), arrowprops={'arrowstyle': '<->'})
+    >>> _ = plt.plot([eres.parvals[1]], [90], 'ok')
 
 CDF for a parameter
 -------------------
 
 .. plot::
     :include-source:
-    :context:
+    :context: close-figs
 
     Normalise by the actual answer to make it easier to see how well
     the results match reality:
 
     >>> cdf = plot.CDFPlot()
-    >>> plt.subplot(2, 1, 1)
+    >>> _ = plt.subplot(2, 1, 1)
     >>> cdf.prepare(pvals[1, :] - truth.xpos.val, r'$\Delta x$')
     >>> cdf.plot(clearwindow=False)
-    >>> plt.title('')
-    >>> plt.subplot(2, 1, 2)
+    >>> _ = plt.title('')
+    >>> _ = plt.subplot(2, 1, 2)
     >>> cdf.prepare(pvals[2, :] - truth.ypos.val, r'$\Delta y$')
     >>> cdf.plot(clearwindow=False)
-    >>> plt.title('')
+    >>> _ = plt.title('')
+    >>> plt.subplots_adjust(hspace=0.4)
 
 Scatter plot
 ------------
@@ -325,10 +329,10 @@ Scatter plot
     :include-source:
     :context: close-figs
 
-    >>> plt.scatter(pvals[0, :] - truth.r0.val,
+    >>> _ = plt.scatter(pvals[0, :] - truth.r0.val,
     ...             pvals[4, :] - truth.alpha.val, alpha=0.3)
-    >>> plt.xlabel(r'$\Delta r_0$', size=18)
-    >>> plt.ylabel(r'$\Delta \alpha$', size=18)
+    >>> _ = plt.xlabel(r'$\Delta r_0$', size=18)
+    >>> _ = plt.ylabel(r'$\Delta \alpha$', size=18)
    
 This can be compared to the
 :py:class:`~sherpa.plot.RegionProjection` calculation:
@@ -337,13 +341,39 @@ This can be compared to the
     :include-source:
     :context: close-figs
 
-    >>> plt.scatter(pvals[0, :], pvals[4, :], alpha=0.3)
+    >>> _ = plt.scatter(pvals[0, :], pvals[4, :], alpha=0.3)
     >>> from sherpa.plot import RegionProjection
     >>> rproj = RegionProjection()
     >>> rproj.prepare(min=[95, 1.8], max=[150, 2.6], nloop=[21, 21])
     >>> rproj.calc(f, mdl.r0, mdl.alpha)
     >>> rproj.contour(overplot=True)
-    >>> plt.xlabel(r'$r_0$'); plt.ylabel(r'$\alpha$')
+    >>> _ = plt.xlabel(r'$r_0$')
+    >>> _ = plt.ylabel(r'$\alpha$')
+
+Connections to ArviZ
+--------------------
+`ArviZ <https://python.arviz.org>`_ is a Python package for exploratory analysis of Bayesian models.
+It serves as a backend-agnostic tool for diagnosing and visualizing Bayesian inference and
+provides different plotting and statistical diagnostic functions for MCMC chains, that
+are not implemented in Sherpa itself. If the ArviZ package is installed,
+`~sherpa.sim.mcmc_to_arviz` can be used to convert the MCMC results to an
+`arviz.data.inference_data.InferenceData` object.
+
+.. plot::
+    :include-source:
+    :context: close-figs
+
+    .. doctest-requires:: arviz
+
+        >>> import arviz as az
+        >>> from sherpa.sim import mcmc_to_arviz
+        >>> dataset = mcmc_to_arviz(mcmc=mcmc, fit=f, list_of_draws=[draws])
+        >>> _ = az.plot_pair(dataset, kind=["scatter", "kde"], kde_kwargs={"fill_last": False},
+        ...     marginals=True, point_estimate="median", figsize=(12, 12))
+
+See the `ArviZ <https://python.arviz.org>`_ documentation for more details on the
+available plotting functions and statistical diagnostics.
+
 
 Reference/API
 =============

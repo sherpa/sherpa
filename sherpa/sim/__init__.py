@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018 - 2021, 2023, 2024
+#  Copyright (C) 2011, 2015-2016, 2018-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -191,12 +191,13 @@ parameter::
     >>> pval, plo, phi = get_error_estimates(par1[nburn:])
 
 """
-
+from datetime import datetime
 import logging
 from typing import Optional
 
 import numpy as np
 
+import sherpa
 from sherpa.data import Data1D, Data1DAsymmetricErrs
 from sherpa.fit import Fit
 from sherpa.optmethods import LevMar, OptMethod
@@ -211,8 +212,7 @@ from sherpa.sim.sample import *
 from sherpa.sim.mh import *
 
 from sherpa.stats import Cash, CStat, WStat, LeastSq, Stat
-from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults, \
-    sao_fcmp
+from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils import random
 
@@ -668,6 +668,10 @@ class MCMC(NoNewAttributesAfterInit):
            values.
         niter : int, optional
            The number of draws to use. The default is ``1000``.
+        cache : bool, optional
+            If this is set to `False`, model caching is disabled during the
+            computation. The default (`True`) does not change the caching state
+            of the model, which means that for most models caching is enabled.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
            Determines how random numbers are created. If set to None then
            the routines from `numpy.random` are used, and so can be
@@ -1004,3 +1008,79 @@ class ReSampleData(NoNewAttributesAfterInit):
             result[name] = pars[name]
 
         return result
+
+
+# The return value is InterferenceData, but this is not imported on the module
+# level, so we can't use it in the type hint.
+def mcmc_to_arviz(mcmc : MCMC, fit: Fit, list_of_draws : list[tuple],
+                  ):
+    """Convert the MCMC results to an ArviZ InferenceData object.
+
+    ArviZ is a Python package for exploratory analysis of Bayesian models and
+    provides a range of tools for visualizing and analyzing MCMC results.
+
+    This function requires the `ArviZ <https://python.arviz.org>`_ package to be installed.
+
+    .. versionadded:: 4.17.1
+
+    Parameters
+    ----------
+    mcmc : MCMC
+        The MCMC object used to run the chain.
+    fit : Fit
+        The Fit object used to fit the data.
+    list_of_draws : list of tuples
+        A list of tuples, each containing three elements as returned from
+        `MCMC.get_draws`: the statistic, the acceptance rate, and the
+        parameter array. Each tuple corresponds to a single chain run for the
+        same model and MCMC object.
+
+    Returns
+    -------
+    inference_data: arviz.InferenceData
+        An ArviZ InferenceData object containing the posterior and log likelihood data.
+    """
+
+    from arviz.data.base import dict_to_dataset
+    from arviz.data.inference_data import InferenceData
+
+    pnames = [p.fullname for p in fit.model.get_thawed_pars()]
+
+    for i, draw in enumerate(list_of_draws):
+        if len(draw) != 3:
+            raise ValueError("For each chain in the list_of_draws, there must be three elements: " +
+                             "the statistic, the acceptance rate, and the parameter array.")
+        if draw[2].shape[0] != len(pnames):
+            raise ValueError(f"Chain {i} contains {draw[2].shape[0]} dimensions, but the model has {len(pnames)} thawed parameters.")
+        if len(draw[0]) != draw[2].shape[1]:
+            raise ValueError(f"Chain {i} contains {draw[0].shape[0]} steps for the static, but parameter array has {draw[2].shape[1]} steps.")
+        if len(list_of_draws[0][0]) != len(draw[0]):
+            raise ValueError("All chains must have the same number of steps. " +
+                f"Chain {i} contains {draw[0].shape[0]} steps, but the first chain has {len(list_of_draws[0][0])} steps.")
+
+    datadict = {}
+    for i, p in enumerate(pnames):
+        datadict[p] = np.stack([draw[2][i, :] for draw in list_of_draws])
+    attrs = {'name': fit.model.name,
+             'created_at': datetime.now().isoformat(),
+             'inference_library': 'sherpa',
+             'inference_library_version': sherpa.__version__,
+             'sampler_name': mcmc.get_sampler_name(),
+             'sampler_opt': mcmc.get_sampler(),
+             'stat_name': fit.stat.name,
+
+             }
+    posterior = dict_to_dataset(datadict,
+                                attrs = attrs,
+                                library=sherpa,
+                                )
+    log_likelihood_data = {'obs': np.stack([draw[0] for draw in list_of_draws])}
+    log_likelihood = dict_to_dataset(log_likelihood_data,
+                                     attrs = attrs,
+                                     library=sherpa,
+                                     )
+
+    return InferenceData(
+            **{"posterior": posterior, "log_likelihood": log_likelihood},
+            attrs = attrs,
+        )

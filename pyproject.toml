@@ -54,7 +54,8 @@ doc = [
   # code needed to run the documentation tests
   "astropy",
   "matplotlib",
-  "bokeh"
+  "bokeh",
+  "arviz",
 ]
 
 [project.urls]

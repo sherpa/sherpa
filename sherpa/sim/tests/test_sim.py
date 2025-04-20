@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2018, 2020, 2021, 2023, 2024
+#  Copyright (C) 2011, 2016, 2018, 2020-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -561,3 +561,100 @@ def test_metropolisMH(setup, caplog):
 
     means = np.asarray([1.06278015, 9.21533855, 2.5736483, 2.5853907, 47.27058904])
     assert params.mean(axis=1) == pytest.approx(means)
+
+
+def setup_no_fit():
+    """Simplified version of the setup fixture that does not perform a fit or confidence
+    to save time. THis is just use to test error messages for non-conforming input."""
+    data = Data1D('fake', _x, _y, _err)
+
+    g1 = Gauss1D('g1')
+    g1.fwhm.set(1.0, _tiny, _max, frozen=False)
+    g1.pos.set(1.0, -_max, _max, frozen=False)
+    g1.ampl.set(1.0, -_max, _max, frozen=False)
+    p1 = PowLaw1D('p1')
+    p1.gamma.set(1.0, -10, 10, frozen=False)
+    p1.ampl.set(1.0, 0.0, _max, frozen=False)
+    p1.ref.set(1.0, -_max, _max, frozen=True)
+    model = p1 + g1
+
+    method = LevMar()
+
+    fit = Fit(data, model, Cash(), method, Covariance())
+
+    return fit
+
+
+def test_to_arviz_tuple_too_short():
+    """Check that we fail if the tuple in list_of_draws does not include all information."""
+
+    arviz = pytest.importorskip("arviz")
+    with pytest.raises(ValueError,
+                       match="^For each chain in the list_of_draws, there must be three elements:"):
+        sim.mcmc_to_arviz(mcmc=sim.MCMC(), fit=setup_no_fit(),
+                           list_of_draws=[np.ones(5), np.ones(5)])
+
+
+def test_to_arviz_tuple_n_steps_inconsistent():
+    """Check that we fail if the number of steps is inconsistent between stats and params."""
+
+    arviz = pytest.importorskip("arviz")
+    with pytest.raises(ValueError,
+                       match="^Chain 0 contains 7 steps for the static, but parameter array has 10 steps."):
+        sim.mcmc_to_arviz(mcmc=sim.MCMC(), fit=setup_no_fit(),
+                           list_of_draws=[(np.ones(7), np.arange(7), np.zeros((5, 10)))])
+
+
+def test_to_arviz_tuple_n_steps_inconsistent_between_draws():
+    """Check that we fail if the number of steps is inconsistent between chains."""
+
+    arviz = pytest.importorskip("arviz")
+    with pytest.raises(ValueError,
+                       match="Chain 1 contains 4 steps, but the first chain has 6 steps."):
+        sim.mcmc_to_arviz(mcmc=sim.MCMC(), fit=setup_no_fit(),
+                          list_of_draws=[(np.ones(6), np.ones(6), np.ones((5, 6))),
+                                         (np.ones(4), np.ones(4), np.ones((5, 4)))])
+
+
+def test_to_arviz_tuple_does_not_match_number_model_params():
+    """Check that we fail if the number of thawed model parameters does not match the data in the chains."""
+
+    arviz = pytest.importorskip("arviz")
+    with pytest.raises(ValueError,
+                       match="^Chain 1 contains 2 dimensions, but the model has 5 thawed parameters."):
+        sim.mcmc_to_arviz(mcmc=sim.MCMC(), fit=setup_no_fit(),
+                          list_of_draws=[(np.ones(6), np.ones(6), np.ones((5, 6))),
+                                         (np.ones(4), np.ones(4), np.ones((2, 4)))])
+
+
+def test_to_arviz_tuple():
+    """Check that we can convert a tuple to an arviz InferenceData object.
+
+    The test just checks a few properties to make sure the conversion works,
+    it's up to arviz to test that their objects work.
+    """
+
+    arviz = pytest.importorskip("arviz")
+
+    data = Data1D('fake', _x, _y, _err)
+    g1 = Gauss1D('g1')
+
+    method = LevMar()
+    fit = Fit(data, g1, Cash(), method, Covariance())
+    fit.fit()
+    results = fit.est_errors()
+    cov = results.extra_output
+
+    mcmc = sim.MCMC()
+    draws = mcmc.get_draws(fit, cov, niter=1e2)
+
+    dataset = sim.mcmc_to_arviz(mcmc=mcmc, fit=fit, list_of_draws=[draws])
+
+    assert dataset.posterior.attrs['inference_library'] == 'sherpa'
+    assert dataset.posterior.attrs['stat_name'] == 'cash'
+    assert dataset.posterior.attrs['sampler_name'] == 'MetropolisMH'
+    assert dataset.posterior.attrs['name'] == 'g1'
+
+    g1pos = np.array(getattr(dataset.posterior, 'g1.pos'))
+    assert g1pos.flatten() == pytest.approx(draws[2][1, :])
+

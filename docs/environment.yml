@@ -20,3 +20,4 @@ dependencies:
     - sphinx-astropy
     - sphinx_rtd_theme>=3.0.0
     - bokeh
+    - arviz
