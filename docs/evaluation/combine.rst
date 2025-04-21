@@ -272,7 +272,24 @@ it can be evaluated on a grid by passing in an array of values::
 
     >>> sim_model([-1.0, 0, 1])
     array([  1.52587891e-05,   1.00003815e+00,   5.34057617e-05])
-    
+
+In the example above, the model consists of two components ``sim1`` and ``sim2``
+and we keep referencing them by their original variables. In general, more complex models
+with more components can be built, which will then be arranged in a tree where the
+leaves are the original components and the internal nodes are the either
+:py:class:`~sherpa.models.model.BinaryOpModel` (which combine two models) or
+:py:class:`~sherpa.models.model.UnaryOpModel` (with modify just one model on
+the level below, e.g. by taking the absolute value of the output of the lower level model)
+instances. Those models can be quite deep and thus Sherpa provides a syntax to access the
+components of a model tree either by name or by model class. If more than one component
+matches the name or class, a list of all matching components is returned::
+
+    >>> sim_model['sim2']
+    <Gauss1D model instance 'sim2'>
+    >>> sim_model[models.Gauss1D]
+    [<Gauss1D model instance 'sim1'>, <Gauss1D model instance 'sim2'>]
+
+
 Setting up the model
 --------------------
 
@@ -310,6 +327,24 @@ parameter is now linked to the ``g1.pos`` value::
        g2.fwhm      thawed          0.1  1.17549e-38  3.40282e+38           
        g2.pos       linked          0.5       expr: g1.pos + 0.5           
        g2.ampl      thawed            1 -3.40282e+38  3.40282e+38           
+
+
+An alternative way to write the code above is to select the model components by name::
+
+    >>> mdl['g2'].fwhm = 0.1
+
+While not necessary in this example, it can make it easier to keep track of a
+model with many components and simplify code that loops over model components.
+In the following example we want to built a model for the jet from a young star that
+has many separate emissions lines::
+
+    >>> spectral_lines = {'[O I]': 6300, 'Hα': 6563, '[N II]': 6586, '[S II]': 6716, '[S II]': 6731}
+    >>> jetlines = [models.Gauss1D(line) for line in spectral_lines.keys()]
+    >>> jetemission = models.Const1D('background') + np.sum(jetlines)
+    >>> for line, wave in spectral_lines.items():
+    ...     jetemission[line].pos = wave
+    ...     jetemission[line].fwhm = 0.1
+    >>> jetemission['Hα'].fwhm = 5.
 
 .. note::
 

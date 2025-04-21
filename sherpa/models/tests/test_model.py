@@ -29,7 +29,7 @@ import pytest
 
 from sherpa.data import Data1D
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
-    ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
+    ArithmeticFunctionModel, BinaryOpModel, Model, NestedModel, \
     UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
@@ -531,11 +531,12 @@ def test_composite_iter():
     parts = list(m)
 
     assert type(parts[0]) is BinaryOpModel
-    assert type(parts[1]) is ArithmeticConstantModel
-    assert parts[1].val == 3.0
-    assert parts[2] is out.m
-    assert parts[3] is out.m2
-    assert len(parts) == 4
+    assert type(parts[1]) is BinaryOpModel
+    assert type(parts[2]) is ArithmeticConstantModel
+    assert parts[2].val == 3.0
+    assert parts[3] is out.m
+    assert parts[4] is out.m2
+    assert len(parts) == 5
 
     assert m(4) == 10
 
@@ -547,11 +548,12 @@ def test_composite_iter_ufunc():
     parts = list(m)
 
     assert type(parts[0]) is BinaryOpModel
-    assert type(parts[1]) is ArithmeticConstantModel
-    assert parts[1].val == 3.0
-    assert parts[2] is out.m
-    assert parts[3] is out.m2
-    assert len(parts) == 4
+    assert type(parts[1]) is BinaryOpModel
+    assert type(parts[2]) is ArithmeticConstantModel
+    assert parts[2].val == 3.0
+    assert parts[3] is out.m
+    assert parts[4] is out.m2
+    assert len(parts) == 5
 
     assert m(4) == 10
 
@@ -606,15 +608,6 @@ def test_composite_complex_expression():
     y1 = cmplx(out.x)
     y2 = (3 * m + m2) / (m ** 3.2)
     assert y1 == y2
-
-
-def test_filter():
-    out = setup_composite()
-    m = out.s[::2]
-
-    assert type(m) is FilterModel
-
-    assert np.all(m(out.xx) == out.s(out.xx)[::2])
 
 
 def test_nested():

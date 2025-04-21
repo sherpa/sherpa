@@ -84,7 +84,7 @@ represented by the following model::
     >>> back = basic.Const1D('back')
     >>> mdl1 = src1 + back
     >>> print(mdl1)
-    (src1 + back)
+    src1 + back
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        src1.fwhm    thawed           10  1.17549e-38  3.40282e+38
@@ -98,7 +98,7 @@ is two times higher than the first::
     >>> src2 = basic.Gauss1D('src2')
     >>> mdl2 = src2 + 2 * back
     >>> print(mdl2)
-    (src2 + (2 * back))
+    src2 + 2.0 * back
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        src2.fwhm    thawed           10  1.17549e-38  3.40282e+38
@@ -256,7 +256,7 @@ independent and dependent axes may be used, but the
 a data object will return the correct data (assuming the
 dimensionality and type match)::
 
-    >>> mdl.guess(*data.to_guess())
+    >>> mdl.guess(*data.to_guess())  # doctest: +SKIP
 
 Note that the soft limits can be changed, as in this example
 which ensures the position of the gaussian falls within the
@@ -264,12 +264,14 @@ grid of points (since this is the common situation; if the source
 is meant to lie outside the data range then the limits will
 need to be increased manually)::
 
+    >>> from sherpa.data import Data2D
+    >>> from sherpa.models import basic
     >>> yg, xg = np.mgrid[4000:4050:10, 3000:3070:10]
     >>> r2 = (xg - 3024.2)**2 + (yg - 4011.7)**2
     >>> zg = 2400 * np.exp(-r2 / 1978.2)
     >>> d2d = Data2D('example', xg.flatten(), yg.flatten(), zg.flatten(),
-                     shape=zg.shape)
-    >>> mdl = Gauss2D('mdl')
+    ...              shape=zg.shape)
+    >>> mdl = basic.Gauss2D('mdl')
     >>> print(mdl)
     mdl
        Param        Type          Value          Min          Max      Units
@@ -285,7 +287,7 @@ need to be increased manually)::
     mdl
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       mdl.fwhm     thawed           10  1.17549e-38  3.40282e+38
+       mdl.fwhm     thawed           60         0.06        60000
        mdl.xpos     thawed         3020         3000         3060
        mdl.ypos     thawed         4010         4000         4040
        mdl.ellip    frozen            0            0        0.999
@@ -408,7 +410,7 @@ gaussian::
     >>> sigma = basic.Scale1D('sigma')
     >>> sigma.c0 = 10
     >>> print(sigma)
-    sep
+    sigma
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        sigma.c0     thawed           10 -3.40282e+38  3.40282e+38
@@ -422,7 +424,7 @@ which creates
     g1
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       g1.fwhm      linked      23.5482 expr: numpy.multiply(2.3548200450309493, sigma.c0)
+       g1.fwhm      linked      23.5482 expr: 2.3548200450309493 * sigma.c0
        g1.pos       thawed         1200 -3.40282e+38  3.40282e+38
        g1.ampl      thawed            1 -3.40282e+38  3.40282e+38
 
@@ -435,7 +437,7 @@ and, because ``g2.fwhm`` is still linked to ``g1.fwhm``
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        g2.fwhm      linked      23.5482            expr: g1.fwhm
-       g2.pos       linked         9434    expr: (g1.pos + 8234)
+       g2.pos       linked         9434      expr: g1.pos + 8234
        g2.ampl      thawed            1 -3.40282e+38  3.40282e+38
 
 .. note::
@@ -563,8 +565,7 @@ soft limits of these parameters.
     >>> g2.lpars
     (<Parameter 'fwhm' of model 'g1'>, <Parameter 'c0' of model 'sep'>)
     >>> for idx, par in enumerate(mdl.pars, 1):
-    ...     print(idx, fullname)
-    ...
+    ...     print(idx, par.fullname)
     1 g1.fwhm
     2 g1.pos
     3 g1.ampl
@@ -574,31 +575,62 @@ soft limits of these parameters.
     >>> mdl.lpars
     (<Parameter 'c0' of model 'sep'>,)
     >>> for idx, par in enumerate(mdl.get_thawed_pars(), 1):
-    ...     print(idx, fullname)
-    ...
+    ...     print(idx, par.fullname)
     1 g1.fwhm
     2 g1.pos
     3 g1.ampl
     4 g2.ampl
     5 sep.c0
 
-Composite models can be queried to find the individual components
-using the ``parts`` attribute, which contains a tuple of the
-components. These components can themselves be composite objects, and
-so can be further explored using ``parts``. Alternatively, models can
-be iterated over to access the individual components - but note that
-this may include composite models.
+We can think of a complex model as a tree of components, where the leaves are
+the individual components and nodes are composite models (e.g.
+a `sherpa.models.model.BinaryOpModel` that adds to model components together).
+There are several ways to access the components of a model, by model name
+(the list will have one entry if the model name is unique, or more if it
+appears more than once)::
+
+    >>> mdl.get_components_by_name('g2')
+    [<Gauss1D model instance 'g2'>]
+
+or by type::
+
+    >>> mdl.get_components_by_class(basic.Gauss1D)
+    [<Gauss1D model instance 'g1'>, <Gauss1D model instance 'g2'>]
+
+Alternatively, you can obtain a list of all components with::
+
+    >>> mdl.get_parts(include_composites=False)
+    [<Gauss1D model instance 'g1'>, <Gauss1D model instance 'g2'>]
+
+where the ``include_composites`` argument controls whether
+composite models are included in the list or only the leaves.
+As a convenience, for example for working interactively in a notebook,
+the same functionality is available as attribute access,
+which can shorten the notation. Here, if the result is a single model,
+it will be returned directly, while a list of models is returned if more
+than one component matches::
+
+    >>> mdl['g2']
+    <Gauss1D model instance 'g2'>
+    >>> mdl[basic.Gauss1D]
+    [<Gauss1D model instance 'g1'>, <Gauss1D model instance 'g2'>]
+
+This allows a very compressed syntax to change the parameters of a single
+component, for example ``mdl['g2'].ampl = 5``.
+
+Models can also be iterated over to access the individual components -
+but note that this may include composite models.
 
     >>> for cpt in iter(mdl):
     ...     print(cpt.name, type(cpt))
-    ...
+    g1 + g2 <class 'sherpa.models.model.BinaryOpModel'>
     g1 <class 'sherpa.models.basic.Gauss1D'>
     g2 <class 'sherpa.models.basic.Gauss1D'>
     >>> for cpt in iter(g1 + 2 * g2):
     ...     print(cpt.name, type(cpt))
-    ...
+    g1 + 2.0 * g2 <class 'sherpa.models.model.BinaryOpModel'>
     g1 <class 'sherpa.models.basic.Gauss1D'>
-    (2.0 * g2) <class 'sherpa.models.model.BinaryOpModel'>
+    2.0 * g2 <class 'sherpa.models.model.BinaryOpModel'>
     2.0 <class 'sherpa.models.model.ArithmeticConstantModel'>
     g2 <class 'sherpa.models.basic.Gauss1D'>
 
@@ -615,7 +647,7 @@ times. The repeat values are actually links to the original version::
     >>> b1.xhi = 10
     >>> b2.xlow = -1
     >>> for idx, par in enumerate(mdl.pars, 1):
-    ...     print(f"{idx} {par.model:5s} {par.name:6s} {par.val}  {par.link is not None}")
+    ...     print(f"{idx} {par.modelname:5s} {par.name:6s} {par.val}  {par.link is not None}")
     ...
     1 scale c0       5.0  False
     2 box1  xlow     0.0  False
