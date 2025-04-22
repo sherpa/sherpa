@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018 - 2024
+#  Copyright (C) 2010, 2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -150,6 +150,7 @@ class Box1D(RegriddableModel1D):
         self.xhi = Parameter(name, 'xhi', 1)
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.xlow, self.xhi, self.ampl))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         lo, hi = guess_bounds(args[0])
@@ -165,9 +166,11 @@ class Box1D(RegriddableModel1D):
 
 
 class Const(ArithmeticModel):
+
     def __init__(self, name='const'):
         self.c0 = Parameter(name, 'c0', 1)
         ArithmeticModel.__init__(self, name, (self.c0,))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         min = dep.min()
@@ -299,6 +302,7 @@ class Delta1D(RegriddableModel1D):
         self.pos = Parameter(name, 'pos', 0)
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.pos, self.ampl))
+        self.cache = 0
 
     def get_center(self):
         return (self.pos.val,)
@@ -1040,6 +1044,7 @@ class Scale1D(Const1D):
     def __init__(self, name='scale1d'):
         Const1D.__init__(self, name)
         self.integrate = False
+        self.cache = 0
 
 
 class Sin(RegriddableModel1D):
@@ -1156,6 +1161,7 @@ class StepHi1D(RegriddableModel1D):
         self.xcut = Parameter(name, 'xcut', 0)
         self.ampl = Parameter(name, 'ampl', 1, 0)
         ArithmeticModel.__init__(self, name, (self.xcut, self.ampl))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         cut = guess_bounds(args[0], False)
@@ -1205,6 +1211,7 @@ class StepLo1D(RegriddableModel1D):
         self.xcut = Parameter(name, 'xcut', 0)
         self.ampl = Parameter(name, 'ampl', 1, 0)
         ArithmeticModel.__init__(self, name, (self.xcut, self.ampl))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         cut = guess_bounds(args[0], False)

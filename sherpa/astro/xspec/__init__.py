@@ -3131,6 +3131,7 @@ class XSbbody(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 3.0, 1.e-2, 100., 1e-4, 200, units='keV')
 
         XSAdditiveModel.__init__(self, name, (self.kT, ))
+        self.cache = 0
 
 
 class XSbbodyrad(XSAdditiveModel):
@@ -3163,6 +3164,7 @@ class XSbbodyrad(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 3., 1e-3, 100, 1e-4, 200, units='keV')
 
         XSAdditiveModel.__init__(self, name, (self.kT, ))
+        self.cache = 0
 
 
 # DOC-NOTE: the XSPEC documentation has a different parameter order to
@@ -7683,6 +7685,7 @@ class XSdiskpn(XSAdditiveModel):
         self.R_in = XSParameter(name, 'R_in', 6., 6., 1000., 6.0, 1000, units='R_g')
 
         XSAdditiveModel.__init__(self, name, (self.T_max, self.R_in))
+        self.cache = 0
 
 
 @version_at_least("12.14.0")
@@ -8070,6 +8073,7 @@ class XSexpdec(XSAdditiveModel):
         self.factor = XSParameter(name, 'factor', 1.0, 0., 100.0, 0.0, 100)
 
         XSAdditiveModel.__init__(self, name, (self.factor, ))
+        self.cache = 0
 
 
 @version_at_least("12.14.0")
@@ -9624,6 +9628,7 @@ class XSnsa(XSAdditiveModel):
 
         pars = (self.LogT_eff, self.M_ns, self.R_ns, self.MagField)
         XSAdditiveModel.__init__(self, name, pars)
+        self.cache = 0
 
 
 class XSnsagrav(XSAdditiveModel):
@@ -9663,6 +9668,7 @@ class XSnsagrav(XSAdditiveModel):
 
         pars = (self.LogT_eff, self.NSmass, self.NSrad)
         XSAdditiveModel.__init__(self, name, pars)
+        self.cache = 0
 
 
 class XSnsatmos(XSAdditiveModel):
@@ -10042,6 +10048,7 @@ class XSoptxagn(XSAdditiveModel):
                 self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma,
                 self.fpl, self.fcol, self.tscat, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
+        self.cache = 0
 
 
 class XSoptxagnf(XSAdditiveModel):
@@ -10124,6 +10131,7 @@ class XSoptxagnf(XSAdditiveModel):
                 self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma,
                 self.fpl, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
+        self.cache = 0
 
 
 class XSpegpwrlw(XSAdditiveModel):
@@ -10646,6 +10654,7 @@ class XSredge(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 1., 0.001, 100., 0.001, 100, units='keV')
 
         XSAdditiveModel.__init__(self, name, (self.edge, self.kT))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         XSAdditiveModel.guess(self, dep, *args, **kwargs)
@@ -10727,6 +10736,7 @@ class XSrefsch(XSAdditiveModel):
                 self.T_disk, self.xi, self.Betor10, self.Rin, self.Rout,
                 self.accuracy)
         XSAdditiveModel.__init__(self, name, pars)
+        self.cache = 0
 
 
 class XSrnei(XSAdditiveModel):

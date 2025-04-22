@@ -115,12 +115,15 @@ def pytest_addoption(parser):
     parser.addoption("--runzenodo", action="store_true", default=False,
                      help="run tests that query Zenodo (requires internet)")
 
+    parser.addoption("--runspeed", action="store_true", default=False,
+                     help="run tests check speed and caching choices (results can vary randomly)")
+
 
 def pytest_collection_modifyitems(config, items):
 
     # Skip tests unless --runxxx given in cli
     #
-    for label in ["slow", "zenodo"]:
+    for label in ["slow", "zenodo", "speed"]:
         opt = "--run{}".format(label)
         if config.getoption(opt):
             continue
@@ -131,7 +134,7 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip)
 
 
-# Whilelist of known warnings. One can associate different warning messages
+# Whitelist of known warnings. One can associate different warning messages
 # to the same warning class
 known_warnings = {
     DeprecationWarning:
@@ -885,3 +888,48 @@ def requires_pylab():
         yield
 
     plt.close(fig="all")
+
+
+def get_runtime_with_cache(mdl, timing = False):
+    """Does the caching change the results? Does it take longer?
+
+    This function compares model evaluations with and without caching
+    by running them with their default values.
+
+    Parameters
+    ----------
+    mdl : model
+        The model to be tested.
+    timing : bool
+        If `True` the function will also compare the runtime fo the model
+        with an without cache and the test will fail if retrieving the
+        cached value is slower than evaluating the model.
+        This test is only done once, so there is some randomness depending
+        on the system load but cna be used to identify the "obvious" cases.
+        If can also help to run the test multiple times.
+    """
+    # run once in case there is a startup time for loading
+    x = np.arange(1, 100, 1000)
+    mdl.cache=5
+    evals = mdl(x)
+
+    start_time_decorated = time.perf_counter()
+    evals = mdl(x)
+    end_time_decorated = time.perf_counter()
+    assert mdl._cache_ctr['hits'] == 1
+    mdl.cache = 0
+
+    start_time_no_cache = time.perf_counter()
+    evals_no_cache = mdl(x)
+    end_time_no_cache = time.perf_counter()
+    assert mdl._cache_ctr['hits'] == 0
+    assert len(mdl._cache) == 0
+
+    assert evals == pytest.approx(evals_no_cache)
+
+    if timing:
+        run_time_decorated = end_time_decorated - start_time_decorated
+        run_time_no_cache = end_time_no_cache - start_time_no_cache
+        assert run_time_decorated < run_time_no_cache, (
+            f"Time with cache takes longer than without: {run_time_decorated} vs. {run_time_no_cache}"
+        )

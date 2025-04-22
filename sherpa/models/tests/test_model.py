@@ -1245,18 +1245,24 @@ def test_cache_not_used_in_fit():
     How do we do that without relying too much on the internal
     implementation?
     """
-    mdl = Const1D('con1')
-    mdl.c0 = 1
-    dat = Data1D('data', np.arange(4), 2 * np.ones(4), np.ones(4))
+    mdl = Gauss1D('con1')
+    mdl.ampl = 1
+    mdl.pos = 0
+    mdl.fwhm = 1
+    dat = Data1D('data', [-2, -1, 0, 1, 2,], [0.05, 1, 2, 1, 0.05], np.ones(5))
     fit = Fit(dat, mdl)
     res = fit.fit()
-    assert mdl.c0.val == pytest.approx(2)
+    assert mdl.ampl.val == pytest.approx(2.02, rel=1e-2)
+    assert mdl.pos.val == pytest.approx(0, abs=1e-6)
     assert len(mdl._cache) == 5
 
     mdl.cache_clear()
-    mdl.c0 = 1
+    mdl.ampl = 1
+    mdl.pos = 0
+    mdl.fwhm = 1
     res = fit.fit(cache=False)
-    assert mdl.c0.val == pytest.approx(2)
+    assert mdl.ampl.val == pytest.approx(2.02, rel=1e-2)
+    assert mdl.pos.val == pytest.approx(0, abs=1e-6)
     assert len(mdl._cache) == 0
     # We cleared the cache and then called the fit with `cache=False`.
     # After the fit, the cache is still empty, so presumably it was never used.
@@ -1396,8 +1402,8 @@ def test_cache_status_multiple(caplog):
     # cache_status.
     #
     p = Polynom1D()
-    b = Box1D()
-    c = Const1D()
+    b = Sin()
+    c = Gauss1D()
     mdl = c * (2 * p + b)
 
     # One model is not cached
@@ -1427,7 +1433,7 @@ def test_cache_status_multiple(caplog):
         tokens.append(toks)
 
     toks = tokens[0]
-    assert toks[0] == 'const1d'
+    assert toks[0] == 'gauss1d'
     assert toks[2] == '2'
     assert toks[4] == '1'
     assert toks[6] == '2'
@@ -1439,7 +1445,7 @@ def test_cache_status_multiple(caplog):
     assert toks[6] == '2'
 
     toks = tokens[2]
-    assert toks[0] == 'box1d'
+    assert toks[0] == 'sin'
     assert toks[2] == '0'
     assert toks[4] == '0'
     assert toks[6] == '0'
@@ -1479,8 +1485,8 @@ def test_cache_clear_multiple():
     """Check cache_clear for a combined model."""
 
     p = Polynom1D()
-    b = Box1D()
-    c = Const1D()
+    b = Sin()
+    c = Gauss1D()
     mdl = c * (p + 2 * b)
 
     # Ensure one component doesn't use the cache
