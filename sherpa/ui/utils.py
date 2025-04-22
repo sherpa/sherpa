@@ -9584,7 +9584,7 @@ class Session(NoNewAttributesAfterInit):
            file handle instead of a string.
 
         .. versionchanged:: 4.17.1
-           The parameters ``record_steps`` was added to keep parameter
+           The parameter ``record_steps`` was added to keep parameter
            values of each iteration with the fit results.
 
         Parameters

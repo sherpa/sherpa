@@ -1313,7 +1313,7 @@ class Fit(NoNewAttributesAfterInit):
            file handle instead of a string.
 
         .. versionchanged:: 4.17.1
-           The parameters ``record_steps`` was added to keep parameter
+           The parameter ``record_steps`` was added to keep parameter
            values of each iteration in the `FitResults` object that is
            returned.
 
