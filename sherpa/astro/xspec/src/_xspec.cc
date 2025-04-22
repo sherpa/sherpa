@@ -154,7 +154,7 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
 
   // Was there an error?
   //
-  if( tmpStream.str().size() > 0 ) {
+  if( !tmpStream.str().empty() ) {
     return PyErr_Format( PyExc_TypeError, // TODO: change from TypeError to ValueError?
 			 (char*)"could not find element '%s'", element);
   }
@@ -194,6 +194,11 @@ static PyObject* get_abund_from_table( PyObject *self, PyObject *args )
     abundVal = FunctionUtility::getAbundance(string(table),
 					     string(element));
   } catch (FunctionUtility::NoInitializer&) {
+
+    IosHolder::setStreams(IosHolder::inHolder(),
+			  IosHolder::outHolder(),
+			  errStream);
+
     return PyErr_Format( PyExc_ValueError,
 			 "Unknown abundance table '%s'",
 			 table );
@@ -205,8 +210,8 @@ static PyObject* get_abund_from_table( PyObject *self, PyObject *args )
 
   // Was there an error?
   //
-  if( tmpStream.str().size() > 0 ) {
-    // No backwards compatability to worry about, so use the sensible
+  if( !tmpStream.str().empty() ) {
+    // No backwards compatibility to worry about, so use the sensible
     // error type (ValueError rather than TypeError as used by
     // get_abund).
     //
@@ -493,7 +498,7 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
   if ( !PyArg_ParseTuple( args, (char*)"|s", &str_name ) )
     return NULL;
 
-  // If no argument is given then we return a dictonary
+  // If no argument is given then we return a dictionary
   // of all items.
   //
   if ( str_name == NULL ) {

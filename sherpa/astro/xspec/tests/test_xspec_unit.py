@@ -352,6 +352,37 @@ def test_abund_get_invalid_element(caplog):
 
 
 @requires_xspec
+@pytest.mark.parametrize("element,table,emsg",
+                         [("O3", "angr",
+                           "could not find element 'O3' in table 'angr'"),
+                          ("O", "foobar",
+                           "Unknown abundance table 'foobar'"),
+                          # It looks like XSPEC only throws the "unknown table"
+                          # error when the element is known, which means the
+                          # following error is not "Unknown abundance table".
+                          ("O3", "barfoo",
+                           "could not find element 'O3' in table 'barfoo'")
+                          ])
+def test_abund_get_invalid_element_table(element, table, emsg, caplog):
+    """Check what happens if sent the wrong element/table name.
+
+    Allow a combination of invalid/valid table and element names, as
+    long as at least one is invalid.
+
+    Users should never hit this case, as it requires explicit calls
+    to the _xspec.get_xsabund_table routine.
+
+    """
+
+    from sherpa.astro.xspec import _xspec
+
+    with pytest.raises(ValueError, match=f"^{emsg}$"):
+        _xspec.get_xsabund_table(table, element)
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
 def test_abund_set_invalid_name(caplog):
     """Check what happens if sent an unknown table
 
