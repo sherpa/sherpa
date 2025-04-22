@@ -9586,6 +9586,10 @@ class Session(NoNewAttributesAfterInit):
            The outfile parameter can now be sent a Path object or a
            file handle instead of a string.
 
+        .. versionchanged:: 4.17.1
+           The parameter ``record_steps`` was added to keep parameter
+           values of each iteration with the fit results.
+
         Parameters
         ----------
         id : int or str, optional
@@ -9601,6 +9605,11 @@ class Session(NoNewAttributesAfterInit):
            overwritten (``True``) or if it raises an exception
            (``False``, the default setting). This is only used if
            `outfile` is set to a string or Path object.
+        record_steps : bool, optional
+            If `True`, then the parameter values and statistic value
+            are recorded at each iteration in an array in the
+            `~sherpa.fit.FitResults` object that you can obtain with
+            `get_fit_results`.
 
         Raises
         ------

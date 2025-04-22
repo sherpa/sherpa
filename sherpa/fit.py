@@ -221,6 +221,10 @@ class FitResults(NoNewAttributesAfterInit):
        and now contains the covariance matrix estimated at the
        best-fit location, if provided by the optimiser.
 
+    .. versionchanged:: 4.17.1
+       The `record_steps` attribute has been added to the class.
+       If the fit recorded the parameter values of each step in the optimization,
+       this attribute will contain an array with the data.
     """
 
     # The fields to include in the __str__ output.
@@ -302,6 +306,10 @@ class FitResults(NoNewAttributesAfterInit):
         # What is the best type here?
         self.extra_output = results[4]
         """The ``extra_output`` field from the fit."""
+
+        self.record_steps: None | dict = results[4].get('record_steps')
+        """A record of all steps taken during the fit, if requested
+        with `record_steps=True`."""
 
         self.modelvals: np.ndarray = _vals
         """The values of the best-fit model evaluated for the data."""
@@ -615,19 +623,21 @@ class IterCallback:
 
     """
 
-    __slots__ = ("data", "model", "stat", "fh", "nfev")
+    __slots__ = ("data", "model", "stat", "fh", "nfev", "record_steps")
 
     def __init__(self,
                  data: DataSimulFit,
                  model: SimulFitModel,
                  stat: Stat,
-                 fh: WriteableTextFile | None = None
+                 fh: WriteableTextFile | None = None,
+                 record_steps: bool = False
                  ) -> None:
         self.data = data
         self.model = model
         self.stat = stat
         self.fh = fh
         self.nfev = 0
+        self.record_steps = [] if record_steps else None
 
     def __call__(self,
                  pars: np.ndarray
@@ -647,6 +657,10 @@ class IterCallback:
             vals = [f'{self.nfev:5e}', f'{output[0]:5e}']
             vals.extend([f'{val:5e}' for val in self.model.thawedpars])
             self.fh.write(' '.join(vals) + '\n')
+
+        if self.record_steps is not None:
+            # Store the current parameter values
+            self.record_steps.append((self.nfev, output[0], *self.model.thawedpars))
 
         # Update the counter and return the results
         self.nfev += 1
@@ -741,7 +755,8 @@ class IterFit:
         raise KeyboardInterrupt()
 
     def _get_callback(self,
-                      fh: WriteableTextFile | None = None
+                      fh: WriteableTextFile | None = None,
+                      record_steps: bool = False,
                       ) -> IterCallback:
         """Create the function that returns the statistic.
 
@@ -769,7 +784,8 @@ class IterFit:
             self.stat.calc_staterror)
 
         return IterCallback(data=self.data, model=self.model,
-                            stat=self.stat, fh=fh)
+                            stat=self.stat, fh=fh,
+                            record_steps=record_steps)
 
     # TODO: look at the cache argument
     def sigmarej(self,
@@ -996,7 +1012,7 @@ class IterFit:
             parmins: ArrayType,
             parmaxes: ArrayType,
             statargs: Sequence[Any] = (),
-            statkwargs: Mapping[str, Any] | None = None
+            statkwargs: Mapping[str, Any] | None = None,
             ) -> OptReturn:
 
         if statkwargs is None:
@@ -1287,7 +1303,8 @@ class Fit(NoNewAttributesAfterInit):
     def fit(self,
             outfile: str | Path | WriteableTextFile | None = None,
             clobber: bool = False,
-            numcores: int | None = 1
+            numcores: int | None = 1,
+            record_steps: bool = False,
             ) -> FitResults:
         """Fit the model to the data.
 
@@ -1295,17 +1312,27 @@ class Fit(NoNewAttributesAfterInit):
            The outfile parameter can now be sent a Path object or a
            file handle instead of a string.
 
+        .. versionchanged:: 4.17.1
+           The parameter ``record_steps`` was added to keep parameter
+           values of each iteration in the `FitResults` object that is
+           returned.
+
         Parameters
         ----------
         outfile : str, Path, IO object, or None, optional
-           If not `None` then information on the fit is written to
-           this file (as defined by a filename, path, or file
-           handle).
+            If not `None` then information on the fit is written to
+            this file (as defined by a filename, path, or file
+            handle).
         clobber : bool, optional
-           Determines if the output file can be overwritten. This is
-           only used when `outfile` is a string or `Path` object.
+            Determines if the output file can be overwritten. This is
+            only used when `outfile` is a string or `Path` object.
         numcores : int or None, optional
-           The number of cores to use in fitting simultaneous data.
+            The number of cores to use in fitting simultaneous data.
+            This argument is currently unused.
+        record_steps : bool, optional
+            If `True`, then the parameter values and statistic value
+            are recorded at each iteration in a dictionary in the
+            `FitResults` object that this method returns.
 
         Returns
         -------
@@ -1339,6 +1366,7 @@ class Fit(NoNewAttributesAfterInit):
         >>> from sherpa.data import Data1D
         >>> from sherpa.models.basic import Const1D
         >>> from sherpa.stats import LeastSq
+        >>> from sherpa.fit import Fit
         >>> d = Data1D("x", [-3, 5, 17, 22], [12, 3, 8, 5])
         >>> m = Const1D()
         >>> s = LeastSq()
@@ -1364,6 +1392,22 @@ class Fit(NoNewAttributesAfterInit):
         Repeat the fit, after resetting the model, so we can see how
         the optimiser searched the parameter space:
 
+        >>> m.reset()
+        >>> out = f.fit(record_steps=True)
+        >>> for row in out.record_steps:
+        ...     print(f"{row['nfev']} {row['statistic']:8.6e} {row['const1d.c0']:6.4f}")
+        0 1.900000e+02 1.0000
+        1 1.900000e+02 1.0000
+        2 1.899834e+02 1.0003
+        3 4.600000e+01 7.0000
+        4 4.600002e+01 7.0024
+        5 4.600000e+01 7.0000
+
+        This format is also easy to plot, e.g.
+        ``plt.plot(out.record_steps['nfev'], out.record_steps['statistic'])``.
+
+        Output could also be file-based or captured using `io.StringIO`:
+
         >>> from io import StringIO
         >>> m.reset()
         >>> optdata = StringIO()
@@ -1376,7 +1420,6 @@ class Fit(NoNewAttributesAfterInit):
         3.000000e+00 4.600000e+01 7.000000e+00
         4.000000e+00 4.600002e+01 7.002417e+00
         5.000000e+00 4.600000e+01 7.000000e+00
-
         """
 
         dep, staterror, _ = self.data.to_fit(self.stat.calc_staterror)
@@ -1400,7 +1443,8 @@ class Fit(NoNewAttributesAfterInit):
                  for par in self.model.get_thawed_pars()]
         cm = _add_fit_stats(outfile, clobber, names)
         with cm as fh:
-            cb = self._iterfit._get_callback(fh=fh)
+            cb = self._iterfit._get_callback(fh=fh,
+                                             record_steps=record_steps)
             output_orig = self._iterfit.fit(cb,
                                             self.model.thawedpars,
                                             self.model.thawedparmins,
@@ -1430,6 +1474,12 @@ class Fit(NoNewAttributesAfterInit):
                         param_warnings += f"WARNING: parameter value {par.fullname} is at its minimum boundary {par.min}\n"
                     if sao_fcmp(par.val, par.max, tol) == 0:
                         param_warnings += f"WARNING: parameter value {par.fullname} is at its maximum boundary {par.max}\n"
+            if record_steps:
+                extended_names = ['nfev', 'statistic'] + names
+                dtypes = [int] + [float] * (len(extended_names) - 1)
+                imap['record_steps'] = np.array(cb.record_steps,
+                                                dtype = [(n, d) for n, d in zip(extended_names, dtypes)])
+
 
         output = (status, newpars, fval_new, msg, imap)
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))

@@ -3137,6 +3137,30 @@ def test_fit_outfile_simple_check_stringio(check_str):
                ""])
 
 
+def test_fit_record_steps():
+    """Check if we record the values of the parameters at each step.
+
+    """
+    data = make_data(Data1D)
+    mdl = Const1D("mx")
+    fit = Fit(data, mdl, stat=Cash())
+    fitres = fit.fit()
+    assert fitres.record_steps is None
+
+    mdl.reset()
+    fitres = fit.fit(record_steps=True)
+
+    expected_stat = [6.0, 6.0, 5.995167, -3.230695, -3.232515, -4.073187,
+                     -4.073357, -4.079456, -4.079455, -4.079456, -4.079456]
+    expected_c0 = [1.0, 1.0, 1.000345, 2.454143, 2.454991, 3.250567,
+                     3.251690, 3.333285, 3.334435, 3.333329, 3.333329]
+
+    assert fitres.record_steps['nfev'] == pytest.approx([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    assert fitres.record_steps['statistic'] == pytest.approx(expected_stat)
+    assert fitres.record_steps['mx.c0'] == pytest.approx(expected_c0)
+    assert len(fitres.record_steps.dtype) == 3
+
+
 @pytest.fixture
 def setup_ldata():
     """Create the data for the GAUSS1D linked-parameter test."""

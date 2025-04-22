@@ -11351,6 +11351,10 @@ class Session(sherpa.ui.utils.Session):
            The outfile parameter can now be sent a Path object or a
            file handle instead of a string.
 
+        .. versionchanged:: 4.17.1
+           The parameter ``record_steps`` was added to keep parameter
+           values of each iteration with the fit results.
+
         Parameters
         ----------
         id : int or str, optional
@@ -11366,6 +11370,11 @@ class Session(sherpa.ui.utils.Session):
            overwritten (``True``) or if it raises an exception
            (``False``, the default setting). This is only used if
            `outfile` is set to a string or Path object.
+        record_steps : bool, optional
+            If `True`, then the parameter values and statistic value
+            are recorded at each iteration in an array in the
+            `~sherpa.fit.FitResults` object that you can obtain with
+            `get_fit_results`.
 
         Raises
         ------
@@ -11420,6 +11429,18 @@ class Session(sherpa.ui.utils.Session):
         Simultaneously fit data sets 1, 2, and 3:
 
         >>> fit(1, 2, 3)
+
+        Fit the dataset 'jet' and keep the values for each parameter in every
+        optimization step:
+
+         >>> fit('jet', record_steps=True)
+         >>> fres = get_fit_results()
+         >>> for row in fres.record_steps:
+         ...     print(f"{row['nfev']} {row['statistic']:8.6e} {row['const1d.c0']:6.4f}")
+         [... output here ...]
+
+        (This example assumes that the model for the data set 'jet' has a
+        parameter called 'const1d.c0'.)
 
         Fit data set 'jet' and write the fit results to the text file
         'jet.fit', over-writing it if it already exists:
