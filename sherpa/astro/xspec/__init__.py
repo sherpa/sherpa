@@ -105,6 +105,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import suppress
+from collections.abc import Callable
 import functools
 import logging
 from pathlib import Path
@@ -1865,12 +1866,12 @@ def mkabund(name: str,
 
 
 def eval_xspec_with_fixed_norm(func: Callable) -> Callable:
-    """Decorator to evaluate an `XSAdditativeModel` with norm=1.
+    """Decorator to evaluate an `XSAdditiveModel` with norm=1.
 
     The norm is then applied in Python, instead of in the XSPEC code.
     This is a speed optimization. For a single call to an XSPEC model, there
     is no advantage, because the XSPEC model needs to be called anyway; it is
-    just called with norm=1 instead of the actal norm and the output of the
+    just called with norm=1 instead of the actual norm and the output of the
     XSPEC model is multiplied by the actual norm in Python.
     The main advantage comes in fitting: Because the XSPEC model is called with
     the same norm (1.0) every time, is is far more likely to hit a parameter
@@ -1898,10 +1899,6 @@ def eval_xspec_with_fixed_norm(func: Callable) -> Callable:
     """
     @functools.wraps(func)
     def cache_model(cls, pars, xlo, *args, **kwargs):
-        # While the following line looks harmless, benchmarking indicates a
-        # noticable performance hit from the lookup of order 10 ms per fuction call,
-        # thus it is commented out in the production version of the code.
-        # assert cls.pars[-1].name == 'norm'
         pars_with_norm_1 = (*pars[:-1], 1)
         return pars[-1] * func(cls, pars_with_norm_1, xlo, *args, **kwargs)
     return cache_model
@@ -1947,8 +1944,8 @@ class XSAdditiveModel(XSModel):
         param_apply_limits(norm, self.norm, **kwargs)
 
     @eval_xspec_with_fixed_norm
-    def calc(self, p, xlo, *args, **kwargs):
-        return super().calc(p, xlo, *args, **kwargs)
+    def calc(self, p, *args, **kwargs):
+        return super().calc(p, *args, **kwargs)
 
 
 class XSMultiplicativeModel(XSModel):

@@ -740,18 +740,13 @@ def test_evaluate_xspec_model(modelcls):
 
     This test checks two independent things:
     1. The model can be evaluated with the default parameters
-       and the results agree and on energy and wavelength grids.
-    2. For additative models: Calling the XSPEC model with the norm gives the
+       and the results agree using energy and wavelength grids.
+    2. For additive models: Calling the XSPEC model with the norm gives the
        same answer as calling the model with a decorator that applies the norm
        in Python and calls XSPEC with norm=1.
 
     Both asserts are combined into a single test because the test runtime is
-    significant (> 1 min on my machine when iterating over all models), but
-    much of that runtime is needed to initialize the models.
-    If, instead, this was split into two separate tests, that initizalization
-    would have to be done twice which would lead to noticeably longer runtimes
-    in particular on CI, which checks several different environments and
-    platforms.
+    significant (> 1 min on my machine when iterating over all models).
     """
 
     from sherpa.astro import xspec
@@ -772,7 +767,7 @@ def test_evaluate_xspec_model(modelcls):
     if isinstance(mdl, xspec.XSAdditiveModel):
         mdl.norm = 0.123 * mdl.norm.val
 
-    # 1) Check that energy and wavelangth give the same result
+    # 1) Check that energy and wavelength give the same result
     evals = mdl(elo, ehi)
     wvals = mdl(wlo, whi)
 
