@@ -37,9 +37,12 @@ def rosenbrock(x):
 SEED = 2354
 
 
-@pytest.mark.parametrize("rng", [None,
-                                 np.random.RandomState(2354)])
-def test_is_simplexbase_repeatable(rng):
+@pytest.mark.parametrize("kwargs",
+                         [{"seed": SEED, "rng": None},
+                          {"seed": SEED, "rng": np.random.default_rng(SEED)},
+                          {"seed": None, "rng": np.random.default_rng(SEED)},
+                          ])
+def test_is_simplexbase_repeatable(kwargs):
     """The SimplexBase* classes uses RNG, so can we make it repeatable?
 
     This is based on the 'if __name__ == "__main__"' section of
@@ -56,23 +59,27 @@ def test_is_simplexbase_repeatable(rng):
     xmin = [-1000, -1000]
     xmax = [1000, 1000]
     simp = SimplexRandom(func=rosenbrock, npop=4, xpar=x0, xmin=xmin,
-                         xmax=xmax, step=x0 + 1.2, seed=SEED,
-                         factor=10, rng=rng)
+                         xmax=xmax, step=x0 + 1.2, factor=10,
+                         **kwargs)
 
-    # After the first line, which is the x0 array + function value,
-    # the next three rows have 2 random numbers and then the function
-    # value at that coordinate, and then sorted on the last column.
-    # So this tests how repeatable the RNG is.
+    # The simplex starts with x0 and then three rows of random numbers
+    # between xmin and xmax.  The fctvals are the rosenbrock output on
+    # those parameters.  The order is in smallest to largest of
+    # fctvals.
     #
-    expected = np.asarray([[-1.2, 1.0, 24.2],
-                           [-3.35073356, 10.0887400, 148.587036],
-                           [-4.81446429, -5.89369307, 8.45563422e+04],
-                           [6.25720004, 2.32379451, 1.35663379e+05]])
-    assert simp.simplex == pytest.approx(expected)
+    expected_simplex = np.asarray([[-1.2, 1.0],
+                                   [-1.56818621, -3.88919619],
+                                   [ 4.48924317, -0.37612188],
+                                   [-8.84949593,  9.70166152]])
+    expected_fctvals = np.asarray([24.2, 4.03681915e+03,
+                                   4.21579083e+04, 4.70856524e+05])
+
+    assert simp.simplex == pytest.approx(expected_simplex)
+    assert simp.fctvals == pytest.approx(expected_fctvals)
 
 
 def test_is_simplexbase_repeatable_post_117():
-    """test_is_simplese_repeatable with a post NumPy 1.17 RNG.
+    """test_is_simplexbase_repeatable with a post NumPy 1.17 RNG.
 
     It's not clear how "repeatable" this will be (i.e. using
     a fixed seed is not guaranteed to give the same results
@@ -92,11 +99,15 @@ def test_is_simplexbase_repeatable_post_117():
                          xmax=xmax, step=x0 + 1.2, seed=SEED + 1,
                          factor=10, rng=rng)
 
-    expected = np.asarray([[-1.2, 1.0, 24.2],
-                           [-1.56818621, -3.88919619, 4.03681915e+03],
-                           [ 4.48924317, -0.37612188, 4.21579083e+04],
-                           [-8.84949593,  9.70166152, 4.70856524e+05]])
-    assert simp.simplex == pytest.approx(expected)
+    expected_simplex = np.asarray([[-1.2, 1.0],
+                                   [-1.56818621, -3.88919619],
+                                   [ 4.48924317, -0.37612188],
+                                   [-8.84949593,  9.70166152]])
+    expected_fctvals = np.asarray([24.2, 4.03681915e+03,
+                                   4.21579083e+04, 4.70856524e+05])
+
+    assert simp.simplex == pytest.approx(expected_simplex)
+    assert simp.fctvals == pytest.approx(expected_fctvals)
 
 
 @pytest.mark.parametrize("cls,name,altname",

@@ -90,12 +90,12 @@ import numpy as np
 
 import pytest
 
-from sherpa.optmethods.ncoresde import DifEvo, ncoresDifEvo, ncoresDifEvoNelderMead
+from sherpa.optmethods.ncoresde import ncoresDifEvo #, DifEvo, ncoresDifEvoNelderMead
 from sherpa.optmethods.ncoresnm import ncoresNelderMead, NelderMead0, NelderMead1, \
-    NelderMead2, NelderMead3, NelderMead4, NelderMead5, NelderMead6, NelderMead7
+    NelderMead2, NelderMead3, NelderMead4, NelderMead5 #, NelderMead6, NelderMead7
 from sherpa.optmethods.opt import SimplexNoStep, SimplexStep, SimplexRandom
-from sherpa.optmethods.optfcts import Callback
 from sherpa.optmethods import _tstoptfct  # type: ignore
+from sherpa.stats import StatCallback
 
 
 def Ackley(x):
@@ -541,7 +541,7 @@ def tst_unc_opt(algorithms, npar):
 
     def tst_algo(opt, fcn, name, num):
         x0, xmin, xmax, fmin = _tstoptfct.init(name, num)
-        result = opt(Callback(fcn), x0, xmin, xmax)
+        result = opt(StatCallback(fcn), x0, xmin, xmax)
         opt_name = opt.__class__.__name__
         print(opt_name, result[2], '=', result[1], 'in', result[0], 'nfevs')
 
@@ -816,81 +816,94 @@ def tst_unc_opt(algorithms, npar):
         chebyquad(name, algo)
 
 
+SIMPLEX_SEED = 234
+
+def make_simplex_kwargs():
+    """Need a new RNG each time we call it."""
+    return [
+        {"seed": SIMPLEX_SEED, "rng": None},
+        {"seed": SIMPLEX_SEED, "rng": np.random.default_rng(SIMPLEX_SEED)},
+        {"seed": None, "rng": np.random.default_rng(SIMPLEX_SEED)},
+    ]
+
+
+@pytest.mark.parametrize("kwargs", make_simplex_kwargs())
 @pytest.mark.parametrize("npar", [10])
-def test_simplexnostep(npar):
+def test_simplexnostep(npar, kwargs):
     """This was part of the if __main__ section of sherpa.optmethods.opt with npar as an argument"""
 
     x0 = np.array(npar * [-1.2, 1.0])
     xmin = npar * [-1000, -1000]
     xmax = npar * [1000, 1000]
     factor = 10
-    seed = 234
     simp = SimplexNoStep(func=Rosenbrock, npop=len(x0) + 1, xpar=x0,
-                         xmin=xmin, xmax=xmax, step=None, seed=seed,
-                         factor=factor)
+                         xmin=xmin, xmax=xmax, step=None, factor=factor,
+                         **kwargs)
     print('simp =\n', simp.simplex)
 
     # It's not clear what to actually test here, so just try this.
-    assert simp.simplex.shape == (21, 21)
+    assert simp.simplex.shape == (21, 20)
 
     expected = [4593.85,     4598.,       4613.434976, 4640.003125, 4640.003125, 4640.003125,
                 4640.003125, 4640.003125, 4640.003125, 4640.003125, 4640.003125, 4640.003125,
                 4640.194976, 4640.194976, 4640.194976, 4640.194976, 4640.194976, 4640.194976,
                 4640.194976, 4640.194976, 4640.194976]
-    assert simp.simplex[:, -1] == pytest.approx(expected)
+    assert simp.fctvals == pytest.approx(expected)
 
 
+@pytest.mark.parametrize("kwargs", make_simplex_kwargs())
 @pytest.mark.parametrize("npar", [10])
-def test_simplexstep(npar):
+def test_simplexstep(npar, kwargs):
     """This was part of the if __main__ section of sherpa.optmethods.opt with npar as an argument"""
 
     x0 = np.array(npar * [-1.2, 1.0])
     xmin = npar * [-1000, -1000]
     xmax = npar * [1000, 1000]
     factor = 10
-    seed = 234
     simp = SimplexStep(func=Rosenbrock, npop= len(x0) + 2, xpar=x0,
-                       xmin=xmin, xmax=xmax, step=x0 + 1.2, seed=seed,
-                       factor=factor)
+                       xmin=xmin, xmax=xmax, step=x0 + 1.2,
+                       factor=factor, **kwargs)
     print('simp =\n', simp.simplex)
 
     # It's not clear what to actually test here, so just try this.
-    assert simp.simplex.shape == (22, 21)
+    assert simp.simplex.shape == (22, 20)
 
+    # Changing the RNG state seems to change the last element; is this
+    # expected.
     expected = [4.59800000e+03, 1.33342000e+04, 1.33342000e+04, 1.33342000e+04,
                 1.33342000e+04, 1.33342000e+04, 1.33342000e+04, 1.33342000e+04,
                 1.33342000e+04, 1.33342000e+04, 1.33342000e+04, 9.42590000e+04,
                 9.42590000e+04, 9.42590000e+04, 9.42590000e+04, 9.42590000e+04,
                 9.42590000e+04, 9.42590000e+04, 9.42590000e+04, 9.42590000e+04,
-                9.42590000e+04, 5.26696072e+06]
-    assert simp.simplex[:, -1] == pytest.approx(expected)
+                9.42590000e+04, 6.66107487e+06]
+    assert simp.fctvals == pytest.approx(expected)
 
 
+@pytest.mark.parametrize("kwargs", make_simplex_kwargs())
 @pytest.mark.parametrize("npar", [10])
-def test_simplexrandom(npar):
+def test_simplexrandom(npar, kwargs):
     """This was part of the if __main__ section of sherpa.optmethods.opt with npar as an argument"""
 
     x0 = np.array(npar * [-1.2, 1.0])
     xmin = npar * [-1000, -1000]
     xmax = npar * [1000, 1000]
     factor = 10
-    seed = 234
     simp = SimplexRandom(func=Rosenbrock, npop=len(x0) + 5, xpar=x0,
                          xmin=xmin, xmax=xmax, step=x0 + 1.2,
-                         seed=seed, factor=factor)
+                         factor=factor, **kwargs)
     print('simp =\n', simp.simplex)
 
     # It's not clear what to actually test here, so just try this.
-    assert simp.simplex.shape == (25, 21)
+    assert simp.simplex.shape == (25, 20)
 
-    expected = [4.59800000e+03, 1.87575996e+06, 2.24392925e+06, 2.93141604e+06,
-                3.97078993e+06, 4.04528040e+06, 4.27902906e+06, 4.56916204e+06,
-                5.20492989e+06, 5.26696072e+06, 5.35932638e+06, 6.20197202e+06,
-                6.59620990e+06, 6.84850846e+06, 6.94056545e+06, 7.84584981e+06,
-                7.96867981e+06, 8.55119428e+06, 8.57490213e+06, 8.94455460e+06,
-                9.23797380e+06, 9.33632243e+06, 9.35800168e+06, 1.10551927e+07,
-                1.11014649e+07]
-    assert simp.simplex[:, -1] == pytest.approx(expected)
+    expected = [4.59800000e+03, 2.37401650e+06, 3.38258584e+06, 3.59153846e+06,
+                4.53562162e+06, 4.62091088e+06, 4.67306804e+06, 5.15919068e+06,
+                5.86998715e+06, 6.61257873e+06, 6.66107487e+06, 6.82568363e+06,
+                7.18958553e+06, 7.21841331e+06, 7.24979198e+06, 7.36309871e+06,
+                8.02178252e+06, 8.98114684e+06, 9.66013120e+06, 9.74769138e+06,
+                9.89524917e+06, 1.06868783e+07, 1.10175987e+07, 1.13171554e+07,
+                1.25916870e+07]
+    assert simp.fctvals == pytest.approx(expected)
 
 
 if __name__ == "__main__":
@@ -935,9 +948,11 @@ if __name__ == "__main__":
     algo_nm: list[Any]
 
     if options.difevo:
-        algo_de = [DifEvo()]
+        # algo_de = [DifEvo()]
+        raise ValueError("DifEvo is currently commented out as unused in Sherpa")
     elif options.combine:
-        algo_de = [ncoresDifEvoNelderMead()]
+        # algo_de = [ncoresDifEvoNelderMead()]
+        raise ValueError("ncoresDifEvoNelderMead is currently broken")
     else:
         algo_de = [ncoresDifEvo()]
 
@@ -947,7 +962,9 @@ if __name__ == "__main__":
     else:
         algo_nm = [NelderMead0(), NelderMead1(), NelderMead2(),
                    NelderMead3(), NelderMead4(), NelderMead5(),
-                   NelderMead6(), NelderMead7()]
+                   # Comment out as these classes are currently unused by Sherpa
+                   # NelderMead6(), NelderMead7()]
+                   ]
 
     if options.unc_opt:
         if options.run_de:
