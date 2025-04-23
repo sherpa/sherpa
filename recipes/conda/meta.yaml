@@ -40,7 +40,7 @@ test:
     - sherpa_smoke
 
 about:
- home: http://cxc.cfa.harvard.edu/sherpa/
+ home: https://cxc.cfa.harvard.edu/sherpa/
  summary: Sherpa is the CIAO modeling and fitting application. It enables the user to construct complex models from simple definitions and fit those models to data, using a variety of statistics and optimization methods
  license: GPLv3
 

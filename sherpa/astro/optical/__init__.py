@@ -26,14 +26,12 @@ and are intended for un-binned one-dimensional data sets defined
 on a wavelength grid, with units of Angstroms. When used with
 a binned data set the lower-edge of each bin is used to evaluate
 the model. This module does not contain all the spectral
-components from SpecView ([2]_).
+components from SpecView.
 
 References
 ----------
 
-.. [1] http://www.stsci.edu/institute/software_hardware/specview/
-
-.. [2] http://specview.stsci.edu/javahelp/Components.html
+.. [1] https://ui.adsabs.harvard.edu/abs/2012ascl.soft10016S/abstract
 
 """
 
@@ -882,7 +880,7 @@ class CCM(RegriddableModel1D):
     ----------
 
     .. [1] Cardelli, Clayton, & Mathis, 1989, ApJ, 345, 245-256.
-           http://adsabs.harvard.edu/abs/1989ApJ...345..245C
+           https://adsabs.harvard.edu/abs/1989ApJ...345..245C
 
     """
 
@@ -1377,7 +1375,7 @@ class XGal(RegriddableModel1D):
     ----------
 
     .. [1] Calzetti, Kinney, Storchi-Bergmann, 1994, ApJ, 429, 582
-           http://adsabs.harvard.edu/abs/1994ApJ...429..582C
+           https://adsabs.harvard.edu/abs/1994ApJ...429..582C
 
     """
 
@@ -1448,7 +1446,7 @@ class FM(RegriddableModel1D):
     ----------
 
     .. [1] Fitzpatrick and Massa 1988
-           http://adsabs.harvard.edu/abs/1988ApJ...328..734F
+           https://adsabs.harvard.edu/abs/1988ApJ...328..734F
 
     """
 
@@ -1507,7 +1505,7 @@ class LMC(RegriddableModel1D):
     ----------
 
     .. [1] Howarth 1983 MNRAS, 203, 301
-           http://adsabs.harvard.edu/abs/1983MNRAS.203..301H
+           https://adsabs.harvard.edu/abs/1983MNRAS.203..301H
 
     """
 
@@ -1576,7 +1574,7 @@ class SM(RegriddableModel1D):
     ----------
 
     .. [1] Savage & Mathis, 1979, ARA&A, 17, 73-111
-           http://adsabs.harvard.edu/abs/1979ARA%26A..17...73S
+           https://adsabs.harvard.edu/abs/1979ARA%26A..17...73S
 
     """
 
@@ -1635,7 +1633,7 @@ class SMC(RegriddableModel1D):
     ----------
 
     .. [1] Prevot et al. 1984, A&A, 132, 389-392
-           http://adsabs.harvard.edu/abs/1984A%26A...132..389P
+           https://adsabs.harvard.edu/abs/1984A%26A...132..389P
 
     """
 
@@ -1737,12 +1735,12 @@ class Seaton(RegriddableModel1D):
     ----------
 
     .. [1] Seaton, M. J. 1979, MNRAS, 187, 73
-           http://adsabs.harvard.edu/abs/1979MNRAS.187P..73S
+           https://adsabs.harvard.edu/abs/1979MNRAS.187P..73S
 
-    .. [2] http://www.stsci.edu/institute/software_hardware/stsdas/synphot
+    .. [2] https://synphot.readthedocs.io/en/latest/
 
     .. [3] Nandy et al., 1975, A&A, 44, 195-203.
-           http://adsabs.harvard.edu/abs/1975A%26A....44..195N
+           https://adsabs.harvard.edu/abs/1975A%26A....44..195N
 
     """
 

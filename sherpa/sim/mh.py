@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2011, 2016, 2019-2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -52,7 +52,7 @@ convergence diagnostics can be found in Appendices A.2 - A.4 of van Dyk et
 al. (2001) and in more detail in Chapter 11 of Gelman, Carlin, Stern, and Rubin
 (Bayesian Data Analysis, 2nd Edition, 2004, Chapman & Hall/CRC).
 
-http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
+https://hea-www.harvard.edu/AstroStat/pyBLoCXS/
 """
 
 # The pyBLoCXS code base is cleanly separable from Sherpa!
@@ -87,7 +87,7 @@ def rmvt(mu, sigma, dof, rng=None):
     """Sampling the non-central multivariate Student's t distribution
     using deviates from multivariate normal and chi-squared distributions
     Source: Kshirsagar method taken from function `rmvt` in R package `mvtnorm`.
-    http://cran.r-project.org/web/packages/mvtnorm/index.html
+    https://cran.r-project.org/web/packages/mvtnorm/index.html
 
     Parameters
     ----------

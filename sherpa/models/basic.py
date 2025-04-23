@@ -354,7 +354,7 @@ class Erf(RegriddableModel1D):
     References
     ----------
 
-    .. [1] http://mathworld.wolfram.com/Erf.html
+    .. [1] https://mathworld.wolfram.com/Erf.html
 
     """
 
@@ -407,7 +407,7 @@ class Erfc(RegriddableModel1D):
     References
     ----------
 
-    .. [1] http://mathworld.wolfram.com/Erfc.html
+    .. [1] https://mathworld.wolfram.com/Erfc.html
 
     """
 
@@ -1516,10 +1516,10 @@ class Gauss2D(RegriddableModel2D):
     ----------
 
     .. [1] HIntLib - High-dimensional Integration Library
-           http://mint.sbg.ac.at/HIntLib/
+           https://github.com/JohannesBuchner/HIntLib
 
     .. [2] GSL - GNU Scientific Library
-           http://www.gnu.org/software/gsl/
+           https://www.gnu.org/software/gsl/
 
     """
 
@@ -1604,10 +1604,10 @@ class SigmaGauss2D(Gauss2D):
     ----------
 
     .. [1] HIntLib - High-dimensional Integration Library
-           http://mint.sbg.ac.at/HIntLib/
+           https://github.com/JohannesBuchner/HIntLib
 
     .. [2] GSL - GNU Scientific Library
-           http://www.gnu.org/software/gsl/
+           https://www.gnu.org/software/gsl/
 
     """
 
@@ -1690,10 +1690,10 @@ class NormGauss2D(RegriddableModel2D):
     ----------
 
     .. [1] HIntLib - High-dimensional Integration Library
-           http://mint.sbg.ac.at/HIntLib/
+           https://github.com/JohannesBuchner/HIntLib
 
     .. [2] GSL - GNU Scientific Library
-           http://www.gnu.org/software/gsl/
+           https://www.gnu.org/software/gsl/
 
     """
 

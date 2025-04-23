@@ -30,7 +30,7 @@ References
 
 .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/index.html
 
-.. [2] http://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
+.. [2] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
 
 .. [3] https://sherpa.readthedocs.io/en/latest/developer/index.html#update-the-xspec-bindings
 
@@ -159,7 +159,7 @@ class AddModelDefinition(ModelDefinition):
     References
     ----------
 
-    .. [1] http://heasarc.gsfc.nasa.gov/docs/software/lheasoft/xanadu/xspec/manual/Additive.html
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/software/lheasoft/xanadu/xspec/manual/Additive.html
     """
 
     modeltype = "Add"
@@ -173,7 +173,7 @@ class MulModelDefinition(ModelDefinition):
     References
     ----------
 
-    .. [1] http://heasarc.gsfc.nasa.gov/docs/software/lheasoft/xanadu/xspec/manual/Multiplicative.html
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/software/lheasoft/xanadu/xspec/manual/Multiplicative.html
     """
 
     modeltype = "Mul"
@@ -187,7 +187,7 @@ class ConModelDefinition(ModelDefinition):
     References
     ----------
 
-    .. [1] http://heasarc.gsfc.nasa.gov/docs/software/lheasoft/xanadu/xspec/manual/Convolution.html
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/software/lheasoft/xanadu/xspec/manual/Convolution.html
     """
 
     modeltype = "Con"
@@ -201,7 +201,7 @@ class MixModelDefinition(ModelDefinition):
     References
     ----------
 
-    .. [1] http://heasarc.gsfc.nasa.gov/docs/software/lheasoft/xanadu/xspec/manual/Mixing.html
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/software/lheasoft/xanadu/xspec/manual/Mixing.html
     """
 
     modeltype = "Mix"

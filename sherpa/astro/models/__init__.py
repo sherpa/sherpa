@@ -78,10 +78,10 @@ class Atten(RegriddableModel1D):
     ----------
 
     .. [1] Rumph, Bowyer, & Vennes 1994, AJ 107, 2108
-           http://adsabs.harvard.edu/abs/1994AJ....107.2108R
+           https://adsabs.harvard.edu/abs/1994AJ....107.2108R
 
     .. [2] Morrison & McCammon 1983, ApJ 270, 119
-           http://adsabs.harvard.edu/abs/1983ApJ...270..119M
+           https://adsabs.harvard.edu/abs/1983ApJ...270..119M
 
     .. [3] https://www.gnu.org/software/gsl/manual/html_node/QNG-non_002dadaptive-Gauss_002dKronrod-integration.html
 
@@ -420,10 +420,10 @@ class Dered(RegriddableModel1D):
     ----------
 
     .. [1] Cardelli, Clayton, & Mathis 1989, ApJ 345, 245
-           http://adsabs.harvard.edu/abs/1989ApJ...345..245C
+           https://adsabs.harvard.edu/abs/1989ApJ...345..245C
 
     .. [2] Bohlin, Savage, & Drake 1978, ApJ 224, 132
-           http://adsabs.harvard.edu/abs/1978ApJ...224..132B
+           https://adsabs.harvard.edu/abs/1978ApJ...224..132B
 
     """
 
@@ -1001,10 +1001,10 @@ class Beta2D(RegriddableModel2D):
     ----------
 
     .. [1] HIntLib - High-dimensional Integration Library
-           http://mint.sbg.ac.at/HIntLib/
+           https://github.com/JohannesBuchner/HIntLib
 
     .. [2] GSL - GNU Scientific Library
-           http://www.gnu.org/software/gsl/
+           https://www.gnu.org/software/gsl/
 
     """
 
@@ -1080,15 +1080,15 @@ class DeVaucouleurs2D(RegriddableModel2D):
     ----------
 
     .. [1] de Vaucouleurs G., 1948, Ann. d'Astroph. 11, 247
-           http://adsabs.harvard.edu/abs/1948AnAp...11..247D
+           https://adsabs.harvard.edu/abs/1948AnAp...11..247D
 
-    .. [2] http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
+    .. [2] https://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
 
     .. [3] Graham, A. & Driver, S., 2005, PASA, 22, 118
-           http://adsabs.harvard.edu/abs/2005PASA...22..118G
+           https://adsabs.harvard.edu/abs/2005PASA...22..118G
 
     .. [4] Ciotti, L. & Bertin, G., A&A, 1999, 352, 447-451
-           http://adsabs.harvard.edu/abs/1999A%26A...352..447C
+           https://adsabs.harvard.edu/abs/1999A%26A...352..447C
 
     """
 
@@ -1171,10 +1171,10 @@ class HubbleReynolds(RegriddableModel2D):
     ----------
 
     .. [1] HIntLib - High-dimensional Integration Library
-           http://mint.sbg.ac.at/HIntLib/
+           https://github.com/JohannesBuchner/HIntLib
 
     .. [2] GSL - GNU Scientific Library
-           http://www.gnu.org/software/gsl/
+           https://www.gnu.org/software/gsl/
 
     """
 
@@ -1337,10 +1337,10 @@ class JDPileup(RegriddableModel1D):
     ----------
 
     .. [1] Davis, J, 2001, ApJ, 562, 575-582.
-           http://adsabs.harvard.edu/abs/2001ApJ...562..575D
+           https://adsabs.harvard.edu/abs/2001ApJ...562..575D
 
     .. [2] "Using A Pileup Model",
-           http://cxc.harvard.edu/sherpa/threads/pileup/
+           https://cxc.harvard.edu/sherpa/threads/pileup/
 
     """
 
@@ -1452,19 +1452,19 @@ class Sersic2D(RegriddableModel2D):
     References
     ----------
 
-    .. [1] http://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
+    .. [1] https://ned.ipac.caltech.edu/level5/March05/Graham/Graham2.html
 
     .. [2] Graham, A. & Driver, S., 2005, PASA, 22, 118
-           http://adsabs.harvard.edu/abs/2005PASA...22..118G
+           https://adsabs.harvard.edu/abs/2005PASA...22..118G
 
     .. [3] Ciotti, L. & Bertin, G., A&A, 1999, 352, 447-451
-           http://adsabs.harvard.edu/abs/1999A%26A...352..447C
+           https://adsabs.harvard.edu/abs/1999A%26A...352..447C
 
     .. [4] HIntLib - High-dimensional Integration Library
-           http://mint.sbg.ac.at/HIntLib/
+           https://github.com/JohannesBuchner/HIntLib
 
     .. [5] GSL - GNU Scientific Library
-           http://www.gnu.org/software/gsl/
+           https://www.gnu.org/software/gsl/
 
     """
 

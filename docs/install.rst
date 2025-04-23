@@ -192,7 +192,7 @@ include:
 FFTW
 ^^^^
 
-Sherpa ships with the `fftw library <http://www.fftw.org/>`_ source
+Sherpa ships with the `fftw library <https://www.fftw.org/>`_ source
 code and builds it by default. To use a different version, change
 the ``fftw`` options in the ``sherpa_config`` section of the
 ``setup.cfg`` file. The options to change are::

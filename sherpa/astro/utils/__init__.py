@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2020 - 2022, 2024
+#  Copyright (C) 2008, 2016, 2020-2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -994,20 +994,20 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
     ----------
 
     .. [1] "The K correction", Hogg, D.W., et al.
-           http://arxiv.org/abs/astro-ph/0210394
+           https://arxiv.org/abs/astro-ph/0210394
 
     .. [2] Appendix B of Jones et al. 1998, ApJ, vol 495,
            p. 100-114.
-           http://adsabs.harvard.edu/abs/1998ApJ...495..100J
+           https://adsabs.harvard.edu/abs/1998ApJ...495..100J
 
     .. [3] "K and evolutionary corrections from UV to IR",
            Poggianti, B.M., A&AS, 1997, vol 122, p. 399-407.
-           http://adsabs.harvard.edu/abs/1997A%26AS..122..399P
+           https://adsabs.harvard.edu/abs/1997A%26AS..122..399P
 
     .. [4] "Galactic evolution and cosmology - Probing the
            cosmological deceleration parameter", Yoshii, Y. &
            Takahara, F., ApJ, 1988, vol 326, p. 1-18.
-           http://adsabs.harvard.edu/abs/1988ApJ...326....1Y
+           https://adsabs.harvard.edu/abs/1988ApJ...326....1Y
 
     """
 

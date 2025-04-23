@@ -465,7 +465,7 @@ class Cash(Likelihood):
 
     .. [1] "Parameter estimation in astronomy through application of
            the likelihood ratio", Cash, W. 1979, ApJ 228, 939
-           http://adsabs.harvard.edu/abs/1979ApJ...228..939C
+           https://adsabs.harvard.edu/abs/1979ApJ...228..939C
 
     """
 
@@ -723,7 +723,7 @@ class Chi2Gehrels(Chi2):
     .. [1] "Confidence limits for small numbers of events in
            astrophysical data", Gehrels, N. 1986, ApJ, vol 303,
            p. 336-346.
-           http://adsabs.harvard.edu/abs/1986ApJ...303..336G
+           https://adsabs.harvard.edu/abs/1986ApJ...303..336G
 
     """
 

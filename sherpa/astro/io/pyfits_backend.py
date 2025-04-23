@@ -26,7 +26,7 @@ References
 
 .. [1] https://en.wikipedia.org/wiki/FITS
 
-.. [2] http://astropy.readthedocs.org/en/latest/io/fits/
+.. [2] https://docs.astropy.org/en/latest/io/fits/
 
 """
 

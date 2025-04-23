@@ -355,7 +355,7 @@ should be reviewed: `Appendix F: Using the XSPEC Models Library in
 Other Programs
 <https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSappendixExternal.html>`_,
 and `Appendix C: Adding Models to XSPEC
-<http://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html>`_.
+<https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html>`_.
 
 The ``spectral/manager/model.dat`` file provided by XSPEC - normally
 in the parent directory of the ``HEADAS`` environment variable - defines

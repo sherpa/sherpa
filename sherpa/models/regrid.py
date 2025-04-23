@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#  Copyright (C) 2017 - 2024
+#  Copyright (C) 2017-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1053,7 +1053,7 @@ def rebin_no_int(array, dimensions=None, scale=None):
     Notes
     -----
     This routine is based on the example at
-    http://martynbristow.co.uk/wordpress/blog/rebinning-data/
+    https://martynbristow.co.uk/
     which was released as GPL v3 © Martyn Bristow 2015. It has been
     slightly modified for Sherpa.
 

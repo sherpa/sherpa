@@ -34,14 +34,11 @@ GNU General Publice License v2+
 fftn, various authors, is released under the terms of the GPL
 license.
 
-pyfits, various authors, released under the terms of the BSD license:
-see http://www.stsci.edu/institute/software_hardware/pyfits
-
 numpy, various authors, released under the terms of the 3-clause
-BSD license, see http://www.numpy.org/
+BSD license, see https://www.numpy.org/
 
 matplotlib, various authors, release under the terms of the
-PSF license, see http://matplotlib.org/
+PSF license, see https://matplotlib.org/
 
 wcssubs, by Jessica Mink for the Smithsonian Astrophysical
 Observatory. The code may be derived from other authors, full
@@ -66,8 +63,8 @@ GPLv3+ license.
 
 minpack was developed by the University of Chicago, as Operator of
 Argonne National Laboratory, under the terms described at:
-http://netlib.org/minpack/disclaimer
+https://netlib.org/minpack/disclaimer
 
 The rebinning code for 2D images was taken from a blog post by Martyn Brystow:
-copyright Martyn Bristow 2015, and licensed under GPL v3
-http://martynbristow.co.uk/wordpress/blog/rebinning-data/
+copyright Martyn Bristow 2015, and licensed under GPL v3.
+https://martynbristow.co.uk/
