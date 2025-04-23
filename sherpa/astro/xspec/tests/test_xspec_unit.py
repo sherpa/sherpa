@@ -75,7 +75,6 @@ DEFAULT_COSMO = (70.0, 0.0, 0.73)
 # will not be used by an actual model so we can set it.
 #
 DEFAULT_XSET_NAME = 'SHERPA-TEST-DUMMY-NAME'
-DEFAULT_XSET_VALUE = ''
 
 # The number of elements in the abundance table
 ELEMENT_NAMES = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
@@ -181,6 +180,17 @@ def test_abund_default():
 
 
 @requires_xspec
+def test_get_xsabundances_path():
+    """Minimal test of get_xsabundances_path"""
+
+    from sherpa.astro import xspec
+
+    # We assume the file must exist if we have got this far
+    path = xspec.get_xsabundances_path()
+    assert path.is_file()
+
+
+@requires_xspec
 def test_xset_default():
     """Check the expected default setting for the xset setting.
 
@@ -196,12 +206,11 @@ def test_xset_default():
     from sherpa.astro import xspec
 
     # The test is case insensitive, but this test doesn't really
-    # test this out (since it is expected to return '' whatever
-    # the input name is).
+    # test this out.
     #
     name = DEFAULT_XSET_NAME.lower()
-    oval = xspec.get_xsxset(name)
-    assert oval == DEFAULT_XSET_VALUE
+    with pytest.raises(KeyError):
+        xspec.get_xsxset(name)
 
 
 @requires_xspec
@@ -338,6 +347,37 @@ def test_abund_get_invalid_element(caplog):
     with pytest.raises(TypeError,
                        match="^could not find element 'O3'$"):
         xspec.get_xsabund("O3")
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+@pytest.mark.parametrize("element,table,emsg",
+                         [("O3", "angr",
+                           "could not find element 'O3' in table 'angr'"),
+                          ("O", "foobar",
+                           "Unknown abundance table 'foobar'"),
+                          # It looks like XSPEC only throws the "unknown table"
+                          # error when the element is known, which means the
+                          # following error is not "Unknown abundance table".
+                          ("O3", "barfoo",
+                           "could not find element 'O3' in table 'barfoo'")
+                          ])
+def test_abund_get_invalid_element_table(element, table, emsg, caplog):
+    """Check what happens if sent the wrong element/table name.
+
+    Allow a combination of invalid/valid table and element names, as
+    long as at least one is invalid.
+
+    Users should never hit this case, as it requires explicit calls
+    to the _xspec.get_xsabund_table routine.
+
+    """
+
+    from sherpa.astro.xspec import _xspec
+
+    with pytest.raises(ValueError, match=f"^{emsg}$"):
+        _xspec.get_xsabund_table(table, element)
 
     assert len(caplog.records) == 0
 
@@ -667,31 +707,103 @@ def test_abund_change_file_subset(tmp_path):
 
 
 @requires_xspec
+def test_get_xsabundances_table_name():
+    """Check we can get a different abundance table to the default."""
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    assert oval != "wilm"  # just in case
+
+    elems1 = xspec.get_xsabundances()
+    elems2 = xspec.get_xsabundances("wilm")
+    elems3 = xspec.get_xsabundances()
+
+    assert elems1 != elems2
+    assert elems1 == elems3  # just to check no change
+    check_abundances(elems2["H"],
+                     elems2["He"],
+                     elems2["Si"],
+                     elems2["Ar"],
+                     elems2["K"],
+                     elems2["Fe"])
+
+
+@requires_xspec
+def test_get_xsabundances_table_name_file():
+    """Check we can get a different abundance table to the default.
+
+    Unlike test_get_xsabundances_table_name we load our own abundances
+    so we can definitely check they are being used.
+
+    """
+
+    from sherpa.astro import xspec
+
+    orig = xspec.get_xsabund()
+    oelems = xspec.get_xsabundances()
+    assert orig != "file"  # as restoring this would be annoying
+
+    nelems = {"H": 1.0, "He": 0.2, "Fe": 2.3, "Zn": 1.3}
+    try:
+        xspec.set_xsabundances(nelems)
+        xspec.set_xsabund(orig)
+
+        got1 = xspec.get_xsabundances()
+        got2 = xspec.get_xsabundances("file")
+    finally:
+        xspec.set_xsabund(orig)
+
+    # Check that got2 matches what we expect and isn't the same as
+    # got1.
+    #
+    assert got1 == oelems
+    assert got1 != got2
+    for k, v in got2.items():
+        if k in nelems:
+            assert v == pytest.approx(nelems[k])
+        else:
+            assert v == pytest.approx(0.0)
+
+
+@requires_xspec
+def test_get_xsabundances_table_name_unknown():
+    """Check we error out if the table name is unknown.
+
+    I don't think there is a way to query XSPEC for the known
+    abundance tables, so we just have to hope we use a name that isn't
+    going to be used.
+
+    """
+
+    from sherpa.astro import xspec
+
+    tbl = "not-an-abundance-table"
+    with pytest.raises(ValueError,
+                       match=f"^Unknown abundance table '{tbl}'$"):
+        xspec.get_xsabundances(tbl)
+
+
+@requires_xspec
 def test_xset_change():
+
     """Can we change the xset setting.
     """
 
     from sherpa.astro import xspec
 
-    def getfunc():
-        return xspec.get_xsxset(DEFAULT_XSET_NAME)
+    with pytest.raises(KeyError):
+        xspec.get_xsxset(DEFAULT_XSET_NAME)
 
-    def setfunc(val):
-        xspec.set_xsxset(DEFAULT_XSET_NAME.lower(), val)
+    try:
+        xspec.set_xsxset(DEFAULT_XSET_NAME.lower(), 'dummy value')
+        got = xspec.get_xsxset(DEFAULT_XSET_NAME)
+    finally:
+        # clear out the keyword
+        xspec.set_xsxset(DEFAULT_XSET_NAME, '')
 
-    val1 = 'dummy value'
-    val2 = 'a different setting'
-    validate_xspec_setting(getfunc, setfunc, val1, val2)
-
-    # A separate part of the XSET interface is that the settings
-    # are recorded in the XSPEC state maintained by the xspec
-    # module, so check that the stored value is included in this.
-    #
-    modelvals = xspec.get_xsstate()['modelstrings']
-    assert DEFAULT_XSET_NAME in modelvals
-
-    # Is it worth changing the code so we know which to check for?
-    assert modelvals[DEFAULT_XSET_NAME] in [val1, val2]
+    with pytest.raises(KeyError):
+        xspec.get_xsxset(DEFAULT_XSET_NAME)
 
 
 @requires_xspec
@@ -796,7 +908,7 @@ def test_get_xsstate_keys():
 @requires_xspec
 @pytest.mark.parametrize("miss_key",
                          ["abund", "chatter", "cosmo", "xsect",
-                          "modelstrings"])  # paths is not a required key
+                          "modelstrings", "paths"])
 def test_set_xsstate_missing_key(miss_key):
     """Check set_xsstate handles a missing key.
 
@@ -806,8 +918,11 @@ def test_set_xsstate_missing_key(miss_key):
 
     ostate = xspec.get_xsstate()
     assert miss_key in ostate
-    for val in ostate.values():
-        assert val is not None
+    for key, val in ostate.items():
+        if key == "abundances":
+            assert val is None
+        else:
+            assert val is not None
 
     def not_elem(value, vals):
         """Pick the first item in vals that is not value"""
@@ -824,6 +939,8 @@ def test_set_xsstate_missing_key(miss_key):
             'paths': {'manager': '/dev/null'}}
 
     del fake[miss_key]
+
+    assert xspec.get_xsabund() != 'file'
 
     try:
         xspec.set_xsstate(fake)
@@ -856,6 +973,11 @@ def test_set_xsstate_missing_key(miss_key):
         #
         for key in fake.get("modelstrings", {}).keys():
             xspec.set_xsxset(key, "")
+
+    # Safety check (this was not being reset correctly when working on
+    # using set_xsabund_vector and the abundances state setting).
+    #
+    assert xspec.get_xsabund() != 'file'
 
 
 @requires_xspec
@@ -899,33 +1021,26 @@ def test_set_xsstate_xset():
 
     ukey = key.upper()
 
-    # There should be no value for this key (since it isn't
-    # in modelstrings by construction).
+    # There should be no value for this key.
     #
-    assert key not in xspec.xsstate["modelstrings"]
-    assert xspec.get_xsxset(key) == ''
+    assert key not in xspec.get_xsxset()
+    with pytest.raises(KeyError):
+        xspec.get_xsxset(key)
 
     nstate = copy.deepcopy(ostate)
     nstate['modelstrings'][key] = val
     xspec.set_xsstate(nstate)
 
     assert xspec.get_xsxset(key) == val
-    assert ukey in xspec.xsstate["modelstrings"]
-    assert xspec.xsstate["modelstrings"][ukey] == val
+    modelstrings = xspec.get_xsxset()
+    assert ukey in modelstrings
+    assert modelstrings[ukey] == val
 
     xspec.set_xsstate(ostate)
 
-    # Unfortunately, due to there being no attempt at clearing out the
-    # XSET settings (e.g. removing existing settings before restoring
-    # the state), the following tests fail.
-    #
-    # TODO: the code should probably be updated to fix this
-    #
-    # assert xspec.get_xsxset(key) == ''
-    # assert xspec.get_xsstate() == ostate
+    with pytest.raises(KeyError):
+        assert xspec.get_xsxset(key)
 
-    xspec.set_xsxset(key, '')
-    del xspec.xsstate["modelstrings"][ukey]
     assert xspec.get_xsstate() == ostate
 
 
@@ -972,7 +1087,40 @@ def test_set_xsstate_path_manager():
     # assert xspec.get_xsstate() == ostate
 
     xspec.set_xspath_manager(opath)
-    # should really clear out xspec.xspecpaths
+    # should really clear out xspec.xsstate["paths"]
+
+
+@requires_xspec
+def test_set_xsstate_abundances():
+    """Check we can restore manually-created abundances.
+    """
+
+    from sherpa.astro import xspec
+
+    oabund = xspec.get_xsabund()
+    assert oabund != "file"
+
+    ostate = xspec.get_xsstate()
+
+    xspec.set_xsabundances({"H": 1, "He": 0.6, "C": 0.5, "Fe": 0.25, "Zn": 0.1})
+
+    nstate = xspec.get_xsstate()
+
+    # Change the abundances so we know the set_xsstate call works
+    xspec.set_xsabund("angr")
+    assert xspec.get_xsabund() == "angr"
+
+    xspec.set_xsstate(nstate)
+    assert xspec.get_xsabund() == "file"
+    assert xspec.get_xsabund("H") == pytest.approx(1)
+    assert xspec.get_xsabund("He") == pytest.approx(0.6)
+    assert xspec.get_xsabund("C") == pytest.approx(0.5)
+    assert xspec.get_xsabund("Fe") == pytest.approx(0.25)
+    assert xspec.get_xsabund("Cu") == pytest.approx(0.0)
+    assert xspec.get_xsabund("Zn") == pytest.approx(0.1)
+
+    xspec.set_xsstate(ostate)
+    assert xspec.get_xsabund() == oabund
 
 
 @requires_data

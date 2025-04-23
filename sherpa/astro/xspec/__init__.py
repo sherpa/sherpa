@@ -107,7 +107,6 @@ from contextlib import suppress
 import logging
 from pathlib import Path
 import string
-import tempfile
 from typing import Any, overload
 import warnings
 
@@ -142,7 +141,7 @@ warning = logging.getLogger(__name__).warning
 # record these settings manually.
 #
 xsstate: dict[str, Any] = {
-    "modelstrings": {},
+    "abundances": None,
     "paths": {},
 }
 
@@ -233,16 +232,25 @@ def get_xsabund(element: str | None = None) -> str | float:
     return _xspec.get_xsabund(element)
 
 
-def get_xsabundances() -> dict[str, float]:
+def get_xsabundances(table: str | None = None) -> dict[str, float]:
     """Return the abundance settings used by X-Spec.
 
+    .. versionchanged:: 4.17.1
+       The optional table argument was added.
+
     .. versionadded:: 4.17.0
+
+    Parameter
+    ---------
+    table : optional
+        The table to use. Leave as None to use the selected abundance
+        table.
 
     Returns
     -------
     abundances : dict
-        The current set of abundances. The keys are the element names
-        (e.g. 'Fe') and the values are the abundances.
+        The keys are the element names (e.g. 'Fe') and the values are
+        the abundances.
 
     See Also
     --------
@@ -254,9 +262,16 @@ def get_xsabundances() -> dict[str, float]:
     >>> get_xsabundances()
     {'H': 1.0, 'He': ...}
 
+    >>> set_xsabud("angr")
+    >>> get_xsabundances()["Cu"]
+    1.619999956403717e-08
+    >>> get_xsabundances("felc")["Cu"]
+    0.0
+
     """
 
-    return {name: _xspec.get_xsabund(name)
+    tbl = get_xsabund() if table is None else table
+    return {name: _xspec.get_xsabund_table(tbl, name)
             for name in get_xselements().keys()}
 
 
@@ -292,11 +307,6 @@ def get_xsabund_doc(name: str | None = None) -> str:
     return _xspec.get_xsabund_doc(aname).strip()
 
 
-# The current interface to the XSPEC model library makes this awkward
-# to write. Once the interface switches to using the FunctionUtility
-# interface this code will be a lot simpler internally, without
-# changing the API.
-#
 def set_xsabundances(abundances: dict[str, float]) -> None:
     """Set the abundances used by X-Spec.
 
@@ -339,22 +349,8 @@ def set_xsabundances(abundances: dict[str, float]) -> None:
 
         out[z - 1] = abund
 
-    # Write them to a file and then load them.
-    #
-    # This should set delete_on_close=False but that
-    # requires Python 3.12.
-    #
-    with tempfile.NamedTemporaryFile(encoding="ascii", mode="w",
-                                     delete=False) as fh:
-        for elem in out:
-            fh.write(f"{elem}\n")
-
-        # Make sure data is written to disk. Could this just
-        # be fh.flush() and avoid closing the file?
-        #
-        fh.close()
-
-        set_xsabund(fh.name)
+    _xspec.set_xsabund_vector(out)
+    xsstate["abundances"] = get_xsabundances()
 
 
 # This function is not added to __all__ as it is very specialized.
@@ -397,6 +393,38 @@ def get_xselements() -> dict[str, int]:
         out[elem] = idx
 
     return out
+
+
+# This function is not added to __all__ as it is very specialized.
+#
+def get_xsabundances_path() -> Path:
+    """Return the path to the abundances file used by X-Spec.
+
+    This file is used by X-Spec to determine the different
+    abundance-table settings used by set_xsabund and get_xsabund.
+
+    .. versionadded:: 4.17.1
+
+    Returns
+    -------
+    path : pathlib.Path
+        The full path to the abundances file.
+
+    See Also
+    --------
+    get_xsabund, set_xsabund
+
+    Examples
+    --------
+
+    >>> get_xsabundances_path()
+    PosixPath('/path/to/spectral/manager/abundances.dat')
+
+    """
+
+    out = Path(_xspec.get_xspath_abundance())
+    out /= Path(_xspec.get_abundance_file())
+    return out.resolve()
 
 
 def get_xschatter() -> int:
@@ -585,6 +613,13 @@ def set_xsabund(abundance: str) -> None:
 
     _xspec.set_xsabund(abundance)
 
+    # Ensure the abundances state setting is created or deleted.
+    #
+    if get_xsabund() == "file":
+        xsstate["abundances"] = get_xsabundances()
+    else:
+        xsstate["abundances"] = None
+
 
 def set_xschatter(level: int) -> None:
     """Set the chatter level used by X-Spec.
@@ -723,24 +758,71 @@ def set_xsxsect(name: str) -> None:
     _xspec.set_xsxsect(name)
 
 
+def clear_xsxset() -> None:
+    """Remove all existing X-Spec model settings.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    get_xsxset, set_xsxset
+
+    Examples
+    --------
+
+    >>> set_xsxset("POW_EMIN", "0.5")
+    >>> get_xsxset()
+    {'POW_EMIN': '0.5'}
+    >>> clear_xsxset()
+    >>> get_xsxset()
+    {}
+
+    """
+    return _xspec.clear_xsxset()
+
+
+@overload
+def get_xsxset() -> dict[str, str]:
+    ...
+
+@overload
+def get_xsxset(name: None) -> dict[str, str]:
+    ...
+
+@overload
 def get_xsxset(name: str) -> str:
-    """Return the X-Spec model setting.
+    ...
+
+def get_xsxset(name: str | None = None) -> str | dict[str, str]:
+    """Return the X-Spec model setting or settings.
+
+    .. versionchanged:: 4.17.1
+       This routine can now be called with no argument, which means
+       that a dictionary containing all the settings is returned.
+       Asking for an unset keyword now raises a KeyError rather than
+       returning the empty string.
 
     Parameters
     ----------
-    name : str
+    name : str or None, optional
        The name of the setting (converted to upper case before being
        sent to X-Spec). There is no check that the name is valid.
 
     Returns
     -------
-    val : str
-       Returns the value set by a previous call to `set_xsxset` or the
-       empty string, if the value has not been previously set.
+    val : str or dict
+       When name is set, returns the value set by a previous call to
+       `set_xsxset`. When name is not set a dictionary of all the
+       settings is returned.
+
+    Raises
+    ------
+    KeyError
+       When the name passed is not set in X-Spec.
 
     See Also
     --------
-    set_xsxset
+    clear_xsxset, set_xsxset
 
     Notes
     -----
@@ -756,9 +838,14 @@ def get_xsxset(name: str) -> str:
     >>> get_xsxset("pow_emin")
     '0.5'
 
+    >>> get_xsxset()
+    {'POW_EMIN': '0.5'}
+
     """
-    name = name.upper()
-    return _xspec.get_xsxset(name)
+    if name is None:
+        return _xspec.get_xsxset()
+
+    return _xspec.get_xsxset(name.upper())
 
 
 def set_xsxset(name: str, value: str) -> None:
@@ -775,12 +862,14 @@ def set_xsxset(name: str, value: str) -> None:
        The name of the setting. It is converted to upper case before
        being used. There is no check that the name is valid.
     value : str
-       The new value of the setting. It must be given as a string.
+       The new value of the setting. It must be given as a string.  If
+       it is the empty string then the name is removed from the model
+       settings.
 
     See Also
     --------
-    get_xsxset, get_xsversion, set_xsabund, set_xschatter, set_xscosmo,
-    set_xsxsect
+    clear_xsxset, get_xsxset, get_xsversion, set_xsabund, set_xschatter,
+    set_xscosmo, set_xsxsect
 
     Notes
     -----
@@ -792,6 +881,10 @@ def set_xsxset(name: str, value: str) -> None:
 
     The model settings are stored so that they can be included in the
     output of `sherpa.astro.ui.save_all`.
+
+    Setting the name argument to "INITIALIZE" will clear the settings,
+    but this is deprecated and the `clear_xsxset` routine must be used
+    instead.
 
     References
     ----------
@@ -812,11 +905,7 @@ def set_xsxset(name: str, value: str) -> None:
     >>> set_xsxset('POW_EMAX', '2.0')
 
     """
-    name = name.upper()
-    _xspec.set_xsxset(name, value)
-    nval = get_xsxset(name)
-    if nval != "":
-        xsstate["modelstrings"][name] = nval
+    _xspec.set_xsxset(name.upper(), value)
 
 
 def get_xspath_manager() -> str:
@@ -875,7 +964,7 @@ def set_xspath_manager(path: str) -> None:
 
     See Also
     --------
-    get_xspath_manager : Return the path to the files describing the XSPEC models.
+    get_xspath_manager
 
     Examples
     --------
@@ -923,12 +1012,16 @@ def get_xsstate() -> dict[str, Any]:
     set_xsstate
     """
 
-    # Do not return the internal dictionary but a copy of it.
+    abundances = xsstate["abundances"]
+    if abundances is not None:
+        abundances = abundances.copy()
+
     return {"abund": get_xsabund(),
+            "abundances": abundances,
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
-            "modelstrings": xsstate["modelstrings"].copy(),
+            "modelstrings": get_xsxset(),
             "paths": xsstate["paths"].copy()
             }
 
@@ -946,8 +1039,8 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        and 'paths'. If a keyword is missing then that setting will
-        not be changed.
+        'abundances', and 'paths'. If a keyword is missing
+        then that setting will not be changed.
 
     See Also
     --------
@@ -968,8 +1061,18 @@ def set_xsstate(state: dict[str, Any]) -> None:
             # Assume state is not a dictionary, so return.
             return
 
-    with suppress(KeyError):
-        set_xsabund(state["abund"])
+    # If a manually-set up table has been loaded then we use that
+    # (this is given by the "abundances" value being set), otherwise
+    # we use the abundance table (the "abund" value).
+    #
+    abundances = state.get("abundances", None)
+    if abundances is None:
+        with suppress(KeyError):
+            set_xsabund(state["abund"])
+
+    else:
+        # This is expected to be a dict of abundance names and values.
+        set_xsabundances(abundances)
 
     with suppress(KeyError):
         set_xsxsect(state["xsect"])
@@ -978,15 +1081,19 @@ def set_xsstate(state: dict[str, Any]) -> None:
         h0, q0, l0 = state["cosmo"]
         set_xscosmo(h0, q0, l0)
 
+    # We clear out the XSET settings if modelstrings is present, even
+    # if it is empty (since that means there are no keys).
+    #
     with suppress(KeyError):
-        # Should this remove any old keys? With the current API this
-        # is hard to do reliably.
-        #
-        for name, value in state["modelstrings"].items():
+        # Assume it is a dictionary.
+        modelstrings = state["modelstrings"]
+        clear_xsxset()
+        for name, value in modelstrings.items():
             set_xsxset(name, value)
 
+    paths = state.get("paths", {})
     with suppress(KeyError):
-        set_xspath_manager(state["paths"]["manager"])
+        set_xspath_manager(paths["manager"])
 
 
 def read_xstable_model(modelname: str,
@@ -1143,8 +1250,10 @@ def read_xstable_model(modelname: str,
 __all__ : tuple[str, ...]
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
-           'get_xsversion', 'set_xsxset', 'get_xsxset', 'set_xsstate',
-           'get_xsstate', 'get_xsabundances', 'set_xsabundances')
+           'get_xsversion',
+           'set_xsxset', 'get_xsxset', 'clear_xsxset',
+           'set_xsstate', 'get_xsstate',
+           'get_xsabundances', 'set_xsabundances')
 
 
 class XSBaseParameter(Parameter):
@@ -7724,7 +7833,7 @@ class XSeebremss(XSAdditiveModel):
     def __init__(self, name='eebremss'):
         self.T = XSParameter(name, 'T', 1.0, min=0.05, max=10000000000.0, hard_min=0.05, hard_max=10000000000.0, units='keV')
         self.eperh = XSParameter(name, 'eperh', 1.2, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
-        self.Redshift = mkRedshift(0)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.T, self.eperh, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)

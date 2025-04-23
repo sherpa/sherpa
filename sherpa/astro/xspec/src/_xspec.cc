@@ -117,7 +117,13 @@ static PyObject* get_chatter( PyObject *self )
 }
 
 
-// TODO: we could send in an integer for the Z number (ie either name or number)
+// TODO:
+//   we could send in an integer for the Z number (ie either name
+//   or number) but that seems a bit excessive, as the user can
+//   get a dict of abundances keyed by the element name.
+//
+// See also: get_abund_from_table
+//
 static PyObject* get_abund( PyObject *self, PyObject *args )
 {
 
@@ -148,9 +154,70 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
 
   // Was there an error?
   //
-  if( tmpStream.str().size() > 0 ) {
+  if( !tmpStream.str().empty() ) {
     return PyErr_Format( PyExc_TypeError, // TODO: change from TypeError to ValueError?
 			 (char*)"could not find element '%s'", element);
+  }
+
+  return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
+
+}
+
+
+// See also: get_abund
+//
+// It is simpler to have separate routines rather than to try to deal
+// with the multiple options in one routine.
+//
+static PyObject* get_abund_from_table( PyObject *self, PyObject *args )
+{
+
+  // This requires both the table and element name.
+  //
+  char* table = NULL;
+  char* element = NULL;
+  if ( !PyArg_ParseTuple( args, (char*)"ss", &table, &element ) )
+    return NULL;
+
+  // Get the specific abundance. Unfortunately getAbundance reports an
+  // error to stderr when an invalid element is used, so we need to
+  // hide this. However it does throw an error if the table is unknown.
+  //
+  std::ostream* errStream = IosHolder::errHolder();
+  std::ostringstream tmpStream;
+  IosHolder::setStreams(IosHolder::inHolder(),
+			IosHolder::outHolder(),
+			&tmpStream);
+
+  float abundVal = 0.0;
+  try {
+    abundVal = FunctionUtility::getAbundance(string(table),
+					     string(element));
+  } catch (FunctionUtility::NoInitializer&) {
+
+    IosHolder::setStreams(IosHolder::inHolder(),
+			  IosHolder::outHolder(),
+			  errStream);
+
+    return PyErr_Format( PyExc_ValueError,
+			 "Unknown abundance table '%s'",
+			 table );
+  }
+
+  IosHolder::setStreams(IosHolder::inHolder(),
+			IosHolder::outHolder(),
+			errStream);
+
+  // Was there an error?
+  //
+  if( !tmpStream.str().empty() ) {
+    // No backwards compatibility to worry about, so use the sensible
+    // error type (ValueError rather than TypeError as used by
+    // get_abund).
+    //
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"could not find element '%s' in table '%s'",
+			 element, table );
   }
 
   return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
@@ -202,8 +269,6 @@ static PyObject* set_chatter( PyObject *self, PyObject *args )
 
 // Based on xsFortran::FPSOLR
 //
-// TODO: add a version where we can send in an array of numbers
-//
 static PyObject* set_abund( PyObject *self, PyObject *args )
 {
 
@@ -215,6 +280,15 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
   tableName = XSutility::lowerCase(tableName);
 
   if (tableName == "file") {
+    // Can not use this if no abundances have been loaded (otherwise
+    // XSPEC has been known to crash).
+    //
+    if (!FunctionUtility::abundChanged()) {
+      PyErr_SetString( PyExc_ValueError,
+		       (char*)"Abundances have not been read in from a file or array" );
+      return NULL;
+    }
+
     FunctionUtility::ABUND(tableName);
     Py_RETURN_NONE;
   }
@@ -224,7 +298,17 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
     Py_RETURN_NONE;
   }
 
-  // If we've got here then try to read the data from a file
+  // If we've got here then try to read the data from a file. This
+  // could be done with a call to FunctionUtility::readNewAbundances()
+  // but
+  // - it doesn't seem to support reading a file with less then
+  //   NELEMS elements,
+  // - and if it did it's not clear how to handle the screen output
+  //   that (may) be created in that case.
+  //
+  // So we essentially repeat the readNewAbundaces code here, which
+  // has the advantage of not having to throw an error which we then
+  // have to catch.
   //
   const size_t nelems = FunctionUtility::NELEMS();
   std::vector<float> vals(nelems, 0);
@@ -258,9 +342,66 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
 
   FunctionUtility::ABUND("file");
   FunctionUtility::abundanceVectors("file", vals);
+  FunctionUtility::abundChanged(true);
 
   Py_RETURN_NONE;
 
+}
+
+
+// Handle a vector of abundances. It must be the right size.
+// To match set_abund when given a file name we set the
+// abundances to "file". This means that a user can not
+// load up a set of abundances and *NOT* use them; they
+// would have to reset the abundance table after loading.
+//
+// It looks like we could label these vectors with any value,
+// such as "tbl1" or "aneb", rather than "file", which would
+// allow multiple tables to be loaded. However, that is for
+// later work to see if it is worthwhile (the XSPEC code doesn't
+// make it clear how "open" the namespace is here)
+//
+static PyObject* set_abund_vector( PyObject *self, PyObject *args )
+{
+  sherpa::astro::xspec::FloatArray vector;
+  if ( !PyArg_ParseTuple( args, (char*)"O&",
+			  (converter)sherpa::convert_to_contig_array< sherpa::astro::xspec::FloatArray >,
+			  &vector ) )
+    return NULL;
+
+  size_t nelem = FunctionUtility::NELEMS();
+  size_t nvector = static_cast<size_t>(vector.get_size());
+
+  // Rather than worry about what to do with either too many or too
+  // few values, just error out.
+  //
+  if ( nvector != nelem ) {
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"Array must contain %d elements, not %d",
+			 nelem, nvector );
+  }
+
+  std::vector<float> vals(nelem);
+  std::copy(&vector[0], &vector[0] + nelem, &vals[0]);
+
+  // Hide the screen output from this call.
+  //
+  std::ostream* outStream = IosHolder::outHolder();
+  std::ostringstream tmpStream;
+  IosHolder::setStreams(IosHolder::inHolder(),
+			&tmpStream,
+			IosHolder::errHolder());
+
+  FunctionUtility::ABUND("file");
+
+  IosHolder::setStreams(IosHolder::inHolder(),
+			outStream,
+			IosHolder::errHolder());
+
+  FunctionUtility::abundanceVectors("file", vals);
+  FunctionUtility::abundChanged(true);
+
+  Py_RETURN_NONE;
 }
 
 
@@ -319,8 +460,12 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
 }
 
 
-// TODO: We could have a seperate "reset" command
-//
+static PyObject* clear_xset( PyObject *self )
+{
+  FunctionUtility::eraseModelStringDataBase();
+  Py_RETURN_NONE;
+}
+
 static PyObject* set_xset( PyObject *self, PyObject *args )
 {
 
@@ -330,6 +475,11 @@ static PyObject* set_xset( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"ss", &str_name, &str_value ) )
     return NULL;
 
+  // Sending in INITIALIZE will reset the database but
+  // - users can now use the clear_xsxset() routine
+  // - using INITIALIZE for this has been marked as deprecated in
+  //   4.17.1
+  //
   string name = XSutility::upperCase(string(str_name));
   if (name == "INITIALIZE") {
     FunctionUtility::eraseModelStringDataBase();
@@ -345,13 +495,31 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 
   char* str_name = NULL;
 
-  if ( !PyArg_ParseTuple( args, (char*)"s", &str_name ) )
+  if ( !PyArg_ParseTuple( args, (char*)"|s", &str_name ) )
     return NULL;
 
+  // If no argument is given then we return a dictionary
+  // of all items.
+  //
+  if ( str_name == NULL ) {
+
+    PyObject *d = PyDict_New();
+    for (const auto& item : FunctionUtility::modelStringDataBase()) {
+      PyObject *value = PyUnicode_FromString(item.second.c_str());
+      PyDict_SetItemString(d, item.first.c_str(), value);
+      Py_DECREF(value);
+    }
+
+    return d;
+  }
+
+  // Treat an unknown key as an error.
+  //
   static string value;
   value = FunctionUtility::getModelString(string(str_name));
   if (value == FunctionUtility::NOT_A_KEY()) {
-    value.erase();
+    PyErr_SetString( PyExc_KeyError, str_name );
+    return NULL;
   }
 
   return Py_BuildValue( (char*)"s", value.c_str() );
@@ -386,15 +554,35 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(get_xschatter, get_chatter),
   FCTSPEC(set_xschatter, set_chatter),
   FCTSPEC(get_xsabund, get_abund),
+  FCTSPEC(get_xsabund_table, get_abund_from_table),
   FCTSPEC(get_xsabund_doc, get_abund_doc),
   FCTSPEC(set_xsabund, set_abund),
+  FCTSPEC(set_xsabund_vector, set_abund_vector),
   FCTSPEC(set_xscosmo, set_cosmo),
   NOARGSPEC(get_xscosmo, get_cosmo),
   NOARGSPEC(get_xsxsect, get_xspec_string<FunctionUtility::XSECT>),
 
   FCTSPEC(set_xsxsect, set_cross),
+  NOARGSPEC(clear_xsxset, clear_xset),
   FCTSPEC(set_xsxset, set_xset),
   FCTSPEC(get_xsxset, get_xset),
+
+  // The set commands are not wrapped yet as it's not clear how well
+  // the system handles these changes (e.g. it doesn't seem to update
+  // the stored abundances if you change one or both of the abundance
+  // settings). The cross-section file should also be accessible in a
+  // similar manner, but the XSPEC API does not provide access to this
+  // (at least for XSPEC 12.12.1).
+  //
+  // Also, abundPath is essentially managerPath, but we provide access
+  // to it as it could be changed (but not by any routine we currently
+  // provide access to).
+  //
+  NOARGSPEC(get_abundance_file, get_xspec_string<FunctionUtility::abundanceFile>),
+  NOARGSPEC(get_xspath_abundance, get_xspec_string<FunctionUtility::abundPath>),
+  // FCTSPEC(set_abundance_file, set_xspec_string<FunctionUtility::abundanceFile>),
+  // FCTSPEC(set_xspath_abundance, set_xspec_string<FunctionUtility::abundPath>),
+
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
   NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
   FCTSPEC(set_xspath_manager, set_manager_data_path),
