@@ -565,7 +565,7 @@ def test_metropolisMH(setup, caplog):
 
 def setup_no_fit():
     """Simplified version of the setup fixture that does not perform a fit or confidence
-    to save time. THis is just use to test error messages for non-conforming input."""
+    to save time. This is just used to test error messages for nonconforming input."""
     data = Data1D('fake', _x, _y, _err)
 
     g1 = Gauss1D('g1')
