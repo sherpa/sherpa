@@ -11410,6 +11410,9 @@ class Session(sherpa.ui.utils.Session):
         `fit_bkg` function can be used to fit models to just the
         background data.
 
+        The screen output from the fit can be controlled with the
+        `SherpaVerbosity` context manager, as shown in the examples.
+
         If outfile is sent a file handle then it is not closed by this
         routine.
 
@@ -11455,6 +11458,16 @@ class Session(sherpa.ui.utils.Session):
         >>> out = StringIO()
         >>> fit(outfile=out)
         >>> txt = out.getvalue()
+
+        The messages from `fit` use the standard Sherpa logging
+        infrastructure, and so can be ignored by using
+        `SherpaVerbosity`:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     fit()
+        ...
+        >>> fres = get_fit_results()
 
         """
         kwargs['bkg_only'] = False
@@ -11513,6 +11526,9 @@ class Session(sherpa.ui.utils.Session):
         This is only for PHA data sets where the background is being
         modelled, rather than subtracted from the data.
 
+        The screen output from the fit can be controlled with the
+        `SherpaVerbosity` context manager, as shown in the examples.
+
         If outfile is sent a file handle then it is not closed by this
         routine.
 
@@ -11539,6 +11555,16 @@ class Session(sherpa.ui.utils.Session):
         >>> out = StringIO()
         >>> fit_bkg(outfile=out)
         >>> txt = out.getvalue()
+
+        The messages from `fit_bkg` use the standard Sherpa logging
+        infrastructure, and so can be ignored by using
+        `SherpaVerbosity`:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     fit_bkg()
+        ...
+        >>> fres = get_fit_results()
 
         """
         kwargs['bkg_only'] = True

@@ -5681,7 +5681,7 @@ class Session(NoNewAttributesAfterInit):
 
         The report of the change in the filter expression can be
         controlled with the `SherpaVerbosity` context manager, as
-        shown in the examples below.
+        shown in the examples.
 
         Examples
         --------
@@ -5807,7 +5807,7 @@ class Session(NoNewAttributesAfterInit):
 
         The report of the change in the filter expression can be
         controlled with the `SherpaVerbosity` context manager, as
-        shown in the examples below.
+        shown in the examples.
 
         Examples
         --------
@@ -5917,7 +5917,7 @@ class Session(NoNewAttributesAfterInit):
 
         The report of the change in the filter expression can be
         controlled with the `SherpaVerbosity` context manager, as
-        shown in the examples below.
+        shown in the examples.
 
         Examples
         --------
@@ -9639,6 +9639,9 @@ class Session(NoNewAttributesAfterInit):
         If outfile is sent a file handle then it is not closed by this
         routine.
 
+        The screen output from the fit can be controlled with the
+        `SherpaVerbosity` context manager, as shown in the examples.
+
         Examples
         --------
 
@@ -9669,6 +9672,16 @@ class Session(NoNewAttributesAfterInit):
         >>> out = StringIO()
         >>> fit(outfile=out)
         >>> txt = out.getvalue()
+
+        The messages from `fit` use the standard Sherpa logging
+        infrastructure, and so can be ignored by using
+        `SherpaVerbosity`:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     fit()
+        ...
+        >>> fres = get_fit_results()
 
         """
         ids, f = self._get_fit(id, otherids)
@@ -11110,6 +11123,10 @@ class Session(NoNewAttributesAfterInit):
         order is unimportant, since any argument that is not defined
         as a model parameter is assumed to be a data id.
 
+        The screen output from the error analysis can be controlled
+        with the `SherpaVerbosity` context manager, as shown in the
+        examples.
+
         The `covar` command is different to `conf`, in that in that
         all other thawed parameters are fixed, rather than being
         allowed to float to new best-fit values.  While `conf` is more
@@ -11190,6 +11207,16 @@ class Session(NoNewAttributesAfterInit):
 
         >>> covar(1, 3, 4, line, clus.kt)
 
+        The messages from `covar` use the standard Sherpa logging
+        infrastructure, and so can be ignored by using
+        `SherpaVerbosity`:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     covar()
+        ...
+        >>> res = get_covar_results()
+
         """
         self._covariance_results = self._est_errors(args, 'covariance')
 
@@ -11242,6 +11269,10 @@ class Session(NoNewAttributesAfterInit):
         When called with multiple ``ids`` or ``parameters`` values, the
         order is unimportant, since any argument that is not defined
         as a model parameter is assumed to be a data id.
+
+        The screen output from the error analysis can be controlled
+        with the `SherpaVerbosity` context manager, as shown in the
+        examples.
 
         The `conf` function is different to `covar`, in that in that
         all other thawed parameters are allowed to float to new
@@ -11397,6 +11428,16 @@ class Session(NoNewAttributesAfterInit):
         3, and 4:
 
         >>> conf(1, 3, 4, line, clus.kt)
+
+        The messages from `conf` use the standard Sherpa logging
+        infrastructure, and so can be ignored by using
+        `SherpaVerbosity`:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     conf()
+        ...
+        >>> res = get_conf_results()
 
         """
         self._confidence_results = self._est_errors(args, 'confidence')
