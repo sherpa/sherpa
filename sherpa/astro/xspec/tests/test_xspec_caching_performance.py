@@ -49,7 +49,6 @@ are consistently faster without the decorator:
 For larger grids also: xposm
 but in ns-type models, it's only nsa, nsagrav, not the other two.
 """
-import copy
 import inspect
 import time
 import types

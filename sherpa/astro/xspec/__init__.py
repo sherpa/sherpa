@@ -105,7 +105,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import suppress
-from collections.abc import Callable
 import functools
 import logging
 from pathlib import Path
@@ -8315,6 +8314,7 @@ class XSezdiskbb(XSAdditiveModel):
         self.T_max = XSParameter(name, 'T_max', 1., 0.01, 100., 0.01, 100, units='keV')
 
         XSAdditiveModel.__init__(self, name, (self.T_max, ))
+        self.cache = 0
 
 
 @version_at_least("12.15.0")
@@ -10328,6 +10328,7 @@ class XSpegpwrlw(XSAdditiveModel):
 
         pars = (self.PhoIndex, self.eMin, self.eMax)
         XSAdditiveModel.__init__(self, name, pars)
+        self.cache = 0
 
 
 # DOC-NOTE: the parameter order in the XSPEC documentation is very different
@@ -10636,6 +10637,7 @@ class XSposm(XSAdditiveModel):
     def __init__(self, name='posm'):
 
         XSAdditiveModel.__init__(self, name, ())
+        self.cache = 0
 
 
 class XSpshock(XSAdditiveModel):
@@ -14232,6 +14234,7 @@ class XSzbbody(XSAdditiveModel):
         self.Redshift = mkRedshift(name)
 
         XSAdditiveModel.__init__(self, name, (self.kT, self.Redshift))
+        self.cache = 0
 
 
 class XSzbknpower(XSAdditiveModel):
