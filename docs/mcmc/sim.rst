@@ -22,6 +22,7 @@ The sherpa.sim module
       flat
       inverse
       inverse2
+      mcmc_to_arviz
 
 Class Inheritance Diagram
 =========================

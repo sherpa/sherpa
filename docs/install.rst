@@ -49,6 +49,8 @@ if installed:
   has only been limited testing. Please
   `report any problems <https://github.com/sherpa/sherpa/issues/>`_
   you find.
+* `ArviZ <https://python.arviz.org>`_ for visualisation and analysis of
+  `sherpa.sim.MCMC` results.
 
 The Sherpa build can be configured to create the
 :py:mod:`sherpa.astro.xspec` module, which provides the models and utility
@@ -484,7 +486,7 @@ additional packages:
   for including Jupyter notebooks
 * `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
-The easiset way to install the Python packages is to install the ``doc``
+The easiest way to install the Python packages is to install the ``doc``
 option with::
 
   pip install .[doc]
