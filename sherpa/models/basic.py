@@ -101,7 +101,36 @@ def clean_kwargs2d(model, kwargs):
     return clean_kwargs(ALLOWED_KEYWORDS_2D, model, kwargs)
 
 
-class Box1D(RegriddableModel1D):
+class Callable1D(RegriddableModel1D):
+    """A 1D model that calls a _modelfcts routine.
+
+    The callable model is stored in the _calc attribute.
+    """
+
+    _calc = None
+    """The model function, accepting (p, *args, **kwargs)"""
+
+    @modelCacher1d
+    def calc(self, p, *args, **kwargs):
+        kwargs = clean_kwargs1d(self, kwargs)
+        return self._calc(p, *args, **kwargs)
+
+
+class Callable2D(RegriddableModel2D):
+    """A 2D model that calls a _modelfcts routine.
+
+    The callable model is stored in the _calc attribute.
+    """
+
+    _calc = None
+    """The model function, accepting (p, *args, **kwargs)"""
+
+    def calc(self, p, *args, **kwargs):
+        kwargs = clean_kwargs2d(self, kwargs)
+        return self._calc(p, *args, **kwargs)
+
+
+class Box1D(Callable1D):
     """One-dimensional box function.
 
     The model is flat between ``xlow`` and ``xhi`` (both limits are
@@ -145,6 +174,8 @@ class Box1D(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.box1d
+
     def __init__(self, name='box1d'):
         self.xlow = Parameter(name, 'xlow', 0)
         self.xhi = Parameter(name, 'xhi', 1)
@@ -158,11 +189,6 @@ class Box1D(RegriddableModel1D):
         param_apply_limits(lo, self.xlow, **kwargs)
         param_apply_limits(hi, self.xhi, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
-
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.box1d(p, *args, **kwargs)
 
 
 class Const(ArithmeticModel):
@@ -190,7 +216,7 @@ class Const(ArithmeticModel):
                            self.c0, **kwargs)
 
 
-class Const1D(RegriddableModel1D, Const):
+class Const1D(Callable1D, Const):
     """A constant model for one-dimensional data.
 
     Attributes
@@ -213,16 +239,14 @@ class Const1D(RegriddableModel1D, Const):
         f(xlo,xhi) = ampl * (xhi - xlo)
 
     """
+
+    _calc = _modelfcts.const1d
+
     def __init__(self, name='const1d'):
         Const.__init__(self, name)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.const1d(p, *args, **kwargs)
 
-
-class Cos(RegriddableModel1D):
+class Cos(Callable1D):
     """One-dimensional cosine function.
 
     Attributes
@@ -248,6 +272,8 @@ class Cos(RegriddableModel1D):
     the bin.
     """
 
+    _calc = _modelfcts.cos
+
     def __init__(self, name='cos'):
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
         self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
@@ -259,13 +285,8 @@ class Cos(RegriddableModel1D):
         norm = guess_amplitude(dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.cos(p, *args, **kwargs)
 
-
-class Delta1D(RegriddableModel1D):
+class Delta1D(Callable1D):
     """One-dimensional delta function.
 
     The delta function model is only non-zero at a single point
@@ -298,6 +319,8 @@ class Delta1D(RegriddableModel1D):
     other models, such as ``Const1D``.
     """
 
+    _calc = _modelfcts.delta1d
+
     def __init__(self, name='delta1d'):
         self.pos = Parameter(name, 'pos', 0)
         self.ampl = Parameter(name, 'ampl', 1)
@@ -316,13 +339,8 @@ class Delta1D(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(pos, self.pos, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.delta1d(p, *args, **kwargs)
 
-
-class Erf(RegriddableModel1D):
+class Erf(Callable1D):
     """One-dimensional error function.
 
     The function is described at [1]_.
@@ -358,6 +376,8 @@ class Erf(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.erf
+
     def __init__(self, name='erf'):
         self.ampl = Parameter(name, 'ampl', 1, 0)
         self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
@@ -369,13 +389,8 @@ class Erf(RegriddableModel1D):
         norm = guess_amplitude(dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.erf(p, *args, **kwargs)
 
-
-class Erfc(RegriddableModel1D):
+class Erfc(Callable1D):
     """One-dimensional complementary error function.
 
     The function is described at [1]_.
@@ -411,6 +426,8 @@ class Erfc(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.erfc
+
     def __init__(self, name='erfc'):
         self.ampl = Parameter(name, 'ampl', 1, 0)
         self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
@@ -422,13 +439,8 @@ class Erfc(RegriddableModel1D):
         norm = guess_amplitude(dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.erfc(p, *args, **kwargs)
 
-
-class Exp(RegriddableModel1D):
+class Exp(Callable1D):
     """One-dimensional exponential function.
 
     Attributes
@@ -454,6 +466,8 @@ class Exp(RegriddableModel1D):
     the bin.
     """
 
+    _calc = _modelfcts.exp
+
     def __init__(self, name='exp'):
         self.offset = Parameter(name, 'offset', 0)
         self.coeff = Parameter(name, 'coeff', -1)
@@ -461,13 +475,8 @@ class Exp(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.offset, self.coeff, self.ampl))
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.exp(p, *args, **kwargs)
 
-
-class Exp10(RegriddableModel1D):
+class Exp10(Callable1D):
     """One-dimensional exponential function, base 10.
 
     Attributes
@@ -493,6 +502,8 @@ class Exp10(RegriddableModel1D):
     the bin.
     """
 
+    _calc = _modelfcts.exp10
+
     def __init__(self, name='exp10'):
         self.offset = Parameter(name, 'offset', 0)
         self.coeff = Parameter(name, 'coeff', -1)
@@ -500,13 +511,8 @@ class Exp10(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.offset, self.coeff, self.ampl))
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.exp10(p, *args, **kwargs)
 
-
-class Gauss1D(RegriddableModel1D):
+class Gauss1D(Callable1D):
     """One-dimensional gaussian function.
 
     Attributes
@@ -569,6 +575,8 @@ class Gauss1D(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.gauss1d
+
     def __init__(self, name='gauss1d'):
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
         self.pos = Parameter(name, 'pos', 0)
@@ -589,13 +597,8 @@ class Gauss1D(RegriddableModel1D):
         param_apply_limits(pos, self.pos, **kwargs)
         param_apply_limits(fwhm, self.fwhm, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.gauss1d(p, *args, **kwargs)
 
-
-class Log(RegriddableModel1D):
+class Log(Callable1D):
     """One-dimensional natural logarithm function.
 
     Attributes
@@ -621,6 +624,8 @@ class Log(RegriddableModel1D):
     the bin.
     """
 
+    _calc = _modelfcts.log
+
     def __init__(self, name='log'):
         self.offset = Parameter(name, 'offset', 0)
         self.coeff = Parameter(name, 'coeff', -1)
@@ -628,13 +633,8 @@ class Log(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.offset, self.coeff, self.ampl))
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.log(p, *args, **kwargs)
 
-
-class Log10(RegriddableModel1D):
+class Log10(Callable1D):
     """One-dimensional logarithm function, base 10.
 
     Attributes
@@ -660,6 +660,8 @@ class Log10(RegriddableModel1D):
     the bin.
     """
 
+    _calc = _modelfcts.log10
+
     def __init__(self, name='log10'):
         self.offset = Parameter(name, 'offset', 0)
         self.coeff = Parameter(name, 'coeff', -1)
@@ -667,13 +669,8 @@ class Log10(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.offset, self.coeff, self.ampl))
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.log10(p, *args, **kwargs)
 
-
-class LogParabola(RegriddableModel1D):
+class LogParabola(Callable1D):
     """One-dimensional log-parabolic function.
 
     Attributes
@@ -709,6 +706,8 @@ class LogParabola(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.logparabola
+
     def __init__(self, name='logparabola'):
         self.ref = Parameter(name, 'ref', 1, alwaysfrozen=True)
         self.c1 = Parameter(name, 'c1', 1)
@@ -717,16 +716,11 @@ class LogParabola(RegriddableModel1D):
         ArithmeticModel.__init__(self, name, (self.ref, self.c1,
                                               self.c2, self.ampl))
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.logparabola(p, *args, **kwargs)
-
 
 _gfactor = numpy.sqrt(numpy.pi / (4 * numpy.log(2)))
 
 
-class NormGauss1D(RegriddableModel1D):
+class NormGauss1D(Callable1D):
     """One-dimensional normalised gaussian function.
 
     Attributes
@@ -757,6 +751,8 @@ class NormGauss1D(RegriddableModel1D):
     the bin.
     """
 
+    _calc = _modelfcts.ngauss1d
+
     def __init__(self, name='normgauss1d'):
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
         self.pos = Parameter(name, 'pos', 0)
@@ -783,13 +779,8 @@ class NormGauss1D(RegriddableModel1D):
                 ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.ngauss1d(p, *args, **kwargs)
 
-
-class Poisson(RegriddableModel1D):
+class Poisson(Callable1D):
     """One-dimensional Poisson function.
 
     A model expressing the ratio of two Poisson distributions of mean
@@ -821,6 +812,8 @@ class Poisson(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.poisson
+
     def __init__(self, name='poisson'):
         self.mean = Parameter(name, 'mean', 1, 1e-05, hard_min=tinyval)
         self.ampl = Parameter(name, 'ampl', 1)
@@ -832,13 +825,8 @@ class Poisson(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(pos, self.mean, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.poisson(p, *args, **kwargs)
 
-
-class Polynom1D(RegriddableModel1D):
+class Polynom1D(Callable1D):
     """One-dimensional polynomial function of order 8.
 
     The maximum order of the polynomial is 8. The default setting has
@@ -883,6 +871,8 @@ class Polynom1D(RegriddableModel1D):
     and for an integrated grid it is the integral of this over
     the bin.
     """
+
+    _calc = _modelfcts.poly1d
 
     def __init__(self, name='polynom1d'):
         pars = []
@@ -947,11 +937,6 @@ class Polynom1D(RegriddableModel1D):
         param_apply_limits(c3, self.c7, **kwargs)
         param_apply_limits(c3, self.c8, **kwargs)
         param_apply_limits(off, self.offset, **kwargs)
-
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.poly1d(p, *args, **kwargs)
 
 
 class PowLaw1D(RegriddableModel1D):
@@ -1047,7 +1032,7 @@ class Scale1D(Const1D):
         self.cache = 0
 
 
-class Sin(RegriddableModel1D):
+class Sin(Callable1D):
     """One-dimensional sine function.
 
     Attributes
@@ -1073,6 +1058,8 @@ class Sin(RegriddableModel1D):
     the bin.
     """
 
+    _calc = _modelfcts.sin
+
     def __init__(self, name='sin'):
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
         self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
@@ -1084,13 +1071,8 @@ class Sin(RegriddableModel1D):
         norm = guess_amplitude(dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.sin(p, *args, **kwargs)
 
-
-class Sqrt(RegriddableModel1D):
+class Sqrt(Callable1D):
     """One-dimensional square root function.
 
     Attributes
@@ -1114,18 +1096,15 @@ class Sqrt(RegriddableModel1D):
     the bin.
     """
 
+    _calc = _modelfcts.sqrt
+
     def __init__(self, name='sqrt'):
         self.offset = Parameter(name, 'offset', 0)
         self.ampl = Parameter(name, 'ampl', 1, 0)
         ArithmeticModel.__init__(self, name, (self.offset, self.ampl))
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.sqrt(p, *args, **kwargs)
 
-
-class StepHi1D(RegriddableModel1D):
+class StepHi1D(Callable1D):
     """One-dimensional step function.
 
     The model is flat above ``xcut``, where it is set to the ``ampl``
@@ -1157,6 +1136,8 @@ class StepHi1D(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.stephi1d
+
     def __init__(self, name='stephi1d'):
         self.xcut = Parameter(name, 'xcut', 0)
         self.ampl = Parameter(name, 'ampl', 1, 0)
@@ -1169,13 +1150,8 @@ class StepHi1D(RegriddableModel1D):
         param_apply_limits(cut, self.xcut, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.stephi1d(p, *args, **kwargs)
 
-
-class StepLo1D(RegriddableModel1D):
+class StepLo1D(Callable1D):
     """One-dimensional step function.
 
     The model is flat below ``xcut``, where it is set to the ``ampl``
@@ -1207,6 +1183,8 @@ class StepLo1D(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.steplo1d
+
     def __init__(self, name='steplo1d'):
         self.xcut = Parameter(name, 'xcut', 0)
         self.ampl = Parameter(name, 'ampl', 1, 0)
@@ -1219,13 +1197,8 @@ class StepLo1D(RegriddableModel1D):
         param_apply_limits(cut, self.xcut, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.steplo1d(p, *args, **kwargs)
 
-
-class Tan(RegriddableModel1D):
+class Tan(Callable1D):
     """One-dimensional tan function.
 
     Attributes
@@ -1251,6 +1224,8 @@ class Tan(RegriddableModel1D):
     the bin.
     """
 
+    _calc = _modelfcts.tan
+
     def __init__(self, name='tan'):
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
         self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
@@ -1262,13 +1237,8 @@ class Tan(RegriddableModel1D):
         norm = guess_amplitude(dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.tan(p, *args, **kwargs)
 
-
-class Box2D(RegriddableModel2D):
+class Box2D(Callable2D):
     """Two-dimensional box function.
 
     The model is flat between the limits, where it is set to the
@@ -1311,6 +1281,8 @@ class Box2D(RegriddableModel2D):
     other models, such as ``Const2D``.
     """
 
+    _calc = _modelfcts.box2d
+
     def __init__(self, name='box2d'):
         self.xlow = Parameter(name, 'xlow', 0)
         self.xhi = Parameter(name, 'xhi', 0)
@@ -1332,12 +1304,8 @@ class Box2D(RegriddableModel2D):
         param_apply_limits(yhi, self.yhi, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.box2d(p, *args, **kwargs)
 
-
-class Const2D(RegriddableModel2D, Const):
+class Const2D(Callable2D, Const):
     """A constant model for two-dimensional data.
 
     Attributes
@@ -1362,13 +1330,11 @@ class Const2D(RegriddableModel2D, Const):
 
     """
 
+    _calc = _modelfcts.const2d
+
     def __init__(self, name='const2d'):
         Const.__init__(self, name)
         self.cache = 0
-
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.const2d(p, *args, **kwargs)
 
 
 class Scale2D(Const2D):
@@ -1407,7 +1373,7 @@ class Scale2D(Const2D):
         self.cache = 0
 
 
-class Delta2D(RegriddableModel2D):
+class Delta2D(Callable2D):
     """Two-dimensional delta function.
 
     The delta function model is only non-zero at a single point
@@ -1443,6 +1409,8 @@ class Delta2D(RegriddableModel2D):
     other models, such as ``Const2D``.
     """
 
+    _calc = _modelfcts.delta2d
+
     def __init__(self, name='delta2d'):
         self.xpos = Parameter(name, 'xpos', 0)
         self.ypos = Parameter(name, 'ypos', 0)
@@ -1464,12 +1432,8 @@ class Delta2D(RegriddableModel2D):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.delta2d(p, *args, **kwargs)
 
-
-class Gauss2D(RegriddableModel2D):
+class Gauss2D(Callable2D):
     """Two-dimensional gaussian function.
 
     Attributes
@@ -1523,6 +1487,8 @@ class Gauss2D(RegriddableModel2D):
 
     """
 
+    _calc = _modelfcts.gauss2d
+
     def __init__(self, name='gauss2d'):
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
         self.xpos = Parameter(name, 'xpos', 0)
@@ -1553,10 +1519,6 @@ class Gauss2D(RegriddableModel2D):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(fwhm, self.fwhm, **kwargs)
-
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.gauss2d(p, *args, **kwargs)
 
 
 class SigmaGauss2D(Gauss2D):
@@ -1611,6 +1573,8 @@ class SigmaGauss2D(Gauss2D):
 
     """
 
+    _calc = _modelfcts.sigmagauss2d
+
     def __init__(self, name='sigmagauss2d'):
         self.sigma_a = Parameter(name, 'sigma_a', 10, tinyval, hard_min=tinyval)
         self.sigma_b = Parameter(name, 'sigma_b', 10, tinyval, hard_min=tinyval)
@@ -1635,12 +1599,8 @@ class SigmaGauss2D(Gauss2D):
         param_apply_limits(fwhm, self.sigma_b, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.sigmagauss2d(p, *args, **kwargs)
 
-
-class NormGauss2D(RegriddableModel2D):
+class NormGauss2D(Callable2D):
     """Two-dimensional normalised gaussian function.
 
     Attributes
@@ -1697,6 +1657,8 @@ class NormGauss2D(RegriddableModel2D):
 
     """
 
+    _calc = _modelfcts.ngauss2d
+
     def __init__(self, name='normgauss2d'):
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
         self.xpos = Parameter(name, 'xpos', 0)
@@ -1735,12 +1697,8 @@ class NormGauss2D(RegriddableModel2D):
                 ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
 
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.ngauss2d(p, *args, **kwargs)
 
-
-class Polynom2D(RegriddableModel2D):
+class Polynom2D(Callable2D):
     """Two-dimensional polynomial function.
 
     The maximum order of the polynomial is 2.
@@ -1784,6 +1742,8 @@ class Polynom2D(RegriddableModel2D):
     and for an integrated grid it is the integral of this over
     the bin.
     """
+
+    _calc = _modelfcts.poly2d
 
     def __init__(self, name='polynom2d'):
         self.c = Parameter(name, 'c', 1)
@@ -1844,10 +1804,6 @@ class Polynom2D(RegriddableModel2D):
         param_apply_limits(c22, self.cx1y2, **kwargs)
         param_apply_limits(c22, self.cx2y1, **kwargs)
         param_apply_limits(c22, self.cx2y2, **kwargs)
-
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.poly2d(p, *args, **kwargs)
 
 
 class TableModel(ArithmeticModel):

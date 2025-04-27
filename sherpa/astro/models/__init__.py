@@ -21,7 +21,7 @@
 
 import numpy
 
-from sherpa.models.basic import clean_kwargs1d, clean_kwargs2d
+from sherpa.models.basic import Callable1D, Callable2D, clean_kwargs1d
 from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, modelCacher1d
 from sherpa.astro.utils import apply_pileup
@@ -103,7 +103,7 @@ class Atten(RegriddableModel1D):
         return _modelfcts.atten(p, *args, **kwargs)
 
 
-class BBody(RegriddableModel1D):
+class BBody(Callable1D):
     """A one-dimensional Blackbody model.
 
     A model representing the ideal blackbody function. It can be
@@ -152,6 +152,8 @@ class BBody(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.bbody
+
     def __init__(self, name='bbody'):
         self.space = Parameter(name, 'space', 0, 0, 1, 0, 1,
                                '0 - energy | 1 - wave', alwaysfrozen=True)
@@ -178,13 +180,8 @@ class BBody(RegriddableModel1D):
                'max': modampl * _guess_ampl_scale}
         param_apply_limits(mod, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.bbody(p, *args, **kwargs)
 
-
-class BBodyFreq(RegriddableModel1D):
+class BBodyFreq(Callable1D):
     """A one-dimensional Blackbody model (frequency).
 
     This model can be used when the independent axis is in frequency
@@ -213,6 +210,8 @@ class BBodyFreq(RegriddableModel1D):
     constant, k is Boltzmann's constant, and c the speed of light.
     """
 
+    _calc = _modelfcts.bbodyfreq
+
     def __init__(self, name='bbodyfreq'):
         self.T = Parameter(name, 'T', 1e+06, 1000, 1e+10, 1000, 1e+10)
         self.ampl = Parameter(name, 'ampl', 1, 0, hard_min=0)
@@ -236,13 +235,8 @@ class BBodyFreq(RegriddableModel1D):
         param_apply_limits(mod, self.ampl, **kwargs)
         param_apply_limits(t, self.t, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.bbodyfreq(p, *args, **kwargs)
 
-
-class Beta1D(RegriddableModel1D):
+class Beta1D(Callable1D):
     """One-dimensional beta model function.
 
     The beta model is a Lorentz model with a varying power law.
@@ -282,6 +276,8 @@ class Beta1D(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.beta1d
+
     def __init__(self, name='beta1d'):
         self.r0 = Parameter(name, 'r0', 1, tinyval, hard_min=tinyval)
         self.beta = Parameter(name, 'beta', 1, 1e-05, 10, 1e-05, 10)
@@ -306,13 +302,8 @@ class Beta1D(RegriddableModel1D):
         norm = guess_amplitude_at_ref(self.r0.val, dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.beta1d(p, *args, **kwargs)
 
-
-class BPL1D(RegriddableModel1D):
+class BPL1D(Callable1D):
     """One-dimensional broken power-law function.
 
     Attributes
@@ -346,6 +337,8 @@ class BPL1D(RegriddableModel1D):
     the bin.
     """
 
+    _calc = _modelfcts.bpl1d
+
     def __init__(self, name='bpl1d'):
         self.gamma1 = Parameter(name, 'gamma1', 0, -10, 10)
         self.gamma2 = Parameter(name, 'gamma2', 0, -10, 10)
@@ -367,15 +360,10 @@ class BPL1D(RegriddableModel1D):
         norm = guess_amplitude_at_ref(self.ref.val, dep, *args)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.bpl1d(p, *args, **kwargs)
-
 
 # TODO: what are the units of the independent axis: Angstrom?
 
-class Dered(RegriddableModel1D):
+class Dered(Callable1D):
     """A de-reddening model.
 
     De-reddening model applied multiplicatively to a spectrum.
@@ -427,19 +415,16 @@ class Dered(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.dered
+
     def __init__(self, name='dered'):
         self.rv = Parameter(name, 'rv', 10, 1e-10, 1000, tinyval)
         self.nhgal = Parameter(name, 'nhgal', 1e-07, 1e-07, 100000)
         ArithmeticModel.__init__(self, name, (self.rv, self.nhgal))
         self.cache = 0
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.dered(p, *args, **kwargs)
 
-
-class Edge(RegriddableModel1D):
+class Edge(Callable1D):
     """Photoabsorption edge model.
 
     This model can be used when the independent axis is in energy
@@ -476,6 +461,8 @@ class Edge(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.edge
+
     def __init__(self, name='edge'):
         self.space = Parameter(name, 'space', 0, 0, 1, 0, 1,
                                '0 - energy | 1 - wave')
@@ -484,11 +471,6 @@ class Edge(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.space, self.thresh, self.abs))
         self.cache = 0
-
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.edge(p, *args, **kwargs)
 
 
 # DOC-NOTE:
@@ -499,7 +481,7 @@ class Edge(RegriddableModel1D):
 #    convince myself that it is doing something useful.
 #
 
-class LineBroad(RegriddableModel1D):
+class LineBroad(Callable1D):
     """A one-dimensional line-broadening profile.
 
     Attributes
@@ -520,6 +502,8 @@ class LineBroad(RegriddableModel1D):
                 x = 1 - ((lambda - rest) * c / (rest * vsini))^2
 
     """
+
+    _calc = _modelfcts.linebroad
 
     def __init__(self, name='linebroad'):
         self.ampl = Parameter(name, 'ampl', 1, 0, hard_min=0)
@@ -550,16 +534,11 @@ class LineBroad(RegriddableModel1D):
                'max': modampl * _guess_ampl_scale}
         param_apply_limits(mod, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.linebroad(p, *args, **kwargs)
-
 
 # DOC-NOTE: for some reason the division in the equation in the notes
 #           section confuses sphinx (it thinks it is a section title).
 #
-class Lorentz1D(RegriddableModel1D):
+class Lorentz1D(Callable1D):
     """One-dimensional normalized Lorentz model function.
 
     Attributes
@@ -588,6 +567,8 @@ class Lorentz1D(RegriddableModel1D):
 
     The area under the function as defined above is 1 if ampl is 1.
     """
+
+    _calc = _modelfcts.lorentz1d
 
     def __init__(self, name='lorentz1d'):
         self.fwhm = Parameter(name, 'fwhm', 10, 0, hard_min=0)
@@ -618,13 +599,8 @@ class Lorentz1D(RegriddableModel1D):
         else:
             param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.lorentz1d(p, *args, **kwargs)
 
-
-class Voigt1D(RegriddableModel1D):
+class Voigt1D(Callable1D):
     """One dimensional Voigt profile.
 
     The Voigt profile is a convolution between a Gaussian distribution
@@ -692,6 +668,8 @@ class Voigt1D(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.wofz
+
     def __init__(self, name='voigt1d'):
         self.fwhm_g = Parameter(name, 'fwhm_g', 10, tinyval, hard_min=tinyval)
         self.fwhm_l = Parameter(name, 'fwhm_l', 10, 0, hard_min=0)
@@ -733,11 +711,6 @@ class Voigt1D(RegriddableModel1D):
                 'min': aprime / _guess_ampl_scale,
                 'max': aprime * _guess_ampl_scale}
         param_apply_limits(ampl, self.ampl, **kwargs)
-
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.wofz(p, *args, **kwargs)
 
 
 class PseudoVoigt1D(RegriddableModel1D):
@@ -831,7 +804,7 @@ class PseudoVoigt1D(RegriddableModel1D):
         return frac * gmdl + (1 - frac) * lmdl
 
 
-class NormBeta1D(RegriddableModel1D):
+class NormBeta1D(Callable1D):
     """One-dimensional normalized beta model function.
 
     This is the same model as the ``Beta1D`` model but with a
@@ -872,6 +845,8 @@ class NormBeta1D(RegriddableModel1D):
 
     """
 
+    _calc = _modelfcts.nbeta1d
+
     def __init__(self, name='normbeta1d'):
         self.pos = Parameter(name, 'pos', 0)
         self.width = Parameter(name, 'width', 1, tinyval, hard_min=tinyval)
@@ -897,11 +872,6 @@ class NormBeta1D(RegriddableModel1D):
         for key in ampl.keys():
             ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
-
-    @modelCacher1d
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.nbeta1d(p, *args, **kwargs)
 
 
 class Schechter(RegriddableModel1D):
@@ -952,7 +922,7 @@ class Schechter(RegriddableModel1D):
         return _modelfcts.schechter(p, *args, **kwargs)
 
 
-class Beta2D(RegriddableModel2D):
+class Beta2D(Callable2D):
     """Two-dimensional beta model function.
 
     The beta model is a Lorentz model with a varying power law.
@@ -1008,6 +978,8 @@ class Beta2D(RegriddableModel2D):
 
     """
 
+    _calc = _modelfcts.beta2d
+
     def __init__(self, name='beta2d'):
         self.r0 = Parameter(name, 'r0', 10, tinyval, hard_min=tinyval)
         self.xpos = Parameter(name, 'xpos', 0)
@@ -1039,12 +1011,8 @@ class Beta2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.beta2d(p, *args, **kwargs)
 
-
-class DeVaucouleurs2D(RegriddableModel2D):
+class DeVaucouleurs2D(Callable2D):
     """Two-dimensional de Vaucouleurs model.
 
     A spatial de Vaucouleurs profile which is a formulation of the
@@ -1092,6 +1060,8 @@ class DeVaucouleurs2D(RegriddableModel2D):
 
     """
 
+    _calc = _modelfcts.devau
+
     def __init__(self, name='devaucouleurs2d'):
         self.r0 = Parameter(name, 'r0', 10, 0, hard_min=0)
         self.xpos = Parameter(name, 'xpos', 0)
@@ -1121,12 +1091,8 @@ class DeVaucouleurs2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.devau(p, *args, **kwargs)
 
-
-class HubbleReynolds(RegriddableModel2D):
+class HubbleReynolds(Callable2D):
     """Two-dimensional Hubble-Reynolds model.
 
     Attributes
@@ -1178,6 +1144,8 @@ class HubbleReynolds(RegriddableModel2D):
 
     """
 
+    _calc = _modelfcts.hr
+
     def __init__(self, name='hubblereynolds'):
         self.r0 = Parameter(name, 'r0', 10, 0, hard_min=0)
         self.xpos = Parameter(name, 'xpos', 0)
@@ -1207,12 +1175,8 @@ class HubbleReynolds(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.hr(p, *args, **kwargs)
 
-
-class Lorentz2D(RegriddableModel2D):
+class Lorentz2D(Callable2D):
     """Two-dimensional un-normalised Lorentz function.
 
     Attributes
@@ -1253,6 +1217,8 @@ class Lorentz2D(RegriddableModel2D):
     the bin.
     """
 
+    _calc = _modelfcts.lorentz2d
+
     def __init__(self, name='lorentz2d'):
         self.fwhm = Parameter(name, 'fwhm', 10, tinyval, hard_min=tinyval)
         self.xpos = Parameter(name, 'xpos', 0)
@@ -1280,10 +1246,6 @@ class Lorentz2D(RegriddableModel2D):
         param_apply_limits(xpos, self.xpos, **kwargs)
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
-
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.lorentz2d(p, *args, **kwargs)
 
 
 class JDPileup(RegriddableModel1D):
@@ -1399,7 +1361,7 @@ class JDPileup(RegriddableModel1D):
         return out[0]
 
 
-class Sersic2D(RegriddableModel2D):
+class Sersic2D(Callable2D):
     """Two-dimensional Sersic model.
 
     This is a generalization of the ``DeVaucouleurs2D`` model,
@@ -1468,6 +1430,8 @@ class Sersic2D(RegriddableModel2D):
 
     """
 
+    _calc = _modelfcts.sersic
+
     def __init__(self, name='sersic2d'):
         self.r0 = Parameter(name, 'r0', 10, 0, hard_min=0)
         self.xpos = Parameter(name, 'xpos', 0)
@@ -1497,10 +1461,6 @@ class Sersic2D(RegriddableModel2D):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
-
-    def calc(self, p, *args, **kwargs):
-        kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.sersic(p, *args, **kwargs)
 
 
 # ## disk2d and shell2d models
