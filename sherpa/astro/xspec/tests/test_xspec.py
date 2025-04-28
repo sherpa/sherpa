@@ -17,6 +17,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+import inspect
+import types
 
 import numpy
 
@@ -29,7 +31,7 @@ from sherpa.utils.testing import requires_data, \
 from sherpa.utils.err import ParameterErr
 
 # How many models should there be?
-# This number includes all additive, multiplicative, and convolition models,
+# This number includes all additive, multiplicative, and convolution models,
 # even the ones that would be disabled by a decoration from .utils.
 # The number can be calculated by counting the occurrences of the strings
 #    '(XSAdditiveModel)'
@@ -250,7 +252,7 @@ def test_check_default_name():
                                     xs.XSConvolutionKernel)):
 
             # At the moment we have some defaulting to xs... and some just ...
-            # (the forner are convolution cases which should probably be
+            # (the former are convolution cases which should probably be
             # switched to drop the leading xs).
             #
             mdl = cls()
@@ -292,12 +294,12 @@ def test_evaluate_model():
     import sherpa.astro.xspec as xs
     mdl = xs.XSbbody()
     out = mdl([1, 2, 3, 4], [2, 3, 4, 5])
-    if mdl.calc.__name__.startswith('C_'):
-        otype = numpy.float64
-    else:
-        otype = numpy.float32
 
-    assert out.dtype.type == otype
+    # The result type apparently depends on the OS with
+    # 32-bit for Linux and 64-bit for MacOSX/ARM.
+    # It might be different again for MacOSX/Intel, so we just check that it
+    # is either of the expected types.
+    assert out.dtype.type == numpy.float64 or (out.dtype.type == numpy.float32)
     # check all values are > 0
     assert (out > 0).all()
 
@@ -735,6 +737,16 @@ def test_evaluate_xspec_model(modelcls):
 
     Convolution models are skipped (easier to filter out here given the
     current design).
+
+    This test checks two independent things:
+    1. The model can be evaluated with the default parameters
+       and the results agree using energy and wavelength grids.
+    2. For additive models: Calling the XSPEC model with the norm gives the
+       same answer as calling the model with a decorator that applies the norm
+       in Python and calls XSPEC with norm=1.
+
+    Both asserts are combined into a single test because the test runtime is
+    significant (> 1 min on my machine when iterating over all models).
     """
 
     from sherpa.astro import xspec
@@ -750,6 +762,12 @@ def test_evaluate_xspec_model(modelcls):
     # so there is no need to check that the output of
     # mdl does not contain non-finite values.
     #
+
+    # This second test would be useless if run with a default norm=1
+    if isinstance(mdl, xspec.XSAdditiveModel):
+        mdl.norm = 0.123 * mdl.norm.val
+
+    # 1) Check that energy and wavelength give the same result
     evals = mdl(elo, ehi)
     wvals = mdl(wlo, whi)
 
@@ -757,6 +775,22 @@ def test_evaluate_xspec_model(modelcls):
     assert_is_finite(wvals, modelcls, "wavelength")
 
     assert wvals == pytest.approx(evals)
+
+    # 2) Now, modify the model to remove
+    # `sherpa.astro.xspec.eval_xspec_with_fixed_norm` decorator.
+    if not isinstance(mdl, xspec.XSAdditiveModel):
+        return
+    mdl.calc = types.MethodType(inspect.unwrap(mdl.calc), mdl)
+
+    # In theory, this should not be necessary, because
+    # eval_xspec_with_fixed_norm will evaluate with norm = 1
+    # instead of the current value so the cache will not be hit.
+    # However, we want this test to still work if the decorator is modified in
+    # the future.
+    mdl.cache_clear()
+    evals_no_wrapper = mdl(elo, ehi)
+
+    assert evals == pytest.approx(evals_no_wrapper)
 
 
 @requires_xspec

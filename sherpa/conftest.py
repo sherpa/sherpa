@@ -21,6 +21,7 @@
 import os
 import re
 import logging
+import time
 
 import numpy as np
 try:
@@ -890,7 +891,7 @@ def requires_pylab():
     plt.close(fig="all")
 
 
-def get_runtime_with_cache(mdl, timing = False):
+def get_runtime_with_cache(mdl, timing=False):
     """Does the caching change the results? Does it take longer?
 
     This function compares model evaluations with and without caching

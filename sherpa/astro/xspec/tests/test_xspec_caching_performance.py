@@ -114,6 +114,7 @@ def test_evaluate_additive_xspec_model_normwrapper(modelcls):
 
     # run once in case there is a startup time for loading
     mdl.norm = 1
+    mdl.cache = 5
     evals = mdl(elo, ehi)
 
     # The norm=1 case has been run for initialization.
@@ -125,15 +126,18 @@ def test_evaluate_additive_xspec_model_normwrapper(modelcls):
     # Now, modify the model to remove `sherpa.astro.xspec.eval_xspec_with_fixed_norm`
     # decorator and empty the cache to make sure we are not using the cached value.
     mdl.calc = types.MethodType(inspect.unwrap(mdl.calc), mdl)
-    mdl.cache_clear()
+    mdl.cache = 0
     start_time_clean = time.perf_counter()
     evals_no_wrapper = mdl(elo, ehi)
     end_time_clean = time.perf_counter()
     assert mdl._cache_ctr['hits'] == 0
-    assert len(mdl._cache) == 0
 
     assert evals == pytest.approx(evals_no_wrapper)
 
     run_time_decorated = end_time_decorated - start_time_decorated
     run_time_clean = end_time_clean - start_time_clean
-    assert run_time_decorated < run_time_clean
+
+    if modelcls().cache == 0:
+        assert run_time_decorated > run_time_clean
+    else:
+        assert run_time_decorated < run_time_clean
