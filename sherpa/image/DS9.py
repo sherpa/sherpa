@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2006-2010, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2006-2010, 2016-2021, 2025
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -25,11 +25,6 @@ Loosely based on XPA, by Andrew Williams.
 For more information, see the XPA Access Points section
 of the ds9 reference manual (under Help in ds9).
 
-WARNING: ds9 3.0.3 and xpa 2.1.5 have several nasty bugs.
-One I have not figured out to work around is that on Windows
-showArray fails because the data undergoes newline translation.
-See <http://www.astro.washington.edu/rowen/ds9andxpa.html> for more information.
-
 Requirements:
 
 *** Unix Requirements
@@ -47,7 +42,7 @@ Requirements:
   does not include xpa then you MUST install darwin xpa.
 
 *** Windows Requirements
-- Mark Hammond's pywin32 package: <http://sourceforge.net/projects/pywin32/>
+- Mark Hammond's pywin32 package: <https://sourceforge.net/projects/pywin32/>
 - ds9 installed in the default directory (C:\Program Files\ds9\
   on English systems)
 - xpa executables installed in the default directory (C:\Program Files\\xpa\)

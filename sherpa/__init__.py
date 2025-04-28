@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2014 - 2016, 2019 - 2024
+#  Copyright (C) 2007, 2014-2016, 2019-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -133,7 +133,7 @@ booktitle = {Astronomical Data Analysis Software and Systems XVI},
    editor = {{Shaw}, R.~A. and {Hill}, F. and {Bell}, D.~J.},
     month = oct,
     pages = {543},
-   adsurl = {http://adsabs.harvard.edu/abs/2007ASPC..376..543D},
+   adsurl = {https://adsabs.harvard.edu/abs/2007ASPC..376..543D},
   adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 """

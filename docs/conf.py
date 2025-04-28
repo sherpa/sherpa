@@ -31,8 +31,6 @@ from sphinx_astropy.conf.v1 import intersphinx_mapping, default_role
 import sphinx_rtd_theme
 
 
-# Based on http://read-the-docs.readthedocs.io/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
-#
 from unittest.mock import MagicMock as BaseMock
 
 
@@ -41,7 +39,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 runtime_dir = os.path.split(os.getcwd())[1]
 
 
-# I found this somewhere (probably the rtd link given above). I was
+# I found this somewhere. I was
 # hoping it would support building with Python 2.7 but it doesn't seem
 # to. I have left it in for now, even though Python 2.7 is no longer
 # supported, in case it is being used somewhere.

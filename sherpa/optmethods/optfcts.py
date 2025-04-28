@@ -656,7 +656,7 @@ def montecarlo(fcn: StatFunc,
            and Efficient Adaptive Scheme for Global Optimization over
            Continuous Spaces." J. Global Optimization 11, 341-359,
            1997.
-           http://www.icsi.berkeley.edu/~storn/code.html
+           https://cse.engineering.nyu.edu/~mleung/CS909/s04/Storn95-012.pdf
 
     """
 
@@ -1015,14 +1015,14 @@ def neldermead(fcn: StatFunc,
            Algorithm in Low Dimensions", Jeffrey C. Lagarias, James
            A. Reeds, Margaret H. Wright, Paul E. Wright , SIAM Journal
            on Optimization, Vol. 9, No. 1 (1998), pages 112-147.
-           http://citeseer.ist.psu.edu/3996.html
+           https://jasoncantarella.com/downloads/SJE000112.pdf
 
     .. [3] "Direct Search Methods: Once Scorned, Now Respectable"
            Wright, M. H. (1996) in Numerical Analysis 1995
            (Proceedings of the 1995 Dundee Biennial Conference in
            Numerical Analysis, D.F. Griffiths and G.A. Watson, eds.),
            191-208, Addison Wesley Longman, Harlow, United Kingdom.
-           http://citeseer.ist.psu.edu/155516.html
+           https://bemlar.ism.ac.jp/zhuang/Refs/Refs/wright1995numana.pdf
 
     """
 

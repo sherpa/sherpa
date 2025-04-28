@@ -110,19 +110,19 @@ parameter chain.
 References
 ----------
 
-.. [1] http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
+.. [1] https://hea-www.harvard.edu/AstroStat/pyBLoCXS/
 
 .. [2] "Statistics, Handle with Care: Detecting Multiple Model Components
        with the Likelihood Ratio Test", Protassov et al., 2002, ApJ, 571, 545
-       http://adsabs.harvard.edu/abs/2002ApJ...571..545P
+       https://adsabs.harvard.edu/abs/2002ApJ...571..545P
 
 .. [3] "Accounting for Calibration Uncertainties in X-ray Analysis:
        Effective Areas in Spectral Fitting", Lee et al., 2011, ApJ, 731, 126
-       http://adsabs.harvard.edu/abs/2011ApJ...731..126L
+       https://adsabs.harvard.edu/abs/2011ApJ...731..126L
 
 .. [4] "Analysis of Energy Spectra with Low Photon Counts via Bayesian
        Posterior Simulation", van Dyk et al. 2001, ApJ, 548, 224
-       http://adsabs.harvard.edu/abs/2001ApJ...548..224V
+       https://adsabs.harvard.edu/abs/2001ApJ...548..224V
 
 .. [5] Chapter 11 of Gelman, Carlin, Stern, and Rubin
        (Bayesian Data Analysis, 2nd Edition, 2004, Chapman & Hall/CRC).

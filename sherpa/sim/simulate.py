@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2019 - 2021, 2023, 2024
+#  Copyright (C) 2010, 2016, 2019-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -214,7 +214,7 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
     References
     ----------
 
-    .. [1] http://en.wikipedia.org/wiki/Likelihood-ratio_test
+    .. [1] https://en.wikipedia.org/wiki/Likelihood-ratio_test
 
     """
 

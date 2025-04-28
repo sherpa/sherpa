@@ -4,7 +4,7 @@ Contributing to Sherpa
 Thanks for reporting an issue, fixing a bug, or adding a new feature to
 Sherpa. The following guidelines are not meant to be too onerous; please open
 an issue if you find this to be wrong! Thanks are due to the [AstroPy
-project](http://www.astropy.org/), from which we based this document.
+project](https://www.astropy.org/), from which we based this document.
 
 Reporting Issues
 ----------------
@@ -30,10 +30,10 @@ request](https://github.com/sherpa/sherpa/pulls) from your GitHub fork of the
 core developers using the Sherpa repository for development. At present we do
 not have a document describing our suggested development workflow, so we
 suggest you follow the [AstroPy
-workflow](http://docs.astropy.org/en/latest/development/workflow/development_workflow.html)
+workflow](https://docs.astropy.org/en/latest/development/workflow/development_workflow.html)
 for now. We also do not have a written up set of coding guidelines, so we also
 suggest using the [AstroPy
-guidelines](http://docs.astropy.org/en/latest/development/codeguide.html); the
+guidelines](https://docs.astropy.org/en/latest/development/codeguide.html); the
 current Sherpa code base is slowly being converted to a single style.
 
 Once you open a pull request (which should be opened against the ``main``

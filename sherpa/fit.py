@@ -799,8 +799,8 @@ class IterFit:
                  ) -> OptReturn:
         """Exclude points that are significately far away from the best fit.
 
-        The `sigmarej` scheme is based on the IRAF ``sfit`` function
-        [3]_, where after a fit data points are excluded if the value
+        The `sigmarej` scheme is based on the IRAF ``sfit`` function,
+        where after a fit data points are excluded if the value
         of ``(data-model) / error`` exceeds a threshold, and the data
         re-fit. This removal of data points continues until the fit
         has converged or a maximum number of iterations has been reached.
@@ -828,11 +828,6 @@ class IterFit:
         grow      int >= 0    If greater than zero, also remove this many data
                               points to either side of the identified element.
         ========  ==========  ===========
-
-        References
-        ----------
-
-        .. [3] http://iraf.net/irafhelp.php?val=sfit
 
         """
         if statkwargs is None:

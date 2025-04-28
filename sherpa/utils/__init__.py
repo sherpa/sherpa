@@ -215,7 +215,7 @@ def calc_ftest(dof1, stat1, dof2, stat2):
     .. [1] Protassov et al., Statistics, Handle with Care: Detecting
            Multiple Model Components with the Likelihood Ratio Test,
            Astrophysical Journal, vol 571, pages 545-559, 2002,
-           http://adsabs.harvard.edu/abs/2002ApJ...571..545P
+           https://adsabs.harvard.edu/abs/2002ApJ...571..545P
 
     Examples
     --------
@@ -286,7 +286,7 @@ def calc_mlr(delta_dof, delta_stat):
     .. [1] Protassov et al., Statistics, Handle with Care: Detecting
            Multiple Model Components with the Likelihood Ratio Test,
            Astrophysical Journal, vol 571, pages 545-559, 2002,
-           http://adsabs.harvard.edu/abs/2002ApJ...571..545P
+           https://adsabs.harvard.edu/abs/2002ApJ...571..545P
 
     Examples
     --------
@@ -816,7 +816,7 @@ def neville(xout, xin, yin):
     References
     ----------
 
-    .. [1] http://en.wikipedia.org/wiki/Neville%27s_algorithm
+    .. [1] https://en.wikipedia.org/wiki/Neville%27s_algorithm
 
     Examples
     --------
@@ -1752,7 +1752,9 @@ def quantile(sorted_array, f):
 
     Based on the description of the GSL routine
     gsl_stats_quantile_from_sorted_data - e.g.
-    http://www.gnu.org/software/gsl/manual/html_node/Median-and-Percentiles.html
+    https://www.gnu.org/software/gsl/doc/html/statistics.html#median-and-percentiles
+
+
     but all errors are my own.
 
     sorted_array is assumed to be 1D and sorted.
@@ -2297,7 +2299,7 @@ def neville2d(xinterp, yinterp, x, y, fval):
     References
     ----------
 
-    .. [1] http://en.wikipedia.org/wiki/Neville%27s_algorithm
+    .. [1] https://en.wikipedia.org/wiki/Neville%27s_algorithm
 
     """
 
@@ -2689,7 +2691,7 @@ def Knuth_close(x, y, tol, myop=operator.__or__) -> bool:
     References
     ----------
 
-    .. [1] http://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction
+    .. [1] https://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction
 
 
     """
@@ -2719,7 +2721,7 @@ def safe_div(num, denom):
 def Knuth_boost_close(x, y, tol, myop=operator.__or__) -> bool:
     """ The following text was taken verbatim from:
 
-    http://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction
+    https://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction
 
     In most cases it is unreasonable to use an operator==(...)
     for a floating-point values equality check. The simple solution
@@ -3271,7 +3273,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
 #  * (the "License"); you may not use this file except in compliance with
 #  * the License.  You may obtain a copy of the License at
 #  *
-#  *      http://www.apache.org/licenses/LICENSE-2.0
+#  *      https://www.apache.org/licenses/LICENSE-2.0
 #  *
 #  * Unless required by applicable law or agreed to in writing, software
 #  * distributed under the License is distributed on an "AS IS" BASIS,

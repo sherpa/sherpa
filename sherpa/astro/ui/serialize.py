@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2019, 2021, 2023, 2024
+#  Copyright (C) 2015-2016, 2019, 2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -337,7 +337,7 @@ def _save_pha_array(out: OutType,
 
     # The OGIP standard is for quality and grouping to be 2-byte
     # integers -
-    # http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node7.html
+    # https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node7.html
     # - then force that type here.
     vals = vals.astype(numpy.int16)
 

@@ -46,9 +46,9 @@ What can you do with Sherpa?
 
 Documentation for Sherpa is available at
 [Read The Docs](https://sherpa.readthedocs.io/)
-and also for [Sherpa in CIAO](http://cxc.harvard.edu/sherpa/).
+and also for [Sherpa in CIAO](https://cxc.harvard.edu/sherpa/).
 
-A [Quick Start Tutorial](http://nbviewer.ipython.org/github/sherpa/sherpa/tree/main/notebooks/SherpaQuickStart.ipynb)
+A [Quick Start Tutorial](https://nbviewer.ipython.org/github/sherpa/sherpa/tree/main/notebooks/SherpaQuickStart.ipynb)
 is included in the `notebooks` folder and can be opened with an `ipython notebook`.
 
 Acknowledging or Citing Sherpa
@@ -74,7 +74,7 @@ the terms of the GNU General Public License as published by the Free Software
 Foundation, either version 3 of the License, or (at your option) any later
 version. A copy of the GNU General Public License can be found in the
 `LICENSE` file provided with the source code, or from the
-[Free Software Foundation](http://www.gnu.org/licenses/).
+[Free Software Foundation](https://www.gnu.org/licenses/).
 
 How To Install Sherpa
 =====================
@@ -125,8 +125,8 @@ History
 =======
 
 Sherpa is developed by the [Chandra X-ray
-Observatory](http://chandra.harvard.edu/) to provide fitting and modelling
-capabilities to the [CIAO](http://cxc.harvard.edu/ciao/) analysis package. It
+Observatory](https://chandra.harvard.edu/) to provide fitting and modelling
+capabilities to the [CIAO](https://cxc.harvard.edu/ciao/) analysis package. It
 has been released onto [GitHub](https://github.com/sherpa/sherpa) for users to
 extend (whether to other areas of Astronomy or in other domains).
 

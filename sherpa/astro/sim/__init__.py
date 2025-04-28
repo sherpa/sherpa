@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2017, 2023
+#  Copyright (C) 2011, 2015, 2017, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -41,7 +41,7 @@ References
 
 .. [1] "Accounting for Calibration Uncertainties in X-ray Analysis:
        Effective Areas in Spectral Fitting", Lee et al., 2011, ApJ, 731, 126
-       http://adsabs.harvard.edu/abs/2011ApJ...731..126L
+       https://adsabs.harvard.edu/abs/2011ApJ...731..126L
 
 """
 

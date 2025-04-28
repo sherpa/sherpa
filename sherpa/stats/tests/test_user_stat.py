@@ -64,7 +64,7 @@ def test_user_model_stat_docs(use_string, clean_astro_ui):
     https://cxc.cfa.harvard.edu/sherpa/statistics/#userstat
 
     and:
-    http://cxc.harvard.edu/sherpa/threads/user_model/
+    https://cxc.harvard.edu/sherpa/threads/user_model/
 
     I tried to be as faithful as possible to the original, although the examples in thedocs
     are not completely self-contained, so some changes were necessary. I changed the numpy

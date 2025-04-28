@@ -38,7 +38,7 @@ built from piecewise cubic polynomials. The resultant curve passes through
 the given data points and will appear smooth and natural.
 
 :Authors:
-  `Christoph Gohlke <http://www.lfd.uci.edu/~gohlke/>`__,
+  `Christoph Gohlke <https://www.lfd.uci.edu/~gohlke/>`__,
   Laboratory for Fluorescence Dynamics, University of California, Irvine
 
 :Version: 2012.09.24 FAP revisions to eliminate c extension module and run in
@@ -47,8 +47,8 @@ the given data points and will appear smooth and natural.
 Requirements
 ------------
 
-* `Python 2.7 or 3.2 <http://www.python.org>`__
-* `Numpy 1.6 <http://numpy.scipy.org>`__
+* `Python 2.7 or 3.2 <https://www.python.org>`__
+* `Numpy 1.6 <https://numpy.org>`__
 
 References
 ----------
