@@ -471,12 +471,6 @@ def read_arf(arg) -> DataARF:
             "header": header,
             "ethresh": ogip_emin}
 
-    blo = block.get("BIN_LO")
-    bhi = block.get("BIN_HI")
-    if blo is not None and bhi is not None:
-        data["bin_lo"] = blo.values
-        data["bin_hi"] = bhi.values
-
     return DataARF(filename, **data)
 
 
@@ -846,8 +840,6 @@ def _process_pha_block(filename: str,
     # Do we create the backgrounds directly?
     #
     kwargs = {"channel": channel,
-              "bin_lo": get("BIN_LO"),
-              "bin_hi": get("BIN_HI"),
               # "grouping": get("GROUPING", expand=True),
               # "quality": get("QUALITY", expand=True),
               "grouping": getcol("GROUPING"),
@@ -1457,10 +1449,6 @@ def _pack_pha(dataset: DataPHA) -> BlockList:
     addfield("QUALITY", dataset.quality, np.int16,
              "Quality (0 for okay)")
 
-    if dataset.bin_lo is not None and dataset.bin_hi is not None:
-        cols.extend([Column("BIN_LO", dataset.bin_lo),
-                     Column("BIN_HI", dataset.bin_hi)])
-
     def addscal(value, name, label):
         """Add the scaling value."""
 
@@ -1573,15 +1561,6 @@ def _pack_arf(dataset: ARFType) -> BlockList:
                     values=dataset.energ_hi.astype(np.float32)),
              Column("SPECRESP", unit="cm^2", desc="Effective Area",
                     values=dataset.specresp.astype(np.float32))]
-
-    # Chandra files can have BIN_LO/HI values, so copy
-    # across if both set.
-    #
-    blo = dataset.bin_lo
-    bhi = dataset.bin_hi
-    if blo is not None and bhi is not None:
-        acols.extend([Column("BIN_LO", blo),
-                      Column("BIN_HI", bhi)])
 
     pheader = _empty_header(creator=True)
 

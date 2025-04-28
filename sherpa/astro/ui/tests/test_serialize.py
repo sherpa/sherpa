@@ -1908,11 +1908,11 @@ set_analysis(1, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(1, "2.000000000000:12.000000000000")
+notice_id(1, "2.000000050569:11.999999841898")
 notice_id(1, bkg_id=1)
-notice_id(1, "2.000000000000:12.000000000000", bkg_id=1)
+notice_id(1, "2.000000050569:11.999999841898", bkg_id=1)
 notice_id(1, bkg_id=2)
-notice_id(1, "2.000000000000:12.000000000000", bkg_id=2)
+notice_id(1, "2.000000050569:11.999999841898", bkg_id=2)
 
 
 ######### Set Statistic
@@ -1949,15 +1949,15 @@ load_bkg(1, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(1, quantity="wavelength", type="rate", factor=0)
+set_analysis(1, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(1, "2.000000000000:4.000000000000")
+notice_id(1, "3793:6192")
 notice_id(1, bkg_id=1)
-notice_id(1, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(1, "3793:6192", bkg_id=1)
 notice_id(1, bkg_id=2)
-notice_id(1, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(1, "3793:6192", bkg_id=2)
 load_pha(10, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -1967,15 +1967,15 @@ load_bkg(10, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(10, quantity="wavelength", type="rate", factor=0)
+set_analysis(10, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(10, "2.000000000000:4.000000000000")
+notice_id(10, "7593:7992")
 notice_id(10, bkg_id=1)
-notice_id(10, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(10, "7593:7992", bkg_id=1)
 notice_id(10, bkg_id=2)
-notice_id(10, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(10, "7593:7992", bkg_id=2)
 load_pha(11, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -1985,15 +1985,15 @@ load_bkg(11, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(11, quantity="wavelength", type="rate", factor=0)
+set_analysis(11, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(11, "2.000000000000:4.000000000000")
+notice_id(11, "6793:7592")
 notice_id(11, bkg_id=1)
-notice_id(11, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(11, "6793:7592", bkg_id=1)
 notice_id(11, bkg_id=2)
-notice_id(11, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(11, "6793:7592", bkg_id=2)
 load_pha(12, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -2003,15 +2003,15 @@ load_bkg(12, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(12, quantity="wavelength", type="rate", factor=0)
+set_analysis(12, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(12, "2.000000000000:4.000000000000")
+notice_id(12, "5993:7192")
 notice_id(12, bkg_id=1)
-notice_id(12, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(12, "5993:7192", bkg_id=1)
 notice_id(12, bkg_id=2)
-notice_id(12, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(12, "5993:7192", bkg_id=2)
 load_pha(2, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -2021,15 +2021,15 @@ load_bkg(2, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(2, quantity="wavelength", type="rate", factor=0)
+set_analysis(2, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(2, "2.000000000000:4.000000000000")
+notice_id(2, "5393:6992")
 notice_id(2, bkg_id=1)
-notice_id(2, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(2, "5393:6992", bkg_id=1)
 notice_id(2, bkg_id=2)
-notice_id(2, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(2, "5393:6992", bkg_id=2)
 load_pha(3, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -2039,15 +2039,15 @@ load_bkg(3, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(3, quantity="wavelength", type="rate", factor=0)
+set_analysis(3, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(3, "2.000000000000:4.000000000000")
+notice_id(3, "6993:7792")
 notice_id(3, bkg_id=1)
-notice_id(3, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(3, "6993:7792", bkg_id=1)
 notice_id(3, bkg_id=2)
-notice_id(3, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(3, "6993:7792", bkg_id=2)
 load_pha(4, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -2057,15 +2057,15 @@ load_bkg(4, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(4, quantity="wavelength", type="rate", factor=0)
+set_analysis(4, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(4, "2.000000000000:4.000000000000")
+notice_id(4, "6993:7792")
 notice_id(4, bkg_id=1)
-notice_id(4, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(4, "6993:7792", bkg_id=1)
 notice_id(4, bkg_id=2)
-notice_id(4, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(4, "6993:7792", bkg_id=2)
 load_pha(5, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -2075,15 +2075,15 @@ load_bkg(5, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(5, quantity="wavelength", type="rate", factor=0)
+set_analysis(5, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(5, "2.000000000000:4.000000000000")
+notice_id(5, "5393:6992")
 notice_id(5, bkg_id=1)
-notice_id(5, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(5, "5393:6992", bkg_id=1)
 notice_id(5, bkg_id=2)
-notice_id(5, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(5, "5393:6992", bkg_id=2)
 load_pha(6, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -2093,15 +2093,15 @@ load_bkg(6, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(6, quantity="wavelength", type="rate", factor=0)
+set_analysis(6, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(6, "2.000000000000:4.000000000000")
+notice_id(6, "3793:6192")
 notice_id(6, bkg_id=1)
-notice_id(6, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(6, "3793:6192", bkg_id=1)
 notice_id(6, bkg_id=2)
-notice_id(6, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(6, "3793:6192", bkg_id=2)
 load_pha(7, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -2111,15 +2111,15 @@ load_bkg(7, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(7, quantity="wavelength", type="rate", factor=0)
+set_analysis(7, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(7, "2.000000000000:4.000000000000")
+notice_id(7, "5993:7192")
 notice_id(7, bkg_id=1)
-notice_id(7, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(7, "5993:7192", bkg_id=1)
 notice_id(7, bkg_id=2)
-notice_id(7, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(7, "5993:7192", bkg_id=2)
 load_pha(8, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -2129,15 +2129,15 @@ load_bkg(8, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(8, quantity="wavelength", type="rate", factor=0)
+set_analysis(8, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(8, "2.000000000000:4.000000000000")
+notice_id(8, "6793:7592")
 notice_id(8, bkg_id=1)
-notice_id(8, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(8, "6793:7592", bkg_id=1)
 notice_id(8, bkg_id=2)
-notice_id(8, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(8, "6793:7592", bkg_id=2)
 load_pha(9, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
@@ -2147,15 +2147,15 @@ load_bkg(9, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(9, quantity="wavelength", type="rate", factor=0)
+set_analysis(9, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(9, "2.000000000000:4.000000000000")
+notice_id(9, "7593:7992")
 notice_id(9, bkg_id=1)
-notice_id(9, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(9, "7593:7992", bkg_id=1)
 notice_id(9, bkg_id=2)
-notice_id(9, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(9, "7593:7992", bkg_id=2)
 
 
 ######### Set Statistic
@@ -3544,8 +3544,29 @@ def test_restore_pha2(make_data_path):
 
     # Note: not including .gz for the file name
     ui.load_pha(make_data_path("3c120_pha2"))
-    ui.set_analysis("wave")
-    ui.notice(2, 4)
+
+    # Before #1564 we could say
+    #
+    #    ui.set_analysis("wave")
+    #    ui.notice(2, 4)
+    #
+    for idval in [1, 6]:
+        ui.notice_id(idval, 3793, 6192)
+
+    for idval in [2, 5]:
+        ui.notice_id(idval, 5393, 6992)
+
+    for idval in [3, 4]:
+        ui.notice_id(idval, 6993, 7792)
+
+    for idval in [7, 12]:
+        ui.notice_id(idval, 5993, 7192)
+
+    for idval in [8, 11]:
+        ui.notice_id(idval, 6793, 7592)
+
+    for idval in [9, 10]:
+        ui.notice_id(idval, 7593, 7992)
 
     def check_data():
         assert ui.list_data_ids() == pytest.approx([1, 10, 11, 12, 2, 3, 4, 5, 6, 7, 8, 9])

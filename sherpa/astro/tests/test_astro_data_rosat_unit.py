@@ -162,7 +162,7 @@ def validate_pha(pha, errors=False):
 
     # TODO: check that grouping/quality is applied correctly
 
-    emptyfields = ['syserror', 'bin_lo', 'bin_hi']
+    emptyfields = ['syserror']
     if errors:
         assert len(pha.staterror) == nchan
         assert pha.staterror.min() == pytest.approx(0.0)
