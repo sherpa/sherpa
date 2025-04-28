@@ -548,6 +548,112 @@ class CStat(Likelihood):
         super().__init__(name=name)
 
 
+# No docstring means it inherits from parent class
+class CStatNumpy(CStat):
+    def _calc(self, data, model, weight, trunc_value):
+
+        if np.any(model < 0.0) and trunc_value <= 0:
+            raise ValueError("Model values are negative and truncation value is not set.")
+
+        model = np.maximum(model, trunc_value)
+        d = model
+
+        # Work with subset of data where the log is valid
+        ind = data > 0
+        dint = data[ind]
+        mind = model[ind]
+        d[ind] = mind - dint + (dint * np.log(dint / mind))
+        if weight is not None:
+            d = d * weight
+
+        d *= 2
+        return d.sum(), np.sqrt(np.abs(d))
+
+
+class CStatNegativePenalty(CStat):
+    """CStat with negative penalty for negative model values.
+
+    CStat as defined in the literature will not work with model values
+    that are 0 or negative because of the term log(1/model).
+    In Sherpa CStat, we deal with that by truncating the model values to a
+    small positive value.
+    (At least that's the default. An error cna be raised instead if the
+    user sets the truncate option to False in the .sherpa.rc file.)
+
+    THIS IS ALREADY A CRUDGE, just to make it work numerically.
+    In practice, most model will have mostly positive values all the time,
+    but in numerical optimization it can happen that the optimizer tries
+    e.g. an absorption lines that is too deep and get a few bins in the
+    model to a negative value. That's usually not a good fit (since the data
+    is always >=0) and the optimizer would usually step the parameter such
+    that the model is positive again. So, we use the truncation to make
+    sure that it doesn't crash in the middle of the optimization.
+
+    This solution is incomplete though: Once a value is negative the
+    statistics do not change with how negative it is. A model value of 0
+    and -10000 will be clipped to the same number and thus the optimizer
+    has no incentive to walk back to positive values.
+
+    Again, in many models that is not a problem, e.g. in a Gaussian
+    absorption line that is several bins wide, reducing the amplitude
+    of the line will improve the fit on the edges of the line, even if the
+    center of the line is still truncated and thus the fit will walk back
+    to positive values. But in some cases, e.g. a narrow Gaussian line
+    there might be only one one bin that is negative and stays negative for
+    a range of parameter values.
+    This can happen in two cases:
+
+    - The initial guess for the model is wrong. While we typically do not
+      start with negative values for Poisson data, that can happen
+      incidentially, e.g. we might describe a model by a continuum and
+      an absorption line. If the absorption line is too deep, the intial
+      model might be negative.
+    - We start with a model that is all positive, but then the optimizer
+      takes a big step on the absorption line parameter and ends up in
+      negative territory.
+
+    So, in addtion to the truncation, this class adds a penalty for negative
+    model values that grows to more negative the value is.
+    THIS IS STILL A CRUDGE and not grounded in mathematical statistics, it's
+    just a way to make the optimizer work better in some cases.
+    As before, we expect that the optimizer will walk back to positive values
+    and thus the penalty in intermediate steps will not influence the statistic
+    value in the final fit at all.
+
+    The scale of the penalty needs to be chosen such that it actually edges
+    the optimizer back to positive values, but not so strong that it creates
+    a giant step in the statistic value which might confuse the optimizer,
+    i.e. we don't want it to be 1e-38, but also not 1e+23.
+    For Poisson data, the natural scale is "1", so we use penalt the sum of
+    all negative model values as penalty.
+
+    Again, the exact choice does not matter, because we expect this penalty
+    to apply only in intermediate steps and not in the final fit.
+
+
+    """
+    def _calc(self, data, model, weight, trunc_value):
+
+        if np.any(model < 0.0) and trunc_value <= 0:
+            raise ValueError("Model values are negative and truncation value is not set.")
+
+        penalty =  - np.sum(model[model < 0])
+
+        model = np.maximum(model, trunc_value)
+        d = model
+
+        # Work with subset of data where the log is valid
+        ind = data > 0
+        dint = data[ind]
+        mind = model[ind]
+        d[ind] = mind - dint + (dint * np.log(dint / mind))
+        if weight is not None:
+            d = d * weight
+
+        d *= 2
+        return d.sum() + penalty, np.sqrt(np.abs(d))
+
+
 class Chi2(Stat):
     """A Gaussian Log-likelihood function.
 
