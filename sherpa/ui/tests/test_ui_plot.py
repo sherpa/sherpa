@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2024
+#  Copyright (C) 2019-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1395,6 +1395,28 @@ def test_get_xxx_contour_prefs_pylab(ctype, session, requires_pylab):
     assert p == {'xlog': False, 'ylog': False,
                  'alpha': None, 'linewidths': None, 'colors': None,
                  'label': None, 'levels': None, 'linestyles': 'solid'}
+
+
+@pytest.mark.parametrize("ctype", ["data", "model"])
+def test_get_xxx_contour_prefs_behavior(ctype, clean_ui):
+    """What happens with multiple id values.
+
+    This is a regression test.
+    """
+
+    preffunc = getattr(ui, f"get_{ctype}_contour_prefs")
+    getfunc = getattr(ui, f"get_{ctype}_contour")
+
+    got = preffunc()
+    assert got["alpha"] is None
+
+    assert getfunc(recalc=False).contour_prefs["alpha"] is None
+
+    got["alpha"] = 0.5
+
+    assert getfunc(recalc=False).contour_prefs["alpha"] == pytest.approx(0.5)
+    assert getfunc(2, recalc=False).contour_prefs["alpha"] == pytest.approx(0.5)
+    assert getfunc("foo", recalc=False).contour_prefs["alpha"] == pytest.approx(0.5)
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
