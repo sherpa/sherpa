@@ -1,5 +1,264 @@
 Release Notes
 
+Sherpa 4.17.1
+=============
+
+This release of Sherpa includes various enhancements, documentation updates, 
+bug fixes, and infrastructure changes.
+
+* enhancements:
+    * improved handling of OGIP products not following the standards (#2235)
+    * Models can now be combined using arbitrary ufuncs (#2248)
+    * various updates to XSpec interface (#2281) and support for XSpec 12.15.0 
+      including the additional of 17 new models (#2252)
+    * added interface to support ArviZ for analysis of Baysian models (#2286) 
+* documentation changes:
+    * provided option to install python packages needed to build sherpa 
+      documentation 
+* infrastructure and testing:
+    * updated tests to work with python 3.13 (#2174)
+* bug fixes: 
+    * fixed a bug in the caching code that limited the cache size to 1 (#2166)
+    * update to use fake_pha for missions which don't use 1 as the first
+      channel (#2214)
+
+Details
+-------
+
+#2039 - Add a security reporting policy
+    Added Statement defining plans to deal with security issues and where users
+    should report them
+
+#2047 - Opt Clean up
+    Improve the typing coverage of the sherpa.optmethods code and internal code
+    clean up.
+
+#2116- Add explicit support for XSPEC 12.14.1
+    Add models from XSPEC 12.14.1 and change the parameter settings to match
+    those from 12.14.1, where necessary.
+
+#2143 - Improve pre-commit script for ranges of years
+    Improve pre-commit script for ranges of years
+
+#2156 - Add macOS ARM Conda Package Builds
+    Add macOS ARM Conda builds
+
+#2164 - XSPEC: fix up error message
+    Correct the information provided in the unlikely case than an XSPEC model
+    fails.
+
+#2166 -Fix bug in cache code that limited cache size to 1.
+    Fix bug that limited cache size to 1.
+
+#2170 - DOC: Example changes to Examples
+    Change the docstring for calc_source and calc_model to use Examples rather 
+    than Example.
+
+#2171 - specify DS9 region format used in pytest
+    Explicitly set region format to use ds9 format for ds9 region pytests
+
+#2174: Allow tests to pass with Python 3.13.0
+    Allow the tests to pass with Python 3.13.0.
+
+#2178 - Post 4.17.0 update to add DOI info to the README.md
+    Adding the DOI for the 4.17.0 Release.
+
+#2179 - add build doc option
+    Provide the doc installation option which will install the python packages
+    needed to build the documentation along with Sherpa.
+
+#2181 - Fix typo in return value
+    Correctly identify the return value of get_source_components_plot. This 
+    does not change the behaviour of the code.
+
+#2182 - DOC: Use "Examples" rather than "Example"
+    Consistent use of "Examples" to indicate one or more examples in the
+    documentation.
+
+#2188 - TEST: address numpy 2 changes to output for docstring tests
+    Allow the documentation tests to pass when using NumPy 2.0. There is no
+    change to the actual code.
+
+#2191: TEST: fix test related to issue #800
+    Clean up a test. There is no functional change to the code.
+
+#2195 - Update ci-conda-workflow to use Miniforge
+    Install Miniforge for use with ci-conda workflow.
+
+#2198 - Allow both Intel and ARM macOS GitHub runners for the conda builds
+    Add a macOS ARM build, and update the macOS Intel build to use the macOS-13
+    runner.
+
+#2201: Change how invalid limits are checked for within the MCMC code
+    Simplify a safety check within the MCMC proposed-parameter code.
+
+#2203 - Allow pytest 8.3.4 to be used
+    Allow the tests to pass with pytest version 8.3.4 by changing the test code.
+    The GitHub macOS conda action is updated to macos-13 (for the Intel build).
+    There is no functional change here.
+
+#2204 - Update the GitHub Actions badge for Conda and Pip workflows
+    Update the GitHub Actions badge in the README.md for the Conda and Pip 
+    workflows.
+
+#2207- TESTS: avoid matplotlib version differences (fix #2206)
+    Allow tests to pass when using matplotlib 3.10.0. This only changes the 
+    tests. Fix #2206.
+
+#2208: BUILD: update ds9 from 8.5 to 8.6
+    Bump to DS9 version 8.6 for testing on GitHub actions (Linux). There is no
+    functional change.
+
+#2209: update to change .bz2 references to .conda to account for changes
+    Modify workflows to use .conda instead of .bz2
+
+#2213 - Better handle dataspace1d for DataPHA use cases when offset is not 1
+    The sherpa.astro.ui.utils.dataspace1d call can now be used to generate a 
+    channel grid that does not start at 1 for DataPHA data. The arguments are 
+    now checked to ensure they are sensible in this case (consecutive integer 
+    values).
+
+#2214: Better handle fake_pha when offset is not 1
+    Allow fake_pha to work with missions where the first channel is not 1. 
+    Fix #2212.
+
+#2215 - Minor xspec additions
+    Minor changes to the XSPEC module, including added documentation to the 
+    set_xsabund routine to note the availability of the "felc" table, and
+    set_xsstate no-longer requires all fields to be present.
+
+#2226 - Allow user-statistics to be referenced by name to match the documentation.
+    Allow user-statistics to be set by name. The get_stat_name routine now 
+    returns the actual name of the user statistic, rather than the generic 
+    value "userstat". Fix #2225.
+
+#2227 - Tests: compare Response1D and MultipleResponse1D behavior
+    Improve testing of the multi-response code. There is no change in behaviour
+    here.
+
+#2229 - Error out if model names are not strings
+    Raise an error if a model name is not a string
+
+#2230 - Note that we need the file program to build Sherpa
+    Note that the file command is needed to build Sherpa (it is used by 
+    extern/configure).
+
+#2231 - Two small astropy-related doc changes
+    Update linke to astropy dev docs (that we link to in lieu of writing our
+    own dev docs); 
+    Recommend to install astropy via pip, not conda
+
+#2232 - TESTS: mark more that require the group module
+    Mark several recently-added tests with the requires_group decorator. There
+    is no functional change.
+
+#2233 - BUILD: pin conda-build (and therefore liblief) to last known working version
+    There's a bug between conda-build and lief that's causing a package build 
+    failure. This pins to "conda-build==25.1.2=*_0", which we've also pinned to
+    in CIAO for this same issue.
+    related Conda-build issue: conda/conda-build#5626
+
+#2235 - Deal with OGIP products that do not follow the standards
+    Some OGIP products from missions occasionally do not follow the OGIP and 
+    FITS standards. Provide workarounds for two recent cases from NuSTAR and
+    NICER (TLMIN/MAX values were recorded as a string, and a QUALITY array was
+    stored as a boolean array). Fix #2185.
+
+#2239 - REGION: test CXCDM region parser, when available
+    Allow the region module to know how it was built (whether reading FITS
+    binary region files is supported). This allows for improvements to the 
+    tests.
+
+#2240 - Minor typing updates
+    Minor internal changes to tests and code to improve typing statements and
+    improve test coverage.
+
+#2241 - drop "iterative fit method" in error-estimation screen output when not set
+    The screen output when calling an error-estimation routine like conf will
+    no-longer return the iterative-fit method name when it is set to None.
+
+#2243 - Internal improvements to stats, fit, optimization, and error estimation
+    Add typing statements and apply minor code cleanup for the statistics, fit,
+    optimization, and error estimation code. There is not expected to be any 
+    functional change unless code in interacting with low-level details of the
+    Sherpa code base.
+
+#2248 - Allow combinations of models with arbitrary ufuncs
+    Models can now be combined using arbitrary ufuncs. Before, it was possible
+    to say model1 + model2 to create a combined model, now any numpy ufunc will
+    work, e.g. np.greater(model1, model2).
+
+#2249 - Update project.toml for PEP 639
+    Address setuptools deprecation of lower-kebab-case for names of options
+
+#2252- Allow Sherpa to build against XSPEC 12.15.0
+    Allow building against XSPEC 12.15.0. Adds the following 17 models:
+    additive: XSfeklor, XSvlorentz, XSvvoigt, XSzfeklor, XSzlorentz,
+    XSzvlorentz, XSzvoigt, XSzvvoigt
+    convolution: XSrgsext
+    multiplicative: XSlorabs, XSvlorabs, XSvoigtabs, XSvvoigtabs, XSzlorabs, 
+    XSzvorlabs, XSzvoigtabs, XSzvvoigtabs
+    The XSPEC initialization file (~/.xspec/Xspec.init) may need to be removed
+    or the AtomDB version in it updated before using XSPEC models.
+
+#2255 - Add missed pep 639 config update
+    #2249 had a few stragglers in the update I missed when reviewing. This  
+    should get all the needed renames.
+
+#2256 - Faster hash for modelCacher1D
+    Select a faster hashing algorithm for the model cache by default
+
+#2261 - Add tests related to analysis setting
+    Add or enhance tests for several cases.
+
+#2265 - Add new public methods to access the components of a model
+    Add new methods to select the components of a model.
+
+#2268 - Treat norm special in XSPEC additive models
+    These code changes increase the speed of fitting data with XSPEC additive
+    models by making the cache more effective.
+
+#2273 - Make sure all datastack-wrapped functions are added to namespace
+    Complete the datastack namespace for functions wrapped to operate on 
+    datastacks
+
+#2274 - Set cache=0 by default for models that are fast to calculate
+    Based on benchmarking for typical Sherpa use cases, some models are faster
+    to recalculate than to cache. For those models, the default cache size it
+    now set to 0 to save runtime and memory.
+
+#2279 - Note support for Python 3.13
+    Note that Sherpa can be used with Python 3.13.
+
+#2280 - Add option `record_steps` to `Fit.fit()` calls
+    Add option record_steps to Fit.fit() calls, which will add a field
+    record_steps to the FitResults object that the fitter returns. This can
+    help to understand why a fit does not converge.
+
+#2281 - Provide access to XSPEC abundances
+    Minor improvements to the XSPEC interface: get_xsabundances now takes an
+    optional table name, get_xsxset can be called with no argument, and
+    clear_xsxset will clear the XSET database. Fix #2282.
+
+#2286 - Add an interface to ArviZ
+    Add an interface to ArviZ
+
+#2287 - Use python 3.10 syntax for typing for the ui modules
+    Use Python 3.10 syntax for typing statements in the ui modules. There are
+    no functional changes in these commits.
+
+#2288 - ui: add more examples of using SherpaVerbosity
+    Point out the use of the sherpa.utils.logging.SherpaVerbosity context 
+    manager in the documentation of the fit and error-analysis UI routines.
+
+#2289 - Update http -> https
+    Update links in docs and source code from http -> https where possible
+
+#2290 - Minor clean up of utility code
+    Ensure a deprecated routine can still be used and remove a routine that
+    has never worked.
+
+
 Sherpa 4.17.0
 =============
 
