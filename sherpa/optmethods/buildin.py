@@ -69,7 +69,7 @@ class OptMethod(NoNewAttributesAfterInit):
          x0: np.ndarray,
          xmin: np.ndarray,
          xmax: np.ndarray,
-         **kwargs) -> OptReturn:
+         **kwargs) -> OptReturn
 
     ``fcn`` is a callable that has only a single argument (a sequence of
     parameter values) and returns a tuple of the statistic value and per-bin
