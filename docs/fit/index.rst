@@ -36,14 +36,19 @@ approach is to:
 The following discussion uses a one-dimensional data set
 with gaussian errors (it was
 :doc:`simulated with gaussian noise <../evaluation/simulate>`
-with :math:`\sigma = 5`):     
+with :math:`\sigma = 5`):
 
-   >>> import numpy as np
-   >>> import matplotlib.pyplot as plt
-   >>> from sherpa.data import Data1D
-   >>> d = Data1D('fit example', [-13, -5, -3, 2, 7, 12],
-   ...            [102.3, 16.7, -0.6, -6.7, -9.9, 33.2],
-   ...            np.ones(6) * 5)
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>> from sherpa.data import Data1D
+    >>> d = Data1D('fit example', [-13, -5, -3, 2, 7, 12],
+    ...            [102.3, 16.7, -0.6, -6.7, -9.9, 33.2],
+    ...            np.ones(6) * 5)
 
 It is going to be fit with the expression:
 
@@ -52,27 +57,37 @@ It is going to be fit with the expression:
 which is represented by the :py:class:`~sherpa.models.basic.Polynom1D`
 model:
 
-   >>> from sherpa.models.basic import Polynom1D
-   >>> mdl = Polynom1D()
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> from sherpa.models.basic import Polynom1D
+    >>> mdl = Polynom1D()
 
 To start with, just the :math:`c_0` and :math:`c_2` terms are
 used in the fit:
 
-   >>> mdl.c2.thaw()
-   >>> print(mdl)
-   polynom1d
-      Param        Type          Value          Min          Max      Units
-      -----        ----          -----          ---          ---      -----
-      polynom1d.c0 thawed            1 -3.40282e+38  3.40282e+38           
-      polynom1d.c1 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c2 thawed            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c3 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c4 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c5 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c6 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38           
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> mdl.c2.thaw()
+    >>> print(mdl)
+    polynom1d
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       polynom1d.c0 thawed            1 -3.40282e+38  3.40282e+38
+       polynom1d.c1 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c2 thawed            0 -3.40282e+38  3.40282e+38
+       polynom1d.c3 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c4 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c5 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c6 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38
     
 .. _fitting_data:
 
@@ -92,34 +107,39 @@ unless explicitly over-riden with the ``stat`` and
 :py:attr:`~sherpa.fit.Fit.method` attributes
 (once the object has been created).    
 
-   >>> from sherpa.fit import Fit
-   >>> f = Fit(d, mdl)
-   >>> print(f)
-   data      = fit example
-   model     = polynom1d
-   stat      = Chi2Gehrels
-   method    = LevMar
-   estmethod = Covariance
-   >>> print(f.data)
-   name      = fit example
-   x         = [-13, -5, -3, 2, 7, 12]
-   y         = [102.3, 16.7, -0.6, -6.7, -9.9, 33.2]
-   staterror = Float64[6]
-   syserror  = None
-   >>> print(f.model)
-   polynom1d
-      Param        Type          Value          Min          Max      Units
-      -----        ----          -----          ---          ---      -----
-      polynom1d.c0 thawed            1 -3.40282e+38  3.40282e+38           
-      polynom1d.c1 thawed            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c2 thawed            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c3 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c4 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c5 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c6 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> from sherpa.fit import Fit
+    >>> f = Fit(d, mdl)
+    >>> print(f)
+    data      = fit example
+    model     = polynom1d
+    stat      = Chi2Gehrels
+    method    = LevMar
+    estmethod = Covariance
+    >>> print(f.data)
+    name      = fit example
+    x         = Int64[6]
+    y         = Float64[6]
+    staterror = Float64[6]
+    syserror  = None
+    >>> print(f.model)
+    polynom1d
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       polynom1d.c0 thawed            1 -3.40282e+38  3.40282e+38
+       polynom1d.c1 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c2 thawed            0 -3.40282e+38  3.40282e+38
+       polynom1d.c3 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c4 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c5 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c6 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38
+       polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38
 
 The fit object stores references to objects, such as the model, which
 means that the fit object reflects the current state, and not just
@@ -127,16 +147,16 @@ the values when it was created or used. For example, in the following
 the model is changed directly, and the value stored in the fit
 object is also changed:
 
-   >>> f.model.c2.val
-   0.0
-   >>> mdl.c2 = 1
-   >>> f.model.c2.val
-   1.0
+    >>> f.model.c2.val
+    0.0
+    >>> mdl.c2 = 1
+    >>> f.model.c2.val
+    1.0
    
 Using the optimiser and statistic
 =================================
 
-With a Fit object can calculate the statistic value for
+A Fit object can calculate the statistic value for
 the current data and model
 (:py:meth:`~sherpa.fit.Fit.calc_stat`),
 summarise how well the current model represents the
@@ -149,19 +169,19 @@ fit the model to the data
 :ref:`calculate the parameter errors <estimating_errors>`
 (:py:meth:`~sherpa.fit.Fit.est_errors`).
 
-   >>> print("Starting statistic: {:.3f}".format(f.calc_stat()))
-   Starting statistic: 840.251
-   >>> sinfo1 = f.calc_stat_info()
-   >>> print(sinfo1)
-   name      = 
-   ids       = None
-   bkg_ids   = None
-   statname  = chi2
-   statval   = 840.2511999999999
-   numpoints = 6
-   dof       = 4
-   qval      = 1.4661616529226985e-180
-   rstat     = 210.06279999999998
+    >>> print("Starting statistic: {:.3f}".format(f.calc_stat()))
+    Starting statistic: 840.251
+    >>> sinfo1 = f.calc_stat_info()
+    >>> print(sinfo1)
+    name      =
+    ids       = None
+    bkg_ids   = None
+    statname  = chi2
+    statval   = 840.2511999999999
+    numpoints = 6
+    dof       = 4
+    qval      = 1.4661616529226985e-180
+    rstat     = 210.06279999999998
 
 The fields in the :py:class:`~sherpa.fit.StatInfoResults` depend on
 the choice of statistic; in particular,
@@ -181,13 +201,13 @@ As shown below, when one data point is
 are changed (such as the
 :py:attr:`~sherpa.fit.StatInfoResults.numpoints` value).
 
-   >>> d.ignore(0, 5)
-   >>> sinfo2 = f.calc_stat_info()
-   >>> d.notice()
-   >>> sinfo1.numpoints
-   6
-   >>> sinfo2.numpoints
-   5
+    >>> d.ignore(0, 5)
+    >>> sinfo2 = f.calc_stat_info()
+    >>> d.notice()
+    >>> sinfo1.numpoints
+    6
+    >>> sinfo2.numpoints
+    5
 
 .. note::
 
@@ -212,46 +232,56 @@ and the best-fit parameter values
 (:py:attr:`~sherpa.fit.FitResults.parnames` and
 :py:attr:`~sherpa.fit.FitResults.parvals`).
 
-   >>> res = f.fit()
-   >>> if res.succeeded: print("Fit succeeded")
-   Fit succeeded
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> res = f.fit()
+    >>> if res.succeeded: print("Fit succeeded")
+    Fit succeeded
 
 The return value has a :py:meth:`~sherpa.fit.FitResults.format` method which
 provides a summary of the fit:
 
-   >>> print(res.format())
-   Method                = levmar
-   Statistic             = chi2
-   Initial fit statistic = 840.251
-   Final fit statistic   = 96.8191 at function evaluation 6
-   Data points           = 6
-   Degrees of freedom    = 4
-   Probability [Q-value] = 4.67533e-20
-   Reduced statistic     = 24.2048
-   Change in statistic   = 743.432
-      polynom1d.c0   -11.0742     +/- 2.91223     
-      polynom1d.c2   0.503612     +/- 0.0311568   
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> print(res.format())
+    Method                = levmar
+    Statistic             = chi2
+    Initial fit statistic = 840.251
+    Final fit statistic   = 96.8191 at function evaluation 6
+    Data points           = 6
+    Degrees of freedom    = 4
+    Probability [Q-value] = 4.67533e-20
+    Reduced statistic     = 24.2048
+    Change in statistic   = 743.432
+       polynom1d.c0   -11.0742     +/- 2.91223
+       polynom1d.c2   0.503612     +/- 0.0311568
 
 The information is also available directly as fields of the
 :py:class:`~sherpa.fit.FitResults` object:
 
-   >>> print(res)
-   datasets       = None
-   itermethodname = none
-   methodname     = levmar
-   statname       = chi2
-   succeeded      = True
-   parnames       = ('polynom1d.c0', 'polynom1d.c2')
-   parvals        = (-11.074165156709268, 0.5036124773506225)
-   statval        = 96.8190901009578
-   istatval       = 840.2511999999999
-   dstatval       = 743.4321098990422
-   numpoints      = 6
-   dof            = 4
-   qval           = 4.675333207707564e-20
-   rstat          = 24.20477252523945
-   message        = successful termination
-   nfev           = 6
+    >>> print(res)
+    datasets       = None
+    itermethodname = none
+    methodname     = levmar
+    statname       = chi2
+    succeeded      = True
+    parnames       = ('polynom1d.c0', 'polynom1d.c2')
+    parvals        = (-11.074165156709268, 0.5036124773506225)
+    statval        = 96.8190901009578
+    istatval       = 840.2511999999999
+    dstatval       = 743.4321098990422
+    numpoints      = 6
+    dof            = 4
+    qval           = 4.675333207707564e-20
+    rstat          = 24.20477252523945
+    message        = successful termination
+    nfev           = 6
     
 The reduced chi square fit is now lower, :math:`\sim 25`, but still
 not close to 1.
@@ -263,13 +293,17 @@ The :py:class:`~sherpa.plot.DataPlot`, :py:class:`~sherpa.plot.ModelPlot`,
 and :py:class:`~sherpa.plot.FitPlot` classes can be used to
 :doc:`see how well the model represents the data <../plots/index>`.
 
-   >>> from sherpa.plot import DataPlot, ModelPlot
-   >>> dplot = DataPlot()
-   >>> dplot.prepare(f.data)
-   >>> mplot = ModelPlot()
-   >>> mplot.prepare(f.data, f.model)
-   >>> dplot.plot()
-   >>> mplot.overplot()
+.. plot::
+    :include-source:
+    :context:
+
+    >>> from sherpa.plot import DataPlot, ModelPlot
+    >>> dplot = DataPlot()
+    >>> dplot.prepare(f.data)
+    >>> mplot = ModelPlot()
+    >>> mplot.prepare(f.data, f.model)
+    >>> dplot.plot()
+    >>> mplot.overplot()
 
 .. image:: ../_static/fit/data_model_c0_c2.png
 
@@ -278,22 +312,22 @@ check to make here is to change the optimiser in case the fit is stuck
 in a local minimum. The default optimiser is
 :py:class:`~sherpa.optmethods.LevMar`:
 
-   >>> f.method.name
-   'levmar'
-   >>> original_method = f.method
+    >>> f.method.name
+    'levmar'
+    >>> original_method = f.method
 
 This can be changed to :py:class:`~sherpa.optmethods.NelderMead`
 and the data re-fit.
 
-   >>> from sherpa.optmethods import NelderMead
-   >>> f.method = NelderMead()
-   >>> resn = f.fit()
+    >>> from sherpa.optmethods import NelderMead
+    >>> f.method = NelderMead()
+    >>> resn = f.fit()
 
 In this case the statistic value has not changed, as shown by
 :py:attr:`~sherpa.fit.FitResults.dstatval` being zero:
-    
-   >>> print("Change in statistic: {}".format(resn.dstatval))
-   Change in statistic: 0.0
+
+    >>> print("Change in statistic: {}".format(resn.dstatval))
+    Change in statistic: 0.0
 
 .. note::
 
@@ -301,8 +335,8 @@ In this case the statistic value has not changed, as shown by
    new method, and use that instead of changing the
    :py:attr:`~sherpa.fit.Fit.method` attribute. For instance:
 
-   >>> fit2 = Fit(d, mdl, method=NelderMead())
-   >>> fit2.fit()
+    >>> fit2 = Fit(d, mdl, method=NelderMead())
+    >>> result2 = fit2.fit()
    
 Adjusting the model
 -------------------
@@ -319,32 +353,42 @@ polynomial to be fit, but a new model could have been tried.
 
 .. _fit_thaw_c1:
 
-   >>> mdl.c1.thaw()
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> mdl.c1.thaw()
    
 For the remainder of the analysis the original (Levenberg-Marquardt)
 optimiser will be used:
 
-   >>> f.method = original_method
+    >>> f.method = original_method
 
 .. _fit_c0_c1_c2:
 
 With :math:`c_1` allowed to vary, the fit finds a much better
 solution, with a reduced chi square value of :math:`\simeq 1.3`:
 
-   >>> res2 = f.fit()
-   >>> print(res2.format())
-   Method                = levmar
-   Statistic             = chi2
-   Initial fit statistic = 96.8191
-   Final fit statistic   = 4.01682 at function evaluation 8
-   Data points           = 6
-   Degrees of freedom    = 3
-   Probability [Q-value] = 0.259653
-   Reduced statistic     = 1.33894
-   Change in statistic   = 92.8023
-      polynom1d.c0   -9.38489     +/- 2.91751     
-      polynom1d.c1   -2.41692     +/- 0.250889    
-      polynom1d.c2   0.478273     +/- 0.0312677   
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> res2 = f.fit()
+    >>> print(res2.format())
+    Method                = levmar
+    Statistic             = chi2
+    Initial fit statistic = 96.8191
+    Final fit statistic   = 4.01682 at function evaluation 8
+    Data points           = 6
+    Degrees of freedom    = 3
+    Probability [Q-value] = 0.259653
+    Reduced statistic     = 1.33894
+    Change in statistic   = 92.8023
+       polynom1d.c0   -9.38489     +/- 2.91751
+       polynom1d.c1   -2.41692     +/- 0.250889
+       polynom1d.c2   0.478273     +/- 0.0312677
 
 The previous plot objects can be used, but the model plot has to be
 updated to reflect the new model values. Three new plot styles are used:
@@ -352,17 +396,19 @@ updated to reflect the new model values. Three new plot styles are used:
 :py:class:`~sherpa.plot.DelchiPlot` to show the residuals, and
 :py:class:`~sherpa.plot.SplitPlot` to control the layout of the plots:
 
-   >>> from sherpa.plot import DelchiPlot, FitPlot, SplitPlot
-   >>> fplot = FitPlot()
-   >>> rplot = DelchiPlot()
-   >>> splot = SplitPlot()
-   >>> mplot.prepare(f.data, f.model)
-   >>> fplot.prepare(dplot, mplot)
-   >>> splot.addplot(fplot)
-   >>> rplot.prepare(f.data, f.model, f.stat)
-   >>> splot.addplot(rplot)
+.. plot::
+    :include-source:
+    :context: close-figs
 
-.. image:: ../_static/fit/fit_delchi_c0_c1_c2.png
+    >>> from sherpa.plot import DelchiPlot, FitPlot, SplitPlot
+    >>> fplot = FitPlot()
+    >>> rplot = DelchiPlot()
+    >>> splot = SplitPlot()
+    >>> mplot.prepare(f.data, f.model)
+    >>> fplot.prepare(dplot, mplot)
+    >>> splot.addplot(fplot)
+    >>> rplot.prepare(f.data, f.model, f.stat)
+    >>> splot.addplot(rplot)
 
 The residuals plot shows, on the ordinate, :math:`\sigma = (d - m) / e` where
 :math:`d`, :math:`m`, and :math:`e` are the data, model, and error value
@@ -378,12 +424,14 @@ example the plots from above are re-used, as no settings have
 changed, so there is no need to call the
 ``prepare`` method of the component plots:
 
-   >>> from sherpa.plot import JointPlot
-   >>> jplot = JointPlot()
-   >>> jplot.plottop(fplot)
-   >>> jplot.plotbot(rplot)
+.. plot::
+    :include-source:
+    :context: close-figs
 
-.. image:: ../_static/fit/fit_delchi_c0_c1_c2_jointplot.png
+    >>> from sherpa.plot import JointPlot
+    >>> jplot = JointPlot()
+    >>> jplot.plottop(fplot)
+    >>> jplot.plotbot(rplot)
 
 The two major changes to the ``SplitPlot`` output are that the
 top plot is now taller, and the gap between the plots has
@@ -420,7 +468,6 @@ be able to find the best-fit location.
 
    >>> for p in mdl.pars[:3]:
    ...     p.val = 10
-   ...
 
 .. note::
 
@@ -468,6 +515,11 @@ to make sure that any existing file is overwritten):
       polynom1d.c1   -2.41692     +/- 0.250889    
       polynom1d.c2   0.478273     +/- 0.0312677   
 
+.. testcleanup::
+
+    >>> import pathlib
+    >>> pathlib.Path('fitpath.txt').unlink()
+
 The output file is a simple ASCII file where the columns give the
 function evaluation number, the statistic, and the parameter values::
   
@@ -485,11 +537,11 @@ function evaluation number, the statistic, and the parameter values::
 
 As can be seen, a solution is found quickly in this situation. Is it
 the same as
-:ref:`the previous attempt <fit_c0_c1_c2>`? Although the final statistic
-values are not the same, they are very close:
+:ref:`the previous attempt <fit_c0_c1_c2>`? The final statistic
+values are the same up to numerical precision:
 
    >>> res3.statval == res2.statval
-   False
+   True
    >>> res3.statval - res2.statval
    1.7763568394002505e-15
 
@@ -551,10 +603,10 @@ after the object has been created, by changing the
 :py:attr:`~sherpa.fit.Fit.estmethod` attribute. The default method
 is covariance
 
-   >>> print(f.estmethod.name)
-   covariance
+    >>> print(f.estmethod.name)
+    covariance
 
-which can be significantly faster faster, but less robust, than the
+which can be significantly faster, but less robust, than the
 confidence technique
 :ref:`shown below <fit_confidence_output>`.
 
@@ -564,36 +616,40 @@ The :py:meth:`~sherpa.fit.Fit.est_errors` method is used to calculate
 the errors on the parameters and returns a
 :py:class:`~sherpa.fit.ErrorEstResults` object:
 
-   >>> coverrs = f.est_errors()
-   >>> print(coverrs.format())
-   Confidence Method     = covariance
-   Iterative Fit Method  = None
-   Fitting Method        = levmar
-   Statistic             = chi2gehrels
-   covariance 1-sigma (68.2689%) bounds:
-      Param            Best-Fit  Lower Bound  Upper Bound
-      -----            --------  -----------  -----------
-      polynom1d.c0     -9.38489     -2.91751      2.91751
-      polynom1d.c1     -2.41692    -0.250889     0.250889
-      polynom1d.c2     0.478273   -0.0312677    0.0312677
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> coverrs = f.est_errors()
+    >>> print(coverrs.format())
+    Confidence Method     = covariance
+    Fitting Method        = levmar
+    Statistic             = chi2gehrels
+    covariance 1-sigma (68.2689%) bounds:
+       Param            Best-Fit  Lower Bound  Upper Bound
+       -----            --------  -----------  -----------
+       polynom1d.c0     -9.38489     -2.91751      2.91751
+       polynom1d.c1     -2.41692    -0.250889     0.250889
+       polynom1d.c2     0.478273   -0.0312677    0.0312677
 
 The ``EstErrResults`` object can also be displayed directly
 (in a similar manner to the ``FitResults`` object returned
 by ``fit``):
 
-   >>> print(coverrs)
-   datasets    = None
-   methodname  = covariance
-   iterfitname = none
-   fitname     = levmar
-   statname    = chi2gehrels
-   sigma       = 1
-   percent     = 68.2689492137
-   parnames    = ('polynom1d.c0', 'polynom1d.c1', 'polynom1d.c2')
-   parvals     = (-9.384889507268973, -2.4169154937357664, 0.47827334260997567)
-   parmins     = (-2.917507940156572, -0.2508893171295504, -0.031267664298717336)
-   parmaxes    = (2.917507940156572, 0.2508893171295504, 0.031267664298717336)
-   nfits       = 0
+    >>> print(coverrs)
+    datasets    = None
+    methodname  = covariance
+    iterfitname = none
+    fitname     = levmar
+    statname    = chi2gehrels
+    sigma       = 1
+    percent     = 68.2689492137
+    parnames    = ('polynom1d.c0', 'polynom1d.c1', 'polynom1d.c2')
+    parvals     = (-9.384889507268973, -2.4169154937357664, 0.47827334260997567)
+    parmins     = (-2.917507940156572, -0.2508893171295504, -0.031267664298717336)
+    parmaxes    = (2.917507940156572, 0.2508893171295504, 0.031267664298717336)
+    nfits       = 0
 
 The default is to calculate the one-sigma (68.3%) limits for
 each thawed parameter. The
@@ -627,32 +683,36 @@ Changing the error bounds
 
 The default is to calculate one-sigma errors, since:
 
-   >>> f.estmethod.sigma
-   1
+    >>> f.estmethod.sigma
+    1
 
 This can be changed, e.g. to calculate 90% errors which are
 approximately :math:`\sigma = 1.6`:
 
-   >>> f.estmethod.sigma = 1.6
-   >>> coverrs90 = f.est_errors()
-   >>> print(coverrs90.format())
-   Confidence Method     = covariance
-   Iterative Fit Method  = None
-   Fitting Method        = levmar
-   Statistic             = chi2gehrels
-   covariance 1.6-sigma (89.0401%) bounds:
-      Param            Best-Fit  Lower Bound  Upper Bound
-      -----            --------  -----------  -----------
-      polynom1d.c0     -9.38489     -4.66801      4.66801
-      polynom1d.c1     -2.41692    -0.401423     0.401423
-      polynom1d.c2     0.478273   -0.0500283    0.0500283
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> f.estmethod.sigma = 1.6
+    >>> coverrs90 = f.est_errors()
+    >>> print(coverrs90.format())
+    Confidence Method     = covariance
+    Fitting Method        = levmar
+    Statistic             = chi2gehrels
+    covariance 1.6-sigma (89.0401%) bounds:
+       Param            Best-Fit  Lower Bound  Upper Bound
+       -----            --------  -----------  -----------
+       polynom1d.c0     -9.38489     -4.66801      4.66801
+       polynom1d.c1     -2.41692    -0.401423     0.401423
+       polynom1d.c2     0.478273   -0.0500283    0.0500283
 
 .. note::
    
    As can be seen, 1.6 sigma isn't quite 90%
-   
-   >>> coverrs90.percent
-   89.0401416600884
+
+     >>> coverrs90.percent
+     89.0401416600884
 
 .. _fit_covar_matrix:
 
@@ -663,16 +723,16 @@ The errors created by :py:class:`~sherpa.estmethods.Covariance` provides
 access to the covariance matrix via the
 :py:attr:`~sherpa.fit.ErrorEstResults.extra_output` attribute:
 
-   >>> print(coverrs.extra_output)
-   [[  8.51185258e+00  -4.39950074e-02  -6.51777887e-02]
-    [ -4.39950074e-02   6.29454494e-02   6.59925111e-04]
-    [ -6.51777887e-02   6.59925111e-04   9.77666831e-04]]
+    >>> print(coverrs.extra_output)
+    [[  8.51185258e+00  -4.39950074e-02  -6.51777887e-02]
+     [ -4.39950074e-02   6.29454494e-02   6.59925111e-04]
+     [ -6.51777887e-02   6.59925111e-04   9.77666831e-04]]
 
 The order of these rows and columns matches that of the
 :py:attr:`~sherpa.fit.ErrorEstResults.parnames` field:
-    
-   >>> print([p.split('.')[1] for p in coverrs.parnames])
-   ['c0', 'c1', 'c2']
+
+    >>> print([p.split('.')[1] for p in coverrs.parnames])
+    ['c0', 'c1', 'c2']
 
 Changing the estimator
 ----------------------
@@ -684,15 +744,23 @@ thawed parameter and varies it until it finds the point where the
 statistic has increased enough (the value is determined by the
 ``sigma`` parameter and assumes the statistic is chi-squared
 distributed). This is repeated separately for the upper and
-lower bounds for each parameter. Since this can take time for
+lower bounds for each parameter.
+
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> from sherpa.estmethods import Confidence
+    >>> f.estmethod = Confidence()
+    >>> conferrs = f.est_errors()
+
+Since this can take time for
 complicated fits, the default behavior is to display a message
 when each limit is found (the
 :ref:`order these messages are displayed can change <fit_multi_core>`
 from run to run):
-   
-   >>> from sherpa.estmethods import Confidence
-   >>> f.estmethod = Confidence()
-   >>> conferrs = f.est_errors()
+
    polynom1d.c0 lower bound:	-2.91751
    polynom1d.c1 lower bound:	-0.250889
    polynom1d.c0 upper bound:	2.91751
@@ -705,17 +773,16 @@ return value is a :py:class:`~sherpa.fit.ErrorEstResults` object:
 
 .. _fit_confidence_output:
 
-   >>> print(conferrs.format())
-   Confidence Method     = confidence
-   Iterative Fit Method  = None
-   Fitting Method        = levmar
-   Statistic             = chi2gehrels
-   confidence 1-sigma (68.2689%) bounds:
-      Param            Best-Fit  Lower Bound  Upper Bound
-      -----            --------  -----------  -----------
-      polynom1d.c0     -9.38489     -2.91751      2.91751
-      polynom1d.c1     -2.41692    -0.250889     0.250889
-      polynom1d.c2     0.478273   -0.0312677    0.0312677
+    >>> print(conferrs.format())
+    Confidence Method     = confidence
+    Fitting Method        = levmar
+    Statistic             = chi2gehrels
+    confidence 1-sigma (68.2689%) bounds:
+       Param            Best-Fit  Lower Bound  Upper Bound
+       -----            --------  -----------  -----------
+       polynom1d.c0     -9.38489     -2.91751      2.91751
+       polynom1d.c1     -2.41692    -0.250889     0.250889
+       polynom1d.c2     0.478273   -0.0312677    0.0312677
 
 Unlike the covariance errors, these are
 :ref:`not guaranteed to be symmetrical <simple_user_model_confidence_bounds>`
@@ -747,10 +814,10 @@ not, and the
 determines how many CPU cores are used (the default is
 to use all available cores).
 
-   >>> f.estmethod.name
-   'confidence'
-   >>> f.estmethod.parallel
-   True
+    >>> f.estmethod.name
+    'confidence'
+    >>> f.estmethod.parallel
+    True
 
 The :py:class:`~sherpa.estmethods.Covariance` technique does not
 provide a parallel option.
@@ -765,22 +832,25 @@ of parameters by setting the ``parlist`` parameter of the
 :py:meth:`~sherpa.fit.Fit.est_errors` call. As an example, the
 errors on just :math:`c_1` can be evaluated with the following:
 
-   >>> c1errs = f.est_errors(parlist=(mdl.c1, ))
-   polynom1d.c1 lower bound:	-0.250889
-   polynom1d.c1 upper bound:	0.250889
-   >>> print(c1errs)
-   datasets    = None
-   methodname  = confidence
-   iterfitname = none
-   fitname     = levmar
-   statname    = chi2gehrels
-   sigma       = 1
-   percent     = 68.26894921370858
-   parnames    = ('polynom1d.c1',)
-   parvals     = (-2.4169154937357664,)
-   parmins     = (-0.25088931712955054,)
-   parmaxes    = (0.25088931712955054,)
-   nfits       = 2
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> c1errs = f.est_errors(parlist=(mdl.c1, ))
+    >>> print(c1errs)
+    datasets    = None
+    methodname  = confidence
+    iterfitname = none
+    fitname     = levmar
+    statname    = chi2gehrels
+    sigma       = 1
+    percent     = 68.26894921370858
+    parnames    = ('polynom1d.c1',)
+    parvals     = (-2.4169154937357664,)
+    parmins     = (-0.25088931712955054,)
+    parmaxes    = (0.25088931712955054,)
+    nfits       = 2
 
 Visualizing the errors
 ----------------------
@@ -793,12 +863,14 @@ other thawed parameters, and displays the statistic value
 :ref:`calculate the errors <fit_confidence_call>`
 are valid):
 
-   >>> from sherpa.plot import IntervalProjection
-   >>> iproj = IntervalProjection()
-   >>> iproj.calc(f, mdl.c1)
-   >>> iproj.plot()
-   
-.. image:: ../_static/fit/iproj_c1_auto.png
+.. plot::
+    :include-source:
+    :context: close-figs
+
+    >>> from sherpa.plot import IntervalProjection
+    >>> iproj = IntervalProjection()
+    >>> iproj.calc(f, mdl.c1)
+    >>> iproj.plot()
 
 .. _fit_iproj_manual:
 
@@ -809,7 +881,12 @@ to change these defaults - e.g. by explicitly setting the ``min``
 and ``max`` values to use - or, as shown below, by scaling the
 covariance error estimate using the ``fac`` argument:
 
-   >>> iproj.prepare(fac=5, nloop=51)
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> iproj.prepare(fac=5, nloop=51)
 
 The number of points has also been increased (the ``nloop`` argument)
 to keep the curve smooth. Before re-plotting, the 
@@ -819,14 +896,16 @@ The one-sigma range is also added as vertical dotted
 lines using
 :py:meth:`~sherpa.plot.IntervalProjection.vline`:
     
-   >>> iproj.calc(f, mdl.c1)
-   >>> iproj.plot()
-   >>> pmin = c1errs.parvals[0] + c1errs.parmins[0]
-   >>> pmax = c1errs.parvals[0] + c1errs.parmaxes[0]
-   >>> iproj.vline(pmin, overplot=True, linestyle='dot')
-   >>> iproj.vline(pmax, overplot=True, linestyle='dot')
+.. plot::
+    :include-source:
+    :context: close-figs
 
-.. image:: ../_static/fit/iproj_c1_manual.png
+    >>> iproj.calc(f, mdl.c1)
+    >>> iproj.plot()
+    >>> pmin = c1errs.parvals[0] + c1errs.parmins[0]
+    >>> pmax = c1errs.parvals[0] + c1errs.parmaxes[0]
+    >>> iproj.vline(pmin, overplot=True, linestyle='dot')
+    >>> iproj.vline(pmax, overplot=True, linestyle='dot')
 
 .. note::
 
@@ -843,12 +922,14 @@ final visualization is created with a call to
 :py:meth:`~sherpa.plot.RegionProjection.contour` rather than
 plot:    
 
-   >>> from sherpa.plot import RegionProjection
-   >>> rproj = RegionProjection()
-   >>> rproj.calc(f, mdl.c0, mdl.c2)
-   >>> rproj.contour()
-   
-.. image:: ../_static/fit/rproj_c0_c2_auto.png
+.. plot::
+    :include-source:
+    :context: close-figs
+
+    >>> from sherpa.plot import RegionProjection
+    >>> rproj = RegionProjection()
+    >>> rproj.calc(f, mdl.c0, mdl.c2)
+    >>> rproj.contour()
 
 .. _fit_rproj_manual:
 
@@ -857,20 +938,24 @@ The limits can be changed, either using the
 :ref:`interval-projection case <fit_iproj_manual>`), or
 with the ``min`` and ``max`` parameters:
 
-   >>> rproj.prepare(min=(-22, 0.35), max=(3, 0.6), nloop=(41, 41))
-   >>> rproj.calc(f, mdl.c0, mdl.c2)
-   >>> rproj.contour()
-   >>> xlo, xhi = plt.xlim()
-   >>> ylo, yhi = plt.ylim()
-   >>> def get_limits(i):
-   ...     return conferrs.parvals[i] + \
-   ...            np.asarray([conferrs.parmins[i],
-   ...                        conferrs.parmaxes[i]])
-   ...
-   >>> plt.vlines(get_limits(0), ymin=ylo, ymax=yhi)
-   >>> plt.hlines(get_limits(2), xmin=xlo, xmax=xhi)
+.. plot::
+    :include-source:
+    :context: close-figs
 
-.. image:: ../_static/fit/rproj_c0_c2_manual.png
+    >>> rproj.prepare(min=(-22, 0.35), max=(3, 0.6), nloop=(41, 41))
+    >>> rproj.calc(f, mdl.c0, mdl.c2)
+    >>> rproj.contour()
+    >>> xlo, xhi = plt.xlim()
+    >>> ylo, yhi = plt.ylim()
+    >>> def get_limits(i):
+    ...     return conferrs.parvals[i] + \
+    ...            np.asarray([conferrs.parmins[i],
+    ...                        conferrs.parmaxes[i]])
+    ...
+    >>> # plt.vlines returns an object. We don't need it any further for
+    >>> # this example, so we just put it in a throwaway variable to avoid extra screen output.
+    >>> _ = plt.vlines(get_limits(0), ymin=ylo, ymax=yhi)
+    >>> _ = plt.hlines(get_limits(2), xmin=xlo, xmax=xhi)
 
 The vertical lines are added to indicate the one-sigma errors
 :ref:`calculated by the confidence method earlier <fit_confidence_call>`.
@@ -885,26 +970,31 @@ are calculated (the ``extent`` argument to matplotlib's
 ``imshow`` command requires the pixel edges, not the
 centers):
 
-   >>> xmin, xmax = rproj.x0.min(), rproj.x0.max()
-   >>> ymin, ymax = rproj.x1.min(), rproj.x1.max()
-   >>> nx, ny = rproj.nloop
-   >>> hx = 0.5 * (xmax - xmin) / (nx - 1)
-   >>> hy = 0.5 * (ymax - ymin) / (ny - 1)
-   >>> extent = (xmin - hx, xmax + hx, ymin - hy, ymax + hy)
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> xmin, xmax = rproj.x0.min(), rproj.x0.max()
+    >>> ymin, ymax = rproj.x1.min(), rproj.x1.max()
+    >>> nx, ny = rproj.nloop
+    >>> hx = 0.5 * (xmax - xmin) / (nx - 1)
+    >>> hy = 0.5 * (ymax - ymin) / (ny - 1)
+    >>> extent = (xmin - hx, xmax + hx, ymin - hy, ymax + hy)
 
 The statistic data is stored as a one-dimensional array, and
 needs to be reshaped before it can be displayed:
 
-   >>> y = rproj.y.reshape((ny, nx))
+.. plot::
+    :include-source:
+    :context: close-figs
 
-   >>> plt.clf()
-   >>> plt.imshow(y, origin='lower', extent=extent, aspect='auto', cmap='viridis_r')
-   >>> plt.colorbar()
-   >>> plt.xlabel(rproj.xlabel)
-   >>> plt.ylabel(rproj.ylabel)
-   >>> rproj.contour(overplot=True)
-
-.. image:: ../_static/fit/rproj_c0_c2_image.png
+    >>> y = rproj.y.reshape((ny, nx))
+    >>> _ = plt.imshow(y, origin='lower', extent=extent, aspect='auto', cmap='viridis_r')
+    >>> _ = plt.colorbar()
+    >>> _ = plt.xlabel(rproj.xlabel)
+    >>> _ = plt.ylabel(rproj.ylabel)
+    >>> rproj.contour(overplot=True)
    
 .. _fit_simultaneous:
 
