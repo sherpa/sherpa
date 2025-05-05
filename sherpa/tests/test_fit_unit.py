@@ -3414,3 +3414,55 @@ def test_sigmarej_invalid_argument(arg, value):
     with pytest.raises(SherpaErr,
                        match="^Generic Error$"):
         f.fit()
+
+
+def test_change_opt_method_after_fit_object_creation():
+    """Check we can change the method after creating the fit object?
+
+    This is a regression test for issue #2296.
+
+    """
+    data = Data1D('data1', x=np.arange(5),
+                  y=[3.4, 3.6, 3.3, 3.5, 3.4],
+                  staterror=[0.1, 0.2, 0.14, 0.09, 0.1])
+    model = Const1D('model')
+
+    fitter = Fit(data=data, model=model, method=NelderMead())
+    res_nm = fitter.fit()
+    assert fitter.method == fitter._iterfit.method
+
+    fitter.method = MonCar()
+    model.reset()
+    res_mc = fitter.fit()
+    assert fitter.method == fitter._iterfit.method
+    # While both converge, the output message is different.
+    assert res_nm != res_mc
+    assert res_nm.nfev != res_mc.nfev
+
+
+def test_change_stat_after_fit_object_creation():
+    """Check we can change the method after creating the fit object?
+
+    This is a regression test for issue #2063.
+
+    """
+    data = Data1D('data1', x=np.arange(5),
+                  y=[4,5,2,3,5],
+                  staterror=[0.1, 0.2, 0.14, 0.09, 0.1])
+    model = Const1D('model')
+
+    lsstat = LeastSq()
+    fitter = Fit(data=data, model=model, stat=lsstat)
+    res_ls = fitter.fit()
+    assert fitter.stat == lsstat
+    assert fitter.stat == fitter._iterfit.stat
+
+    chigstat = Chi2Gehrels()
+    fitter.stat = chigstat
+    model.reset()
+    res_chig = fitter.fit()
+    assert fitter.stat == chigstat
+    assert fitter.stat == fitter._iterfit.stat
+    # While both converge, the statval is obviously different.
+    assert res_ls.statval != res_chig.statval
+    assert res_ls.statname != res_chig.statname
