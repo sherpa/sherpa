@@ -87,37 +87,38 @@ def convert_bounds_to_scipy(parmins: ArrayType,
     return bounds
 
 
+# At first sight, this looks like it should be a decorator, but instead
+# we make it a higher-order function, because decorated functions cannot
+# be pickled.
+# https://pythonicthoughtssnippets.github.io/2020/08/09/PTS13-rethinking-python-decorators.html
 def wrap_scipy_fcn(func: Callable,
-                   requires_finite_bounds: bool) -> OptFunc:
+                   requires_finite_bounds: bool,
+                   stat: StatFunc,
+                   x0: np.ndarray,
+                   xmin: np.ndarray,
+                   xmax: np.ndarray,
+                   **kwargs) -> OptReturn:
     """Wrap a function in scipy.optimize to the Sherpa interface.
     """
     sig = inspect.signature(func)
 
-    @functools.wraps(func)
-    def fcn(stat: StatFunc,
-         x0: np.ndarray,
-         xmin: np.ndarray,
-         xmax: np.ndarray,
-         **kwargs) -> OptReturn:
+    def stat_wrapper(x):
+        # The function is called with the parameters
+        # and returns the statistic and per-bin values
+        return stat(x)[0]
 
-        def stat_wrapper(x):
-            # The function is called with the parameters
-            # and returns the statistic and per-bin values
-            return stat(x)[0]
+    converted_args: dict = {}
+    if 'x0' in sig.parameters.keys():
+        converted_args['x0'] = x0
+    if 'bounds' in sig.parameters.keys():
+        converted_args['bounds'] = convert_bounds_to_scipy(xmin, xmax,
+                                                            requires_finite_bounds)
 
-        converted_args: dict = {}
-        if 'x0' in sig.parameters.keys():
-            converted_args['x0'] = x0
-        if 'bounds' in sig.parameters.keys():
-            converted_args['bounds'] = convert_bounds_to_scipy(xmin, xmax,
-                                                                requires_finite_bounds)
-
-        result = func(stat_wrapper, **converted_args, **kwargs)
-        for arg in ['bounds', 'ranges']:
-            if arg in converted_args:
-                result[f'input_{arg}'] = converted_args[arg]
-        return (result.success, result.x, result.fun, result.message, result)
-    return fcn
+    result = func(stat_wrapper, **converted_args, **kwargs)
+    for arg in ['bounds', 'ranges']:
+        if arg in converted_args:
+            result[f'input_{arg}'] = converted_args[arg]
+    return (result.success, result.x, result.fun, result.message, result)
 
 
 SCIPY_KEYWORDS_NOT_APPLICABLE = ['fun', 'func',
@@ -162,9 +163,10 @@ class ScipyBase(OptMethod):
                               doc='The default settings for the optimiser.')
 
     def __init__(self, name : str | None = None) -> None:
-        super().__init__(name=f'scipy.optimize.{self._scipy_func.__name__}' if name is None else name,
-                         optfunc=wrap_scipy_fcn(self._scipy_func,
-                                                self._requires_finite_bounds),
+         super().__init__(name=f'scipy.optimize.{self._scipy_func.__name__}' if name is None else name,
+                         optfunc=functools.partial(wrap_scipy_fcn,
+                                                   self._scipy_func,
+                                                   self._requires_finite_bounds),
                         )
 
 
