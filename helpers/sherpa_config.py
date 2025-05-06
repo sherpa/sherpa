@@ -36,6 +36,7 @@ class sherpa_config(Command):
                     ('fftw_include_dirs', None, "Where the fftw3 headers are located, if fftw is 'local'"),
                     ('fftw_lib_dirs', None, "Where the fftw3 libraries are located, if fftw is 'local'"),
                     ('fftw_libraries', None, "Name of the libraries that should be linked as fftw3"),
+                    ('disable_region', None, "Disable the use of the region library"),
                     ('region', None, "Whether Sherpa should build the embedded region library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
                     ('region_include_dirs', None, "Where the region headers are located, if region is 'local'"),
                     ('region_lib_dirs', None, "Where the region libraries are located, if region is 'local'"),
@@ -60,6 +61,7 @@ class sherpa_config(Command):
         self.fftw_include_dirs = None
         self.fftw_lib_dirs = None
         self.fftw_libraries = 'fftw3'
+        self.disable_region = False
         self.region = None
         self.region_include_dirs = None
         self.region_lib_dirs = None
@@ -87,17 +89,18 @@ class sherpa_config(Command):
         if self.fftw_lib_dirs is None:
             self.fftw_lib_dirs = libdir
 
-        if self.region_include_dirs is None:
-            self.region_include_dirs = incdir
+        if not self.disable_region:
+            if self.region_include_dirs is None:
+                self.region_include_dirs = incdir
 
-        if self.region_lib_dirs is None:
-            self.region_lib_dirs = libdir
+            if self.region_lib_dirs is None:
+                self.region_lib_dirs = libdir
 
-        # It is not clear that the other boolean options work
-        # correctly when set to False/false.
-        #
-        if not isinstance(self.region_use_cxc_parser, bool):
-            self.region_use_cxc_parser = self.region_use_cxc_parser.lower() == "true"
+            # It is not clear that the other boolean options work
+            # correctly when set to False/false.
+            #
+            if not isinstance(self.region_use_cxc_parser, bool):
+                self.region_use_cxc_parser = self.region_use_cxc_parser.lower() == "true"
 
         if self.wcs_include_dirs is None:
             self.wcs_include_dirs = incdir
@@ -116,16 +119,19 @@ class sherpa_config(Command):
         # can we find ascdm.h (if so we can support FITS region files as long
         # as the other settings are set up to include ascdm)?
         #
-        region_macros = None
-        if self.region_use_cxc_parser:
-            region_macros = [("USE_CXCDM_PARSER", None)]
+        if not self.disable_region:
+            region_macros = None
+            if self.region_use_cxc_parser:
+                region_macros = [("USE_CXCDM_PARSER", None)]
+
+            regext = build_ext(self, 'region', define_macros=region_macros)
+            self.distribution.ext_modules.append(regext)
 
         psfext = build_ext(self, 'psf', 'fftw')
-        wcsext = build_ext(self, 'wcs')
-        regext = build_ext(self, 'region', define_macros=region_macros)
         self.distribution.ext_modules.append(psfext)
+
+        wcsext = build_ext(self, 'wcs')
         self.distribution.ext_modules.append(wcsext)
-        self.distribution.ext_modules.append(regext)
 
         configure = ['./configure', '--prefix=' + self.install_dir,
                      '--with-pic', '--enable-standalone']
@@ -136,7 +142,7 @@ class sherpa_config(Command):
             configure.extend(self.configure.split(' '))
         if self.fftw != 'local':
             configure.append('--enable-fftw')
-        if self.region != 'local':
+        if not self.disable_region and self.region != 'local':
             configure.append('--enable-region')
 
         # Note that we hack in the "correct" location for the group
