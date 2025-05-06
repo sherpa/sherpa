@@ -42,6 +42,7 @@ class sherpa_config(Command):
                     ('region_lib_dirs', None, "Where the region libraries are located, if region is 'local'"),
                     ('region_libraries', None, "Name of the libraries that should be linked as region"),
                     ('region_use_cxc_parser', None, "If set to True than use the CXC Data Model library to parse region files"),
+                    ('disable_wcs', None, "Disable the use of the wcs library"),
                     ('wcs', None, "Whether Sherpa should build the embedded wcs library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
                     ('wcs_include_dirs', None, "Where the wcs subroutines headers are located"),
                     ('wcs_lib_dirs', None, "Where the wcs subroutines libraries are located"),
@@ -67,6 +68,7 @@ class sherpa_config(Command):
         self.region_lib_dirs = None
         self.region_libraries = 'region'
         self.region_use_cxc_parser = False
+        self.disable_wcs = False
         self.wcs = None
         self.wcs_include_dirs = None
         self.wcs_lib_dirs = None
@@ -102,11 +104,12 @@ class sherpa_config(Command):
             if not isinstance(self.region_use_cxc_parser, bool):
                 self.region_use_cxc_parser = self.region_use_cxc_parser.lower() == "true"
 
-        if self.wcs_include_dirs is None:
-            self.wcs_include_dirs = incdir
+        if not self.disable_wcs:
+            if self.wcs_include_dirs is None:
+                self.wcs_include_dirs = incdir
 
-        if self.wcs_lib_dirs is None:
-            self.wcs_lib_dirs = libdir
+            if self.wcs_lib_dirs is None:
+                self.wcs_lib_dirs = libdir
 
         if self.group_location is None:
             self.group_location = os.path.join(pydir, 'group.so')
@@ -130,8 +133,9 @@ class sherpa_config(Command):
         psfext = build_ext(self, 'psf', 'fftw')
         self.distribution.ext_modules.append(psfext)
 
-        wcsext = build_ext(self, 'wcs')
-        self.distribution.ext_modules.append(wcsext)
+        if not self.disable_wcs:
+            wcsext = build_ext(self, 'wcs')
+            self.distribution.ext_modules.append(wcsext)
 
         configure = ['./configure', '--prefix=' + self.install_dir,
                      '--with-pic', '--enable-standalone']
@@ -168,7 +172,7 @@ class sherpa_config(Command):
             else:
                 self.distribution.data_diles.extend(dfiles)
 
-        if self.wcs != 'local':
+        if not self.disable_wcs and self.wcs != 'local':
             configure.append('--enable-wcs')
 
         self.warn(f'built configure string {configure}')
