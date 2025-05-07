@@ -83,7 +83,6 @@ class sherpa_config(Command):
     def finalize_options(self):
         incdir = os.path.join(self.install_dir, 'include')
         libdir = os.path.join(self.install_dir, 'lib')
-        pydir = os.path.join(libdir, f'python{version}', 'site-packages')
 
         if self.fftw_include_dirs is None:
             self.fftw_include_dirs = incdir
@@ -110,6 +109,12 @@ class sherpa_config(Command):
 
             if self.wcs_lib_dirs is None:
                 self.wcs_lib_dirs = libdir
+
+        # Note that the directory is not assumed to be called
+        # "lib", unlike libdir above.
+        #
+        pydir = os.path.join(self.install_dir, sys.platlibdir,
+                             f'python{version}', 'site-packages')
 
         if self.group_location is None:
             self.group_location = os.path.join(pydir, 'group.so')
