@@ -1,6 +1,6 @@
-**************************************
-The sherpa.optmethodss.optscipy module
-**************************************
+*************************************
+The sherpa.optmethods.optscipy module
+*************************************
 
 .. currentmodule:: sherpa.optmethods.optscipy
 
