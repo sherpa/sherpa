@@ -5,9 +5,7 @@ Fitting the data
 .. todo::
 
    In "Estimating Errors", the warning block needs work.
-   The "Simultaneous Fits" section probably needs an example, maybe
-   moving to a separate page.
-   The "Poisson stats" section needs looking at.
+
    
 The :py:class:`~sherpa.fit.Fit` class takes the
 :doc:`data <../data/index>` and :doc:`model expression <../models/index>`
@@ -244,11 +242,6 @@ and the best-fit parameter values
 The return value has a :py:meth:`~sherpa.fit.FitResults.format` method which
 provides a summary of the fit:
 
-.. plot::
-    :include-source:
-    :context:
-    :nofigs:
-
     >>> print(res.format())
     Method                = levmar
     Statistic             = chi2
@@ -304,8 +297,6 @@ and :py:class:`~sherpa.plot.FitPlot` classes can be used to
     >>> mplot.prepare(f.data, f.model)
     >>> dplot.plot()
     >>> mplot.overplot()
-
-.. image:: ../_static/fit/data_model_c0_c2.png
 
 As can be seen, the model isn't able to fully describe the data. One
 check to make here is to change the optimiser in case the fit is stuck
@@ -588,16 +579,17 @@ suggested reference is
 
 Estimating errors
 =================
-
-.. note::
-
-   Should I add a paragraph mentioning it can be a good idea to
-   rerun ``f.fit()`` to make sure any changes haven't messsed up
-   the location?
-
 There are two methods available to estimate errors from the fit object:
 :py:class:`~sherpa.estmethods.Covariance` and
-:py:class:`~sherpa.estmethods.Confidence`. The method to use can be set
+:py:class:`~sherpa.estmethods.Confidence`.
+Error estimation explores the parameter space around the best-fit
+solution to find the range of values that are consistent with the
+data. Thus, it is important to have the model at a good fit before running
+either of these methods. The easiest way to do that is to simply run
+
+    >>> fit_res = f.fit()
+
+again. The method to use can be set
 when creating the fit object - using the ``estmethod`` parameter - or
 after the object has been created, by changing the
 :py:attr:`~sherpa.fit.Fit.estmethod` attribute. The default method
@@ -673,8 +665,8 @@ call.
    enough. See the ``max_rstat`` field of the
    :py:class:`~sherpa.estmethods.EstMethod` object.
 
-   Give the error if this does not happen (e.g. if c1 has not
-   been fit)?
+   Running an error estimation when the fit is not good enough will
+   issue an error.
 
 .. _fit_change_sigma:
    
@@ -996,28 +988,17 @@ needs to be reshaped before it can be displayed:
     >>> _ = plt.ylabel(rproj.ylabel)
     >>> rproj.contour(overplot=True)
    
-.. _fit_simultaneous:
 
-Simultaneous fits
-=================
+More on fitting
+===============
 
-Sherpa uses the 
-:py:class:`~sherpa.data.DataSimulFit` and
-:py:class:`~sherpa.models.model.SimulFitModel`
-classes to fit multiple data seta and models simultaneously.
-This can be done explicitly, by combining individual data sets
-and models into instances of these classes, or implicitly
-with the :py:meth:`~sherpa.fit.Fit.simulfit` method.
+.. toctree::
+   :maxdepth: 2
 
-It only makes sense to perform a simultaneous fit if there is
-some "link" between the various data sets or models, such
-as sharing one or model components or
-:ref:`linking model parameters <params-link>`.
+   simultaneousfits
+   poisson
+   strategies
 
-Poisson stats
-=============
-
-Should there be something about using Poisson stats?    
 
 Reference/API
 =============
