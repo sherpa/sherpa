@@ -1,3 +1,5 @@
+.. _optimizers:
+
 *******************************************************
 Optimisers: How to improve the current parameter values
 *******************************************************
@@ -37,24 +39,69 @@ These settings are available both as fields of the object and via
 the :py:attr:`~sherpa.optmethods.OptMethod.config` dictionary
 field.
 
-Additional optimisers can be built by extending from the
-:py:class:`sherpa.optmethods.OptMethod` class. This can be used
+In addition to the built-in optimisers in `sherpa.optmethods.buildin`,
+Sherpa includes an interface to several of the optimizers in
+`scipy.optimize`, which will be available if the `scipy` package
+is installed in your Python environment.
+Available optimisers are listed in the `Reference/API` section below.
+
+More optimisers can be built with the
+:py:class:`sherpa.optmethods.OptMethod` class; a detailed example is given
+in the documentation of that class. This can be used
 to provide access to external packages such as
 `CERN's MINUIT optimisation library <https://iminuit.readthedocs.io>`_.
+
 
 Choosing an optimiser
 =====================
 
-.. todo::
+Different optimisers have different strengths and weaknesses, and
+there is no single best choice for all problems - that is why Sherpa
+provides a range of them. Since optimisers are usually used with
+`~sherpa.fit.Fit`, we discuss the strategies for choosing an
+optimiser in practice in :doc:`the section on fitting <../fit/index>`.
 
-   Need to work on this section.
+Below is some background information on the mathematics of optimisation
+and the optimisers implemented in Sherpa. A reader more interested in
+running Sherpa can skip this section and go straight to the
+:doc:`section on fitting <../fit/index>`.
 
-.. warning::
+For further reading, we also encourage to look at the very
+accessible `Scipy User Guide <https://docs.scipy.org/doc/scipy/tutorial/optimize.html>`_ and
+the `"explanation" chapters of the optimagic package <https://docs.scipy.org/doc/scipy/tutorial/optimize.html>`_.
+For the optimisers in Sherpa, references to the original papers are given in the
+documentation for the individual optimisers.
 
-   The following may not correctly represent Sherpa's current capabilities,
-   so please take care when interpreting this section.
 
-The following information is adapted from a memo written by
+In general, the best assurance that the correct minimum has been found in a
+particular calculation is careful examination of the nature of the solution
+(e.g., by plotting a fitted function over data), and some confidence that the
+full region that the minimum may lie in has been well searched by the algorithm
+used, we will show examples in the :doc:`section on fitting <../fit/index>`.
+
+
+Some points to take away from the discussions in the rest of this document.
+
+  1. Never accept the result of a minimization using a single optimisation run;
+     always test the minimum using a different method.
+
+  2. Check that the result of the minimization does not have parameter values
+     at the edges of the parameter space. If this happens, then the fit must be
+     disregarded since the minimum lies outside the space that has been
+     searched, or the minimization missed the minimum.
+
+  3. Get a feel for the range of values of the target function (in Sherpa this
+     is the fit statistic), and the stability of the solution, by starting the
+     minimization from several different parameter values.
+
+  4. Always check that the minimum "looks right" by visualizing the
+     model and the data.
+
+
+Background information on different types of optimisers
+=======================================================
+
+The following sections are adapted from a memo written by
 Mark Birkinshaw (1998).
 
 The minimization of mathematical functions is a difficult operation. A general
@@ -75,31 +122,6 @@ of the function and find plausible local minima, which will often contain
 the physically-meaningful minimum in the types of problem with which Sherpa
 deals.
 
-In general, the best assurance that the correct minimum has been found in a
-particular calculation is careful examination of the nature of the solution
-(e.g., by plotting a fitted function over data), and some confidence that the
-full region that the minimum may lie in has been well searched by the algorithm
-used. This document seeks to give the reader some information about what the
-different choices of algorithm will mean in terms of run-time and confidence of
-locating a good minimum.
-
-Some points to take away from the discussions in the rest of this document.
-
-  1. Never accept the result of a minimization using a single optimization run;
-     always test the minimum using a different method.
-
-  2. Check that the result of the minimization does not have parameter values
-     at the edges of the parameter space. If this happens, then the fit must be
-     disregarded since the minimum lies outside the space that has been
-     searched, or the minimization missed the minimum.
-
-  3. Get a feel for the range of values of the target function (in Sherpa this
-     is the fit statistic), and the stability of the solution, by starting the
-     minimization from several different parameter values.
-
-  4. Always check that the minimum "looks right" by visualizing the
-     model and the data.
-
 Sherpa contains two types of routine for minimizing a fit statistic. I will
 call them the "single-shot" routines, which start from a guessed set of
 parameters, and then try to improve the parameters in a continuous fashion, and
@@ -107,8 +129,8 @@ the "scatter-shot" routines, which try to look at parameters over the entire
 permitted hypervolume to see if there are better minima than near the starting
 guessed set of parameters.
 
-Single-shot techniques
-----------------------
+Single-shot techniques (or "local" techniques)
+----------------------------------------------
 
 As the reader might expect, the single-shot routines are relatively quick, but
 depend critically on the guessed initial parameter values :math:`{\bf x}_0`
@@ -120,7 +142,8 @@ point as the next guess, :math:`{\bf x}_1`, if the fit statistic is smaller
 than at the first point, and modify the search procedure if it isn't
 smaller. The routines continue to run until one of the following occurs:
 
-  1. all search directions result in an increased value of the fit statistic;
+  1. all search directions result in an increased value of the fit statistic
+     (i.e., the search has converged to a local or global minimum);
   2. an excessive number of steps have been taken; or
   3. something strange happens to the fit statistic (e.g., it turns out to be
      discontinuous in some horrible way).
@@ -192,13 +215,13 @@ Bearing this in mind, the single-shot minimizers in Sherpa are listed below:
   with progressive movement towards the dominant local minimum. Since
   this technique uses information about the local curvature of the fit
   statistic as well as its local gradients, the approach tends to stabilize the
-  result in somce cases. I regard the techniques implemented in Sherpa as being
+  result in some cases. I regard the techniques implemented in Sherpa as being
   good minimum-refiners for simple local topologies, since more assumptions
   about topology are made than in the NelderMead approach, but bad at
   finding global minima for target functions with complicated topologies.
 
-Scatter-shot techniques
------------------------
+Scatter-shot techniques (or "global" techniques)
+------------------------------------------------
 
 Although a bit ad hoc, these techniques attempt to locate a decent minimum over
 the entire range of the search parameter space. Because they involve searching
@@ -210,19 +233,19 @@ The routines are listed below:
 :py:class:`~sherpa.optmethods.GridSearch`
   This routine simply searches a grid in each of the search parameters,
   where the spacing is uniform between the minimum and maximum
-  value of each parameter. There is an option to refine the fit
-  at each point, by setting the
-  :py:attr:`~sherpa.optmethods.GridSearch.method` attribute to one of the
-  single-shot optimisers, but this is not set by default, as it can
-  significantly increase the time required to fit the data.
+  value of each parameter.
+  This often requires many function evaluations and takes a long time
+  to run. Even if there are only seven parameters (e.g. two Gaussians with
+  position, amplitude, and width plus a constant background) and we
+  want to search each parameter in 10 steps, we already need 100000
+  function evaluations, while a Levenberg-Marquardt optimiser might find
+  that same minimum in a few hundred evaluations.
+
   The coarseness of the grid sets how precise a root will be found,
   and if the fit statistic has significant structure on a
-  smaller scale, then the grid-searcher will miss it completely. This is a good
-  technique for finding an approximation to the minimum for a slowly-varying
-  function. It is a bad technique for getting accurate estimates of the
-  location of a minimum, or for examining a fit statistic with lots of
-  subsidiary maxima and minima within the search space. It is intended
-  for use with
+  smaller scale, then the grid-searcher will miss it completely.
+
+  On the other hand, GridSearch is very useful together with
   :py:class:`template models <sherpa.models.template.TemplateModel>`.
 
 :py:class:`Monte Carlo <sherpa.optmethods.MonCar>`
@@ -232,30 +255,6 @@ The routines are listed below:
   be used to find solutions to complex search spaces but is not guaranteed
   to find a global minimum. It is over-kill for relatively simple problems.
 
-Summary and best-buy strategies
-===============================
-
-Overall, the single-shot methods are best regarded as ways of refining minima
-located in other ways: from good starting guesses, or from the scatter-shot
-techniques. Using intelligence to come up with a good first-guess solution is
-the best approach, when the single-shot refiners can be used to get accurate
-values for the parameters at the minimum. However, I would certainly recommend
-running at least a second single-shot minimizer after the first, to get some
-indication that one set of assumptions about the shape of the minimum is not
-compromising the solution. It is probably best if the code rescales the
-parameter range between minimizations, so that a completely different sampling
-of the function near the trial minimum is being made.
-
-===================  ============  =========  ==========================
-Optimiser            Type          Speed      Commentary
-===================  ============  =========  ==========================
-NelderMead           single-shot   fast       OK for refining minima
-Levenberg-Marquardt  single-shot   fast       OK for refining minima,
-                                              should **only** be used
-                                              with chi-square statistics
-GridSearch           scatter-shot  slow       OK for smooth functions
-Monte Carlo          scatter-shot  very slow  Good in many cases
-===================  ============  =========  ==========================
 
 Reference/API
 =============
@@ -264,5 +263,5 @@ Reference/API
    :maxdepth: 2
 
    optmethods
-   optfcts
    optscipy
+   optfcts
