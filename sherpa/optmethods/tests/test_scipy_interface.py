@@ -78,7 +78,7 @@ def test_convert_bounds_to_scipy_raises():
     # Test case 2: Mixed bounds
     xmin = np.array([-10, 0])
     xmax = np.array([10, hugeval])
-    with pytest.raises(ValueError, match="The scipy function requires finite bounds"):
+    with pytest.raises(ValueError, match="The optimizer requires finite bounds"):
         optscipy.convert_bounds_to_scipy(xmin, xmax, requires_finite_bounds=True)
 
 
@@ -173,7 +173,7 @@ def test_scipy_unconstrainted(optimizer, works_unconstrained):
         assert result.succeeded
         assert result.parvals[0] == pytest.approx(40.75)
     else:
-        with pytest.raises(ValueError, match="The scipy function requires finite bounds"):
+        with pytest.raises(ValueError, match="The optimizer requires finite bounds"):
             # Perform the fit
             fit.fit()
 

@@ -82,7 +82,7 @@ def convert_bounds_to_scipy(parmins: ArrayType,
                 for pmin, pmax in zip(parmins, parmaxes)]
     if requires_finite_bounds:
         if None in np.array(bounds):
-            raise ValueError("The scipy function requires finite bounds, but "
+            raise ValueError("The optimizer requires finite bounds, but "
                              "the Sherpa model has some bounds set to HUGEVAL.")
     return bounds
 
