@@ -273,6 +273,13 @@ try:
         >>> optimizer = Optimagic()
         >>> optimizer.algorithm = 'scipy_bfgs'
 
+        To make the notation more concise, it is also possible to use
+        a keyword argument when the optimizer is created:
+
+        >>> optimizer = Optimagic(algorithm='scipy_bfgs')
+
+        Next, we use the optimizer in a fit. 
+        
         >>> fit = Fit(data=data, model=model, stat=Chi2(), method=optimizer)
         >>> result = fit.fit()
         >>> print(result)
@@ -311,10 +318,10 @@ try:
         default_config = property(_get_default_config,
                                 doc='The default settings for the optimiser.') 
         
-        def __init__(self, name : str | None = None) -> None:
+        def __init__(self, name : str | None = None, **kwargs) -> None:
             super().__init__(name='optimagic.minimize' if name is None else name,
                              optfunc=wrap_optimagic_minimize,
-                             )
+                             **kwargs)
             
     __all__.append('Optimagic')
 

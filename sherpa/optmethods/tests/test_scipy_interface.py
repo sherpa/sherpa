@@ -222,3 +222,40 @@ def test_scipy_constrained(optimizer, rtol):
         assert result.succeeded is False
     else:
         assert result.succeeded is True
+
+
+@pytest.mark.parametrize("cls,par,numbers", 
+                         [(optmethods.Scipy_Minimize, 'tol', (0.01, 0.001)),
+                          (optmethods.Scipy_Basinhopping, "niter", (150, 200)),
+                          (optmethods.Scipy_DifferentialEvolution, "maxiter", (100, 200)),
+                          (optmethods.Scipy_DualAnnealing, "maxiter", (100, 200)),
+                          (optmethods.Scipy_Shgo, "n", (150, 200)),
+                          (optmethods.Scipy_Direct, "eps", (0.01, 0.02)),
+                          ])
+def test_optmethod_setattr(cls, par, numbers):
+    """Check the call-through-to-config option works"""
+
+    opt = cls()
+    # Check one config value
+    oldval = opt.config[par]
+    assert getattr(opt, par) == pytest.approx(oldval)
+
+    newval = numbers[0]
+    setattr(opt, par, newval)
+    assert opt.config[par] == pytest.approx(newval)
+    assert getattr(opt, par) == pytest.approx(newval)
+
+    # just to check that ftol doesn't happen to match the new value,
+    # which would mean changing newval
+    #
+    assert oldval != pytest.approx(newval)
+
+    newval = numbers[1]
+    opt = cls(**{par: newval})
+    assert opt.config[par] == pytest.approx(newval)
+    assert getattr(opt, par) == pytest.approx(newval)
+
+    # just to check that ftol doesn't happen to match the new value,
+    # which would mean changing newval
+    #
+    assert oldval != pytest.approx(newval)

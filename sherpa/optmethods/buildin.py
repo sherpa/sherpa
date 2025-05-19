@@ -180,7 +180,7 @@ class OptMethod(NoNewAttributesAfterInit):
     def __init__(self,
                  name: str,
                  optfunc: OptFunc,
-                 **kwargs: Any
+                 **kwargs: Any,
                  ) -> None:
         self.name = name
         self._optfunc = optfunc

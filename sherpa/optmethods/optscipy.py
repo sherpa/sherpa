@@ -156,17 +156,19 @@ class ScipyBase(OptMethod):
     def _get_default_config(self) -> dict[str, Any]:
         sig = inspect.signature(self._scipy_func)
         return {p.name: p.default for p in sig.parameters.values()
-                if p.kind == p.POSITIONAL_OR_KEYWORD and
+                if ((p.kind == p.POSITIONAL_OR_KEYWORD)
+                    or (p.kind == p.KEYWORD_ONLY)) and
                  p.name not in SCIPY_KEYWORDS_NOT_APPLICABLE}
 
     default_config = property(_get_default_config,
                               doc='The default settings for the optimiser.')
 
-    def __init__(self, name : str | None = None) -> None:
+    def __init__(self, name : str | None = None, **kwargs) -> None:
          super().__init__(name=f'scipy.optimize.{self._scipy_func.__name__}' if name is None else name,
                          optfunc=functools.partial(wrap_scipy_fcn,
                                                    self._scipy_func,
                                                    self._requires_finite_bounds),
+                        **kwargs
                         )
 
 
@@ -266,8 +268,6 @@ try:
         message        = Converged (|x_n-x_(n-1)| ~= 0)
         nfev           = 725
         """
-
-
         _scipy_func = staticmethod(optimize.minimize)
         _requires_finite_bounds = False
 
