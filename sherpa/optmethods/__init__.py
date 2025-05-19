@@ -116,8 +116,9 @@ const1d
    const1d.c0   thawed            4 -3.40282e+38  3.40282e+38
 
 """
-from . import buildin, optscipy
+from . import buildin, optscipy, optoptimagic
 from .buildin import *
 from .optscipy import *
+from .optoptimagic import *
 
-__all__ = buildin.__all__ + optscipy.__all__
+__all__ = buildin.__all__ + optscipy.__all__ + optoptimagic.__all__

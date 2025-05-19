@@ -141,6 +141,7 @@ extensions = [
 # but adding to the astropy list.
 intersphinx_mapping['bokeh'] = ('https://docs.bokeh.org/en/latest/', None)
 intersphinx_mapping['arviz'] = ('https://python.arviz.org/en/latest/', None)
+intersphinx_mapping['optimagic'] = ('https://optimagic.readthedocs.io/en/latest/', None)
 
 # Settings for matplotlib sphinx extension
 plot_html_show_source_link = False
