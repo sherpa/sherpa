@@ -52,6 +52,11 @@ if installed:
 * `scipy <https://www.scipy.org>`_ for the `sherpa.optmethods.optscipy`
   module, which provides an interface to use several optimizers from Scipy
   for Sherpa fitting.
+* `optimagic <https://optimagic.readthedocs.io>`_ for the 
+  `sherpa.optmethods.optoptimagic` which provides an interface to `optimagic.minimize`.
+  Optimagic provides a single interface to dozens of optimizers, many of which
+  rely on other external packages that need to be installed separately, see
+  https://optimagic.readthedocs.io/en/latest/installation.html
 * `ArviZ <https://python.arviz.org>`_ for visualisation and analysis of
   `sherpa.sim.MCMC` results.
 

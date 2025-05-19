@@ -118,7 +118,9 @@ const1d
 """
 from sherpa.optmethods import buildin
 from sherpa.optmethods import optscipy
+from sherpa.optmethods import optoptimagic
 from sherpa.optmethods.buildin import *
 from sherpa.optmethods.optscipy import *
+from sherpa.optmethods.optoptimagic import *
 
-__all__ = buildin.__all__ + optscipy.__all__
+__all__ = buildin.__all__ + optscipy.__all__ + optoptimagic.__all__
