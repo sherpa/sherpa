@@ -115,8 +115,7 @@ def test_optimagic_constrained(optimizer, rtol):
     gauss.ampl.min = 0
     gauss.ampl.max = 100
 
-    opt = Optimagic()
-    opt.algorithm = optimizer
+    opt = Optimagic(algorithm=optimizer)
     fit = Fit(data=data, model=gauss, stat=Chi2(), method=opt)
 
     # Perform the fit
@@ -192,3 +191,22 @@ def test_optimagic_invalid_algorithm():
     with pytest.raises(AttributeError, match="optimagic does not have an algorithm named does_not_exist."):   
         result = fit.fit()
 
+
+def test_optimagic_setattr():
+    """Check the call-through-to-config option works"""
+
+    opt = Optimagic()
+    opt.algorithm = "scipy_lbfgsb"
+    # Unlike test_optmethod_getattr, only check one config value
+    oldval = opt.config["algorithm"]
+    assert opt.algorithm == pytest.approx(oldval)
+
+    newval = "scipy_differential_evolution"
+    opt.algorithm= newval
+    assert opt.config["algorithm"] == pytest.approx(newval)
+    assert opt.algorithm == pytest.approx(newval)
+
+    # just to check that ftol doesn't happen to match the new value,
+    # which would mean changing newval
+    #
+    assert oldval != pytest.approx(newval)
