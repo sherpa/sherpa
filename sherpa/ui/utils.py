@@ -1282,11 +1282,8 @@ class Session(NoNewAttributesAfterInit):
         """
         _check_str_type(filename, "filename")
 
-        fin = open(filename, 'rb')
-        try:
+        with open(filename, 'rb') as fin:
             obj = pickle.load(fin)
-        finally:
-            fin.close()
 
         if not isinstance(obj, Session):
             raise ArgumentErr('nosession', filename)
