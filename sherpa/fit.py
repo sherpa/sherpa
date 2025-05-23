@@ -1454,7 +1454,7 @@ class Fit(NoNewAttributesAfterInit):
             # have the case that self.stat and self._iterfit.stat were
             # not guaranteed to be the same).
             #
-            # Could we skip this if newpars is them same as thawedpars?
+            # Could we skip this if newpars is the same as thawedpars?
             #
             fval_new, _ = cb(newpars)
 
