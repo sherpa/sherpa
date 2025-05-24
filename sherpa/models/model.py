@@ -1617,11 +1617,6 @@ class ArithmeticModel(Model):
                                  strformat=strformat)
         return NotImplemented
 
-    def __setstate__(self, state):
-        # In case old pickle files do not have cache info
-        self.cache_clear()
-        self.__dict__.update(state)
-
     def startup(self, cache: bool = False) -> None:
         if cache:
             self.cache_clear()
