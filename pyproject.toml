@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 [project]
 dynamic = ["version"]
 license = "GPL-3.0-or-later"
-license-files = ["LICENSE", "COPYRPGHT", "extern/fftw-3.3.10/COPYRIGHT",
+license-files = ["LICENSE", "COPYRIGHT", "extern/fftw-3.3.10/COPYRIGHT",
 "extern/fftw-3.3.10/COPYING", "extern/wcssubs/wcssubs-3.9.5/COPYING"]
 
 name = "sherpa"
