@@ -30,14 +30,13 @@ from sherpa.astro.data import DataPHA
 
 from sherpa.utils.parallel import ncpus
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_xspec, requires_group, requires_region, requires_wcs
+    requires_xspec, requires_group, requires_region, requires_wcs, \
+    requires_psf
 
 try:
     from sherpa.astro import xspec
-    has_xspec = True
 except ImportError:
-    has_xspec = False
-
+    pass
 
 try:
     from sherpa.astro.io import backend
@@ -288,6 +287,7 @@ def test_radpro_dm(run_thread, clean_astro_ui):
     check_thread(run_thread, 'radpro_dm', False, cmp_radpro, ['src'])
 
 
+@requires_psf
 @requires_data
 @requires_fits
 @requires_region
@@ -307,6 +307,7 @@ def test_psf2d(run_thread, clean_astro_ui):
     assert g1.ampl.val == approx(166.649, rel=1e-2)
 
 
+@requires_psf
 @requires_data
 @requires_fits
 @requires_region
@@ -333,6 +334,7 @@ def test_fpsf2d(run_thread, clean_astro_ui):
     assert g1mdl.ampl.val == approx(36344.48324, rel=1e-4)
 
 
+@requires_psf
 @requires_data
 @requires_fits
 def test_radpro_psf(run_thread, clean_astro_ui):
@@ -350,6 +352,7 @@ def test_radpro_psf(run_thread, clean_astro_ui):
     assert src.ampl.val == approx(5.27604, rel=1e-4)
 
 
+@requires_psf
 @requires_data
 @requires_fits
 @pytest.mark.parametrize('parallel', [False, True])
@@ -371,6 +374,7 @@ def test_linepro(parallel, run_thread, clean_astro_ui):
     check_thread(run_thread, 'linepro', parallel, cmp_thread, ['b1'])
 
 
+@requires_psf
 @requires_data
 @requires_fits
 @pytest.mark.parametrize('parallel', [False, True])
@@ -570,6 +574,7 @@ def test_stats_all(run_thread, fix_xspec):
     assert tlocals['stat_cstat'] == approx(1210.56896183, 1e-4)
 
 
+@requires_psf
 @requires_data
 @requires_fits
 @requires_region
