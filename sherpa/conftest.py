@@ -116,7 +116,9 @@ RUNOPTS = [("slow", "run slow tests",
            ("speed", "run tests check speed and caching choices (results can vary randomly)",
             "check if model caching improves evaluation time"),
            ("session", "run Session tests as well as AstroSession ones",
-            "test Session as well as AstroSession")
+            "test Session as well as AstroSession"),
+           ("cores", "run extra multi-core optimization tests",
+            "add more multi-core tests")
            ]
 
 

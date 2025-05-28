@@ -4378,7 +4378,7 @@ def setup_multicore_data(s: Session) -> tuple[ArithmeticModel, ArithmeticModel]:
 #
 @pytest.mark.skipif(not multi, reason="multi-core support not enabled")
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
-@pytest.mark.parametrize("ncores", [1, 2, 3])
+@pytest.mark.parametrize("ncores", [1, pytest.param(2, marks=pytest.mark.cores), 3])
 def test_method_numcores_levmar(session, ncores):
     """Check we can use numcores>1 with levmar"""
 
@@ -4411,7 +4411,7 @@ def test_method_numcores_levmar(session, ncores):
 
 @pytest.mark.skipif(not multi, reason="multi-core support not enabled")
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
-@pytest.mark.parametrize("ncores", [1, 3])  # save some time not using ncores=2
+@pytest.mark.parametrize("ncores", [1, pytest.param(2, marks=pytest.mark.cores), 3])
 def test_errors_numcores_levmar_proj(session, ncores):
     """Check we can use numcores>1 with proj"""
 
@@ -4445,7 +4445,7 @@ def test_errors_numcores_levmar_proj(session, ncores):
 
 @pytest.mark.skipif(not multi, reason="multi-core support not enabled")
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
-@pytest.mark.parametrize("ncores", [1, 3])  # save some time not using ncores=2
+@pytest.mark.parametrize("ncores", [1, pytest.param(2, marks=pytest.mark.cores), 3])
 def test_errors_numcores_levmar_conf(session, ncores):
     """Check we can use numcores>1 with conf"""
 
@@ -4541,7 +4541,7 @@ def check_moncar(ncores, fr, g1, g2) -> None:
 
 @pytest.mark.skipif(not multi, reason="multi-core support not enabled")
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
-@pytest.mark.parametrize("ncores", [1, 2, 3])
+@pytest.mark.parametrize("ncores", [1, pytest.param(2, marks=pytest.mark.cores), 3])
 def test_method_numcores_moncar(session, ncores):
     """Check we can use numcores>1 with moncar"""
 
