@@ -114,7 +114,9 @@ RUNOPTS = [("slow", "run slow tests",
            ("zenodo", "run tests that query Zenodo (requires internet)",
             "requires internet access to Zenodo"),
            ("speed", "run tests check speed and caching choices (results can vary randomly)",
-            "check if model caching improves evaluation time")
+            "check if model caching improves evaluation time"),
+           ("session", "run Session tests as well as AstroSession ones",
+            "test Session as well as AstroSession")
            ]
 
 

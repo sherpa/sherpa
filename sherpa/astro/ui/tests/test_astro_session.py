@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020 - 2025
+#  Copyright (C) 2016, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -69,7 +69,7 @@ def skip_if_no_io(request):
 
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("as_string", [True, False])
 def test_model_identifiers_set_globally(session, as_string):
     """Check we create a global symbol for the models.
@@ -170,7 +170,7 @@ def test_astro_model_identifiers_set_globally():
     s.clean()
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_does_clean_remove_model_identifiers(session):
     """Check whether clean() will remove model identifiers.
 
@@ -292,13 +292,13 @@ def test_zero_division_calc_stat(caplog):
     assert ui._get_stat_info()[0].rstat is np.nan
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_iter_method_name_default(session):
     s = session()
     assert s.get_iter_method_name() == "none"
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("opt", ["none", "sigmarej"])
 def test_set_iter_method_valid(session, opt):
     s = session()
@@ -306,7 +306,7 @@ def test_set_iter_method_valid(session, opt):
     assert s.get_iter_method_name() == opt
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_set_iter_method_unknown_string(session):
     s = session()
     with pytest.raises(TypeError,
@@ -314,7 +314,7 @@ def test_set_iter_method_unknown_string(session):
         s.set_iter_method("not a method")
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_set_iter_method_not_a_string(session):
     s = session()
     with pytest.raises(ArgumentTypeErr,
@@ -322,13 +322,13 @@ def test_set_iter_method_not_a_string(session):
         s.set_iter_method(23)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_iter_method_opt_default(session):
     s = session()
     assert s.get_iter_method_opt() == {}
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_iter_method_opt_sigmarej(session):
     s = session()
     s.set_iter_method("sigmarej")
@@ -338,14 +338,14 @@ def test_get_iter_method_opt_sigmarej(session):
     assert keys == set(["grow", "lrej", "hrej", "maxiters"])
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_iter_method_opt_sigmarej_lrej(session):
     s = session()
     s.set_iter_method("sigmarej")
     assert s.get_iter_method_opt("lrej") == pytest.approx(3)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("opt,key", [("none", "lrej"), ("sigmarej", "fast")])
 def test_get_iter_method_opt_unknown(session, opt, key):
     s = session()
@@ -355,7 +355,7 @@ def test_get_iter_method_opt_unknown(session, opt, key):
         s.get_iter_method_opt(key)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_set_iter_method_opt_sigmarej_lrej(session):
     s = session()
     s.set_iter_method("sigmarej")
@@ -363,7 +363,7 @@ def test_set_iter_method_opt_sigmarej_lrej(session):
     assert s.get_iter_method_opt("lrej") == pytest.approx(5)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("setting", ['chisqr', 'compmodel', 'compsource', 'data',
                                      "model_component", "source_component",
                                      'delchi', 'fit', 'kernel', 'model',
@@ -377,7 +377,7 @@ def test_id_checks_session(session, setting):
         s.load_arrays(setting, [1, 2], [1, 2])
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("setting", ['cdf', 'energy', 'lr', 'photon', 'pdf', 'scatter', 'trace'])
 def test_id_checks_session_unexpected(session, setting):
     """These identifiers are allowed. Should they be?"""
@@ -411,7 +411,7 @@ def test_id_checks_astro_session(session, success, setting):
             s.load_arrays(setting, [1, 2], [1, 2])
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("plottype", ["source_component", "compsource",
                                       "model_component", "compmodel"])
 def test_plot_component(session, plottype):
@@ -437,7 +437,7 @@ def test_plot_component(session, plottype):
     s.plot(plottype, mdl)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("plottype", ["source_component", "compsource",
                                       "model_component", "compmodel"])
 def test_plot_component_fails(session, plottype):
@@ -1235,7 +1235,7 @@ def test_show_bkg_source_output():
     assert len(toks) == 10
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("idval", [None, "foo"])
 def test_show_filter(idval, session):
     """Is show_filter doing anything sensible?"""
@@ -1260,7 +1260,7 @@ def test_show_filter(idval, session):
     assert len(toks) == 5
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("idval", [None, 1])
 @pytest.mark.parametrize("label", ["source", "model"])
 def test_show_model(idval, label, session):
@@ -1303,7 +1303,7 @@ def test_show_model(idval, label, session):
     assert len(toks) == 8
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_show_method(session):
     """Is show_method doing anything sensible?"""
 
@@ -1333,7 +1333,7 @@ def test_show_method(session):
     assert len(toks) == 12
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_show_stat(session):
     """Is show_stat doing anything sensible?"""
 
@@ -1356,7 +1356,7 @@ def test_show_stat(session):
     assert toks[2] == ""
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_show_fit(session):
     """Cover a number of internal routines to check show_fit works."""
 
@@ -1443,7 +1443,7 @@ def test_show_fit(session):
     assert len(toks) == 32
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["proj", "unc"])
 def test_get_int_xxx_recalc_false(session, label):
     """Check we call the recalc=False path, even with no data loaded."""
@@ -1460,7 +1460,7 @@ def test_get_int_xxx_recalc_false(session, label):
     assert plotobj.x is None
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["proj", "unc"])
 def test_get_reg_xxx_recalc_false(session, label):
     """Check we call the recalc=False path, even with no data loaded."""
@@ -1508,7 +1508,7 @@ def setup_template_model(session, make_data_path, interp="default"):
 
 
 @requires_data
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["model", "source"])
 def test_get_xxx_component_plot_with_templates_recalc_true(session, label, make_data_path, skip_if_no_io):
     """What is the intended behavior for template models?
@@ -1536,7 +1536,7 @@ def test_get_xxx_component_plot_with_templates_recalc_true(session, label, make_
 
 
 @requires_data
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["model", "source"])
 def test_get_xxx_component_plot_with_templates_recalc_true_no_interp(session, label, make_data_path, skip_if_no_io):
     """What is the intended behavior for template models?
@@ -1561,7 +1561,7 @@ def test_get_xxx_component_plot_with_templates_recalc_true_no_interp(session, la
 
 
 @requires_data
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["model", "source"])
 def test_get_xxx_component_plot_with_templates_recalc_false(session, label, make_data_path, skip_if_no_io):
     """What is the intended behavior for template models?
@@ -1606,7 +1606,7 @@ def test_get_xxx_component_plot_with_templates_recalc_false(session, label, make
 
 
 @requires_data
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["model", "source"])
 def test_get_xxx_component_plot_with_templates_recalc_false_no_interp(session, label, make_data_path, skip_if_no_io):
     """What is the intended behavior for template models?
@@ -1652,7 +1652,7 @@ def test_get_xxx_component_plot_with_templates_recalc_false_no_interp(session, l
 
 
 @requires_data
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["model", "source"])
 def test_get_xxx_component_plot_with_templates_data1d(session, label, make_data_path, skip_if_no_io):
     """What is the intended behavior for template models?  Data1D
@@ -1696,7 +1696,7 @@ def test_get_xxx_component_plot_with_templates_data1d(session, label, make_data_
 
 
 @requires_data
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["model", "source"])
 def test_get_xxx_component_plot_with_templates_data1d_no_interp(session, label, make_data_path, skip_if_no_io):
     """What is the intended behavior for template models?  Data1D, no interpolator
@@ -1744,7 +1744,7 @@ def test_get_xxx_component_plot_with_templates_data1d_no_interp(session, label, 
 
 
 @requires_data
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["model", "source"])
 def test_get_xxx_component_plot_with_templates_data1dint(session, label, make_data_path):
     """What is the intended behavior for template models?  Data1DInt"""
@@ -1785,7 +1785,7 @@ def test_get_xxx_component_plot_with_templates_data1dint(session, label, make_da
 
 
 @requires_data
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["model", "source"])
 def test_get_xxx_component_plot_with_templates_data1dint_no_interp(session, label, make_data_path):
     """What is the intended behavior for template models?  Data1DInt, no interpolator"""
@@ -2074,7 +2074,7 @@ def check_stat_info_basic(sinfo, name, ids, numpoints, statval):
     assert sinfo.statval == pytest.approx(statval)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_stat_info_basic_one(session):
     """Check get_stat_info with one dataset"""
 
@@ -2095,7 +2095,7 @@ def test_get_stat_info_basic_one(session):
     check_stat_info_basic(sinfo[0], "Dataset [1]", [1], 3, 9)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_stat_info_basic_two(session):
     """Check get_stat_info with two datasets"""
 
@@ -2197,7 +2197,7 @@ class DummyClass:
     pass
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_add_model_errors_out(session):
     """The model class needs to be derived from ArithmeticModel."""
 
@@ -2209,7 +2209,7 @@ def test_add_model_errors_out(session):
         s.add_model(DummyClass)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_source_with_convolved_model(session):
     """Check we get an error.
 
@@ -2392,7 +2392,7 @@ def test_fit_checks_kwarg(session, msg):
         s.fit(unknown_argument=True)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("alias,original",
                          [("compsource", "source_component"),
                           ("compmodel", "model_component")])
@@ -2716,7 +2716,7 @@ def test_save_resid_ascii_data2d(session, kwargs, expected, idval, tmp_path, ski
     check_save_ascii2d(session, expected, out, s.save_resid, idval, kwargs, check_str)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_load_template_model_error_mismatched_header(session, tmp_path):
     """Check error handling: col names and col values differ"""
 
@@ -2730,7 +2730,7 @@ def test_load_template_model_error_mismatched_header(session, tmp_path):
         s.load_template_model("tmp", str(mfile))
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_load_template_model_error_no_pars(session, tmp_path):
     """Check error handling: no parameter column"""
 
@@ -2744,7 +2744,7 @@ def test_load_template_model_error_no_pars(session, tmp_path):
         s.load_template_model("tmp", str(mfile))
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_load_template_model_error_no_modelfile(session, tmp_path):
     """Check error handling: no modelfile"""
 
@@ -2758,7 +2758,7 @@ def test_load_template_model_error_no_modelfile(session, tmp_path):
         s.load_template_model("tmp", str(mfile))
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_load_template_model_error_no_modelflag(session, tmp_path):
     """Check error handling: no modelfile"""
 
@@ -2772,7 +2772,7 @@ def test_load_template_model_error_no_modelflag(session, tmp_path):
         s.load_template_model("tmp", str(mfile))
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_load_template_model_error_1_col(session, tmp_path):
     """Check error handling: template file has < 2 columns"""
 
@@ -2790,7 +2790,7 @@ def test_load_template_model_error_1_col(session, tmp_path):
         s.load_template_model("tmp", str(mfile))
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_load_template_model_error_multi_col(session, tmp_path):
     """Check error handling: template file has > 2 columns"""
 
@@ -2808,7 +2808,7 @@ def test_load_template_model_error_multi_col(session, tmp_path):
         s.load_template_model("tmp", str(mfile))
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_method_unknown(session):
     """Check we error out"""
 
@@ -2818,7 +2818,7 @@ def test_get_method_unknown(session):
         s.get_method("bob")
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_method_opt_unknown(session):
     """Check we error out"""
 
@@ -2830,7 +2830,7 @@ def test_get_method_opt_unknown(session):
         s.get_method_opt("bob")
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_method_opt_known(session):
     """Check we get a result.
 
@@ -2845,7 +2845,7 @@ def test_get_method_opt_known(session):
     assert s.get_method_opt("factor") == pytest.approx(100.0)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_set_iter_method_opt_unknown(session):
     """Check we error out"""
 
@@ -2855,7 +2855,7 @@ def test_set_iter_method_opt_unknown(session):
         s.set_iter_method_opt("bob", True)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_stat_unknown(session):
     """Check we error out"""
 
@@ -2865,7 +2865,7 @@ def test_get_stat_unknown(session):
         s.get_stat("bob")
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_indep(session):
     """Somehow we were not calling the Session version"""
 
@@ -2877,7 +2877,7 @@ def test_get_indep(session):
     assert got[0] == pytest.approx([2, 3, 4])
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_dims(session):
     """Somehow we were not calling the Session version"""
 
@@ -2888,7 +2888,7 @@ def test_get_dims(session):
     assert got == (2, 3)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("etype", ["stat", "sys"])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_load_xxxerror(session, etype, idval, tmp_path, skip_if_no_io):
@@ -2914,7 +2914,7 @@ def test_load_xxxerror(session, etype, idval, tmp_path, skip_if_no_io):
     assert get(idval) == pytest.approx([1.1, 2.2, 0.0])
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_fake_fixed(session, idval):
     """Basic check of fake"""
@@ -2943,7 +2943,7 @@ def test_fake_fixed(session, idval):
     assert s.get_dep(idval) == pytest.approx([4, 7, 11])
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_fake_random(session, idval):
     """Basic check of fake"""
@@ -2970,7 +2970,7 @@ def test_fake_random(session, idval):
     assert s.get_dep(idval) == pytest.approx([9, 4, 11])
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_save_filter_excluded_everything(session, tmp_path):
     """Check we error out"""
 
@@ -2987,7 +2987,7 @@ def test_save_filter_excluded_everything(session, tmp_path):
         s.save_filter(str(ofile))
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_save_filter_noticed_everything(session, tmp_path):
     """Check we error out"""
 
@@ -3001,7 +3001,7 @@ def test_save_filter_noticed_everything(session, tmp_path):
         s.save_filter(str(ofile))
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_add_model_types_simple(session):
     """coverage check"""
 
@@ -3014,7 +3014,7 @@ def test_add_model_types_simple(session):
     assert len(s.list_models()) == 31
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_add_model_types_scalar(session):
     """coverage check"""
 
@@ -3026,7 +3026,7 @@ def test_add_model_types_scalar(session):
     assert len(s.list_models()) == 31
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_model_component_sent_str(session):
     """Just to match test_get_model_component_sent_model"""
 
@@ -3037,7 +3037,7 @@ def test_get_model_component_sent_str(session):
     assert s.get_model_component("g1") == mdl
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_model_component_sent_model(session):
     """coverage check"""
 
@@ -3048,7 +3048,7 @@ def test_get_model_component_sent_model(session):
     assert s.get_model_component(mdl) == mdl
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_create_model_component_sent_model(session):
     """coverage check"""
 
@@ -3059,7 +3059,7 @@ def test_create_model_component_sent_model(session):
     assert s.create_model_component(mdl) == mdl
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_create_model_component_sent_unknown(session):
     """coverage check"""
 
@@ -3070,7 +3070,7 @@ def test_create_model_component_sent_unknown(session):
         s.create_model_component("notamodel1d", "g1")
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_reset_sent_model(session):
     """Check model behavior"""
 
@@ -3091,7 +3091,7 @@ def test_reset_sent_model(session):
     assert mdl.c0.val == pytest.approx(2)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_reset_sent_id(session):
     """Check behavior when sent an id"""
 
@@ -3118,7 +3118,7 @@ def test_reset_sent_id(session):
     assert mdl2.pos.val == pytest.approx(10)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_reset_sent_nothing(session):
     """Check behavior when sent nothing"""
 
@@ -3145,7 +3145,7 @@ def test_reset_sent_nothing(session):
     assert mdl2.pos.val == pytest.approx(10)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_model_type_basic(session):
     """Check behavior"""
 
@@ -3162,7 +3162,7 @@ def test_get_model_type_basic(session):
     assert s.get_model_type(mdl1 + mdl2) == "binaryopmodel"
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_model_pars_str(session):
     """Check behavior"""
 
@@ -3173,7 +3173,7 @@ def test_get_model_pars_str(session):
     assert s.get_model_pars("g1") == ["fwhm", "pos", "ampl"]
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_model_pars_model(session):
     """Check behavior"""
 
@@ -3184,7 +3184,7 @@ def test_get_model_pars_model(session):
     assert s.get_model_pars(mdl) == ["fwhm", "pos", "ampl"]
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_num_par(session):
     """Check behavior"""
 
@@ -3201,7 +3201,7 @@ def test_get_num_par(session):
     assert s.get_num_par(2) == 3
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_model_component_checks_model_name(session):
     """Check corner case"""
 
@@ -3213,7 +3213,7 @@ def test_model_component_checks_model_name(session):
         s.create_model_component("gauss1d", "gauss1d")
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_model_component_checks_builtin_name(session):
     """Check corner case"""
 
@@ -3225,7 +3225,7 @@ def test_model_component_checks_builtin_name(session):
         s.create_model_component("gauss1d", "exit")
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_conf_opt_none(session):
     """Check corner case
 
@@ -3549,7 +3549,7 @@ def test_bkg_fit_data_with_no_model():
         s.get_stat_info()
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_do_not_fold_all_models(session, tmp_path, skip_if_no_io):
     """Corner case of _add_convolution_models
 
@@ -3603,7 +3603,7 @@ def test_do_not_fold_all_models(session, tmp_path, skip_if_no_io):
     assert tbl2([1, 2, 3]) == pytest.approx([10, 5, 2])
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_delete_psf_not_there(session):
     """delete_psf does nothing if no PSF exist"""
 
@@ -3613,7 +3613,7 @@ def test_delete_psf_not_there(session):
     assert s.list_psf_ids() == []
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_delete_psf_there(session):
     """delete_psf removes the PSF"""
 
@@ -3633,7 +3633,7 @@ def test_delete_psf_there(session):
     assert s.list_psf_ids() == [1]
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_fit_ignores_repeated_otherid(session, caplog):
 
     s = session()
@@ -3701,7 +3701,7 @@ def test_fit_ignores_repeated_otherid(session, caplog):
     assert s.calc_chisqr("1", 1, 1, "1") == pytest.approx(d2 + d1)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_draws_wants_errors(session):
 
     s = session()
@@ -3716,7 +3716,7 @@ def test_get_draws_wants_errors(session):
         s.get_draws(niter=1)
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("method", ["proj", "unc"])
 def test_get_int_xxx_otherids(method, session):
     """Corner case.
@@ -3752,7 +3752,7 @@ def test_get_int_xxx_otherids(method, session):
     assert plot.y == pytest.approx([125, 101, 86, 80, 83])
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("method", ["proj", "unc"])
 def test_get_reg_xxx_otherids(method, session):
     """Corner case.
@@ -3867,7 +3867,7 @@ def test_pack_image():
     assert s.pack_image() is not None
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("idval", [None, 1, "bob"])
 def test_show_kernel(session, idval):
 
@@ -3895,7 +3895,7 @@ def test_show_kernel(session, idval):
     assert len(toks) == 12
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_show_kernel_multi(session):
 
     s = session()
@@ -3921,7 +3921,7 @@ def test_show_kernel_multi(session):
     assert len(toks) == 3
 
 
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_load_conv_model_instance(session):
     """Corner case"""
 
@@ -3955,7 +3955,7 @@ def check_fit_results(s, datasets, parnames, parvals, istatval, statval, numpoin
 
 
 @pytest.mark.parametrize("id1", [1, 2])
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_fit_data1d_mix_data(id1, session):
     """Check what happens with a mix of datasets with/without data.
 
@@ -4377,7 +4377,7 @@ def setup_multicore_data(s: Session) -> tuple[ArithmeticModel, ArithmeticModel]:
 # Note: gridsearch is too slow to test this way
 #
 @pytest.mark.skipif(not multi, reason="multi-core support not enabled")
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ncores", [1, 2, 3])
 def test_method_numcores_levmar(session, ncores):
     """Check we can use numcores>1 with levmar"""
@@ -4410,7 +4410,7 @@ def test_method_numcores_levmar(session, ncores):
 
 
 @pytest.mark.skipif(not multi, reason="multi-core support not enabled")
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ncores", [1, 3])  # save some time not using ncores=2
 def test_errors_numcores_levmar_proj(session, ncores):
     """Check we can use numcores>1 with proj"""
@@ -4444,7 +4444,7 @@ def test_errors_numcores_levmar_proj(session, ncores):
 
 
 @pytest.mark.skipif(not multi, reason="multi-core support not enabled")
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ncores", [1, 3])  # save some time not using ncores=2
 def test_errors_numcores_levmar_conf(session, ncores):
     """Check we can use numcores>1 with conf"""
@@ -4540,7 +4540,7 @@ def check_moncar(ncores, fr, g1, g2) -> None:
 
 
 @pytest.mark.skipif(not multi, reason="multi-core support not enabled")
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ncores", [1, 2, 3])
 def test_method_numcores_moncar(session, ncores):
     """Check we can use numcores>1 with moncar"""
