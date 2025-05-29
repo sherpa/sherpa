@@ -6,7 +6,7 @@ The optimiser varies the model parameters in an attempt to find
 the solution which minimises the chosen
 :doc:`statistic <../statistics/index>`.
 
-In general it is expected that the optimiser will be used by
+In general, it is expected that the optimiser will be used by
 a :py:class:`~sherpa.fit.Fit` object to
 :doc:`perform the fit <../fit/index>`, but
 it can be used directly using the
@@ -20,17 +20,18 @@ As an example, the default parameter values for the
 :py:class:`Levenberg-Marquardt <sherpa.optmethods.LevMar>`
 optimiser are::
 
-    >>> from sherpa.optmethods.LevMar
+    >>> from sherpa.optmethods import LevMar
     >>> lm = LevMar()
     >>> print(lm)
-    name    = levmar
-    ftol    = 1.19209289551e-07
-    xtol    = 1.19209289551e-07
-    gtol    = 1.19209289551e-07
-    maxfev  = None
-    epsfcn  = 1.19209289551e-07
-    factor  = 100.0
-    verbose = 0
+    name     = levmar
+    ftol     = 1.1920928955078125e-07
+    xtol     = 1.1920928955078125e-07
+    gtol     = 1.1920928955078125e-07
+    maxfev   = None
+    epsfcn   = 1.1920928955078125e-07
+    factor   = 100.0
+    numcores = 1
+    verbose  = 0
 
 These settings are available both as fields of the object and via
 the :py:attr:`~sherpa.optmethods.OptMethod.config` dictionary
