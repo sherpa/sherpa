@@ -83,17 +83,16 @@ def test_save_restore(tmpdir):
 
 
 @requires_xspec
-def test_save_restore_composite_model_with_cache(tmpdir):
+def test_save_restore_composite_model_with_cache(tmp_path, xsmodel):
     """Test that the save/restore works with a composite model.
 
-    Specifically, we use a model form XSPEC that has a cache.
+    Specifically, we use a model from XSPEC that has a cache.
     Slightly expanded regression test for bug #2301.
     """
-    xspec = pytest.importorskip("sherpa.astro.xspec")
 
-    outfile = tmpdir.join("sherpa.save")
+    outfile = outfile = tmp_path / "sherpa.save"
     session = Session()
-    m1 = xspec.XSphabs() * xspec.XSvapec()
+    m1 = xsmodel("phabs") * xsmodel("vapec")
     session.set_source(1, m1)
     session.save(str(outfile), clobber=True)
     session.clean()
