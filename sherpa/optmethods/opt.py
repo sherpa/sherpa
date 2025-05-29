@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2021, 2023 - 2025
+#  Copyright (C) 2019-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -43,13 +43,20 @@ FUNC_MAX = float(np.finfo(np.float64).max)
 #
 OptimizerFunc = Callable[[np.ndarray], float]
 
+# WorkerFunc could be done as a Protocol, but the argument names are
+# not consistent, and it also requires **kwargs, which has not been
+# handled well by pyright. Concatenate could be used to at least
+# indicate the extra arguments but that requires Python 3.11 (as
+# Concatenate in Python 3.10 can not end with an ellipsis).
+#
 MyOptOutput = tuple[int, float, np.ndarray]
 WorkerFunc = Callable[[OptimizerFunc,
                        np.ndarray,
                        np.ndarray,
                        np.ndarray,
                        float,
-                       int | None],
+                       int | None
+                       ],
                       MyOptOutput]
 
 
@@ -71,6 +78,11 @@ class MyNcores:
              maxnfev: int | None
              ) -> list[MyOptOutput]:
         """Apply each function to the arguments, running in parallel."""
+
+        # Safety check
+        nfuncs = len(funcs)
+        if nfuncs == 0:
+            raise TypeError("funcs can not be empty")
 
         for func in funcs:
             if not callable(func):
