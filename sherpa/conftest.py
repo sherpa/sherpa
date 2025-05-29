@@ -106,32 +106,43 @@ TEST_DATA_OPTION = "--test-data"
 # for adding a command-line option to let slow-running tests be run
 # (not by default), which combines with existing code and options.
 #
+
+# The elements are name, help string, text for marker
+#
+RUNOPTS = [("slow", "run slow tests",
+            "mark test as slow to run"),
+           ("zenodo", "run tests that query Zenodo (requires internet)",
+            "requires internet access to Zenodo"),
+           ("speed", "run tests check speed and caching choices (results can vary randomly)",
+            "check if model caching improves evaluation time"),
+           ("session", "run Session tests as well as AstroSession ones",
+            "test Session as well as AstroSession"),
+           ("cores", "run extra multi-core optimization tests",
+            "add more multi-core tests")
+           ]
+
+
 def pytest_addoption(parser):
     parser.addoption("-D", TEST_DATA_OPTION, action="store",
                      help="Alternative location of test data files")
 
-    parser.addoption("--runslow", action="store_true", default=False,
-                     help="run slow tests")
-
-    parser.addoption("--runzenodo", action="store_true", default=False,
-                     help="run tests that query Zenodo (requires internet)")
-
-    parser.addoption("--runspeed", action="store_true", default=False,
-                     help="run tests check speed and caching choices (results can vary randomly)")
+    for name, msg, _ in RUNOPTS:
+        parser.addoption(f"--run{name}", action="store_true",
+                         default=False, help=msg)
 
 
 def pytest_collection_modifyitems(config, items):
 
     # Skip tests unless --runxxx given in cli
     #
-    for label in ["slow", "zenodo", "speed"]:
-        opt = "--run{}".format(label)
+    for name, _, _ in RUNOPTS:
+        opt = f"--run{name}"
         if config.getoption(opt):
             continue
 
-        skip = pytest.mark.skip(reason="need {} option to run".format(opt))
+        skip = pytest.mark.skip(reason=f"need {opt} option to run")
         for item in items:
-            if label in item.keywords:
+            if name in item.keywords:
                 item.add_marker(skip)
 
 
@@ -321,7 +332,7 @@ def pytest_configure(config):
     This configuration hook overrides the default mechanism for test data self-discovery, if the --test-data command line
     option is provided
 
-    It also adds support for the "slow" and "zenodo" test markers.
+    It also adds support for the Sherpa-specific test markers.
 
     Parameters
     ----------
@@ -334,8 +345,8 @@ def pytest_configure(config):
     except ValueError:  # option not defined from command line, no-op
         pass
 
-    config.addinivalue_line("markers", "slow: mark test as slow to run")
-    config.addinivalue_line("markers", "zenodo: indicates requires internet access to Zenodo")
+    for name, _, msg in RUNOPTS:
+        config.addinivalue_line("markers", f"{name}: {msg}")
 
 
 @pytest.fixture(scope="session")
