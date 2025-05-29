@@ -454,25 +454,26 @@ def test_mh(setup, caplog):
     # Note when the covariance changes; this is more just as a check
     # hence not a full check.
     #
-    diag = np.asarray([1.68857268e-03, 6.48507899e-01,
-                       9.22029508e-03, 1.88340111e-03,
-                       3.22767792e+00])
+    diag = np.asarray([1.68861299e-03, 6.48511837e-01,
+                       9.22037431e-03, 1.88340729e-03,
+                       3.22766923e+00])
     assert np.diag(cov) == pytest.approx(diag)
 
     # Check outfile; expect
     #     nfev statistic pl.gamma pl.ampl g1.fwhm g1.pos g1.ampl
     #
     row0 = np.asarray([0, -8975.692, 1.070194, 9.182625, 2.586208, 2.601620, 47.26266])
-    row19 = np.asarray([19, -8975.953, 1.069763, 9.219122,  2.570933, 2.586584,  47.36504])
-    row20 = row19.copy()
-    row20[0] = 20
+    row551 = np.asarray([551, -8975.953,  1.069770,  9.219028,
+                         2.570941,  2.586583,  47.36505])
+    row552 = row551.copy()
+    row552[0] = 552
 
     out.seek(0)
     fitvals = np.loadtxt(out)
-    assert fitvals.shape == (21, 7)
+    assert fitvals.shape == (553, 7)
     assert fitvals[0] == pytest.approx(row0)
-    assert fitvals[19] == pytest.approx(row19)
-    assert fitvals[20] == pytest.approx(row20)
+    assert fitvals[551] == pytest.approx(row551)
+    assert fitvals[552] == pytest.approx(row552)
 
     mcmc = sim.MCMC()
     for par in setup.fit.model.pars:
@@ -501,7 +502,7 @@ def test_mh(setup, caplog):
     assert accept.min() == 0
     assert accept.max() == 1
 
-    means = np.asarray([1.06497461, 9.2188531, 2.58191838, 2.57882817, 47.5158447])
+    means = np.asarray([1.064982272, 9.2187596738, 2.581926009, 2.57882817, 47.5158447])
     assert params.mean(axis=1) == pytest.approx(means)
 
 
@@ -520,25 +521,25 @@ def test_metropolisMH(setup, caplog):
     # Note when the covariance changes; this is more just as a check
     # hence not a full check.
     #
-    diag = np.asarray([1.68857268e-03, 6.48507899e-01,
-                       9.22029508e-03, 1.88340111e-03,
-                       3.22767792e+00])
+    diag = np.asarray([1.68861300e-03, 6.48511828e-01,
+                       9.22037429e-03, 1.88340729e-03,
+                       3.22766923e+00])
     assert np.diag(cov) == pytest.approx(diag)
 
     # Check outfile; expect
     #     nfev statistic pl.gamma pl.ampl g1.fwhm g1.pos g1.ampl
     #
     row0 = np.asarray([0, 98.83959, 1.070194, 9.182625, 2.586208, 2.601620, 47.26266])
-    row19 = np.asarray([19, 98.5784, 1.069763, 9.219122, 2.570933, 2.586584, 47.36504])
-    row20 = row19.copy()
-    row20[0] = 20
+    row602 = np.asarray([602., 98.5784, 1.06977, 9.219028, 2.570941, 2.586583, 47.36505])
+    row603 = row602.copy()
+    row603[0] = 603
 
     out.seek(0)
     fitvals = np.loadtxt(out)
-    assert fitvals.shape == (21, 7)
+    assert fitvals.shape == (604, 7)
     assert fitvals[0] == pytest.approx(row0)
-    assert fitvals[19] == pytest.approx(row19)
-    assert fitvals[20] == pytest.approx(row20)
+    assert fitvals[602] == pytest.approx(row602)
+    assert fitvals[603] == pytest.approx(row603)
 
     mcmc = sim.MCMC()
     mcmc.set_sampler('MetropolisMH')
@@ -559,7 +560,7 @@ def test_metropolisMH(setup, caplog):
     assert accept.min() == 0
     assert accept.max() == 1
 
-    means = np.asarray([1.06278015, 9.21533855, 2.5736483, 2.5853907, 47.27058904])
+    means = np.asarray([1.06278784, 9.2152448, 2.573655956, 2.5853907, 47.27058904])
     assert params.mean(axis=1) == pytest.approx(means)
 
 
