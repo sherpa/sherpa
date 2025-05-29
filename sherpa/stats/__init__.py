@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015 - 2020, 2022, 2024 - 2025
+#  Copyright (C) 2009, 2015-2020, 2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1176,7 +1176,7 @@ class WStat(Likelihood):
 class StatCallback:
     """Return the statistic value for a set of parameters.
 
-    .. versionadded:: 4.17.1
+    .. versionadded:: 4.18.0
 
     """
 
