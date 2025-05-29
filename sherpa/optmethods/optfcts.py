@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018 - 2025
+#  Copyright (C) 2007, 2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -195,6 +195,33 @@ def _update_reported_nfev(result: OptReturn,
     """
 
     result[4]['nfev'] += nfev
+
+
+# Left in in case anyone is using it.
+#
+class Callback(StatCallback):
+    """This class is deprecated.
+
+    .. deprecated:: 4.18.0
+       Use StatCallback instead.
+
+    .. versionadded:: 4.17.1
+
+    """
+
+    def __init__(self, func: StatFunc) -> None:
+        # Since:
+        #
+        # - warnings.deprecated needs Python 3.13
+        # - warnings.warn(..., category=DeprecationWarning) does not
+        #   create a message in normal use, so is easy to miss
+        #
+        # just go with an explicit log message. As this class is new
+        # it is not expected to have been used, so the exact method of
+        # getting a warning to the user is hoped not to be important.
+        #
+        warning("Callback is deprecated: use StatCallback instead")
+        super().__init__(func)
 
 
 class InfinitePotential:
