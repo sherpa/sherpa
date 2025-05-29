@@ -19,6 +19,3 @@ The sherpa.optmethods.optfcts module
      minim
      montecarlo
      neldermead
-     InfinitePotential
-     EPSILON
-     FUNC_MAX

@@ -21,6 +21,7 @@
 """Optimizing functions.
 
 As input, these functions take
+
   - a callback function, which should return the current statistic value
     and an array of the statistic value per bin.
   - the current set of parameters (a numpy array)
@@ -28,14 +29,13 @@ As input, these functions take
   - the maximum for each parameter (numpy array)
   - any optional arguments
 
-The return a tuple containing
+The return value is a tuple containing
 
  - a boolean indicating whether the optimization succeeded or not
  - the list of parameter values at the best-fit location
- - the statistic value at this location
- - a string message - when ``status`` is `False` this will give information
-   on the failure
- - a dictionary which depends on the optimizer
+ - a string message, which might be empty. If the first element is `False`
+   most optimizers indicate a reason for the failure in this string.
+ - a dictionary which depends on the optimizer and may be empty, or `None`.
 
 
 Notes
@@ -71,7 +71,7 @@ Best-fit value: 4.0
 
 How are parameter bounds implemented?
 -------------------------------------
-The optimizers in this module use a simple Infinite Potential
+The optimizers `neldermead` and `minim` use a simple Infinite Potential
 approach, where the value of the statistic is set to a very large
 number defined by the module level variable `FUNC_MAX`
 if any of the parameter values is outside the limits.
@@ -99,7 +99,6 @@ from .ncoresnm import ncoresNelderMead
 
 __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
            'minim', 'montecarlo', 'neldermead',
-           'InfinitePotential', 'EPSILON', 'FUNC_MAX',
            )
 
 

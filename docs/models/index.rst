@@ -227,7 +227,7 @@ During a fit the parameter values are bound by the soft limits,
 and a screen message will be displayed if an attempt to move
 outside this range was made. During error analysis the parameter
 values are allowed outside the soft limits, as long as they remain
-inside the hard limits. This helps with determining Uncertainties
+inside the hard limits. This may help with determining uncertainties
 for parameters that are close to the soft limits.
 
 .. _params-guess:
