@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2019 - 2024
+#  Copyright (C) 2016-2017, 2019-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -39,6 +39,7 @@ import sherpa.models.basic
 from sherpa import estmethods as est
 from sherpa import optmethods as opt
 from sherpa import stats
+from sherpa.models import Const1D, PowLaw1D
 from sherpa.ui.utils import Session, ModelWrapper
 from sherpa.utils import poisson_noise
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -111,19 +112,29 @@ def test_list_ids():
     assert_array_equal(TEST, session.get_data(1).get_dep())
 
 
-# bug #297
+# bug #297 and #2301
 def test_save_restore(tmp_path):
+    """Check we can save and restore a session with data and a model
+
+    In particular, we use a composite model to check for the regression in
+    #2301.
+    """
     outfile = tmp_path / "sherpa.save"
     session = Session()
     session.load_arrays(1, TEST, TEST2)
+    m1 = Const1D(name='myconst') + PowLaw1D()
+    session.set_source(2, m1)
     session.save(str(outfile), clobber=True)
     session.clean()
     assert set() == set(session.list_data_ids())
+    assert set() == set(session.list_model_ids())
 
     session.restore(str(outfile))
     assert {1, } == set(session.list_data_ids())
+    assert {2, } == set(session.list_model_ids())
     assert_array_equal(TEST, session.get_data(1).get_indep()[0])
     assert_array_equal(TEST2, session.get_data(1).get_dep())
+    assert m1.name == session.get_source(2).name
 
 
 def test_save_clobber_check(tmp_path):

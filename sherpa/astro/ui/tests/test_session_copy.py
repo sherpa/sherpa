@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2022
+#  Copyright (C) 2016-2017, 2022, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -27,7 +27,9 @@ code and tests is likely needed.
 """
 
 from sherpa.astro.ui.utils import Session
+from sherpa.utils.testing import requires_xspec
 from numpy.testing import assert_array_equal
+import pytest
 
 TEST = [1, 2, 3]
 TEST2 = [4, 5, 6]
@@ -78,3 +80,28 @@ def test_save_restore(tmpdir):
     assert {1, } == set(session.list_data_ids())
     assert_array_equal(TEST, session.get_data(1).get_indep()[0])
     assert_array_equal(TEST2, session.get_data(1).get_dep())
+
+
+@requires_xspec
+def test_save_restore_composite_model_with_cache(tmp_path, xsmodel):
+    """Test that the save/restore works with a composite model.
+
+    Specifically, we use a model from XSPEC that has a cache.
+    Slightly expanded regression test for bug #2301.
+    """
+
+    outfile = outfile = tmp_path / "sherpa.save"
+    session = Session()
+    m1 = xsmodel("phabs") * xsmodel("vapec")
+    session.set_source(1, m1)
+    session.save(str(outfile), clobber=True)
+    session.clean()
+    assert set() == set(session.list_model_ids())
+
+    session.restore(str(outfile))
+    assert {1, } == set(session.list_model_ids())
+    # We cannot use an identity check here since the model is
+    # reconstructed at a different memory location, but we can check
+    # that it is functionally the same, by checking the name
+    # which will contain the parts like 'phabs * vapec'
+    assert session.get_source(1).name == m1.name
