@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2020, 2021, 2023
+#  Copyright (C) 2007, 2020, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -17,6 +17,13 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+"""Control commumication with the DS9 backend using pyds9.
+
+Note that pyds9 is currently unsupported and this interface is
+untested.
+
+"""
 
 import time
 
@@ -112,6 +119,7 @@ def image(arr, newframe=False, tile=False):
             imager.set("tile no")
     except:
         raise DS9Err('settile')
+
     time.sleep(1)
     try:
         # pyds9 expects shape[::-1] compared to DS9.py
