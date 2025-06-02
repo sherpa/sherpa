@@ -77,6 +77,37 @@ class Strategy:
                  pop: SimplexRandom,
                  icurrent: int
                  ) -> MyOptOutput:
+
+        # The subclasses are assumed to follow:
+        #
+        #   r1, ..., rn = self.init(n)
+        #   trial = pop[icurrent].copy()
+        #   n = self.select_par()
+        #   for counter in self.npar():
+        #
+        # and then either
+        #
+        #       trial[n] += ...
+        #       n = (n + 1) % self.npar
+        #       if self.check_end():
+        #           break
+        #
+        # or
+        #
+        #       if self.check_select(counter):
+        #           trial[n] += ...
+        #           n = (n + 1) % self.npar
+        #
+        # and then ending up with
+        #
+        #  return self.calc(trial, pop)
+        #
+        # Some of the logic in "..." above could be moved out of the
+        # loop (as it can be calculated for the full parameter array
+        # once rather than per element), but this was found to subtly
+        # change some results - presumably because of numerical
+        # instability - and so the code has been left as is for now.
+        #
         raise NotImplementedError
 
     # The arg argument contains parameter values and then the
@@ -94,6 +125,24 @@ class Strategy:
     def init(self, num: int) -> np.ndarray:
         return random.choice(self.rng, range(self.npop), num)
 
+    def select_par(self) -> int:
+        """Select a parameter."""
+
+        return random.integers(self.rng, self.npar)
+
+    # Not all sub-classes are expected to use this.
+    def check_end(self) -> bool:
+        """Should the iteration exit?"""
+
+        return random.random(self.rng) > self.xprob
+
+    # Not all sub-classes are expected to use this.
+    def check_select(self, counter: int) -> bool:
+        """Should the iteration be evaluated?"""
+
+        return random.random(self.rng) < self.xprob or \
+            counter == self.npar - 1
+
 
 class Strategy0(Strategy):
 
@@ -105,11 +154,11 @@ class Strategy0(Strategy):
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
-        n = random.integers(self.rng, self.npar)
+        n = self.select_par()
         for _ in range(self.npar):
             trial[n] = pop[0][n] + self.sfactor * (pop[r2][n] - pop[r3][n])
             n = (n + 1) % self.npar
-            if random.random(self.rng) > self.xprob:
+            if self.check_end():
                 break
 
         return self.calc(trial, pop)
@@ -125,11 +174,11 @@ class Strategy1(Strategy):
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
-        n = random.integers(self.rng, self.npar)
+        n = self.select_par()
         for _ in range(self.npar):
             trial[n] = trial[n] + self.sfactor * (pop[r2][n] - pop[r3][n])
             n = (n + 1) % self.npar
-            if random.random(self.rng) > self.xprob:
+            if self.check_end():
                 break
 
         return self.calc(trial, pop)
@@ -143,12 +192,12 @@ class Strategy2(Strategy):
                  ) -> MyOptOutput:
         r1, r2 = self.init(2)
         trial = pop[icurrent].copy()
-        n = random.integers(self.rng, self.npar)
+        n = self.select_par()
         for _ in range(self.npar):
             trial[n] = trial[n] + self.sfactor * (pop[0][n] - trial[n]) + \
                 self.sfactor * (pop[r1][n] - pop[r2][n])
             n = (n + 1) % self.npar
-            if random.random(self.rng) > self.xprob:
+            if self.check_end():
                 break
 
         return self.calc(trial, pop)
@@ -162,13 +211,13 @@ class Strategy3(Strategy):
                  ) -> MyOptOutput:
         r1, r2, r3, r4 = self.init(4)
         trial = pop[icurrent].copy()
-        n = random.integers(self.rng, self.npar)
+        n = self.select_par()
         for _ in range(self.npar):
             trial[n] = pop[0][n] + \
                 (pop[r1][n] + pop[r2][n] - pop[r3][n] - pop[r4][n]) * \
                 self.sfactor
             n = (n + 1) % self.npar
-            if random.random(self.rng) > self.xprob:
+            if self.check_end():
                 break
 
         return self.calc(trial, pop)
@@ -182,13 +231,13 @@ class Strategy4(Strategy):
                  ) -> MyOptOutput:
         r1, r2, r3, r4, r5 = self.init(5)
         trial = pop[icurrent].copy()
-        n = random.integers(self.rng, self.npar)
+        n = self.select_par()
         for _ in range(self.npar):
             trial[n] = pop[r5][n] + \
                 (pop[r1][n] + pop[r2][n] - pop[r3][n] - pop[r4][n]) * \
                 self.sfactor
             n = (n + 1) % self.npar
-            if random.random(self.rng) > self.xprob:
+            if self.check_end():
                 break
 
         return self.calc(trial, pop)
@@ -204,10 +253,9 @@ class Strategy5(Strategy):
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
-        n = random.integers(self.rng, self.npar)
+        n = self.select_par()
         for counter in range(self.npar):
-            if random.random(self.rng) < self.xprob or \
-                    counter == self.npar - 1:
+            if self.check_select(counter):
                 trial[n] = pop[0][n] + \
                     self.sfactor * (pop[r2][n] - pop[r3][n])
                 n = (n + 1) % self.npar
@@ -223,10 +271,9 @@ class Strategy6(Strategy):
                  ) -> MyOptOutput:
         r1, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
-        n = random.integers(self.rng, self.npar)
+        n = self.select_par()
         for counter in range(self.npar):
-            if random.random(self.rng) < self.xprob or \
-                    counter == self.npar - 1:
+            if self.check_select(counter):
                 trial[n] = pop[r1][n] + self.sfactor * \
                     (pop[r2][n] - pop[r3][n])
                 n = (n + 1) % self.npar
@@ -242,10 +289,9 @@ class Strategy7(Strategy):
                  ) -> MyOptOutput:
         r1, r2 = self.init(2)
         trial = pop[icurrent].copy()
-        n = random.integers(self.rng, self.npar)
+        n = self.select_par()
         for counter in range(self.npar):
-            if random.random(self.rng) < self.xprob or \
-                    counter == self.npar - 1:
+            if self.check_select(counter):
                 trial[n] += self.sfactor * ((pop[0][n] - trial[n]) +
                                             (pop[r1][n] - pop[r2][n]))
                 n = (n + 1) % self.npar
@@ -263,10 +309,9 @@ class Strategy8(Strategy):
         # code has been tested using this call.
         _, r2, r3, r4 = self.init(4)
         trial = pop[icurrent].copy()
-        n = random.integers(self.rng, self.npar)
+        n = self.select_par()
         for counter in range(self.npar):
-            if random.random(self.rng) < self.xprob or \
-                    counter == self.npar - 1:
+            if self.check_select(counter):
                 trial[n] = pop[0][n] + \
                     self.sfactor * (pop[r2][n] - pop[r3][n] - pop[r4][n])
                 n = (n + 1) % self.npar
@@ -282,10 +327,9 @@ class Strategy9(Strategy):
                  ) -> MyOptOutput:
         r1, r2, r3, r4, r5 = self.init(5)
         trial = pop[icurrent].copy()
-        n = random.integers(self.rng, self.npar)
+        n = self.select_par()
         for counter in range(self.npar):
-            if random.random(self.rng) < self.xprob or \
-                    counter == self.npar - 1:
+            if self.check_select(counter):
                 trial[n] = pop[r5][n] + \
                     self.sfactor * (pop[r1][n] + pop[r2][n] - pop[r3][n] -
                                     pop[r4][n])
