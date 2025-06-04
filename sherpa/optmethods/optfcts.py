@@ -412,6 +412,84 @@ def difevo_nm(fcn: StatFunc,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
+def make_range_sequence(npar: int,
+                        xmin: np.ndarray,
+                        xmax: np.ndarray,
+                        N: int
+                        ) -> list[list[float]]:
+    """Create the grid ranges.
+
+    Parameters
+    ----------
+    npar
+       The number of parameters.
+    xmin, xmax
+       The minimum and maximum of each parameter.
+    N
+       The number of bins to create for each parameter.
+
+    Returns
+    -------
+    grid
+       Each element is a list of the parameter values at the
+       grid point. There will be pow(N, npar) elements.
+
+    Notes
+    -----
+
+    The ordering of the results (does the first parameter loop fastest
+    or slowest) is not guaranteed.
+
+    Examples
+    --------
+
+    Create the grid for 1 parameter, between 1 and 10,
+    with 4 elements:
+
+    >>> x1 = make_range_sequence(1, [1], [10], 4)
+    >>> len(x1)
+    4
+    >>> x1[0]
+    [np.float64(1.0)]
+    >>> x1[1]
+    [np.float64(4.0)]
+    >>> x1[3]
+    [np.float64(10.0)]
+
+    With two parameters, ranging 1 to 10 and 100 to 115,
+    N=4 created 16 pairs:
+
+    >>> x2 = make_range_sequence(2, [1, 100], [10, 115], 4)
+    >>> x2[0]
+    [np.float64(1.0), np.float64(100.0)]
+    >>> x2[1]
+    [np.float64(1.0), np.float64(105.0)]
+    >>> x2[2]
+    [np.float64(1.0), np.float64(110.0)]
+    >>> x2[3]
+    [np.float64(1.0), np.float64(115.0)]
+    >>> x2[4]
+    [np.float64(4.0), np.float64(100.0)]
+
+    """
+
+    step = complex(N)
+    slices = [slice(x1, x2, step)
+              for x1, x2 in zip(xmin, xmax)]
+
+    mgrid = np.mgrid[slices]
+    mynfev = pow(N, npar)
+    grid = list(map(np.ravel, mgrid))
+    sequence = []
+    for index in range(mynfev):
+        tmp = []
+        for xx in range(npar):
+            tmp.append(grid[xx][index])
+        sequence.append(tmp)
+
+    return sequence
+
+
 # Ideally method would send in the actual method, not the name,
 # but it's hard to specialize the arguments.
 #
@@ -484,38 +562,19 @@ def grid_search(fcn: StatFunc,
             print(f'f{pars}={aaa:g}')
         return aaa
 
-    def make_sequence(ranges, N):
-        list_ranges = list(ranges)
-        for ii in range(npar):
-            list_ranges[ii] = tuple(list_ranges[ii]) + (complex(N),)
-            list_ranges[ii] = slice(*list_ranges[ii])
-
-        grid = np.mgrid[list_ranges]
-        mynfev = pow(N, npar)
-        grid = list(map(np.ravel, grid))
-        sequence = []
-        for index in range(mynfev):
-            tmp = []
-            for xx in range(npar):
-                tmp.append(grid[xx][index])
-            sequence.append(tmp)
-        return sequence
-
     def eval_stat_func(xxx):
         return np.append(func(xxx), xxx)
 
     if sequence is None:
-        ranges = []
-        for index in range(npar):
-            ranges.append([xmin[index], xmax[index]])
-        sequence = make_sequence(ranges, num)
-    else:
-        if not np.iterable(sequence):
-            raise TypeError("sequence option must be iterable")
+        sequence = make_range_sequence(npar, xmin, xmax, num)
 
+    elif np.iterable(sequence):
         for seq in sequence:
             if npar != len(seq):
                 raise TypeError(f"{seq} must be of length {npar}")
+
+    else:
+        raise TypeError("sequence option must be iterable")
 
     answer = eval_stat_func(x)
     sequence_results = parallel_map(eval_stat_func, sequence, numcores)
