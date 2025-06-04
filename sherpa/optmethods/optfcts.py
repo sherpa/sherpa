@@ -20,20 +20,23 @@
 
 """Optimizing functions.
 
-These functions take a callback, the current set of parameters, the
-minimum and maximum parameter ranges, along with optional arguments,
-and return a tuple containing
+As input, these functions take
 
-    status, parameters, statistic, message, dict
+  - a callback function, which should return the current statistic value
+    and an array of the statistic value per bin.
+  - the current set of parameters (a numpy array)
+  - the minimum for each parameter (numpy array)
+  - the maximum for each parameter (numpy array)
+  - any optional arguments
 
-where ``status`` is a boolean indicating whether the optimisation
-succeeded or not, parameters is the list of parameter values at the
-best-fit location, the statistic value at this location, a string
-message - when ``status`` is `False` this will give information on the
-failure - and a dictionary which depends on the optimiser.
+The return value is a tuple containing
 
-The callback should return the current statistic value and an array
-of the statistic value per bin.
+ - a boolean indicating whether the optimization succeeded or not
+ - the list of parameter values at the best-fit location
+ - a string message, which might be empty. If the first element is `False`
+   most optimizers indicate a reason for the failure in this string.
+ - a dictionary which depends on the optimizer and may be empty, or `None`.
+
 
 Notes
 -----
@@ -66,6 +69,16 @@ model value of 1 and bounded to the range 0 to 10000:
 >>> print(f"Best-fit value: {res[1][0]}")
 Best-fit value: 4.0
 
+How are parameter bounds implemented?
+-------------------------------------
+The optimizers `neldermead` and `minim` use a simple Infinite Potential
+approach, where the value of the statistic is set to a very large
+number defined by the module level variable `FUNC_MAX`
+if any of the parameter values is outside the limits.
+
+This approach is easy to implement and fast to evaluate, but it does
+introduce a discontinuity at the limits which can in some cases cause
+problems when the best-fit value is close to the limits.
 """
 
 from collections.abc import Sequence
@@ -85,20 +98,21 @@ from .ncoresnm import ncoresNelderMead
 
 
 __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
-           'minim', 'montecarlo', 'neldermead')
+           'minim', 'montecarlo', 'neldermead',
+           )
 
 
 warning = logging.getLogger(__name__).warning
 
-# Use FLT_EPSILON as default tolerance
-#
-EPSILON = np.float64(np.finfo(np.float32).eps)
 
-# Maximum callback function value, used to indicate that the optimizer
-# has exceeded parameter boundaries.  All the optimizers expect double
+EPSILON = np.float64(np.finfo(np.float32).eps)
+'''Use FLT_EPSILON as default tolerance'''
+
+# All the optimizers expect double
 # precision arguments, so we use np.float64 instead of SherpaFloat.
-#
 FUNC_MAX = np.finfo(np.float64).max
+"""Value used to indicate that the optimizer has exceeded parameter limits.
+"""
 
 
 def _check_args(x0: ArrayType,
@@ -234,6 +248,15 @@ class InfinitePotential:
     the statistic are not NaN and lie within the range
 
         minval <= pars <= maxval
+
+    Parameters
+    ----------
+    func : function
+        The function to be called to evaluate the statistic.
+    minval : array
+        The minimum value for each parameter.
+    maxval : array
+        The maximum value for each parameter.
 
     """
 
