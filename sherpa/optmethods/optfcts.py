@@ -1266,10 +1266,9 @@ class FdJac:
                pars: np.ndarray,
                xmax: np.ndarray
                ) -> np.ndarray:
-        nn = len(pars)
-        h = np.empty((nn,))
-        for ii in range(nn):
-            h[ii] = self.eps * pars[ii]
+
+        h = self.eps * pars
+        for ii in range(len(pars)):
             if h[ii] == 0.0:
                 h[ii] = self.eps
             if pars[ii] + h[ii] > xmax[ii]:
