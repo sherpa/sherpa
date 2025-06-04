@@ -845,6 +845,35 @@ def montecarlo(fcn: StatFunc,
 #
 # Nelder Mead
 #
+def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
+            myfcn, ofval=FUNC_MAX):
+    """Simplex implementation for neldermead.
+
+    .. versionadded:: 4.18.0
+       In earlier versions this was an internal routine to neldermead.
+
+    """
+
+    if len(final) >= 3:
+        # get rid of the last entry in the list
+        tmpfinal = final[0:-1]
+    else:
+        tmpfinal = final[:]
+
+    xx, ff, nf, er = _saoopt.neldermead(verbose, maxfev, init,
+                                        tmpfinal, tol, step, xmin,
+                                        xmax, x, myfcn)
+
+    if len(final) >= 3 and ff < 0.995 * ofval and nf < maxfev:
+        myfinal = [final[-1]]
+        x, fval, nfev, err = simplex(verbose, maxfev - nf, init,
+                                     myfinal, tol, step, xmin, xmax,
+                                     x, myfcn, ofval=ff)
+        return x, fval, nfev + nf, err
+
+    return xx, ff, nf, er
+
+
 def neldermead(fcn: StatFunc,
                x0: ArrayType,
                xmin: ArrayType,
@@ -1114,26 +1143,6 @@ def neldermead(fcn: StatFunc,
 
     if maxfev is None:
         maxfev = 1024 * len(x)
-
-    def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
-                myfcn, ofval=FUNC_MAX):
-
-        tmpfinal = final[:]
-        if len(final) >= 3:
-            # get rid of the last entry in the list
-            tmpfinal = final[0:-1]
-
-        xx, ff, nf, er = _saoopt.neldermead(verbose, maxfev, init, tmpfinal,
-                                            tol, step, xmin, xmax, x, myfcn)
-
-        if len(final) >= 3 and ff < 0.995 * ofval and nf < maxfev:
-            myfinal = [final[-1]]
-            x, fval, nfev, err = simplex(verbose, maxfev-nf, init, myfinal, tol,
-                                         step, xmin, xmax, x, myfcn,
-                                         ofval=ff)
-            return x, fval, nfev + nf, err
-
-        return xx, ff, nf, er
 
     x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, fsimplex,
                                  ftol, step, xmin, xmax, x, stat_cb0)
