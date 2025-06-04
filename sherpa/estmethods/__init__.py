@@ -1223,10 +1223,6 @@ def confidence(pars: np.ndarray,
         msg += '%s' % myargs
         sherpablog.info(msg)
 
-    # TODO: this dictionary is used to store a value, but the value is
-    # never used. Do we need it?
-    store = {}
-
     # LocalEstFunc
     def func(counter: int,
              singleparnum: int,
@@ -1270,7 +1266,6 @@ def confidence(pars: np.ndarray,
 
         for dirn in range(2):
 
-            #
             # trial_points stores the history of the points for the
             # parameter which has been evaluated in order to locate
             # the root. Note the first point is 'given' since the info
@@ -1299,11 +1294,6 @@ def confidence(pars: np.ndarray,
 
         # This should really set the error flag appropriately.
         error_flags.append(est_success)
-
-        #
-        # include the minimum point to separate the -/+ interval
-        #
-        store[par_name] = trial_points
 
         return (conf_int[0][0], conf_int[1][0], error_flags[0],
                 counter_cb.nfev, None)
