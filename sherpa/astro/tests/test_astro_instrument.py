@@ -46,7 +46,8 @@ from sherpa.models.basic import Box1D, Const1D, Gauss1D, Polynom1D, \
 from sherpa.models.model import ArithmeticModel, \
     ArithmeticConstantModel, BinaryOpModel, Model
 from sherpa.utils.err import DataErr, PSFErr
-from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
+from sherpa.utils.testing import requires_xspec, requires_data, \
+    requires_fits, requires_psf
 
 try:
     from sherpa.astro.xspec import XSconstant
@@ -2242,6 +2243,7 @@ def test_rmf_to_image_offset_0(make_data_path, recwarn):
 # Several tests from sherpa/tests/test_instrument.py repeated to check out
 # the astro-version of PSFModel
 #
+@requires_psf
 def test_psf1d_empty_pars():
     """What does .pars mean for an empty PSFModel?"""
 
@@ -2249,6 +2251,7 @@ def test_psf1d_empty_pars():
     assert m.pars == ()
 
 
+@requires_psf
 def test_psf1d_pars():
     """What does .pars mean for a PSFModel?"""
 
@@ -2257,6 +2260,7 @@ def test_psf1d_pars():
     assert m.pars == ()
 
 
+@requires_psf
 def test_psf1d_convolved_pars():
     """What does .pars mean for a PSFModel applied to a model?"""
 
@@ -2282,6 +2286,7 @@ def test_psf1d_convolved_pars():
         assert cpar == bpar
 
 
+@requires_psf
 def test_psfmodel_kernel_has_no_dimension():
     """It is expected that this will error out, but just where.
 
@@ -2300,6 +2305,7 @@ def test_psfmodel_kernel_has_no_dimension():
         m.get_kernel(data)
 
 
+@requires_psf
 def test_psfmodel_fold_check_kernel_no_cdelt_warning(caplog):
     """Check behavior"""
 
@@ -2338,6 +2344,7 @@ class FakeWCS:
     cdelt: float = 1.0
 
 
+@requires_psf
 def test_psfmodel_fold_check_data_no_cdelt_warning(caplog):
     """Check behavior"""
 

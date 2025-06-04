@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2020 - 2024
+#  Copyright (C) 2017, 2020 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -191,6 +191,13 @@ if HAS_PYTEST:
     def requires_xspec(test_function):
         return requires_package("xspec required", "sherpa.astro.xspec")(test_function)
 
+    def requires_psf(test_function):
+        """Decorator for test functions requiring PSF support"""
+        # Note that 'from sherpa.utils import _psf' returns None
+        # but 'import sherpa.utils._psf' fails.
+        #
+        return requires_package("FFT/PSF rquired", 'sherpa.utils._psf')(test_function)
+
 else:
 
     def wrapped():
@@ -216,6 +223,8 @@ else:
     requires_ds9 = make_fake()
 
     requires_xspec = make_fake()
+
+    requires_psf = make_fake()
 
     def requires_package(*args):
         return make_fake()
