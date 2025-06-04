@@ -564,6 +564,85 @@ def covariance(pars: np.ndarray,
             np.array(error_flags), 0, inv_info)
 
 
+# Use a class purely to make it easy to separate the setup arguments
+# from those needed to call the per-parameter routine while still
+# allowing multiprocessing to work with non-fork methods.
+#
+# As it's not clear what all the types of the values should be
+# this is not written as a dataclass.
+#
+class ProjFunc:
+    """Evaluate an individual parameter with the projection routine."""
+
+    def __init__(self,
+                 *,
+                 stat_cb,
+                 fit_cb,
+                 pars,
+                 parmins,
+                 parmaxes,
+                 parhardmins,
+                 parhardmaxes,
+                 sigma: float,
+                 eps: float,
+                 tol: float,
+                 maxiters: int,
+                 remin,
+                 report_progress
+                 ) -> None:
+        self.stat_cb = stat_cb
+        self.fit_cb = fit_cb
+        self.pars = pars
+        self.parmins = parmins
+        self.parmaxes = parmaxes
+        self.parhardmins = parhardmins
+        self.parhardmaxes = parhardmaxes
+        self.sigma = sigma
+        self.eps = eps
+        self.tol = tol
+        self.maxiters = maxiters
+        self.remin = remin
+        self.report_progress = report_progress
+
+    # Matches LocalEstFunc
+    #
+    def __call__(self,
+                 counter: int,  # unused
+                 singleparnum: int,
+                 lock: SupportsLock | None = None
+                 ) -> tuple[SupportsFloat, SupportsFloat, int, int, None]:
+        """Evaluate the projection for a single parameter."""
+
+        proj_func = _est_funcs.projection
+
+        try:
+            singlebounds = proj_func(self.pars, self.parmins,
+                                     self.parmaxes, self.parhardmins,
+                                     self.parhardmaxes, self.sigma,
+                                     self.eps, self.tol,
+                                     self.maxiters, self.remin,
+                                     [singleparnum], self.stat_cb,
+                                     self.fit_cb)
+
+        except EstNewMin as emin:
+            # catch the EstNewMin exception and attach the modified
+            # parameter values to the exception obj.  These modified
+            # parvals determine the new lower statistic.
+            raise EstNewMin(self.pars) from emin
+
+        if lock is not None:
+            lock.acquire()
+
+        self.report_progress(singleparnum, singlebounds[0],
+                             singlebounds[1])
+
+        if lock is not None:
+            lock.release()
+
+        return (singlebounds[0][0], singlebounds[1][0],
+                singlebounds[2][0], singlebounds[3], None)
+
+
 def projection(pars: np.ndarray,
                parmins: np.ndarray,
                parmaxes: np.ndarray,
@@ -601,35 +680,20 @@ def projection(pars: np.ndarray,
     # upon exiting the while loop, constructing a new tuple to return.
     # SMD 03/17/2009
 
-    proj_func = _est_funcs.projection
-
-    # LocalEstFunction
-    def func(counter: int,  # unused
-             singleparnum: int,
-             lock: SupportsLock | None = None
-             ) -> tuple[SupportsFloat, SupportsFloat, int, int, None]:
-        try:
-            singlebounds = proj_func(pars, parmins, parmaxes,
-                                     parhardmins, parhardmaxes,
-                                     sigma, eps, tol, maxiters,
-                                     remin, [singleparnum], stat_cb,
-                                     fit_cb)
-        except EstNewMin as emin:
-            # catch the EstNewMin exception and attach the modified
-            # parameter values to the exception obj.  These modified
-            # parvals determine the new lower statistic.
-            raise EstNewMin(pars) from emin
-
-        if lock is not None:
-            lock.acquire()
-
-        report_progress(singleparnum, singlebounds[0], singlebounds[1])
-
-        if lock is not None:
-            lock.release()
-
-        return (singlebounds[0][0], singlebounds[1][0], singlebounds[2][0],
-                singlebounds[3], None)
+    estfunc = ProjFunc(stat_cb=stat_cb,
+                       fit_cb=fit_cb,
+                       pars=pars,
+                       parmins=parmins,
+                       parmaxes=parmaxes,
+                       parhardmins=parhardmins,
+                       parhardmaxes=parhardmaxes,
+                       sigma=sigma,
+                       eps=eps,
+                       tol=tol,
+                       maxiters=maxiters,
+                       remin=remin,
+                       report_progress=report_progress
+                       )
 
     if numsearched < 2 or not multi or numcores < 2:
         do_parallel = False
@@ -640,7 +704,7 @@ def projection(pars: np.ndarray,
         eflags = np.zeros(numsearched, dtype=int)
         nfits = 0
         for i, pnum in enumerate(limit_parnums):
-            singlebounds = func(i, pnum)
+            singlebounds = estfunc(i, pnum)
             lower_limits[i] = singlebounds[0]
             upper_limits[i] = singlebounds[1]
             eflags[i] = singlebounds[2]
@@ -648,7 +712,7 @@ def projection(pars: np.ndarray,
 
         return (lower_limits, upper_limits, eflags, nfits, None)
 
-    return parallel_est(func, limit_parnums, pars, numcores)
+    return parallel_est(estfunc, limit_parnums, pars, numcores)
 
 #################################confidence###################################
 
