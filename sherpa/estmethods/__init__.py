@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 import logging
-from typing import Any, Protocol, SupportsFloat
+from typing import Any, Protocol, SupportsFloat, TypeVar
 import warnings
 
 import numpy as np
@@ -49,6 +49,8 @@ __all__ = ('EstNewMin', 'Covariance', 'Confidence',
            'est_hardmax', 'est_hardminmax', 'est_newmin', 'est_maxiter',
            'est_hitnan')
 
+
+T = TypeVar('T')
 
 warning = logging.getLogger(__name__).warning
 
@@ -1063,6 +1065,145 @@ class ConfStep:
         return self.covar(dir, iter, step_size, base)
 
 
+# Local routines for confidence.
+#
+def c_get_prefix(index: int,
+                 name: str,
+                 minus_plus: Sequence[str]
+                 ) -> list[str]:
+    '''To print the prefix/indent when verbose is on'''
+    blank = 3 * index * ' '
+    return [f"{blank}{name} {mtext}:" for mtext in minus_plus]
+
+
+def c_get_delta_root(arg, dir, par_at_min):
+
+    my_neg_pos = ConfBracket.neg_pos[dir]
+
+    if is_iterable(arg):
+        # return map( lambda x: my_neg_pos * abs( x - par_at_min ), arg )
+        return arg
+
+    if arg is not None:
+        arg -= par_at_min
+        return my_neg_pos * abs(arg)
+
+    return arg
+
+
+def c_get_step_size(error_scales,
+                    upper_scales,
+                    index: int,
+                    par: SupportsFloat
+                    ) -> float:
+
+    if 0 != error_scales[index]:
+        # if covar error is NaN then set it to fraction of the par value.
+        ith_covar_err = 0.0625 * abs(par)
+    else:
+        ith_covar_err = abs(upper_scales[index])
+    if 0.0 == ith_covar_err:
+        # just in case covar and/or par is 0
+        ith_covar_err = 1.0e-6
+
+    return ith_covar_err
+
+
+def c_monitor_func(fcn: Callable[..., T],
+                   history: Sequence[list]
+                   ) -> Callable[..., T]:
+    """Store input/output values from calling the function."""
+
+    def myfunc(x, *args):
+        fval = fcn(x, *args)
+        history[0].append(x)
+        history[1].append(fval)
+        return fval
+
+    return myfunc
+
+
+def c_print_status(myblog,
+                   verbose,
+                   prefix: str,
+                   answer,
+                   lock: SupportsLock | None
+                   ) -> None:
+
+    if lock is not None:
+        lock.acquire()
+
+    if 0 == verbose:
+        p = prefix.lstrip()
+    else:
+        p = prefix
+
+    msg = f"{p}\t"
+
+    if is_iterable(answer):
+        msg += list_to_open_interval(answer)
+    elif answer is None:
+        msg += '-----'
+    else:
+        msg += f"{answer:g}"
+    myblog(msg)
+
+    if lock is not None:
+        lock.release()
+
+
+def c_translated_fit_cb(fcn: Callable[..., T],
+                        myargs: ConfArgs
+                        ) -> Callable[..., T]:
+    """Work in the translated coordinate.
+
+    Hence the 'errors/confidence' are the zeros/roots in the
+    translated coordinate system.
+
+    """
+
+    def translated_fit_cb_wrapper(x, *args):
+        hlimit = myargs.hlimit
+        slimit = myargs.slimit
+        hmin = hlimit[0]
+        hmax = hlimit[1]
+        xpars = myargs.xpars
+        ith_par = myargs.ith_par
+        # The parameter must be within the hard limits
+        if x < hmin[ith_par] or x > hmax[ith_par]:
+            raise OutOfBoundErr
+
+        smin = slimit[0]
+        smax = slimit[1]
+        orig_ith_xpar = xpars[ith_par]
+        xpars[ith_par] = x
+        translated_stat = fcn(
+            xpars, smin, smax, ith_par) - myargs.target_stat
+        xpars[ith_par] = orig_ith_xpar
+        return translated_stat
+
+    return translated_fit_cb_wrapper
+
+
+def c_verbose_fitcb(fcn: Callable[..., T],
+                    bloginfo: ConfBlog
+                    ) -> Callable[..., T]:
+    if 0 == bloginfo.verbose:
+        return fcn
+
+    def verbose_fcn(x, *args):
+        fval = fcn(x, *args)
+        msg = f"{bloginfo.prefix} f( {x:e} ) ="
+        if fval is None:
+            msg = f"{msg} None"
+        else:
+            msg = f"{msg} {fval:e}"
+        bloginfo.blogger.info(msg)
+        return fval
+
+    return verbose_fcn
+
+
 def confidence(pars: np.ndarray,
                parmins: np.ndarray,
                parmaxes: np.ndarray,
@@ -1083,109 +1224,6 @@ def confidence(pars: np.ndarray,
                numcores: int,
                open_interval
                ) -> EstReturn:
-
-    def get_prefix(index, name, minus_plus):
-        '''To print the prefix/indent when verbose is on'''
-        blank = 3 * index * ' '
-        return [f"{blank}{name} {mtext}:" for mtext in minus_plus]
-
-    def get_delta_root(arg, dir, par_at_min):
-
-        my_neg_pos = ConfBracket.neg_pos[dir]
-
-        if is_iterable(arg):
-            # return map( lambda x: my_neg_pos * abs( x - par_at_min ), arg )
-            return arg
-
-        if arg is not None:
-            arg -= par_at_min
-            return my_neg_pos * abs(arg)
-
-        return arg
-
-    def get_step_size(error_scales, upper_scales, index, par):
-
-        if 0 != error_scales[index]:
-            # if covar error is NaN then set it to fraction of the par value.
-            ith_covar_err = 0.0625 * abs(par)
-        else:
-            ith_covar_err = abs(upper_scales[index])
-        if 0.0 == ith_covar_err:
-            # just in case covar and/or par is 0
-            ith_covar_err = 1.0e-6
-
-        return ith_covar_err
-
-    def monitor_func(fcn, history):
-        def myfunc(x, *args):
-            fval = fcn(x, *args)
-            history[0].append(x)
-            history[1].append(fval)
-            return fval
-
-        return myfunc
-
-    def print_status(myblog, verbose, prefix, answer, lock):
-
-        if lock is not None:
-            lock.acquire()
-
-        if 0 == verbose:
-            msg = '%s\t' % prefix.lstrip()
-        else:
-            msg = '%s\t' % prefix
-
-        if is_iterable(answer):
-            msg += list_to_open_interval(answer)
-        elif answer is None:
-            msg += '-----'
-        else:
-            msg += '%g' % answer
-        myblog(msg)
-
-        if lock is not None:
-            lock.release()
-
-    #
-    # Work in the translated coordinate. Hence the 'errors/confidence'
-    # are the zeros/roots in the translated coordinate system.
-    #
-    def translated_fit_cb(fcn, myargs):
-        def translated_fit_cb_wrapper(x, *args):
-            hlimit = myargs.hlimit
-            slimit = myargs.slimit
-            hmin = hlimit[0]
-            hmax = hlimit[1]
-            xpars = myargs.xpars
-            ith_par = myargs.ith_par
-            # The parameter must be within the hard limits
-            if x < hmin[ith_par] or x > hmax[ith_par]:
-                raise OutOfBoundErr
-
-            smin = slimit[0]
-            smax = slimit[1]
-            orig_ith_xpar = xpars[ith_par]
-            xpars[ith_par] = x
-            translated_stat = fcn(
-                xpars, smin, smax, ith_par) - myargs.target_stat
-            xpars[ith_par] = orig_ith_xpar
-            return translated_stat
-        return translated_fit_cb_wrapper
-
-    def verbose_fitcb(fcn, bloginfo):
-        if 0 == bloginfo.verbose:
-            return fcn
-
-        def verbose_fcn(x, *args):
-            fval = fcn(x, *args)
-            msg = '%s f( %e ) =' % (bloginfo.prefix, x)
-            if fval is None:
-                msg = '%s None' % msg
-            else:
-                msg = '%s %e' % (msg, fval)
-            bloginfo.blogger.info(msg)
-            return fval
-        return verbose_fcn
 
     sherpablog = logging.getLogger('sherpa')  # where to print progress report
 
@@ -1244,25 +1282,25 @@ def confidence(pars: np.ndarray,
         #
         myargs.ith_par = singleparnum
 
-        fitcb = translated_fit_cb(counter_cb, myargs)
+        fitcb = c_translated_fit_cb(counter_cb, myargs)
 
         par_name = get_par_name(myargs.ith_par)
 
-        ith_covar_err = get_step_size(error_scales, upper_scales, counter,
-                                      pars[myargs.ith_par])
+        ith_covar_err = c_get_step_size(error_scales, upper_scales, counter,
+                                        pars[myargs.ith_par])
 
         trial_points = [[], []]
-        fitcb = monitor_func(fitcb, trial_points)
+        fitcb = c_monitor_func(fitcb, trial_points)
 
         bracket = ConfBracket(myargs, trial_points)
 
         # the parameter name is set, may as well get the prefix
-        prefix = get_prefix(counter, par_name, ['-', '+'])
+        prefix = c_get_prefix(counter, par_name, ['-', '+'])
 
-        myfitcb = [verbose_fitcb(fitcb,
-                                 ConfBlog(sherpablog, prefix[0], verbose, lock)),
-                   verbose_fitcb(fitcb,
-                                 ConfBlog(sherpablog, prefix[1], verbose, lock))]
+        myfitcb = [c_verbose_fitcb(fitcb,
+                                   ConfBlog(sherpablog, prefix[0], verbose, lock)),
+                   c_verbose_fitcb(fitcb,
+                                   ConfBlog(sherpablog, prefix[1], verbose, lock))]
 
         for dirn in range(2):
 
@@ -1283,14 +1321,14 @@ def confidence(pars: np.ndarray,
 
             myzero = root(eps, myblog)
 
-            delta_zero = get_delta_root(myzero, dirn, pars[myargs.ith_par])
+            delta_zero = c_get_delta_root(myzero, dirn, pars[myargs.ith_par])
 
             conf_int[dirn].append(delta_zero)
 
-            status_prefix = get_prefix(counter, par_name, ['lower bound',
-                                                           'upper bound'])
-            print_status(myblog.blogger.info, verbose, status_prefix[dirn],
-                         delta_zero, lock)
+            status_prefix = c_get_prefix(counter, par_name, ['lower bound',
+                                                             'upper bound'])
+            c_print_status(myblog.blogger.info, verbose, status_prefix[dirn],
+                           delta_zero, lock)
 
         # This should really set the error flag appropriately.
         error_flags.append(est_success)
