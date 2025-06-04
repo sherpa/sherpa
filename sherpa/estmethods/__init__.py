@@ -28,6 +28,7 @@ import warnings
 import numpy as np
 from numpy.linalg import LinAlgError
 
+from sherpa.stats import StatCallback
 from sherpa.utils import NoNewAttributesAfterInit, \
     FuncCounter, OutOfBoundErr, Knuth_close, \
     print_fields, is_iterable, list_to_open_interval, quad_coef, \
@@ -47,6 +48,9 @@ __all__ = ('EstNewMin', 'Covariance', 'Confidence',
            'Projection', 'est_success', 'est_failure', 'est_hardmin',
            'est_hardmax', 'est_hardminmax', 'est_newmin', 'est_maxiter',
            'est_hitnan')
+
+
+warning = logging.getLogger(__name__).warning
 
 
 # The return type for the estimation routines.
@@ -157,8 +161,8 @@ class EstMethod(NoNewAttributesAfterInit):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
         """Estimate the error range.
 
@@ -198,8 +202,8 @@ class Covariance(EstMethod):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
         """Estimate the error range.
 
@@ -213,8 +217,10 @@ class Covariance(EstMethod):
 
         """
 
-        def stat_cb(pars):
-            return statfunc(pars)[0]
+        if statargs is not None or statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
+
+        stat_cb = StatCallback(statfunc)
 
         def fit_cb(scb, pars, parmins, parmaxes, i):
             # parameter i is a no-op usually
@@ -280,8 +286,8 @@ class Confidence(EstMethod):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
 
         """Estimate the error range.
@@ -296,8 +302,10 @@ class Confidence(EstMethod):
 
         """
 
-        def stat_cb(pars):
-            return statfunc(pars)[0]
+        if statargs is not None or statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
+
+        stat_cb = StatCallback(statfunc)
 
         def fit_cb(pars, parmins, parmaxes, i):
             # freeze model parameter i
@@ -385,8 +393,8 @@ class Projection(EstMethod):
                 thaw_par: Callable,
                 report_progress: Callable,
                 get_par_name: Callable,
-                statargs=(),
-                statkwargs={}
+                statargs: Any = None,
+                statkwargs: Any = None
                 ) -> EstReturn:
         """Estimate the error range.
 
@@ -400,11 +408,13 @@ class Projection(EstMethod):
 
         """
 
+        if statargs is not None or statkwargs is not None:
+            warning("statargs/kwargs set but values unused")
+
         if fitfunc is None:
             raise TypeError("fitfunc should not be none")
 
-        def stat_cb(pars):
-            return statfunc(pars)[0]
+        stat_cb = StatCallback(statfunc)
 
         def fit_cb(pars, parmins, parmaxes, i):
             # freeze model parameter i
