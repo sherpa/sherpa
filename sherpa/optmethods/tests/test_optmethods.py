@@ -17,11 +17,17 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import functools
 import pytest
+import numpy as np
 
 from sherpa.optmethods import _tstoptfct  # type: ignore
 from sherpa.optmethods.optfcts import lmdif, minim, montecarlo, neldermead
 from sherpa.utils.parallel import ncpus
+
+# Make tests with MonteCarlo reproducible
+rng = np.random.default_rng(1234567890)
+montecarlo = functools.partial(montecarlo, rng=rng)
 
 
 def init(name, npar):
