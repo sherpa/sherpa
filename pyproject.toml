@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-  "setuptools >= 64.0.0",  # minimum for PEP 660 editable install
+  "setuptools >= 77.0.3",  # minimum for PEP 639 - license identifiers
   "numpy",
   "tomli; python_version < '3.11'"
 ]
@@ -8,11 +8,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 dynamic = ["version"]
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE", "COPYRIGHT", "extern/fftw-3.3.10/COPYRIGHT",
+"extern/fftw-3.3.10/COPYING", "extern/wcssubs/wcssubs-3.9.5/COPYING"]
 
 name = "sherpa"
 description = "Modeling and fitting package for scientific data analysis"
 readme = {file = "README.md", content-type = "text/markdown"}
-license = {file = "LICENSE"}
 
 
 authors = [
@@ -21,7 +23,6 @@ authors = [
 
 classifiers = [
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
   "Programming Language :: C",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
