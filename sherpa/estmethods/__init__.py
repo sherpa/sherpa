@@ -1204,6 +1204,131 @@ def c_verbose_fitcb(fcn: Callable[..., T],
     return verbose_fcn
 
 
+# Use a class purely to make it easy to separate the setup arguments
+# from those needed to call the per-parameter routine while still
+# allowing multiprocessing to work with non-fork methods.
+#
+# As it's not clear what all the types of the values should be
+# this is not written as a dataclass.
+#
+class ConfFunc:
+    """Evaluate an individual parameter with the confidence routine."""
+
+    def __init__(self,
+                 *,
+                 fit_cb,
+                 myargs: ConfArgs,
+                 pars: np.ndarray,
+                 maxiters: int,
+                 eps: float,
+                 error_scales,
+                 upper_scales,
+                 sherpablog,
+                 verbose: bool,
+                 delta_stat,
+                 get_par_name: Callable,
+                 open_interval
+                 ) -> None:
+
+        self.fit_cb = fit_cb
+        self.myargs = myargs
+        self.pars = pars
+        self.maxiters = maxiters
+        self.eps = eps
+        self.error_scales = error_scales
+        self.upper_scales = upper_scales
+        self.sherpablog = sherpablog
+        self.verbose = verbose
+        self.delta_stat = delta_stat
+        self.get_par_name = get_par_name
+        self.open_interval = open_interval
+
+    # Matches LocalEstFunc
+    #
+    def __call__(self,
+                 counter: int,
+                 singleparnum: int,
+                 lock: SupportsLock | None = None
+                 ) -> tuple[SupportsFloat, SupportsFloat, int, int, None]:
+        """Evaluate the confidence for a single parameter."""
+
+        counter_cb = FuncCounter(self.fit_cb)
+
+        # These are the bounds to be returned by this method
+        #
+        conf_int = [[], []]
+        error_flags = []
+
+        # If the user has requested a specific parameter to be
+        # calculated then 'ith_par' represents the index of the
+        # free parameter to deal with.
+        #
+        self.myargs.ith_par = singleparnum
+
+        fitcb = c_translated_fit_cb(counter_cb, self.myargs)
+
+        par_name = self.get_par_name(self.myargs.ith_par)
+
+        ith_covar_err = c_get_step_size(self.error_scales,
+                                        self.upper_scales,
+                                        counter,
+                                        self.pars[self.myargs.ith_par])
+
+        trial_points = [[], []]
+        fitcb = c_monitor_func(fitcb, trial_points)
+
+        bracket = ConfBracket(self.myargs, trial_points)
+
+        # the parameter name is set, may as well get the prefix
+        prefix = c_get_prefix(counter, par_name, ['-', '+'])
+
+        myfitcb = [c_verbose_fitcb(fitcb,
+                                   ConfBlog(self.sherpablog,
+                                            prefix[0], self.verbose,
+                                            lock)),
+                   c_verbose_fitcb(fitcb,
+                                   ConfBlog(self.sherpablog,
+                                            prefix[1], self.verbose,
+                                            lock))]
+
+        for dirn in range(2):
+
+            # trial_points stores the history of the points for the
+            # parameter which has been evaluated in order to locate
+            # the root. Note the first point is 'given' since the info
+            # of the minimum is crucial to the search.
+            #
+            bracket.trial_points[0].append(self.pars[self.myargs.ith_par])
+            bracket.trial_points[1].append(- self.delta_stat)
+
+            myblog = ConfBlog(self.sherpablog, prefix[dirn],
+                              self.verbose, lock)
+
+            # have to set the callback func otherwise disaster.
+            bracket.fcn = myfitcb[dirn]
+            root = bracket(dirn, iter, ith_covar_err,
+                           self.open_interval, self.maxiters,
+                           self.eps, myblog)
+
+            myzero = root(self.eps, myblog)
+
+            delta_zero = c_get_delta_root(myzero, dirn,
+                                          self.pars[self.myargs.ith_par])
+
+            conf_int[dirn].append(delta_zero)
+
+            status_prefix = c_get_prefix(counter, par_name, ['lower bound',
+                                                             'upper bound'])
+            c_print_status(myblog.blogger.info, self.verbose,
+                           status_prefix[dirn], delta_zero, lock)
+
+        # This should really set the error flag appropriately.
+        error_flags.append(est_success)
+
+        return (conf_int[0][0], conf_int[1][0], error_flags[0],
+                counter_cb.nfev, None)
+
+
 def confidence(pars: np.ndarray,
                parmins: np.ndarray,
                parmaxes: np.ndarray,
@@ -1261,83 +1386,21 @@ def confidence(pars: np.ndarray,
         msg += '%s' % myargs
         sherpablog.info(msg)
 
-    # LocalEstFunc
-    def func(counter: int,
-             singleparnum: int,
-             lock: SupportsLock | None = None
-             ) -> tuple[SupportsFloat, SupportsFloat, int, int, None]:
-
-        counter_cb = FuncCounter(fit_cb)
-
-        #
-        # These are the bounds to be returned by this method
-        #
-        conf_int = [[], []]
-        error_flags = []
-
-        #
-        # If the user has requested a specific parameter to be
-        # calculated then 'ith_par' represents the index of the
-        # free parameter to deal with.
-        #
-        myargs.ith_par = singleparnum
-
-        fitcb = c_translated_fit_cb(counter_cb, myargs)
-
-        par_name = get_par_name(myargs.ith_par)
-
-        ith_covar_err = c_get_step_size(error_scales, upper_scales, counter,
-                                        pars[myargs.ith_par])
-
-        trial_points = [[], []]
-        fitcb = c_monitor_func(fitcb, trial_points)
-
-        bracket = ConfBracket(myargs, trial_points)
-
-        # the parameter name is set, may as well get the prefix
-        prefix = c_get_prefix(counter, par_name, ['-', '+'])
-
-        myfitcb = [c_verbose_fitcb(fitcb,
-                                   ConfBlog(sherpablog, prefix[0], verbose, lock)),
-                   c_verbose_fitcb(fitcb,
-                                   ConfBlog(sherpablog, prefix[1], verbose, lock))]
-
-        for dirn in range(2):
-
-            # trial_points stores the history of the points for the
-            # parameter which has been evaluated in order to locate
-            # the root. Note the first point is 'given' since the info
-            # of the minimum is crucial to the search.
-            #
-            bracket.trial_points[0].append(pars[myargs.ith_par])
-            bracket.trial_points[1].append(- delta_stat)
-
-            myblog = ConfBlog(sherpablog, prefix[dirn], verbose, lock)
-
-            # have to set the callback func otherwise disaster.
-            bracket.fcn = myfitcb[dirn]
-            root = bracket(dirn, iter, ith_covar_err, open_interval, maxiters,
-                           eps, myblog)
-
-            myzero = root(eps, myblog)
-
-            delta_zero = c_get_delta_root(myzero, dirn, pars[myargs.ith_par])
-
-            conf_int[dirn].append(delta_zero)
-
-            status_prefix = c_get_prefix(counter, par_name, ['lower bound',
-                                                             'upper bound'])
-            c_print_status(myblog.blogger.info, verbose, status_prefix[dirn],
-                           delta_zero, lock)
-
-        # This should really set the error flag appropriately.
-        error_flags.append(est_success)
-
-        return (conf_int[0][0], conf_int[1][0], error_flags[0],
-                counter_cb.nfev, None)
-
     if len(limit_parnums) < 2 or not multi or numcores < 2:
         do_parallel = False
+
+    estfunc = ConfFunc(fit_cb=fit_cb,
+                       myargs=myargs,
+                       pars=pars,
+                       maxiters=maxiters,
+                       eps=eps,
+                       error_scales=error_scales,
+                       upper_scales=upper_scales,
+                       sherpablog=sherpablog,
+                       verbose=verbose,
+                       delta_stat=delta_stat,
+                       get_par_name=get_par_name,
+                       open_interval=open_interval)
 
     if not do_parallel:
         lower_limits = []
@@ -1345,8 +1408,10 @@ def confidence(pars: np.ndarray,
         eflags = []
         nfits = 0
         for i, lpar in enumerate(limit_parnums):
-            lower_limit, upper_limit, flags, nfit, extra = func(
-                i, lpar)
+            lower_limit, upper_limit, flags, nfit, extra = estfunc(
+                counter=i,
+                singleparnum=lpar)
+
             lower_limits.append(lower_limit)
             upper_limits.append(upper_limit)
             eflags.append(flags)
@@ -1354,7 +1419,7 @@ def confidence(pars: np.ndarray,
 
         return (lower_limits, upper_limits, eflags, nfits, None)
 
-    return parallel_est(func, limit_parnums, pars, numcores)
+    return parallel_est(estfunc, limit_parnums, pars, numcores)
 
 #################################confidence###################################
 
