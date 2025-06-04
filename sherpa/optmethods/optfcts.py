@@ -490,6 +490,29 @@ def make_range_sequence(npar: int,
     return sequence
 
 
+class AddParameters:
+    """Append the current parameters to the statistic."""
+
+    __slots__ = ("func", "verbose")
+
+    def __init__(self,
+                 func: StatFunc,
+                 verbose: bool
+                 ) -> None:
+        self.func = StatCallback(func)
+        self.verbose = verbose
+
+    def __call__(self, pars: np.ndarray) -> np.ndarray:
+
+        out = self.func(pars)
+        if self.verbose:
+            # TODO: this could use the logger and so avoid the need
+            # for the verbose parameter.
+            print(f'f{pars}={out:g}')
+
+        return np.append(out, pars)
+
+
 # Ideally method would send in the actual method, not the name,
 # but it's hard to specialize the arguments.
 #
@@ -555,15 +578,7 @@ def grid_search(fcn: StatFunc,
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     npar = len(x)
-
-    def func(pars):
-        aaa = fcn(pars)[0]
-        if verbose:
-            print(f'f{pars}={aaa:g}')
-        return aaa
-
-    def eval_stat_func(xxx):
-        return np.append(func(xxx), xxx)
+    eval_stat_func = AddParameters(fcn, bool(verbose))
 
     if sequence is None:
         sequence = make_range_sequence(npar, xmin, xmax, num)
