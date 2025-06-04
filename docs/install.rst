@@ -35,6 +35,7 @@ Sherpa has the following requirements:
 
 * Python 3.10 to 3.12, with experimental support for Python 3.13
 * NumPy
+* `FFTW <https://www.fftw.org/>`_
 * Linux or OS-X (patches to add Windows support are welcome)
 
 Sherpa can take advantage of the following Python packages
@@ -131,16 +132,22 @@ command::
 Building from source
 ====================
 
+.. note::
+
+   The build backend was changed from ``setuptools`` to ``meson-python``
+   in the Sherpa 4.17.1 release. There are therefore a number of
+   changes to what is needed to install Sherpa, how to configure the
+   build, and how to test Sherpa changes.
+
 Prerequisites
 -------------
 
 The prerequisites for building from source are:
 
-* Python versions: 3.9 to 3.12
-* Python packages: ``setuptools``, ``numpy`` (these should be
-  automatically installed by ``pip``)
+* Python versions: 3.10 to 3.12.
+* The FFTW3 library and headers, accessible via ``pkg-config``.
 * System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
-  ``bison``, ``ar`` (which may be provided by the ``binutils`` package), ``file``.
+  ``bison``, ``ar`` (which may be provided by the ``binutils`` package).
 
 The aim is to support recent versions of these tools and libraries;
 please report problems to the
@@ -182,28 +189,83 @@ For example::
 will use the ``4.16.0`` tag (although we strongly suggest using a
 newer release now!).
 
+.. _configure:
+
 Configuring the build
 ---------------------
 
-The Sherpa build is controlled by the ``setup.cfg`` file in the
-root of the Sherpa source tree. These configuration options
-include:
+The configuration options are listed in the ``meson.options``
+file. These options need to be passed to the Python build step using
+the syntax (this needs to be done for each option)::
+
+  -Csetup-args=-D<option name>=<option value>
+
+.. note::
+
+   Prior to 4.17.1 the configuration options were set in the
+   ``setup.cfg`` file. The names and options have been changed,
+   and they are now specified when building Sherpa, and not read from
+   a file.
+
+.. _build_group:
+
+group
+^^^^^
+
+The ``build-group`` option determines whether the ``group`` module is
+built, and defaults to ``true``. Set to ``false`` if the :term:`CIAO`
+``group`` module is already installed, or if support for PHA grouping
+is not required.
+
+.. _build_stk:
+
+stk
+^^^
+
+The ``build-stk`` option determines whether the ``stk`` module is
+built, and defaults to ``true``. Set to ``false`` if the :term:`CIAO`
+``stk`` module is already installed, or if support for stacks
+(specifying multiple arguments via a file) is not required.
+
+.. _build_region:
+
+region
+^^^^^^
+
+Support for region files, as used in calls like ``notice2d``, is
+provided via the region code. If ``build-region`` is ``true`` (its
+default) then the region code will be built along with Sherpa. If the
+setting is ``false`` but ``region-prefix`` is set, then the region
+library from that location will be used (the ``region-use-cxc-parser``
+option should be set to ``false`` if this is not a :term:`CIAO`
+environment).
+
+If neither option is set then Sherpa will not include support for
+region files.
+
+.. _build-wcssubs:
+
+wcssubs
+^^^^^^^
+
+Support for :term:`WCS` information, used to allow the coordinate
+setting to be changed when fitting image data, is provided by either
+setting the ``build-wcssubs`` option to ``true``, its default, or by
+setting the ``wcssubs-prefix`` option to point to an existing wcssubs
+library.
+
+.. _build-fftw:
 
 FFTW
 ^^^^
 
-Sherpa ships with the `fftw library <https://www.fftw.org/>`_ source
-code and builds it by default. To use a different version, change
-the ``fftw`` options in the ``sherpa_config`` section of the
-``setup.cfg`` file. The options to change are::
+Although Sherpa ships with the `fftw library <http://www.fftw.org/>`_ source
+code, it currently **does not** support building this code. Therefore
+the FFTW library (``fftw3``) and header files must  be installed and
+findable (for example with ``pkg-config``).
 
-    fftw=local
-    fftw_include_dirs=/usr/local/include
-    fftw_lib_dirs=/use/local/lib
-    fftw_libraries=fftw3
-
-The ``fftw`` option must be set to ``local`` and then the remaining
-options changed to match the location of the local installation.
+Anyone who feels like combining ``meson`` and ``autoconf`` are more-than
+welcome to looking into the ``subprojects/fftw-3.3.10/`` directory!
 
 .. _build-xspec:
 
@@ -211,133 +273,65 @@ XSPEC
 ^^^^^
 
 Sherpa can be built to use the Astronomy models provided by
-:term:`XSPEC`. To enable XSPEC support, several changes must be
-made to the ``xspec_config`` section of the ``setup.cfg`` file. The
-available options (with default values) are::
+:term:`XSPEC`. The required information is
 
-    with_xspec = False
-    xspec_version = 12.12.0
-    xspec_lib_dirs = None
-    xspec_include_dirs = None
-    xspec_libraries = XSFunctions XSUtil XS
-    cfitsio_lib_dirs = None
-    cfitsio_libraries =
-    ccfits_lib_dirs = None
-    ccfits_libraries =
-    wcslib_lib_dirs = None
-    wcslib_libraries =
-    gfortran_lib_dirs = None
-    gfortran_libraries =
+- the location of the XSPEC installation (where the ``lib`` and
+  ``include`` directories are located; this is normally
+  ``$HEADAS``),
 
-To build the :py:mod:`sherpa.astro.xspec` module, the
-``with_xspec`` option must be set to ``True`` **and** the
-``xspec_version`` option set to the correct version string (the XSPEC
-patch level must not be included), and then the
-remaining options depend on the version of XSPEC and whether
-the XSPEC model library or the full XSPEC system has been installed.
+- and the libraries needed to link to.
 
-In the examples below, the ``$HEADAS`` value **must be replaced**
-by the actual path to the HEADAS installation, and the versions of
-the libraries - such as ``CCfits_2.6`` - may need to be changed to
-match the contents of the XSPEC installation.
+The ``HEADAS`` environment variable **must** be set before the
+build is attempted.
+
+The following examples show the options needed to build the
+:py:mod:`sherpa.astro.xspec` module with different versions
+of XSPEC, although numeric values may need to be updated
+with recent releases of XSPEC.
 
 1. If the full XSPEC 12.15.0 system has been built then use::
 
-       with_xspec = True
-       xspec_version = 12.15.0
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.35
-       ccfits_libraries = CCfits_2.7
-       wcslib_libraries = wcs-8.3
+     xspec-prefix=$HEADAS
+     xspec-libraries=XSFunctions,XSUtil,XS,hdsp_6.35,CCfits_2.7,wcs-8.3
 
-   where the version numbers were taken from version 6.35 of HEASOFT and
+   The version numbers were taken from version 6.35 of HEASOFT and
    may need updating with a newer release.
 
 2. If the full XSPEC 12.14.1 system has been built then use::
 
-       with_xspec = True
-       xspec_version = 12.14.1
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.34
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-8.3
-
-   where the version numbers were taken from version 6.34 of HEASOFT and
-   may need updating with a newer release.
+     xspec-prefix=$HEADAS
+     xspec-libraries=XSFunctions,XSUtil,XS,hdsp_6.34,CCfits_2.6,wcs-8.3
 
 3. If the full XSPEC 12.14.0 system has been built then use::
 
-       with_xspec = True
-       xspec_version = 12.14.0
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.33
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-8.2.1
-
-   where the version numbers were taken from version 6.33.1 of HEASOFT and
-   may need updating with a newer release.
+     xspec-prefix=$HEADAS
+     xspec-libraries=XSFunctions,XSUtil,XS,hdsp_6.33,CCfits_2.6,wcs-8.2.1
 
 4. If the full XSPEC 12.13.1 system has been built then use::
 
-       with_xspec = True
-       xspec_version = 12.13.1
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.32
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-7.7
-
-   where the version numbers were taken from version 6.32 of HEASOFT and
-   may need updating with a newer release.
+     xspec-prefix=$HEADAS
+     xspec-libraries=XSFunctions,XSUtil,XS,hdsp_6.32,CCfits_2.6,wcs-7.7
 
 5. If the full XSPEC 12.13.0 system has been built then use::
 
-       with_xspec = True
-       xspec_version = 12.13.0
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.31
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-7.7
+     xspec-prefix=$HEADAS
+     xspec-libraries=XSFunctions,XSUtil,XS,hdsp_6.31,CCfits_2.6,wcs-7.7
 
 6. If the full XSPEC 12.12.1 system has been built then use::
 
-       with_xspec = True
-       xspec_version = 12.12.1
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.30
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-7.7
+     xspec-prefix=$HEADAS
+     xspec-libraries=XSFunctions,XSUtil,XS,hdsp_6.30,CCfits_2.6,wcs-7.7
 
 7. If the full XSPEC 12.12.0 system has been built then use::
 
-       with_xspec = True
-       xspec_version = 12.12.0
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.29
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-7.3.1
+     xspec-prefix=$HEADAS
+     xspec-libraries=XSFunctions,XSUtil,XS,hdsp_6.29,CCfits_2.6,wcs-7.3.1
 
 8. If the model-only build of XSPEC - created with the
    ``--enable-xs-models-only`` flag when building HEASOFT - has been
    installed, then the configuration is similar, but the library names
    may not need version numbers and locations, depending on how the
    ``cfitsio``, ``CCfits``, and ``wcs`` libraries were installed.
-
-A common problem is to set one or both of the ``xspec_lib_dirs``
-and ``xspec_lib_include`` options to the value of ``$HEADAS`` instead of
-``$HEADAS/lib`` and ``$HEADAS/include`` (after expanding out the
-environment variable). Doing so will cause the build to fail with
-errors about being unable to find various XSPEC libraries such as
-``XSFunctions`` and ``XSModel``.
-
-The ``gfortran`` options should be adjusted if there are problems
-using the XSPEC module.
 
 In order for the XSPEC module to be used from Python, the
 ``HEADAS`` environment variable **must** be set before the
@@ -349,15 +343,6 @@ the following command::
 
     % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
     12.15.0
-
-Other options
-^^^^^^^^^^^^^
-
-The remaining options in the ``setup.cfg`` file allow Sherpa to be
-built in specific environments, such as when it is built as part
-of the `CIAO analysis system <https://cxc.harvard.edu/ciao/>`_. Please
-see the comments in the ``setup.cfg`` file for more information on
-these options.
 
 Installing all dependencies with conda
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -376,7 +361,13 @@ or that provided by
 be used when building and installing Sherpa.
 
 The ``CC`` and ``CXX`` environment variables can be set to the C and
-C++ compilers to use if not found by ``setup.py``.
+C++ compilers to use if the default values picked up by meson are not
+correct.
+
+In the following the `pip tool
+<https://pip.pypa.io/en/stable/cli/pip_install/>`_ is used for
+installing Sherpa, but any modern Python installation tool that
+supports building Python extension modules should also work.
 
 .. warning::
 
@@ -387,6 +378,9 @@ C++ compilers to use if not found by ``setup.py``.
      export PYTHON_LDFLAGS=' '
 
    That is, the variable is set to a space, not the empty string.
+
+   It is not clear if this is still true with the ``meson-python``
+   backend.
 
 .. _install-build:
 
@@ -402,23 +396,35 @@ From the root of the Sherpa source tree, Sherpa can be built with
 Please report any problems to the
 `Sherpa issues page <https://github.com/sherpa/sherpa/issues/>`_.
 
+If any :ref:`options are set <configure>` then they are given with the::
+
+  -Csetup_args=-D<name>=<value>
+
+syntax, one per option. As an example, the following installation
+call will build Sherpa with :ref:`support for XSPEC 12.14.1 <build-xspec>`::
+
+  pip install . -Csetup-args=-Dxspec-prefix=$HEADAS -Csetup-args=-Dxspec-libraries=XSFunctions,XSUtil,XS,hdsp_6.34,CCfits_2.6,wcs-8.3
+
 .. _developer-build:
 
 A development build
 ^^^^^^^^^^^^^^^^^^^
 
 The code can be built locally, which is useful when adding new
-functionality or fixing a bug (the ``[test]`` term just ensures that
-``pytest`` is also installed)::
+functionality or fixing a bug. Using the ``--no-build-isolation``
+flag means that the ``build-system`` requirements from the
+``pyproject.toml`` need to be installed, which can be done with::
 
-  pip install -e .[test]
+  pip install numpy meson-python ninja
 
-This will need to be re-run when any of the extension models - that is,
-any compiled code - is changed.
+and then the code can be built with the following (the ``[test]`` term
+just ensures that ``pytest`` is also installed)::
+
+  pip install -e .[test] --no-build-isolation
 
 The ``--verbose`` flag is useful when diagnosing problems when building Sherpa::
 
-  pip install -e .[test] --verbose
+  pip install -e .[test] --no-build-isolation --verbose
 
 Testing Sherpa
 ^^^^^^^^^^^^^^
@@ -522,7 +528,7 @@ Testing the Sherpa installation
 A very-brief "smoke" test can be run from the command-line with
 the ``sherpa_smoke`` executable::
 
-    sherpa_smoke
+    % sherpa_smoke
     WARNING: failed to import sherpa.astro.xspec; XSPEC models will not be available
     ----------------------------------------------------------------------
     Ran 7 tests in 0.456s
