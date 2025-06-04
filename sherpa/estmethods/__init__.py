@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023 - 2025
+#  Copyright (C) 2007, 2015, 2016, 2019-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1342,6 +1342,41 @@ class LocalEstFunc(Protocol):
         ...
 
 
+def parallel_worker(estfunc: LocalEstFunc,
+                    pars: np.ndarray,
+                    out_q: SupportsQueue,
+                    err_q: SupportsQueue,
+                    lock: SupportsLock,
+                    parids: np.ndarray,
+                    parnums: np.ndarray
+                    ) -> None:
+    """Estimate errors for a set of parameters.
+
+    The return value is sent back via the out_q parameter.
+
+    """
+
+    results = []
+    for parid, singleparnum in zip(parids, parnums):
+        try:
+            result = estfunc(parid, singleparnum, lock)
+            results.append((parid, result))
+        except EstNewMin:
+            # catch the EstNewMin exception and include the exception
+            # class and the modified parameter values to the error queue.
+            # These modified parvals determine the new lower statistic.
+            # The exception class will be re-raised with the
+            # parameter values attached.  C++ Python exceptions are not
+            # picklable for use in the queue.
+            err_q.put(EstNewMin(pars))
+            return
+        except Exception as e:
+            err_q.put(e)
+            return
+
+    out_q.put(results)
+
+
 def parallel_est(estfunc: LocalEstFunc,
                  limit_parnums: np.ndarray,  # integers
                  pars: np.ndarray,
@@ -1371,6 +1406,11 @@ def parallel_est(estfunc: LocalEstFunc,
 
     """
 
+    # Help the type checkers, as this should not be called when
+    # multiprocessing (hence context) is not available.
+    #
+    assert context is not None
+
     # See sherpa.utils.parallel for a discussion of how multiprocessing is
     # being used to run code in parallel.
     #
@@ -1392,32 +1432,13 @@ def parallel_est(estfunc: LocalEstFunc,
         numcores = size
 
     # group limit_parnums into numcores-worth of chunks
-    limit_parnums = np.array_split(limit_parnums, numcores)
-    parids = np.array_split(parids, numcores)
+    limit_chunk = np.array_split(limit_parnums, numcores)
+    parids_chunk = np.array_split(parids, numcores)
 
-    def worker(parids, parnums) -> None:
-        results = []
-        for parid, singleparnum in zip(parids, parnums):
-            try:
-                result = estfunc(parid, singleparnum, lock)
-                results.append((parid, result))
-            except EstNewMin:
-                # catch the EstNewMin exception and include the exception
-                # class and the modified parameter values to the error queue.
-                # These modified parvals determine the new lower statistic.
-                # The exception class will be re-raised with the
-                # parameter values attached.  C++ Python exceptions are not
-                # picklable for use in the queue.
-                err_q.put(EstNewMin(pars))
-                return
-            except Exception as e:
-                err_q.put(e)
-                return
-
-        out_q.put(results)
-
-    tasks = [context.Process(target=worker, args=(parid, parnum))
-             for parid, parnum in zip(parids, limit_parnums)]
+    tasks = [context.Process(target=parallel_worker,
+                             args=(estfunc, pars, out_q, err_q, lock,
+                                   parid, parnum))
+             for parid, parnum in zip(parids_chunk, limit_chunk)]
 
     return run_tasks(tasks, out_q, err_q, size)
 
