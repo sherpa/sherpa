@@ -1284,18 +1284,20 @@ class FdJac:
         self.h = self.calc_h(pars, xmax)
         self.pars = np.copy(pars)
 
-    def __call__(self, param):
-        wa = self.func(param[1:])
-        return (wa - self.fvec) / self.h[int(param[0])]
+    def __call__(self,
+                 arg: tuple[float, np.ndarray]
+                 ) -> np.ndarray:
+        (h, params) = arg
+        wa = self.func(params)
+        return (wa - self.fvec) / h
 
     def calc_h(self,
                pars: np.ndarray,
                xmax: np.ndarray
                ) -> np.ndarray:
-        nn = len(pars)
-        h = np.empty((nn,))
-        for ii in range(nn):
-            h[ii] = self.eps * pars[ii]
+
+        h = self.eps * pars
+        for ii in range(len(pars)):
             if h[ii] == 0.0:
                 h[ii] = self.eps
             if pars[ii] + h[ii] > xmax[ii]:
@@ -1303,17 +1305,15 @@ class FdJac:
 
         return h
 
-    def calc_params(self):
+    def calc_params(self) -> list[tuple[float, np.ndarray]]:
         params = []
         for ii in range(len(self.h)):
+            h = self.h[ii]
             tmp_pars = np.copy(self.pars)
-            tmp_pars[ii] += self.h[ii]
-            tmp_pars = np.append(ii, tmp_pars)
-            params.append(tmp_pars)
+            tmp_pars[ii] += h
+            params.append((h, tmp_pars))
 
-        # TODO: the return value should be more-structured than a
-        # simple tuple (e.g. separate the index from the parameters).
-        return tuple(params)
+        return params
 
 
 class ParallelizeFdJac:
@@ -1479,6 +1479,7 @@ def lmdif(fcn: StatFunc,
                           xtol, gtol, maxfev, epsfcn, factor, verbose, xmin,
                           xmax, fjac)
 
+    covar = None
     if info > 0:
         fjac = np.reshape(np.ravel(fjac, order='F'), (m, n), order='F')
 
@@ -1496,17 +1497,20 @@ def lmdif(fcn: StatFunc,
             x = nm_result[1]
             fval = nm_result[2]
 
+    # Convert the info code
     if 0 == info:
-        info = 1
+        info2 = 1
     elif info >= 1 or info <= 4:
-        info = 0
+        info2 = 0
     else:
-        info = 3
-    status, msg = _get_saofit_msg(maxfev, info)
+        info2 = 3
 
-    imap = {'info': info, 'nfev': nfev,
+    status, msg = _get_saofit_msg(maxfev, info2)
+
+    imap = {'info': info2, 'nfev': nfev,
             'num_parallel_map': fcn_parallel_counter.nfev}
-    if info == 0:
+    if info2 == 0:
+        assert covar is not None, "Internal error: covar is not set"
         imap['covar'] = covar
 
     return (status, x, fval, msg, imap)
