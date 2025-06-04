@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 import logging
 from typing import Any, Protocol, SupportsFloat, TypeVar
 import warnings
@@ -253,6 +254,50 @@ class Covariance(EstMethod):
                           report_progress=report_progress)
 
 
+# This is not expected to be used outside this module.
+# It is used by both Confidence and Projection.
+#
+@dataclass
+class EstFit:
+    """Fit the data and return the best-fit statistic for a fixed parameter.
+
+    .. versionadded:: 4.18.0
+
+    """
+
+    fitfunc: FitFunc
+    statfunc: StatFunc
+    freeze_par: Callable
+    thaw_par: Callable
+
+    def __call__(self,
+                 pars: np.ndarray,
+                 parmins: np.ndarray,
+                 parmaxes: np.ndarray,
+                 i: int
+                 ) -> float:
+
+            # freeze model parameter i
+            (current_pars,
+             current_parmins,
+             current_parmaxes) = self.freeze_par(pars, parmins, parmaxes, i)
+
+            fit_pars = self.fitfunc(self.statfunc, current_pars,
+                                    current_parmins,
+                                    current_parmaxes)[1]
+
+            # TODO: is this comment still valid?
+            #
+            # If stat is not chi-squared, and fit method is
+            # lmdif, need to recalculate stat at end, just
+            # like in sherpa/sherpa/fit.py:fit()
+            stat = self.statfunc(fit_pars)[0]
+            # stat = fitfunc(scb, pars, parmins, parmaxes)[2]
+
+            # thaw model parameter i
+            self.thaw_par(i)
+            return stat
+
 
 class Confidence(EstMethod):
     """The confidence method for estimating errors."""
@@ -308,26 +353,9 @@ class Confidence(EstMethod):
             warning("statargs/kwargs set but values unused")
 
         stat_cb = StatCallback(statfunc)
+        fit_cb = EstFit(fitfunc=fitfunc, statfunc=statfunc,
+                        freeze_par=freeze_par, thaw_par=thaw_par)
 
-        def fit_cb(pars, parmins, parmaxes, i):
-            # freeze model parameter i
-            (current_pars,
-             current_parmins,
-             current_parmaxes) = freeze_par(pars, parmins, parmaxes, i)
-
-            fit_pars = fitfunc(statfunc, current_pars,
-                               current_parmins,
-                               current_parmaxes)[1]
-            # If stat is not chi-squared, and fit method is
-            # lmdif, need to recalculate stat at end, just
-            # like in sherpa/sherpa/fit.py:fit()
-            stat = statfunc(fit_pars)[0]
-            # stat = fitfunc(scb, pars, parmins, parmaxes)[2]
-            # thaw model parameter i
-            thaw_par(i)
-            return stat
-
-        #
         # convert stat call back to have the same signature as fit call back
         #
         def stat_cb_extra_args(fcn):
@@ -417,23 +445,8 @@ class Projection(EstMethod):
             raise TypeError("fitfunc should not be none")
 
         stat_cb = StatCallback(statfunc)
-
-        def fit_cb(pars, parmins, parmaxes, i):
-            # freeze model parameter i
-            (current_pars,
-             current_parmins,
-             current_parmaxes) = freeze_par(pars, parmins, parmaxes, i)
-            fit_pars = fitfunc(statfunc, current_pars,
-                               current_parmins,
-                               current_parmaxes)[1]
-            # If stat is not chi-squared, and fit method is
-            # lmdif, need to recalculate stat at end, just
-            # like in sherpa/sherpa/fit.py:fit()
-            stat = statfunc(fit_pars)[0]
-            # stat = fitfunc(scb, pars, parmins, parmaxes)[2]
-            # thaw model parameter i
-            thaw_par(i)
-            return stat
+        fit_cb = EstFit(fitfunc=fitfunc, statfunc=statfunc,
+                        freeze_par=freeze_par, thaw_par=thaw_par)
 
         return projection(pars,
                           parmins=parmins,
