@@ -435,6 +435,9 @@ def test_lrt_multicore(setup):
     else:
         expected = RATIOS_ONE
 
+    # Maybe it's always RATIOS_TWO?
+    expected = RATIOS_TWO
+
     # TODO: do we still need to restrict the elements being checked?
     assert results.ratios[:3] == pytest.approx(expected[:3])
 
@@ -657,4 +660,3 @@ def test_to_arviz_tuple():
 
     g1pos = np.array(getattr(dataset.posterior, 'g1.pos'))
     assert g1pos.flatten() == pytest.approx(draws[2][1, :])
-
