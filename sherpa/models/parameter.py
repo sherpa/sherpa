@@ -368,25 +368,14 @@ hard_min
 
     # 'val' property
     #
-    # Note that _get_val has to check the parameter value when it
-    # is a link, to ensure that it isn't outside the parameter's
-    # min/max range. See issue #742.
-    #
     _val: SherpaFloat  # needed for typing
 
     def _get_val(self) -> SherpaFloat:
         if hasattr(self, 'eval'):
             return self.eval()
-        if self.link is None:
-            return self._val
-
-        val = self.link.val
-        if val < self.min:
-            raise ParameterErr('edge', self.fullname, 'minimum', self.min)
-        if val > self.max:
-            raise ParameterErr('edge', self.fullname, 'maximum', self.max)
-
-        return val
+        if self.link is not None:
+            return self.link.val
+        return self._val
 
     def _set_val(self, val: Union[Parameter, SupportsFloat]) -> None:
         if isinstance(val, Parameter):

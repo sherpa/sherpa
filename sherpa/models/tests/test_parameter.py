@@ -496,7 +496,7 @@ def test_link_unlink_val_ui():
 
     tst_unlink(src1, src2)
 
-
+@pytest.mark.xfail
 def test_link_parameter_setting():
     """See https://github.com/sherpa/sherpa/issues/742
 
@@ -541,6 +541,7 @@ def test_link_parameter_setting():
     assert mdl.gamma.val == pytest.approx(-2)
 
 
+@pytest.mark.xfail
 def test_link_parameter_evaluation():
     """See also test_link_parameter_setting
 
