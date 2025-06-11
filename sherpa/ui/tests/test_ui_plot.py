@@ -129,7 +129,7 @@ def test_get_fit_plot(idval, clean_ui):
     assert mp.title == 'Model'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["data", "model"])
 @pytest.mark.parametrize("arg", [None, 1, 'foo'])
 def test_plot_prefs_xxx(session, ptype, arg):
@@ -159,7 +159,7 @@ def test_plot_prefs_xxx(session, ptype, arg):
     assert not prefs3['xlog']
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["data", "model"])
 def test_plot_prefs_xxx_data1dint(session, ptype):
     """Data1DInt is different to Data1D.
@@ -802,7 +802,7 @@ def test_prefs_change_session_objects_fit(clean_ui):
     assert plotobj.modelplot is ui.get_model_plot(id=12, recalc=False)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["data", "kernel", "model" ,"psf", "ratio", "resid", "source"])
 def test_get_plot_prefs_returns_something(session, ptype):
     """Check this returns something.
@@ -817,7 +817,7 @@ def test_get_plot_prefs_returns_something(session, ptype):
     assert isinstance(p, dict)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_plot_prefs_does_not_like_fit(session):
     """Check this errors out.
 
@@ -833,7 +833,7 @@ def test_get_plot_prefs_does_not_like_fit(session):
         s.get_plot_prefs("fit")
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["", "not-a-plot", None, 1])
 def test_get_plot_prefs_fails(session, ptype):
     """Check this call fails."""
@@ -844,7 +844,7 @@ def test_get_plot_prefs_fails(session, ptype):
         s.get_plot_prefs(ptype)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_plot_prefs_recognizes_datatype(session):
     """Check that get_plot_prefs recognizes the data type."""
 
@@ -882,7 +882,7 @@ def test_plot_xdf(plotfunc):
     plotfunc(pvals)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_psf(session):
     """Very basic check we can call plot_psf/get_psf_plot
 
@@ -917,7 +917,7 @@ def test_plot_psf(session):
     assert plotobj.y == pytest.approx(yexp)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_psf_plot_recalc(session):
     """get_psf_plot with recalc=False
 
@@ -958,7 +958,7 @@ def test_get_psf_plot_recalc(session):
     assert plotobj.y == pytest.approx(yexp2)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_kernel(session, caplog, plot_backends):
     """Very basic check we can call plot_kernel/get_kernel_plot
 
@@ -1002,7 +1002,7 @@ def test_plot_kernel(session, caplog, plot_backends):
     assert plotobj.y == pytest.approx(yexp)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_kernel_plot_recalc(session):
     """get_kernel_plot with recalc=False
 
@@ -1096,7 +1096,7 @@ def test_plot_fit_resid_ignores_ylog(getplot, plotfunc, clean_ui):
     assert dprefs['ylog']
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("plottype", ["plot", "contour"])
 def test_plot_contour_error_out_invalid(plottype, session):
     """plot()/contour() error out if argument name is invalid
@@ -1112,7 +1112,7 @@ def test_plot_contour_error_out_invalid(plottype, session):
         func("fooflan flim flam")
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_single(session, requires_pylab):
     """Can we call plot() with a single plot type?
 
@@ -1158,7 +1158,7 @@ def test_plot_single(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_multiple(session, requires_pylab):
     """Can we call plot() with multiple plot types?
 
@@ -1211,7 +1211,7 @@ def test_plot_multiple(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_contour_single(session, requires_pylab):
     """Can we call contour() with a single plot type?
 
@@ -1268,7 +1268,7 @@ def test_contour_single(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_contour_multiple(session, requires_pylab):
     """Can we call contour() with multiple plot types?
 
@@ -1313,7 +1313,7 @@ def test_contour_multiple(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("plotfunc,title,pcls",
                          [("data", "", sherpa.plot.DataContour),
                           ("model", "Model", sherpa.plot.ModelContour),
@@ -1385,7 +1385,7 @@ def test_contour_xxx(plotfunc, title, pcls, session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ctype", ["data", "model"])
 def test_get_xxx_contour_prefs_pylab(ctype, session, requires_pylab):
 
@@ -1419,7 +1419,7 @@ def test_get_xxx_contour_prefs_behavior(ctype, clean_ui):
     assert getfunc("foo", recalc=False).contour_prefs["alpha"] == pytest.approx(0.5)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ctype", ["data", "kernel", "model" ,"psf", "ratio", "resid", "source"])
 def test_get_contour_prefs_returns_something(session, ctype):
     """Check this returns something.
@@ -1434,7 +1434,7 @@ def test_get_contour_prefs_returns_something(session, ctype):
     assert isinstance(p, dict)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_contour_prefs_does_not_like_fit(session):
     """Check this errors out.
 
@@ -1450,7 +1450,7 @@ def test_get_contour_prefs_does_not_like_fit(session):
         s.get_contour_prefs("fit")
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ctype", ["", "not-a-plot", None, 1])
 def test_get_contour_prefs_fails(session, ctype):
     """Check this call fails."""
@@ -1461,7 +1461,7 @@ def test_get_contour_prefs_fails(session, ctype):
         s.get_contour_prefs(ctype)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_scatter_plot_empty(session):
     """Very basic check we can call get_scatter_plot
 
@@ -1475,7 +1475,7 @@ def test_get_scatter_plot_empty(session):
         assert getattr(p, f) is None
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_scatter_plot(session):
     """Very basic check we can call plot_scatter/get_scatter_plot
 
@@ -1500,7 +1500,7 @@ def test_get_scatter_plot(session):
     assert p.title == 'Scatter: (x,y)'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_scatter_plot_labels_noname(session):
     """Very basic check we can call plot_scatter/get_scatter_plot
 
@@ -1525,7 +1525,7 @@ def test_get_scatter_plot_labels_noname(session):
     assert p.title == 'Scatter: (x,y)'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_scatter_plot_labels(session):
     """Very basic check we can call plot_scatter/get_scatter_plot
 
@@ -1550,7 +1550,7 @@ def test_get_scatter_plot_labels(session):
     assert p.title == 'Scatter: Fred Fred'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_trace_plot_empty(session):
     """Very basic check we can call get_trace_plot
 
@@ -1564,7 +1564,7 @@ def test_get_trace_plot_empty(session):
         assert getattr(p, f) is None
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_trace_plot(session):
     """Very basic check we can call get_trace_plot/plot_trace
 
@@ -1588,7 +1588,7 @@ def test_get_trace_plot(session):
     assert p.title == 'Trace: x'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_trace_plot_labels_noname(session):
     """Very basic check we can call get_trace_plot/plot_trace
 
@@ -1614,7 +1614,7 @@ def test_get_trace_plot_labels_noname(session):
     assert p.title == 'Trace: x'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_trace_plot_labels(session):
     """Very basic check we can call get_trace_plot/plot_trace
 
@@ -1641,7 +1641,7 @@ def test_get_trace_plot_labels(session):
     assert p.title == 'Trace: Awesome sauce'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_cdf_plot_empty(session):
 
     s = session()
@@ -1651,7 +1651,7 @@ def test_get_cdf_plot_empty(session):
         assert getattr(p, f) is None
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_cdf_replot_no_data(session, requires_pylab):
     """what does replot=True do for plot_cdf?
 
@@ -1668,7 +1668,7 @@ def test_plot_cdf_replot_no_data(session, requires_pylab):
         s.plot_cdf(x, replot=True)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_cdf_replot(session, requires_pylab):
     """what does replot=True do for plot_cdf?
 
@@ -1700,7 +1700,7 @@ def test_plot_cdf_replot(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_cdf(session):
 
     s = session()
@@ -1723,7 +1723,7 @@ def test_plot_cdf(session):
     assert p.title == 'CDF: x'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_cdf_labels_noname(session):
 
     s = session()
@@ -1739,7 +1739,7 @@ def test_plot_cdf_labels_noname(session):
     assert p.title == 'CDF: x'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_cdf_labels(session):
 
     s = session()
@@ -1755,7 +1755,7 @@ def test_plot_cdf_labels(session):
     assert p.title == 'CDF: b a'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_show_cdf_plot_empty(session):
 
     s = session()
@@ -1777,7 +1777,7 @@ def test_show_cdf_plot_empty(session):
     assert toks[8] == 'title  = None'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("use_numpy", [False, True])
 def test_show_cdf_plot(session, use_numpy, old_numpy_printing):
     """This was to show issue #912 that has now been fixed.
@@ -1811,7 +1811,7 @@ def test_show_cdf_plot(session, use_numpy, old_numpy_printing):
     assert toks[8] == 'title  = CDF: x'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_pdf_plot_empty(session):
 
     s = session()
@@ -1821,7 +1821,7 @@ def test_get_pdf_plot_empty(session):
         assert getattr(p, f) is None
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_pdf(session):
 
     s = session()
@@ -1851,7 +1851,7 @@ def test_plot_pdf(session):
     assert p.title == 'PDF: x'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_pdf_replot_no_data(session, requires_pylab):
     """what does replot=True do for plot_pdf?
 
@@ -1870,7 +1870,7 @@ def test_plot_pdf_replot_no_data(session, requires_pylab):
     assert "'NoneType' has no len" in str(exc.value)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_pdf_replot(session, requires_pylab):
     """what does replot=True do for plot_pdf?
 
@@ -1913,7 +1913,7 @@ def test_plot_pdf_replot(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_pdf_labels_noname(session):
 
     s = session()
@@ -1933,7 +1933,7 @@ def test_plot_pdf_labels_noname(session):
     assert p.title == 'PDF: x'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_pdf_labels(session):
 
     s = session()
@@ -1953,7 +1953,7 @@ def test_plot_pdf_labels(session):
     assert p.title == 'PDF: no name'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_show_pdf_plot_empty(session):
 
     s = session()
@@ -1973,7 +1973,7 @@ def test_show_pdf_plot_empty(session):
     assert toks[6] == 'title  = None'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_show_pdf_plot(session, old_numpy_printing):
     """This is important as it also checks normed=False
 
@@ -2001,7 +2001,7 @@ def test_show_pdf_plot(session, old_numpy_printing):
     assert toks[6] == 'title  = PDF: x'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_data_plot_recalc(session):
     """Basic testing of get_data_plot(recalc=False)"""
 
@@ -2024,7 +2024,7 @@ def test_data_plot_recalc(session):
     assert p.y == pytest.approx([10, 12, 14])
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype,extraargs",
                          [('model', []), ('model_component', ['mdl']),
                           ('source', []), ('source_component', ['mdl'])])
@@ -2044,7 +2044,7 @@ def test_xxx_plot_nodata(ptype, extraargs, session):
     assert retval.y is None
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype,extraargs",
                          [('model', []), ('model_component', ['mdl']),
                           ('source', []), ('source_component', ['mdl'])])
@@ -2064,7 +2064,7 @@ def test_xxx_plot_nodata_recalc(ptype, extraargs, session):
         func(*extraargs)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype,extraargs",
                          [('model', []), ('model_component', ['mdl']),
                           ('source', []), ('source_component', ['mdl'])])
@@ -2105,7 +2105,7 @@ def test_model_plot_recalc(ptype, extraargs, session):
     assert p.y == pytest.approx([162.5, 450, 1200])
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype,pclass,y1,y2",
                          [('resid', sherpa.plot.ResidPlot, [-10, -12], [-20, -28, -36]),
                           ('ratio', sherpa.plot.RatioPlot, [1/11, 0], [1/3, 12/40, 14/50]),
@@ -2150,7 +2150,7 @@ def test_xxx_plot_recalc(ptype, pclass, y1, y2, session):
     assert p.y == pytest.approx(y2)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_fit_plot_recalc(session):
     """Basic testing of get_fit_plot(recalc=False)"""
 
@@ -2216,7 +2216,7 @@ def check_pvalue(caplog, plot):
     assert plot.lr == pytest.approx(2.3637744995453147)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_pvalue_plot(session, caplog):
     """Basic testing of get_pvalue_plot
 
@@ -2250,7 +2250,7 @@ def test_get_pvalue_plot(session, caplog):
     check_pvalue(caplog, p)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_pvalue_requires_null_model(session):
     """We need a null_model argument"""
 
@@ -2263,7 +2263,7 @@ def test_plot_pvalue_requires_null_model(session):
     assert str(te.value) == 'null model cannot be None'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_pvalue_requires_alt_model(session):
     """We need a alt_model argument"""
 
@@ -2277,7 +2277,7 @@ def test_plot_pvalue_requires_alt_model(session):
     assert str(te.value) == 'alternative model cannot be None'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_pvalue(session, caplog, plot_backends):
     """Basic testing of plot_pvalue
 
@@ -2312,7 +2312,7 @@ def test_plot_pvalue(session, caplog, plot_backends):
     check_pvalue(caplog, p)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_split_plot(session):
     """Check we can call get_split_plot.
 
@@ -2326,7 +2326,7 @@ def test_get_split_plot(session):
     assert splot.cols == 1
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_model_component_plot_invalid(session):
     """invalid model argument for get_model_component_plot"""
 
@@ -2341,7 +2341,7 @@ def test_get_model_component_plot_invalid(session):
     assert str(exc.value) == emsg
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_model_component_plot_string(session):
     """Check we can call get_model_component_plot with string model"""
 
@@ -2361,7 +2361,7 @@ def test_get_model_component_plot_string(session):
     assert plot.title == 'Model component: const1d.gmdl'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_get_model_component_plot_model(session):
     """Check we can call get_model_component_plot with a model"""
 
@@ -2381,7 +2381,7 @@ def test_get_model_component_plot_model(session):
     assert plot.title == 'Model component: const1d.gmdl'
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_pylab_plot_scatter_empty_replot(session, requires_pylab):
     """plot_scatter with replot=False and no data
 
@@ -2414,7 +2414,7 @@ def test_pylab_plot_scatter_empty_replot(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_pylab_plot_scatter(session, requires_pylab):
     """Simple test of plot_scatter"""
 
@@ -2450,7 +2450,7 @@ def test_pylab_plot_scatter(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_pylab_plot_trace_empty_replot(session, requires_pylab):
     """plot_trace with replot=False and no data
 
@@ -2466,7 +2466,7 @@ def test_pylab_plot_trace_empty_replot(session, requires_pylab):
         s.plot_trace(y, replot=True)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_pylab_plot_trace(session, requires_pylab):
     """Simple test of plot_trace"""
 
@@ -2503,7 +2503,7 @@ def test_pylab_plot_trace(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_data_contour_recalc(session):
     """Basic testing of get_data_contour(recalc=False)"""
 
@@ -2540,7 +2540,7 @@ def test_data_contour_recalc(session):
     assert p.y == pytest.approx(ny)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_model_contour_recalc(session):
     """Basic testing of get_model_contour(recalc=False)"""
 
@@ -2586,7 +2586,7 @@ def test_model_contour_recalc(session):
     assert p.y.min() == p.y.max()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_source_contour_recalc(session):
     """Basic testing of get_source_contour(recalc=False)"""
 
@@ -2632,7 +2632,7 @@ def test_source_contour_recalc(session):
     assert p.y.min() == p.y.max()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_ratio_contour_recalc(session):
     """Basic testing of get_ratio_contour(recalc=False)"""
 
@@ -2680,7 +2680,7 @@ def test_ratio_contour_recalc(session):
     assert not ygood[40]
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_resid_contour_recalc(session):
     """Basic testing of get_resid_contour(recalc=False)"""
 
@@ -2728,7 +2728,7 @@ def test_resid_contour_recalc(session):
     assert not ygood[40]
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_fit_contour_recalc(session):
     """Basic testing of get_fit_contour(recalc=False)"""
 
@@ -2931,7 +2931,7 @@ def test_plot_fit_resid_handles_resid_log(idval, clean_ui, requires_pylab):
 
 
 @pytest.mark.xfail
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("label", ["source", "model"])
 @pytest.mark.parametrize("idval", [None, 1, "bob"])
 def test_get_foo_component_plot_recalc(session, label, idval):
@@ -2971,7 +2971,7 @@ def test_get_foo_component_plot_recalc(session, label, idval):
     assert plotobj.y == pytest.approx([9, 11, 12])
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype,mclass,label",
                          [("source", sherpa.plot.ComponentSourcePlot,
                            "Source model"),
@@ -3019,7 +3019,7 @@ def test_get_xxx_components_simple(session, ptype, mclass, label):
     assert out.plots[1].title == f"{label} component: scale1d.c1 * box1d.c3"
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["source", "model"])
 def test_plot_xxx_components_simple_mpl(session, ptype, requires_pylab):
     """Simple check of plot_xxx_components using matpotlib"""
@@ -3064,7 +3064,7 @@ def test_plot_xxx_components_simple_mpl(session, ptype, requires_pylab):
     assert axes.lines[1].get_ydata() == pytest.approx([0, 2, 2])
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["source", "model"])
 def test_plot_xxx_components_simple_bokeh(session, ptype):
     """Simple check of plot_xxx_components using bokeh"""
@@ -3109,7 +3109,7 @@ def test_plot_xxx_components_simple_bokeh(session, ptype):
     # Unlike the matplotlib case we do not check the plotted data.
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["source", "model"])
 def test_plot_xxx_components_scalar_mpl(session, ptype, requires_pylab):
     """Can I set a kwarg to a scalar using matpotlib"""
@@ -3144,7 +3144,7 @@ def test_plot_xxx_components_scalar_mpl(session, ptype, requires_pylab):
         assert l.get_linestyle() == "--"
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["source", "model"])
 def test_plot_xxx_components_scalar_bokeh(session, ptype):
     """Can I set a kwarg to a scalar using bokeh"""
@@ -3177,7 +3177,7 @@ def test_plot_xxx_components_scalar_bokeh(session, ptype):
     # For now there is no check the kwargs were used
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["source", "model"])
 def test_plot_xxx_components_kwargs_mpl(session, ptype, requires_pylab):
     """Can we have per-plot kwargs? matplotlib"""
@@ -3212,7 +3212,7 @@ def test_plot_xxx_components_kwargs_mpl(session, ptype, requires_pylab):
     assert axes.lines[1].get_linestyle() == ":"
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["source", "model"])
 def test_plot_xxx_components_kwargs_bokeh(session, ptype):
     """Can we have per-plot kwargs? bokeh"""
@@ -3241,7 +3241,7 @@ def test_plot_xxx_components_kwargs_bokeh(session, ptype):
     # For now there is no check the kwargs were used
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("ptype", ["source", "model"])
 @pytest.mark.parametrize("kwargs,badarg",
                          [({"color": ["orange", "black", "green"]}, "color"),
@@ -3273,7 +3273,7 @@ def test_plot_xxx_components_kwargs_mismatch(kwargs, badarg, session, ptype, plo
         pfunc(**kwargs)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("name,val",
                          [("rows", 0), ("cols", 0),
                           ("rows", 1.4), ("cols", 1.9)])
@@ -3290,7 +3290,7 @@ def test_plot_invalid_size(session, name, val):
         s.plot("data", "data", **kwargs)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("nplots", [1, 2, 3, 4, 5])
 def test_plot_overplot_too_many_plots(session, nplots):
     """Check we error out."""
@@ -3308,7 +3308,7 @@ def test_plot_overplot_too_many_plots(session, nplots):
         s.plot(*args2, overplot=True)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("nrows,ncols,nplots",
                          [(1, 1, 1),
                           (2, 1, 2),
@@ -3345,7 +3345,7 @@ def test_plot_check_default_size_pylab(session, nrows, ncols, nplots, requires_p
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("nrows,ncols,kwargs",
                          [(2, 3, {}),  # this is the default setting
                           (2, 3, {"rows": 1, "cols": 3}),  # also when requested nplots is too small
@@ -3389,7 +3389,7 @@ def test_plot_check_size_nrows_ncols_pylab(session, nrows, ncols, kwargs, requir
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("rows,cols", [(None, 2), (1, 2),
                                        (2, None), (2, 1),
                                        (2, 2)])
@@ -3415,7 +3415,7 @@ def test_plot_singleton_ignores_sizes(session, rows, cols, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_uses_split_plot_prefs(session, requires_pylab):
     """Check we can use get_split_plot to change the size."""
 
@@ -3439,7 +3439,7 @@ def test_plot_uses_split_plot_prefs(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_overplot(session, requires_pylab):
     """What happens when overplot is set. See issue #2128.
 
@@ -3506,7 +3506,7 @@ def test_plot_overplot(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_overplot_smaller(session, requires_pylab):
     """Check we can overplot less plots than the original.
 
