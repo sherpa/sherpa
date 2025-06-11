@@ -54,6 +54,10 @@ def skip_if_no_io(request):
     pytest.skip(reason="FITS backend required")
 
 
+# Do not mark Session as marks=pytest.mark.session as the test is not
+# long and there are potential differences between the two cases (as
+# shown by skip_if_no_io).
+#
 @requires_data
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_309(session, make_data_path, skip_if_no_io):
@@ -527,8 +531,12 @@ def test_template_with_different_independent_axes(pa, expected):
     assert got == pytest.approx(expected)
 
 
+# Although there are diffences in Session/AstroSession, assume this is
+# tested by test_309 so this can be marked as needing --runsession to
+# run.
+#
 @requires_data
-@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("method,nfev,statval",
                          [("neldermead", 68, 2.940358057485021),
                           ("NelderMead", 68, 2.940358057485021),
