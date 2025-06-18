@@ -1498,11 +1498,11 @@ T_SAMPLE = np.asarray([[9.75190011, 6.69601813],
 
 @pytest.mark.parametrize("xxx,expected, setrng",
                          [("normal", N_SAMPLE, set_rng_global),
-                          pytest.param("normal", N_SAMPLE, set_rng_local, marks=pytest.mark.xfail),
+                          ("normal", N_SAMPLE, set_rng_local),
                           ("uniform", U_SAMPLE, set_rng_global),
-                          pytest.param("uniform", U_SAMPLE, set_rng_local, marks=pytest.mark.xfail),
+                          ("uniform", U_SAMPLE, set_rng_local),
                           ("t", T_SAMPLE, set_rng_global),
-                          pytest.param("t", T_SAMPLE, set_rng_local, marks=pytest.mark.xfail),
+                          ("t", T_SAMPLE, set_rng_local),
                          ])
 def test_xxx_sample_random(xxx, expected, setrng, clean_ui):
     """Check if xxx_sample is repeatable.
@@ -1528,7 +1528,7 @@ def test_xxx_sample_random(xxx, expected, setrng, clean_ui):
     assert answer == pytest.approx(expected)
 
 
-@pytest.mark.parametrize("setrng", [set_rng_global, pytest.param(set_rng_local, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("setrng", [set_rng_global, set_rng_local])
 def test_normal_sample_correlate(setrng, clean_ui):
     """Does the correlate setting change anything with normal_sample?"""
 

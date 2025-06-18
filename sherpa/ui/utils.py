@@ -10067,16 +10067,24 @@ class Session(NoNewAttributesAfterInit):
     # Unfortunately not quite a direct copy, so hard
     # to see how to do
 
-    def normal_sample(self, num=1, sigma=1, correlate=True,
+    def normal_sample(self,
+                      num: int = 1,
+                      sigma: float = 1,
+                      correlate: bool = True,
                       id: IdType | None = None,
                       otherids: IdTypes = (),
-                      numcores=None):
+                      numcores: int | None = None
+                      ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values
         from a normal distribution.
 
         For each iteration (sample), change the thawed parameters by
         drawing values from a uni- or multi-variate normal (Gaussian)
         distribution, and calculate the fit statistic.
+
+        ..versionchanged:: 4.18.0
+          The random state returned by get_rng is now used for the
+          sampling.
 
         Parameters
         ----------
@@ -10136,19 +10144,29 @@ class Session(NoNewAttributesAfterInit):
 
         """
         ids, fit = self._get_fit(id, otherids)
-        return sherpa.sim.normal_sample(fit, num, sigma, correlate, numcores)
+        rng = self.get_rng()
+        return sherpa.sim.normal_sample(fit, num=num, sigma=sigma,
+                                        correlate=correlate,
+                                        numcores=numcores, rng=rng)
 
     # DOC-TODO: improve the description of factor parameter
-    def uniform_sample(self, num=1, factor=4,
+    def uniform_sample(self,
+                       num: int = 1,
+                       factor: float = 4,
                        id: IdType | None = None,
                        otherids: IdTypes = (),
-                       numcores=None):
+                       numcores: int | None = None
+                       ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values
         from an uniform distribution.
 
         For each iteration (sample), change the thawed parameters by
         drawing values from a uniform distribution, and calculate the
         fit statistic.
+
+        ..versionchanged:: 4.18.0
+          The random state returned by get_rng is now used for the
+          sampling.
 
         Parameters
         ----------
@@ -10194,18 +10212,27 @@ class Session(NoNewAttributesAfterInit):
 
         """
         ids, fit = self._get_fit(id, otherids)
-        return sherpa.sim.uniform_sample(fit, num, factor, numcores)
+        rng = self.get_rng()
+        return sherpa.sim.uniform_sample(fit, num=num, factor=factor,
+                                         numcores=numcores, rng=rng)
 
-    def t_sample(self, num=1, dof=None,
+    def t_sample(self,
+                 num: int = 1,
+                 dof: int | None = None,
                  id: IdType | None = None,
                  otherids: IdTypes = (),
-                 numcores=None):
+                 numcores: int | None = None
+                 ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values from
         a Student's t-distribution.
 
         For each iteration (sample), change the thawed parameters
         by drawing values from a Student's t-distribution, and
         calculate the fit statistic.
+
+        ..versionchanged:: 4.18.0
+          The random state returned by get_rng is now used for the
+          sampling.
 
         Parameters
         ----------
@@ -10253,9 +10280,12 @@ class Session(NoNewAttributesAfterInit):
         """
         ids, fit = self._get_fit(id, otherids)
         if dof is None:
-            dof = (len(fit.data.eval_model_to_fit(fit.model)) -
-                   len(fit.model.thawedpars))
-        return sherpa.sim.t_sample(fit, num, dof, numcores)
+            dof = len(fit.data.eval_model_to_fit(fit.model)) - \
+                len(fit.model.thawedpars)
+
+        rng = self.get_rng()
+        return sherpa.sim.t_sample(fit, num=num, dof=dof,
+                                   numcores=numcores, rng=rng)
 
     ###########################################################################
     # Error estimation
