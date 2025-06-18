@@ -228,8 +228,10 @@ class ParameterScaleVector(ParameterScale):
                                 scale = np.abs(t.parmaxes[0])
 
                             else:
-                                warning('1 sigma bounds for parameter %s'
-                                        ' could not be found, using soft limit minimum',
+                                warning('%g sigma bounds for parameter %s '
+                                        'could not be found, using soft '
+                                        'limit minimum',
+                                        self.sigma,
                                         par.fullname)
                                 if 0.0 == np.abs(par.min):
                                     scale = 1.0e-16
