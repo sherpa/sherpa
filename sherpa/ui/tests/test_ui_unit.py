@@ -1528,8 +1528,7 @@ def test_xxx_sample_random(xxx, expected, setrng, clean_ui):
     assert answer == pytest.approx(expected)
 
 
-@pytest.mark.xfail
-@pytest.mark.parametrize("setrng", [set_rng_global, set_rng_local])
+@pytest.mark.parametrize("setrng", [set_rng_global, pytest.param(set_rng_local, marks=pytest.mark.xfail)])
 def test_normal_sample_correlate(setrng, clean_ui):
     """Does the correlate setting change anything with normal_sample?"""
 
