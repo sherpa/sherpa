@@ -1556,11 +1556,7 @@ def test_normal_sample_correlate(setrng, clean_ui):
     # off the best-fit? The first column is dropped as it is the
     # statistic column.
     #
-    # The scalevalue should be 2.0, but at present the sigma value
-    # does not get sent through to the correct classes, so it is
-    # actually unused (at least in some cases).
-    #
-    scalevalue = 1.0
+    scalevalue = 2.0
     expected = np.full((3, 2), scalevalue)
 
     def check_ratio(v1, v2):
@@ -1572,9 +1568,6 @@ def test_normal_sample_correlate(setrng, clean_ui):
         assert r == pytest.approx(expected)
 
     check_ratio(e1t[:, 1:], e2t[:, 1:])
-
-    scalevalue = 2.0
-    expected = np.full((3, 2), scalevalue)
     check_ratio(e1f[:, 1:], e2f[:, 1:])
 
     # Assume that the correlated=true/false results are different,
@@ -2171,8 +2164,8 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
     assert resf_sigma2[:, 0] == pytest.approx([1.93025625, 8.39272471, 95.45773131, 4.09849966, 20.96955128])
 
     assert rest_sigma1[:, 0] == pytest.approx([3.26772618, 7.86906547, 1.58810658, 5.40581264, 3.12139264])
-    assert rest_sigma16[:, 0] == pytest.approx(rest_sigma1[:, 0])
-    assert rest_sigma2[:, 0] == pytest.approx(rest_sigma1[:, 0])
+    assert rest_sigma16[:, 0] == pytest.approx([7.31972735, 14.19471891, 2.47293905, 19.31488558, 6.98017826])
+    assert rest_sigma2[:, 0] == pytest.approx([11.77709675, 12.75671961, 3.57858166, 39.53542143, 11.29312376])
 
     # The c values are hard to check for correlate=False, so just
     # check the offsets from the expected value.
@@ -2208,12 +2201,15 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
     d16t = abs(rest_sigma16[:, 1:] - mdl.thawedpars)
     d2t = abs(rest_sigma2[:, 1:] - mdl.thawedpars)
 
-    def check_ratio(vsigma, vsigma1, expected):
+    def check_ratio(vsigma, vsigma1, minval, maxval):
         r = vsigma / vsigma1
-        assert r == pytest.approx(np.full((5, 2), expected))
+        assert r.min() == pytest.approx(minval)
+        assert r.max() == pytest.approx(maxval)
+        # check the ratio for the c column
+        assert (r[:, 0] > 1.6).all()
 
-    check_ratio(d16t, d1t, 1.0)
-    check_ratio(d2t, d1t, 1.0)
+    check_ratio(d16t, d1t, 0.5592601525645855, 2.38351205346464)
+    check_ratio(d2t, d1t, 0.6046847674045083, 3.9596727215871725)
 
 
 def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
@@ -2279,8 +2275,9 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
     assert resf_sigma16[:, 0] == pytest.approx([1.12467203e+03, 5.37400095e+04, 3.00878135e+01, 2.59548008e+04, 1.20528623e+03])
     assert resf_sigma2[:, 0] == pytest.approx([1.12733428e+03, 5.37836483e+04, 2.87802714e+01, 2.59496320e+04, 1.19845547e+03])
 
-    assert rest_sigma16[:, 0] == pytest.approx(rest_sigma1[:, 0])
-    assert rest_sigma2[:, 0] == pytest.approx(rest_sigma1[:, 0])
+    assert rest_sigma1[:, 0] == pytest.approx([3.26772618, 3.88042719, 1.58810658, 1.49768585, 3.12139264])
+    assert rest_sigma16[:, 0] == pytest.approx([7.31972735, 5.95784881, 2.47293905, 1.66356551, 6.98017826])
+    assert rest_sigma2[:, 0] == pytest.approx([11.77709675, 7.91490779, 3.57858165, 4.16485202, 11.29312376])
 
     # The c values should be the same, as they are drawn from the same
     # distribution as this is a special case, when correlate=False.
@@ -2313,9 +2310,12 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
     d16t = abs(rest_sigma16[:, 1:] - mdl.thawedpars)
     d2t = abs(rest_sigma2[:, 1:] - mdl.thawedpars)
 
-    def check_ratio(vsigma, vsigma1, expected):
+    def check_ratio(vsigma, vsigma1, minval, maxval):
         r = vsigma / vsigma1
-        assert r == pytest.approx(np.full((5, 2), expected))
+        assert r.min() == pytest.approx(minval)
+        assert r.max() == pytest.approx(maxval)
+        # check the ratio for the c column
+        assert (r[:, 0] > 1.6).all()
 
-    check_ratio(d16t, d1t, 1.0)
-    check_ratio(d2t, d1t, 1.0)
+    check_ratio(d16t, d1t, 0.5592601537154354, 2.3835120525988995)
+    check_ratio(d2t, d1t, 0.6046847674045083, 3.9596727215871725)
