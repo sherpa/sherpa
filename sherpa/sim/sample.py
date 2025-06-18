@@ -754,8 +754,7 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
 
         """
 
-        samples = NormalParameterSampleFromScaleMatrix.get_sample(
-            self, fit, num=num, rng=rng)
+        samples = super().get_sample(fit, num=num, rng=rng)
         return _sample_stat(fit, samples, numcores)
 
 
@@ -807,8 +806,7 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
             remaining are the parameter values.
 
         """
-        samples = NormalParameterSampleFromScaleVector.get_sample(
-            self, fit, num=num, rng=rng)
+        samples = super().get_sample(fit, num=num, rng=rng)
         return _sample_stat(fit, samples, numcores)
 
 
@@ -862,9 +860,8 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
            remaining are the parameter values.
 
         """
-        samples = UniformParameterSampleFromScaleVector.get_sample(self, fit,
-                                                                   factor=factor, num=num,
-                                                                   rng=rng)
+        samples = super().get_sample(fit, factor=factor, num=num,
+                                     rng=rng)
         return _sample_stat(fit, samples, numcores)
 
 
@@ -919,8 +916,7 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
             remaining are the parameter values.
 
         """
-        samples = StudentTParameterSampleFromScaleMatrix.get_sample(
-            self, fit, dof=dof, num=num, rng=rng)
+        samples = super().get_sample(fit, dof=dof, num=num, rng=rng)
         return _sample_stat(fit, samples, numcores)
 
 
