@@ -318,7 +318,10 @@ class ParameterScaleMatrix(ParameterScale):
                 cov = self.sigma * self.sigma * cov
 
         else:
-
+            # NOTE: the self.sigma value is not used when the scales
+            # are manually sent in (it is up to the user to send in
+            # the expected scaled covariance matrix).
+            #
             npar = len(fit.model.thawedpars)
             msg = f'scales must be a numpy array of size ({npar},{npar})'
 
@@ -959,6 +962,10 @@ def normal_sample(fit: Fit,
     drawing values from a uni- or multi-variate normal (Gaussian)
     distribution, and calculate the fit statistic.
 
+    .. versionchanged:: 4.18.0
+       The sigma setting is now used (previously it was not guaranteed
+       to be used).
+
     .. versionchanged:: 4.16.0
        The rng parameter was added.
 
@@ -1004,11 +1011,12 @@ def normal_sample(fit: Fit,
     off-diagonal elements of the covariance matrix.
 
     """
-    sampler = NormalSampleFromScaleVector()
-    sampler.scale.sigma = sigma
     if correlate:
         sampler = NormalSampleFromScaleMatrix()
+    else:
+        sampler = NormalSampleFromScaleVector()
 
+    sampler.scale.sigma = sigma
     return sampler.get_sample(fit, num=num, numcores=numcores, rng=rng)
 
 

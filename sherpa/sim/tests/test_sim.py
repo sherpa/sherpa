@@ -399,7 +399,6 @@ def test_normal_sample_correlated(setup):
     assert out == pytest.approx(EXPECTED_NORMAL2)
 
 
-@pytest.mark.xfail  # See issue #1736
 def test_normal_sample_correlated_sigma(setup):
     """Test normal_sample with different sigma values + correlation."""
 
