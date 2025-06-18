@@ -2268,10 +2268,10 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
     assert r.getMessage() == "1 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"
 
     r = caplog.records[nlog2 + 5]
-    assert r.getMessage() == "1 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"  # note: this does not report the actual sigma limit
+    assert r.getMessage() == "1.6 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"
 
     r = caplog.records[nlog3 + 5]
-    assert r.getMessage() == "1 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"  # note: this does not report the actual sigma limit
+    assert r.getMessage() == "2 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"
 
     # Check how the statistic values vary.
     #
