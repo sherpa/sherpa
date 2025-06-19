@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020 - 2025
+#  Copyright (C) 2017, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1466,3 +1466,63 @@ def test_num_pars_links(clean_ui):
     assert ui.get_num_par() == 5
     assert ui.get_num_par_thawed() == 3
     assert ui.get_num_par_frozen() == 2
+
+
+SEEDVAL = 1327
+
+def set_rng_global():
+    # Ensure no RNG is set
+    ui.set_rng(None)
+    np.random.seed(SEEDVAL)
+
+
+def set_rng_local():
+    # Set the global RNG state to a random state to make sure it isn't
+    # being used (the assumption is that this will not match SEEDVAL).
+    np.random.seed()
+    ui.set_rng(np.random.RandomState(SEEDVAL))
+
+
+# The uniform sampling creates a model value < 0 which is allowed,
+# but unphysical. Really should have changed the parameter range.
+#
+N_SAMPLE = np.asarray([[2.9013215,  4.4862895 ],
+                       [1.55735165, 3.86432178],
+                       [0.42363933, 2.35716076]])
+U_SAMPLE = np.asarray([[ 5.97118671e-01,  3.20748789e+00],
+                       [ 9.39240153e-01,  3.48835118e+00],
+                       [ 9.21034037e+02, -2.67949604e-01]])
+T_SAMPLE = np.asarray([[9.75190011, 6.69601813],
+                       [8.60285233, 6.37242034],
+                       [0.46611989, 2.30776257]])
+
+@pytest.mark.parametrize("xxx,expected, setrng",
+                         [("normal", N_SAMPLE, set_rng_global),
+                          pytest.param("normal", N_SAMPLE, set_rng_local, marks=pytest.mark.xfail),
+                          ("uniform", U_SAMPLE, set_rng_global),
+                          pytest.param("uniform", U_SAMPLE, set_rng_local, marks=pytest.mark.xfail),
+                          ("t", T_SAMPLE, set_rng_global),
+                          pytest.param("t", T_SAMPLE, set_rng_local, marks=pytest.mark.xfail),
+                         ])
+def test_xxx_sample_random(xxx, expected, setrng, clean_ui):
+    """Check if xxx_sample is repeatable.
+
+    At the moment we allow the global RNG (np.random.seed)
+
+    """
+
+    ui.load_arrays(1, [2, 3, 10], [3, 4, 1])
+    ui.set_stat('cash')
+    ui.set_source(ui.const1d.mdl)
+    ui.fit()
+
+    setrng()
+
+    func = getattr(ui, f"{xxx}_sample")
+    answer = func(num=3)
+
+    # clear out the RNG state
+    np.random.seed()
+    ui.set_rng(None)
+
+    assert answer == pytest.approx(expected)
