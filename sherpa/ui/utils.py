@@ -34,18 +34,36 @@ from typing import Any, Literal, TypeVar, overload
 
 import numpy as np
 
-from sherpa import get_config
+# This provides warning messages to the user when optional parts of
+# the system are not available, such as plotting and I/O backends. The
+# required modules are "re-loaded" below.
+#
 import sherpa.all
+
+from sherpa import get_config
+
+import sherpa.data
 from sherpa.data import Data, DataSimulFit
+import sherpa.estmethods
 from sherpa.estmethods import EstMethod
 from sherpa.fit import Fit, FitResults
+import sherpa.instrument
+import sherpa.io
+import sherpa.image
+import sherpa.models
 from sherpa.models.basic import TableModel
+import sherpa.models.model
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
+import sherpa.optmethods
 from sherpa.optmethods import OptMethod
+import sherpa.plot
 from sherpa.plot import Plot, MultiPlot, set_backend, get_per_plot_kwargs
+import sherpa.sim
+import sherpa.stats
 from sherpa.stats import Stat, UserStat
+import sherpa.utils
 from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
