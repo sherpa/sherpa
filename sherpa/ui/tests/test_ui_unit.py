@@ -1496,7 +1496,7 @@ T_SAMPLE = np.asarray([[9.75190011, 6.69601813],
                        [8.60285233, 6.37242034],
                        [0.46611989, 2.30776257]])
 
-@pytest.mark.parametrize("xxx,expected, setrng",
+@pytest.mark.parametrize("xxx,expected,setrng",
                          [("normal", N_SAMPLE, set_rng_global),
                           ("normal", N_SAMPLE, set_rng_local),
                           ("uniform", U_SAMPLE, set_rng_global),
