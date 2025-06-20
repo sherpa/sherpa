@@ -1496,7 +1496,7 @@ T_SAMPLE = np.asarray([[9.75190011, 6.69601813],
                        [8.60285233, 6.37242034],
                        [0.46611989, 2.30776257]])
 
-@pytest.mark.parametrize("xxx,expected, setrng",
+@pytest.mark.parametrize("xxx,expected,setrng",
                          [("normal", N_SAMPLE, set_rng_global),
                           pytest.param("normal", N_SAMPLE, set_rng_local, marks=pytest.mark.xfail),
                           ("uniform", U_SAMPLE, set_rng_global),
@@ -1526,3 +1526,52 @@ def test_xxx_sample_random(xxx, expected, setrng, clean_ui):
     ui.set_rng(None)
 
     assert answer == pytest.approx(expected)
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("setrng", [set_rng_global, set_rng_local])
+def test_normal_sample_correlate(setrng, clean_ui):
+    """Does the correlate setting change anything with normal_sample?"""
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [2, 4, 7, 15, 19])
+    ui.set_source(ui.polynom1d.mdl)
+    mdl.c1.thaw()
+    ui.fit()
+
+    bestfit = np.asarray([mdl.c0.val, mdl.c1.val])
+
+    setrng()
+    e1t = ui.normal_sample(num=3, sigma=1, correlate=True)
+
+    setrng()
+    e1f = ui.normal_sample(num=3, sigma=1, correlate=False)
+
+    setrng()
+    e2t = ui.normal_sample(num=3, sigma=2, correlate=True)
+
+    setrng()
+    e2f = ui.normal_sample(num=3, sigma=2, correlate=False)
+
+    # Are the sigma=2 values twice those of sigma=1, after subtractig
+    # off the best-fit? The first column is dropped as it is the
+    # statistic column.
+    #
+    expected = np.full((3, 2), 2.0)
+
+    def check_ratio(v1, v2):
+        """Check sigma=1 and sigma=2 results scale"""
+
+        d1 = v1 - bestfit
+        d2 = v2 - bestfit
+        r = d2 / d1
+        assert r == pytest.approx(expected)
+
+    check_ratio(e1t[:, 1:], e2t[:, 1:])
+    check_ratio(e1f[:, 1:], e2f[:, 1:])
+
+    # Assume that the correlated=true/false results are different,
+    # which can be checked by comparing the statistic columns.
+    #
+    stat_t = e1t[:, 0]
+    stat_f = e1f[:, 0]
+    assert not stat_f == pytest.approx(stat_t)
