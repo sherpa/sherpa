@@ -36,7 +36,7 @@ from sherpa.estmethods import Covariance
 from sherpa import sim
 from sherpa.utils.err import EstErr
 from sherpa.utils.logging import SherpaVerbosity
-from sherpa.utils.parallel import _multi, _ncpus
+from sherpa.utils.parallel import multi, ncpus
 
 
 _max = np.finfo(np.float32).max
@@ -432,7 +432,7 @@ def test_lrt_multicore(setup):
     # the _ncpus setting (although it appears that we still need to
     # check whether multi-processing is enabled or not).
     #
-    if _multi and _ncpus > 1:
+    if multi and ncpus > 1:
         expected = RATIOS_TWO
     else:
         expected = RATIOS_ONE
