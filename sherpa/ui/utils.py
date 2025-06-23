@@ -411,8 +411,8 @@ def reduce_ufunc(func):
     modname = getattr(func, '__module__', 'numpy')
     funcname = func.__name__
     if func is not getattr(sys.modules[modname], funcname, None):
-        raise ValueError("module '%s' does not contain ufunc '%s'" %
-                         (modname, funcname))
+        raise ValueError(f"module '{modname}' does not contain "
+                         f"ufunc '{funcname}'")
     return (construct_ufunc, (modname, funcname))
 
 
@@ -683,7 +683,8 @@ def _assign_model_to_main(name: str, model: Model) -> None:
     """
     # Ask sys what the __main__ module is; packages such
     # as IPython can add their own __main__ module.
-    model.name = '%s.%s' % (type(model).__name__.lower(), name)
+    lname = type(model).__name__.lower()
+    model.name = f'{lname}.{name}'
     _assign_obj_to_main(name, model)
 
 
@@ -1327,82 +1328,100 @@ class Session(NoNewAttributesAfterInit):
                 self._model_autoassign_func(name, cmpt)
 
     def _get_show_data(self, id: IdType | None = None) -> str:
-        data_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
-            data_str += 'Data Set: %s\n' % id
-            data_str += str(self.get_data(id)) + '\n\n'
+
+        data_str = ''
+        for idval in ids:
+            data_str += f'Data Set: {idval}\n'
+            data_str += str(self.get_data(idval)) + '\n\n'
+
         return data_str
 
     def _get_show_filter(self, id: IdType | None = None) -> str:
-        filt_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
-            filt_str += 'Data Set Filter: %s\n' % id
-            filt_str += self.get_data(id).get_filter_expr() + '\n\n'
+
+        filt_str = ''
+        for idval in ids:
+            filt_str += f'Data Set Filter: {idval}\n'
+            filt_str += self.get_data(idval).get_filter_expr() + '\n\n'
+
         return filt_str
 
     def _get_show_model(self, id: IdType | None = None) -> str:
-        model_str = ''
-        ids = self.list_data_ids()
-        mdl_ids = self.list_model_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
-            if id in mdl_ids:
-                model_str += 'Model: %s\n' % id
-                model_str += str(self.get_model(id)) + '\n\n'
+
+        mdl_ids = self.list_model_ids()
+        model_str = ''
+        for idval in ids:
+            if idval in mdl_ids:
+                model_str += f'Model: {idval}\n'
+                model_str += str(self.get_model(idval)) + '\n\n'
+
         return model_str
 
     def _get_show_source(self, id: IdType | None = None) -> str:
-        model_str = ''
-        ids = self.list_data_ids()
-        src_ids = self._sources.keys()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
-            if id in src_ids:
-                model_str += 'Model: %s\n' % id
-                model_str += str(self.get_source(id)) + '\n\n'
+
+        src_ids = self._sources.keys()
+        model_str = ''
+        for idval in ids:
+            if idval in src_ids:
+                model_str += f'Model: {idval}\n'
+                model_str += str(self.get_source(idval)) + '\n\n'
+
         return model_str
 
     def _get_show_kernel(self, id: IdType | None = None) -> str:
-        kernel_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
-            if id in self._psf.keys():
-                kernel_str += 'PSF Kernel: %s\n' % id
+
+        kernel_str = ''
+        for idval in ids:
+            if idval in self._psf.keys():
+                kernel_str += f'PSF Kernel: {idval}\n'
                 # Show the PSF parameters
-                kernel_str += str(self.get_psf(id)) + '\n\n'
+                kernel_str += str(self.get_psf(idval)) + '\n\n'
+
         return kernel_str
 
     def _get_show_psf(self, id: IdType | None = None) -> str:
-        psf_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
-            if id in self._psf.keys():
-                psf_str += 'PSF Model: %s\n' % id
+
+        psf_str = ''
+        for idval in ids:
+            if idval in self._psf.keys():
+                psf_str += f'PSF Model: {idval}\n'
                 # Show the PSF dataset or PSF model
-                psf_str += str(self.get_psf(id).kernel) + '\n\n'
+                psf_str += str(self.get_psf(idval).kernel) + '\n\n'
+
         return psf_str
 
     def _get_show_method(self) -> str:
-        return ('Optimization Method: %s\n%s\n' %
-                (type(self._current_method).__name__,
-                 str(self._current_method)))
+        n1 = type(self._current_method).__name__
+        n2 = self._current_method
+        return f'Optimization Method: {n1}\n{n2}\n'
 
     def _get_show_stat(self) -> str:
-        return ('Statistic: %s\n%s\n' %
-                (type(self._current_stat).__name__,
-                 str(self._current_stat)))
+        n1 = type(self._current_stat).__name__
+        n2 = self._current_stat
+        return f'Statistic: {n1}\n{n2}\n'
 
     def _get_show_fit(self) -> str:
         if self._fit_results is None:
@@ -2049,10 +2068,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         funcs_list = self.get_functions()
-        funcs = ''
-        for func in funcs_list:
-            funcs += '%s\n' % func
-
+        funcs = '\n'.join(funcs_list) + '\n'
         send_to_pager(funcs, outfile, clobber)
 
     ###########################################################################
@@ -3673,7 +3689,6 @@ class Session(NoNewAttributesAfterInit):
         """
         if val is None:
             val, id = id, val
-        err = None
 
         d = self.get_data(id)
         set_error(d, "syserror", val, fractional=fractional)
@@ -5753,7 +5768,8 @@ class Session(NoNewAttributesAfterInit):
 
         # TODO: do we still expect to get bytes here?
         if lo is not None and isinstance(lo, (str, np.bytes_)):
-            return self._notice_expr(lo, **kwargs)
+            self._notice_expr(lo, **kwargs)
+            return
 
         # Jump through the data sets in "order".
         #
@@ -5976,7 +5992,8 @@ class Session(NoNewAttributesAfterInit):
 
         # TODO: do we still expect to get bytes here?
         if lo is not None and isinstance(lo, (str, np.bytes_)):
-            return self._notice_expr_id(idvals, lo, **kwargs)
+            self._notice_expr_id(idvals, lo, **kwargs)
+            return
 
         # Unlike notice() we do not sort the id list as this
         # was set by the user.
@@ -6739,8 +6756,8 @@ class Session(NoNewAttributesAfterInit):
             has_source = key in self._sources and mod in self._sources[key]
 
             if has_model or has_source:
-                warning(f"the model component '{mod.name}' is found in model {key}" +
-                        " and cannot be deleted")
+                warning("the model component '%s' is found in model %s"
+                        " and cannot be deleted", mod.name, key)
                 # restore the model component in use and return
                 self._model_components[name] = mod
                 return
