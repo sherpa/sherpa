@@ -29,11 +29,43 @@ import warnings
 
 import numpy as np
 
-import sherpa.ui.utils
+# This provides warning messages to the user when optional parts of
+# the system are not available, such as plotting and I/O backends. The
+# required modules are "re-loaded" below.
+#
+import sherpa.astro.all
+
+import sherpa.astro.background
+import sherpa.astro.data
+from sherpa.astro.data import DataIMG, DataIMGInt, DataPHA, \
+    DataARF, DataRMF
+from sherpa.astro import fake
+import sherpa.astro.flux
+import sherpa.astro.instrument
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
+import sherpa.astro.io
+import sherpa.astro.plot
+import sherpa.astro.sim
+from sherpa.astro.ui import serialize
+import sherpa.astro.utils
+
+import sherpa.data
+from sherpa.data import Data, Data1D, Data1DAsymmetricErrs, Data2D, \
+    Data2DInt
+from sherpa.fit import Fit
+import sherpa.io
+from sherpa.models.basic import TableModel, UserModel
+from sherpa.models.model import Model
+import sherpa.plot
+from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
+    ReSampleData
+from sherpa.stats import Cash, CStat, WStat
+
+import sherpa.ui.utils
 from sherpa.ui.utils import _check_type, _check_str_type, _is_str, \
     get_plot_prefs
+
 import sherpa.utils
 from sherpa.utils import bool_cast, get_error_estimates, is_subclass, \
     sao_arange, send_to_pager
@@ -41,31 +73,7 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr, SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.types import IdType
-from sherpa.data import Data, Data1D, Data1DAsymmetricErrs, Data2D, \
-    Data2DInt
-import sherpa.data
-import sherpa.plot
-import sherpa.astro.all
-import sherpa.astro.background
-import sherpa.astro.data
-import sherpa.astro.flux
-import sherpa.astro.io
-import sherpa.astro.plot
-import sherpa.astro.sim
-from sherpa.astro.ui import serialize
-import sherpa.astro.utils
-from sherpa.data import Data
-from sherpa.fit import Fit
-import sherpa.io
-from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
-    ReSampleData
-from sherpa.stats import Cash, CStat, WStat
-from sherpa.models.basic import TableModel, UserModel
-from sherpa.models.model import Model
-from sherpa.astro import fake
-from sherpa.astro.data import DataIMG, DataIMGInt, DataPHA, \
-    DataARF, DataRMF
-import sherpa.astro.instrument
+
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
