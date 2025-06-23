@@ -34,20 +34,33 @@ from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
 from sherpa.ui.utils import _check_type, _check_str_type, _is_str, \
     get_plot_prefs
-from sherpa.utils import is_subclass, sao_arange, send_to_pager
+import sherpa.utils
+from sherpa.utils import bool_cast, get_error_estimates, is_subclass, \
+    sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
-    IdentifierErr, ImportErr, IOErr, ModelErr
+    IdentifierErr, ImportErr, IOErr, ModelErr, SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.types import IdType
-from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
+from sherpa.data import Data, Data1D, Data1DAsymmetricErrs, Data2D, \
+    Data2DInt
+import sherpa.data
+import sherpa.plot
 import sherpa.astro.all
+import sherpa.astro.background
+import sherpa.astro.data
+import sherpa.astro.flux
+import sherpa.astro.io
 import sherpa.astro.plot
+import sherpa.astro.sim
 from sherpa.astro.ui import serialize
+import sherpa.astro.utils
 from sherpa.data import Data
 from sherpa.fit import Fit
-from sherpa.sim import NormalParameterSampleFromScaleMatrix
+import sherpa.io
+from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
+    ReSampleData
 from sherpa.stats import Cash, CStat, WStat
-from sherpa.models.basic import TableModel
+from sherpa.models.basic import TableModel, UserModel
 from sherpa.models.model import Model
 from sherpa.astro import fake
 from sherpa.astro.data import DataIMG, DataIMGInt, DataPHA, \
@@ -219,8 +232,8 @@ def _save_errorcol(session: Session,
 
     """
 
-    clobber = sherpa.utils.bool_cast(clobber)
-    asciiflag = sherpa.utils.bool_cast(asciiflag)
+    clobber = bool_cast(clobber)
+    asciiflag = bool_cast(asciiflag)
     if filename is None:
         idval, filename = filename, idval
 
@@ -2248,7 +2261,7 @@ class Session(sherpa.ui.utils.Session):
         >>> pha = unpack_pha(hdus)
 
         """
-        use_errors = sherpa.utils.bool_cast(use_errors)
+        use_errors = bool_cast(use_errors)
         return sherpa.astro.io.read_pha(arg, use_errors)
 
     # DOC-TODO: what does this return when given a PHA2 file?
@@ -2300,7 +2313,7 @@ class Session(sherpa.ui.utils.Session):
         >>> pha = unpack_pha(hdus)
 
         """
-        use_errors = sherpa.utils.bool_cast(use_errors)
+        use_errors = bool_cast(use_errors)
         return sherpa.astro.io.read_pha(arg, use_errors, True)
 
     # DOC-TODO: how best to include datastack support?
@@ -2502,7 +2515,7 @@ class Session(sherpa.ui.utils.Session):
     def _get_data_or_bkg(self,
                          id: IdType | None,
                          bkg_id: IdType | None = None
-                         ) -> sherpa.data.Data:
+                         ) -> Data:
         """Return the given dataset (may be a background).
 
         Unlike _get_pha_data it does not force the data to
@@ -4509,8 +4522,8 @@ class Session(sherpa.ui.utils.Session):
         ...             ascii=False, clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         sherpa.astro.io.write_arrays(filename, args, fields=fields,
                                      ascii=ascii, clobber=clobber)
 
@@ -4595,8 +4608,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_source('img', 'model.img')
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         self._save_type('source', id, filename, ascii=ascii, clobber=clobber,
                         bkg_id=bkg_id)
 
@@ -4680,8 +4693,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_model('img', 'model.img')
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         self._save_type('model', id, filename, ascii=ascii, clobber=clobber,
                         bkg_id=bkg_id)
 
@@ -4754,8 +4767,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_resid('jet', "resid.dat", ascii=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         self._save_type('resid', id, filename, ascii=ascii, clobber=clobber,
                         bkg_id=bkg_id)
 
@@ -4828,8 +4841,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_delchi('jet', "delchi.fits", ascii=False)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         self._save_type('delchi', id, filename, ascii=ascii, clobber=clobber,
                         bkg_id=bkg_id)
 
@@ -4899,8 +4912,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_filter('src', 'filter.fits', ascii=False)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
 
@@ -5236,8 +5249,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_pha('pi.dat', ascii=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
@@ -5325,8 +5338,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_arf('pi.arf', ascii=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
@@ -5416,7 +5429,7 @@ class Session(sherpa.ui.utils.Session):
         >>> save_rmf('jet', 'out.rmf', clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
@@ -5505,8 +5518,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_grouping('jet', 'grp.fits', ascii=False, clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
@@ -5590,8 +5603,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_quality('jet', 'qual.fits', ascii=False, clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
@@ -5666,8 +5679,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_image('jet', 'jet.img', clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
@@ -5736,8 +5749,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_table('jet', 'jet.dat', ascii=True, clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
@@ -5819,8 +5832,8 @@ class Session(sherpa.ui.utils.Session):
         >>> save_data('rprof', 'prof.fits', clobber=True, ascii=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
+        clobber = bool_cast(clobber)
+        ascii = bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
 
@@ -8733,7 +8746,6 @@ class Session(sherpa.ui.utils.Session):
         False
 
         """
-        data = self._get_pha_data(id, bkg_id)
 
         # This will call the background datasets to be ungrouped
         # as well (when bkg_id is not set).
@@ -9932,7 +9944,7 @@ class Session(sherpa.ui.utils.Session):
             pha.grouping = grouping
 
         if pha.grouping is not None:
-            if sherpa.utils.bool_cast(grouped):
+            if bool_cast(grouped):
                 pha.group()
             else:
                 pha.ungroup()
@@ -9979,7 +9991,7 @@ class Session(sherpa.ui.utils.Session):
                 # that the old model expression will be lost).
                 #
                 old_model = self.get_bkg_source(idval)
-            except ModelErr as me:
+            except ModelErr:
                 old_model = None
 
             for bkg_id in pha.background_ids:
@@ -11138,7 +11150,7 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source(myfunc + gauss1d.gline)
 
         """
-        usermodel = sherpa.models.UserModel(modelname)
+        usermodel = UserModel(modelname)
         usermodel.calc = func
         usermodel._file = filename
         if filename is not None:
@@ -14620,7 +14632,7 @@ class Session(sherpa.ui.utils.Session):
         stat = self.get_stat()
         method = self.get_method()
 
-        resampledata = sherpa.sim.ReSampleData(data, model)
+        resampledata = ReSampleData(data, model)
         return resampledata(niter=niter, seed=seed,
                             stat=stat, method=method,
                             rng=self.get_rng())
@@ -14856,7 +14868,7 @@ class Session(sherpa.ui.utils.Session):
             if model is None:
                 model = self.get_bkg_source(id, bkg_id)
 
-        correlated = sherpa.utils.bool_cast(correlated)
+        correlated = bool_cast(correlated)
 
         return sherpa.astro.flux.sample_flux(fit, data, model,
                                              method=sherpa.astro.utils.calc_photon_flux,
@@ -15097,7 +15109,7 @@ class Session(sherpa.ui.utils.Session):
             if model is None:
                 model = self.get_bkg_source(id, bkg_id)
 
-        correlated = sherpa.utils.bool_cast(correlated)
+        correlated = bool_cast(correlated)
 
         return sherpa.astro.flux.sample_flux(fit, data, model,
                                              method=sherpa.astro.utils.calc_energy_flux,
@@ -15303,7 +15315,7 @@ class Session(sherpa.ui.utils.Session):
             except IdentifierErr:
                 raise IdentifierErr('Please use calc_energy_flux as set_full_model was used') from None
 
-        correlated = sherpa.utils.bool_cast(correlated)
+        correlated = bool_cast(correlated)
 
         # Why is this +1? The original comment was
         # "num+1 cause sample energy flux is under-reporting its result?"
@@ -15488,7 +15500,7 @@ class Session(sherpa.ui.utils.Session):
                         # check just in case usr has run covar()
                         covar_results = self.get_covar_results()
                         covar_matrix = covar_results.extra_output
-                    except sherpa.utils.err.SessionErr:
+                    except SessionErr:
                         # usr has not run covar, will have to run it
                         covar_matrix = fit.est_errors().extra_output
                 is_numpy_ndarray(covar_matrix, 'covar_matrix', npar, npar)
@@ -15520,7 +15532,7 @@ class Session(sherpa.ui.utils.Session):
                     self.set_par(parname, val)
                 eqw[params_index] = \
                     sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
-            median, lower, upper = sherpa.utils.get_error_estimates(eqw)
+            median, lower, upper = get_error_estimates(eqw)
             fit.model.thawedpars = orig_par_vals
             return median, lower, upper, params, eqw
 
@@ -16864,7 +16876,7 @@ class Session(sherpa.ui.utils.Session):
 
         if _is_str(outfile):
             if os.path.isfile(outfile):
-                if sherpa.utils.bool_cast(clobber):
+                if bool_cast(clobber):
                     os.remove(outfile)
                 else:
                     raise IOErr('filefound', outfile)
