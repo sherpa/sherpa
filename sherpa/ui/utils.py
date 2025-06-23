@@ -1327,91 +1327,94 @@ class Session(NoNewAttributesAfterInit):
             for name, cmpt in self._model_components.items():
                 self._model_autoassign_func(name, cmpt)
 
-    def _get_show_data(self, id: IdType | None = None) -> str:
-        if id is None:
+    def _get_show_helper(self,
+                         checkfunc: Callable[[IdType], bool] | None,
+                         labelfunc: Callable[[IdType], str],
+                         idarg: IdType | None = None,
+                         ) -> str:
+        """Helper return for _get_show_xxx calls with an id.
+
+        checkfunc determines whether the id value should be
+        processed (if None, there is no check), and labelfunc
+        returns the actual text for the identifier.
+
+        """
+
+        if idarg is None:
             ids = self.list_data_ids()
         else:
-            ids = [self._fix_id(id)]
+            ids = [self._fix_id(idarg)]
 
-        data_str = ''
+        out = ''
         for idval in ids:
-            data_str += f'Data Set: {idval}\n'
-            data_str += str(self.get_data(idval)) + '\n\n'
+            if checkfunc is None or checkfunc(idval):
+                out += f"{labelfunc(idval)}\n\n"
 
-        return data_str
+        return out
+
+    def _get_show_data(self, id: IdType | None = None) -> str:
+
+        def get(idval):
+            istr = self.get_data(idval)
+            return f"Data Set: {idval}\n{istr}"
+
+        return self._get_show_helper(None, get, id)
 
     def _get_show_filter(self, id: IdType | None = None) -> str:
-        if id is None:
-            ids = self.list_data_ids()
-        else:
-            ids = [self._fix_id(id)]
 
-        filt_str = ''
-        for idval in ids:
-            filt_str += f'Data Set Filter: {idval}\n'
-            filt_str += self.get_data(idval).get_filter_expr() + '\n\n'
+        def get(idval):
+            istr = self.get_data(idval).get_filter_expr()
+            return f"Data Set Filter: {idval}\n{istr}"
 
-        return filt_str
+        return self._get_show_helper(None, get, id)
 
     def _get_show_model(self, id: IdType | None = None) -> str:
-        if id is None:
-            ids = self.list_data_ids()
-        else:
-            ids = [self._fix_id(id)]
 
         mdl_ids = self.list_model_ids()
-        model_str = ''
-        for idval in ids:
-            if idval in mdl_ids:
-                model_str += f'Model: {idval}\n'
-                model_str += str(self.get_model(idval)) + '\n\n'
+        def check(idval):
+            return idval in mdl_ids
 
-        return model_str
+        def get(idval):
+            istr = self.get_model(idval)
+            return f"Model: {idval}\n{istr}"
+
+        return self._get_show_helper(check, get, id)
 
     def _get_show_source(self, id: IdType | None = None) -> str:
-        if id is None:
-            ids = self.list_data_ids()
-        else:
-            ids = [self._fix_id(id)]
 
         src_ids = self._sources.keys()
-        model_str = ''
-        for idval in ids:
-            if idval in src_ids:
-                model_str += f'Model: {idval}\n'
-                model_str += str(self.get_source(idval)) + '\n\n'
+        def check(idval):
+            return idval in src_ids
 
-        return model_str
+        def get(idval):
+            istr = self.get_source(idval)
+            return f"Model: {idval}\n{istr}"
+
+        return self._get_show_helper(check, get, id)
 
     def _get_show_kernel(self, id: IdType | None = None) -> str:
-        if id is None:
-            ids = self.list_data_ids()
-        else:
-            ids = [self._fix_id(id)]
 
-        kernel_str = ''
-        for idval in ids:
-            if idval in self._psf.keys():
-                kernel_str += f'PSF Kernel: {idval}\n'
-                # Show the PSF parameters
-                kernel_str += str(self.get_psf(idval)) + '\n\n'
+        psf_ids = self._psf.keys()
+        def check(idval):
+            return idval in psf_ids
 
-        return kernel_str
+        def get(idval):
+            istr = self.get_psf(idval)
+            return f"PSF Kernel: {idval}\n{istr}"
+
+        return self._get_show_helper(check, get, id)
 
     def _get_show_psf(self, id: IdType | None = None) -> str:
-        if id is None:
-            ids = self.list_data_ids()
-        else:
-            ids = [self._fix_id(id)]
 
-        psf_str = ''
-        for idval in ids:
-            if idval in self._psf.keys():
-                psf_str += f'PSF Model: {idval}\n'
-                # Show the PSF dataset or PSF model
-                psf_str += str(self.get_psf(idval).kernel) + '\n\n'
+        psf_ids = self._psf.keys()
+        def check(idval):
+            return idval in psf_ids
 
-        return psf_str
+        def get(idval):
+            istr = self.get_psf(idval).kernel
+            return f"PSF Model: {idval}\n{istr}"
+
+        return self._get_show_helper(check, get, id)
 
     def _get_show_method(self) -> str:
         n1 = type(self._current_method).__name__
