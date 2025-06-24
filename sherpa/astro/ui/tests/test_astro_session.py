@@ -4569,3 +4569,66 @@ def test_method_numcores_moncar(session, ncores):
     assert fr.succeeded
     assert fr.statval == pytest.approx(36.36138580050819)
     check_moncar(ncores, fr, g1, g2)
+
+
+# It is important to check Session as well as AstroSession here, hence
+# no pytest.mark.session. The test is fast.
+#
+@pytest.mark.parametrize("session", [Session, pytest.param(AstroSession, marks=pytest.mark.xfail)])  # issue #2318
+def test_send_fit_record_steps(session):
+    """Check we can send the record_steps argument to fit.
+
+    See issue #2318.
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.load_arrays(1, [1, 2, 3], [4, 5, 7])
+    mdl = s.create_model_component("scale1d", "mdl")
+    s.set_source(mdl)
+
+    # Explicit settings for the fit; the idea is just to get a quick
+    # fit, not be statistically rigorous.
+    #
+    s.set_stat("leastsq")
+    s.set_method("levmar")
+
+    s.fit(record_steps=True)
+    fr = s.get_fit_results()
+    assert fr.succeeded
+
+    steps = fr.record_steps
+    assert steps is not None
+
+    # Check that the number of elements in record_steps matches the
+    # number of evaluations plus 1. Unfortunately, for levmar this
+    # does not hold and we get an extra iteration. As this is just
+    # to check we get sensible values back treat this as a regression
+    # test.
+    #
+    assert fr.nfev == 4
+    # assert len(steps) == (fr.nfev + 1)
+    assert len(steps) == (fr.nfev + 2)
+
+    # Do we have the expected columns?
+    #
+    assert steps.dtype.names == ('nfev', 'statistic', 'mdl.c0')
+
+    # The column values depend on the optimization and other parts
+    # of the system, so these checks may need to be changed or
+    # possibly not done here (as this is not really a test of the
+    # optimizer, just that we can get the data).
+    #
+    assert steps['nfev'] == pytest.approx(np.arange(6))
+
+    c0s = np.asarray([1, 1, 1.00034527, 5.33333333, 5.33517476,
+                      5.33333333])
+    assert steps['mdl.c0'] == pytest.approx(c0s)
+
+    # The stats field could be calculated from c0s and calling
+    # calc_stat, as an external check, but leave that for now.
+    #
+    stats = np.asarray([61, 61, 60.99102342, 4.66666667, 4.66667684,
+                        4.66666667])
+    assert steps['statistic'] == pytest.approx(stats)
