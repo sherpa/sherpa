@@ -11597,11 +11597,12 @@ class Session(sherpa.ui.utils.Session):
              ) -> None:
         # pylint: disable=W1113
 
-        # validate the kwds to f.fit() so user typos do not
-        # result in regular fit
-        # valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
-        valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache', 'numcores', 'bkg_only')
-        for key in kwargs.keys():
+        # Validate the kwds to f.fit() so user typos are caught.
+        # TODO: should cache be included here?
+        #
+        valid_keys = list(sherpa.utils.get_keyword_names(Fit.fit))
+        valid_keys += ['filter_nan', 'cache', 'bkg_only']
+        for key in kwargs:
             if key not in valid_keys:
                 raise TypeError(f"unknown keyword argument: '{key}'")
 
