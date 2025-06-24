@@ -11367,13 +11367,13 @@ class Session(sherpa.ui.utils.Session):
         fit. The final fit results are displayed to the screen and can
         be retrieved with `get_fit_results`.
 
-        .. versionchanged:: 4.17.0
-           The outfile parameter can now be sent a Path object or a
-           file handle instead of a string.
-
         .. versionchanged:: 4.17.1
            The parameter ``record_steps`` was added to keep parameter
            values of each iteration with the fit results.
+
+        .. versionchanged:: 4.17.0
+           The outfile parameter can now be sent a Path object or a
+           file handle instead of a string.
 
         Parameters
         ----------
@@ -11453,17 +11453,16 @@ class Session(sherpa.ui.utils.Session):
 
         >>> fit(1, 2, 3)
 
-        Fit the dataset 'jet' and keep the values for each parameter in every
-        optimization step:
+        Fit the dataset 'jet' and keep the values for each parameter
+        in every optimization step (this example assumes that the
+        model for the data set 'jet' has a parameter called
+        'const1d.c0'):
 
-         >>> fit('jet', record_steps=True)
-         >>> fres = get_fit_results()
-         >>> for row in fres.record_steps:
-         ...     print(f"{row['nfev']} {row['statistic']:8.6e} {row['const1d.c0']:6.4f}")
-         [... output here ...]
-
-        (This example assumes that the model for the data set 'jet' has a
-        parameter called 'const1d.c0'.)
+        >>> fit('jet', record_steps=True)
+        >>> fres = get_fit_results()
+        >>> for row in fres.record_steps:
+        ...     print(f"{row['nfev']} {row['statistic']:8.6e} {row['const1d.c0']:6.4f}")
+        [... output here ...]
 
         Fit data set 'jet' and write the fit results to the text file
         'jet.fit', over-writing it if it already exists:
@@ -11507,6 +11506,10 @@ class Session(sherpa.ui.utils.Session):
         these parameters are well defined before performing a
         simultaneous source and background fit.
 
+        .. versionchanged:: 4.17.1
+           The parameter ``record_steps`` was added to keep parameter
+           values of each iteration with the fit results.
+
         .. versionchanged:: 4.17.0
            The outfile parameter can now be sent a Path object or a
            file handle instead of a string.
@@ -11527,6 +11530,11 @@ class Session(sherpa.ui.utils.Session):
            overwritten (``True``) or if it raises an exception
            (``False``, the default setting). This is only used if
            `outfile` is set to a string or Path object.
+        record_steps : bool, optional
+            If `True`, then the parameter values and statistic value
+            are recorded at each iteration in an array in the
+            `~sherpa.fit.FitResults` object that you can obtain with
+            `get_fit_results`.
 
         Raises
         ------
@@ -11597,14 +11605,21 @@ class Session(sherpa.ui.utils.Session):
              ) -> None:
         # pylint: disable=W1113
 
-        # validate the kwds to f.fit() so user typos do not
-        # result in regular fit
-        # valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
-        valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache', 'numcores', 'bkg_only')
-        for key in kwargs.keys():
+        # Validate the kwds to f.fit() so user typos are caught.
+        # TODO: should cache be included here?
+        #
+        valid_keys = list(sherpa.utils.get_keyword_names(Fit.fit))
+        valid_keys += ['filter_nan', 'cache', 'bkg_only']
+        for key in kwargs:
             if key not in valid_keys:
                 raise TypeError(f"unknown keyword argument: '{key}'")
 
+        # NOTE: this replaces the default "numcores=None" argument,
+        # which may be surprising for users who have expected it
+        # to use multiple cores. At this time the multi-core fit
+        # code should be considered "experimental" so this probably
+        # works out well.
+        #
         numcores = kwargs.get('numcores', 1)
 
         if 'bkg_only' in kwargs and kwargs.pop('bkg_only'):
@@ -11612,6 +11627,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             ids, f = self._get_fit(id, otherids, numcores=numcores)
 
+        # TODO: why is this needed / used?
         if 'filter_nan' in kwargs and kwargs.pop('filter_nan'):
             for idval in ids:
                 data = self.get_data(idval)

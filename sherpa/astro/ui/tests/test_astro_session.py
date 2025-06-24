@@ -4574,7 +4574,7 @@ def test_method_numcores_moncar(session, ncores):
 # It is important to check Session as well as AstroSession here, hence
 # no pytest.mark.session. The test is fast.
 #
-@pytest.mark.parametrize("session", [Session, pytest.param(AstroSession, marks=pytest.mark.xfail)])  # issue #2318
+@pytest.mark.parametrize("session", [Session, AstroSession])
 def test_send_fit_record_steps(session):
     """Check we can send the record_steps argument to fit.
 
