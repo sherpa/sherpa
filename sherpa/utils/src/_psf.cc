@@ -1,6 +1,6 @@
-// 
-//  Copyright (C) 2007, 2016, 2018, 2020, 2021
-//       Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2007, 2016, 2018, 2020-2021, 2025
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -30,9 +30,7 @@ extern "C" {
 
 #include "structmember.h"
 #include "tcd/tcd.h"
-  //#include "fftw3.h"
 
-  void init_psf();
 }
 
 typedef sherpa::Array< long, NPY_LONG > LongArray;
@@ -80,7 +78,7 @@ static PyObject *tcdPyData_new(PyTypeObject *type, PyObject *args,
   tcdPyData *self = NULL;
   self = (tcdPyData*)type->tp_alloc(type, 0);
   return (PyObject*)self;
-  
+
 }
 
 static int tcdPyData_init(tcdPyData *self, PyObject *args, PyObject *kwds)
@@ -111,10 +109,10 @@ static int _pad(const long length, long& factor)
   long padding[num] =
       {   2,   3,   4,   5,   6,   8,   9,  10,  12,  15,  16,  18,  20,
          24,  25,  27,  30,  32,  36,  40,  45,  48,  50,  54,  60,  64,
-         72,  75,  80,  81,  90,  96, 100, 108, 120, 125, 128, 135, 144, 
-        150, 160, 162, 180, 192, 200, 216, 225, 240, 243, 250, 256, 270, 
-        288, 300, 320, 324, 360, 375, 384, 400, 405, 432, 450, 480, 486, 
-        500, 512, 540, 576, 600, 625, 640, 648, 675, 720, 729, 750, 768, 
+         72,  75,  80,  81,  90,  96, 100, 108, 120, 125, 128, 135, 144,
+        150, 160, 162, 180, 192, 200, 216, 225, 240, 243, 250, 256, 270,
+        288, 300, 320, 324, 360, 375, 384, 400, 405, 432, 450, 480, 486,
+        500, 512, 540, 576, 600, 625, 640, 648, 675, 720, 729, 750, 768,
         800, 810, 864, 900, 960, 972,1000,1024,1080,1125,1152,1200,1215,
        1250,1280,1296,1350,1440,1458,1500,1536,1600,1620,1728,1800,1875,
        1920,1944,2000,2025,2048,2160,2187,2250,2304,2400,2430,2500,2560,
@@ -172,7 +170,7 @@ static int _pad_data(const int dim, double* res, double* src,
         }
       }
     }
-    
+
     return EXIT_SUCCESS;
   }
 
@@ -216,11 +214,11 @@ static int _convolve( tcdPyData* self, double* source, double* kernel,
 		      long* dims_src, long* dims_kern,
 		      long* dOrigin, long* kOrigin,
 		      const long nAxes, double*& output ) {
-  
+
   // TCDlib variables
   tcdDComplex *fftData = NULL, *fftKern = NULL, *ffttemp = NULL;
   long  *newAxes = NULL, *newTemp = NULL;
-  
+
   if( self ) {
     ffttemp = (tcdDComplex*) self->kernel_fft;
     if( ffttemp ) fftKern = ffttemp;
@@ -228,7 +226,7 @@ static int _convolve( tcdPyData* self, double* source, double* kernel,
     newTemp = (long*) self->newAxes;
     if( newTemp ) newAxes = newTemp;
   }
-  
+
   if( fftKern && newAxes ) {
     if( tcdSUCCESS != tcdFFTConvolveD( tcdCONVOLVE, tcdDOUBLE, source,
   				       nAxes, dims_src, dOrigin, tcdDOUBLE,
@@ -243,7 +241,7 @@ static int _convolve( tcdPyData* self, double* source, double* kernel,
 				     &newAxes, &fftData, &fftKern ) )
     return EXIT_FAILURE;
   }
-  
+
   if ( tcdSUCCESS != tcdFreeTransformD( &fftData ) )
     return EXIT_FAILURE;
 
@@ -251,11 +249,11 @@ static int _convolve( tcdPyData* self, double* source, double* kernel,
   if( self ) {
     if(!self->kernel_fft)
       self->kernel_fft = fftKern;
-    
+
     if(!self->newAxes)
       self->newAxes = newAxes;
   }
-  
+
   return EXIT_SUCCESS;
 }
 
@@ -276,13 +274,13 @@ static bool same_size_arrays( npy_intp size1, npy_intp size2,
 
 static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
 {
-  
+
   DoubleArray source;
   DoubleArray kernel;
   LongArray dims_src;
   LongArray dims_kern;
   LongArray center;
-  
+
   if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&",
 			  CONVERTME( DoubleArray ),
 			  &source,
@@ -295,7 +293,7 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
 			  CONVERTME( LongArray ),
 			  &center) )
     return NULL;
-  
+
   if( !same_size_arrays( dims_src.get_size(), dims_kern.get_size(),
                          "dims_src", "dims_kern" ) )
     return NULL;
@@ -303,7 +301,7 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
   if( !same_size_arrays( dims_kern.get_size(), center.get_size(),
                          "dims_kern", "center" ) )
     return NULL;
-  
+
   // src and kernel dims should be equal length
   long num = dims_kern.get_size();
   long kern_size = std::accumulate( &dims_kern[0],
@@ -312,15 +310,15 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
   long src_size =  std::accumulate( &dims_src[0],
                                     &dims_src[0] + num,
                                     1, std::multiplies<long>() );
-  
+
   if( !same_size_arrays( source.get_size(), src_size,
                          "source size", "source dim", "dimensions" ) )
     return NULL;
-  
+
   if( !same_size_arrays( kernel.get_size(), kern_size,
                          "kernel size", "kernel dim",  "dimensions" ) )
     return NULL;
-  
+
   const long nAxes = (long) dims_kern.get_size();
   double* output = NULL;
   std::vector<long> dOrigin(nAxes, 0);
@@ -338,7 +336,7 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
 
       if ( EXIT_SUCCESS != _pad(padSize, padfactor ) )
 	return NULL;
-      
+
       if (padfactor != dims_pad[ii]) need_to_pad = true;
       dims_pad[ii] = padfactor;
       padsize *= dims_pad[ii];
@@ -367,10 +365,10 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
 		     (char*)"tcd convolution failed" );
     if(output) free(output);
     return NULL;
-  } 
-  
+  }
+
   DoubleArray result;
-  
+
   if (need_to_pad) {
 
     if( EXIT_SUCCESS != result.create(source.get_ndim(), source.get_dims() ) ) {
@@ -384,10 +382,10 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
       std::ostringstream err;
       err << "Padding dimension not supported";
       PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      
+
       if(output) free(output);
       return NULL;
-      
+
     }
   } else {
 
@@ -395,7 +393,7 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
     cdims[0] = 1;
     for(int ii = 0; ii < nAxes; ii++)
       cdims[0] *= (npy_intp) self->newAxes[ii];
-    
+
     if( EXIT_SUCCESS != result.create(source.get_ndim(), cdims ) ) {
       if(output) free(output);
       return NULL;
@@ -403,9 +401,9 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
 
     std::copy( output, output + cdims[0], &result[0] );
   }
-  
-  if(output) free(output);  
-  
+
+  if(output) free(output);
+
   return result.return_new_ref();
 }
 
@@ -454,16 +452,16 @@ static PyMemberDef tcdPyData_members[] = {
   //{(char*)"datatype", T_INT, offsetof(tcdPyData, datatype), 0,
   // (char*)""},
 
-  {NULL}  // Sentinel 
+  {NULL}  // Sentinel
 };
 
 static PyMethodDef tcdPyData_methods[] = {
 
   { (char*) "clear_kernel_fft",(PyCFunction)tcdPyData_clear, METH_NOARGS, (char*) "clear cache"},
-  
+
   { (char*) "convolve",(PyCFunction)tcdPyData_convolve, METH_VARARGS, (char*) "convolve PSF"},
-  
-  {NULL, NULL, 0, NULL}  // Sentinel 
+
+  {NULL, NULL, 0, NULL}  // Sentinel
 };
 
 
@@ -491,23 +489,23 @@ static PyTypeObject tcdPyData_Type = {
   0,                                // tp_as_buffer
   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, //tp_flags
   (char*)"tcdPyData object",        // tp_doc, __doc__
-  0,		                    // tp_traverse 
-  0,		                    // tp_clear 
-  0,		                    // tp_richcompare 
-  0,		                    // tp_weaklistoffset 
+  0,		                    // tp_traverse
+  0,		                    // tp_clear
+  0,		                    // tp_richcompare
+  0,		                    // tp_weaklistoffset
   0,		                    // tp_iter, __iter__
-  0,		                    // tp_iternext 
-  tcdPyData_methods,              // tp_methods 
-  tcdPyData_members,              // tp_members 
-  0,                                // tp_getset 
-  0,                                // tp_base 
+  0,		                    // tp_iternext
+  tcdPyData_methods,              // tp_methods
+  tcdPyData_members,              // tp_members
+  0,                                // tp_getset
+  0,                                // tp_base
   0,                                // tp_dict, __dict__
-  0,                                // tp_descr_get 
-  0,                                // tp_descr_set 
-  0,                                // tp_dictoffset 
+  0,                                // tp_descr_get
+  0,                                // tp_descr_set
+  0,                                // tp_dictoffset
   (initproc)tcdPyData_init,         // tp_init, __init__
-  0,                                // tp_alloc 
-  tcdPyData_new,                    // tp_new 
+  0,                                // tp_alloc
+  tcdPyData_new,                    // tp_new
 };
 
 static void _normalize_kernel( double* res, long len ) {
@@ -521,7 +519,7 @@ static void _normalize_kernel( double* res, long len ) {
   if ((res_sum != 0.0) && ( std::fabs(res_sum - 1) > DBL_EPSILON ))
     for( ii = 0; ii < len; ii++ )
       res[ii] /= res_sum;
-  
+
 }
 
 
@@ -535,18 +533,18 @@ static int _extract_kernel( const double* psf, const long* dims,
   std::vector<long> nsize(ndims);
   //std::vector<long> xlo(ndims);
   //std::vector<long> xhi(ndims);
-  
+
   if( NULL == psf )
     return EXIT_FAILURE;
-  
+
   for(long ii = 0 ; ii < ndims ; ii++ ) {
 
     //If the "subregion" of the PSF to be extracted is actually
-    // bigger than the PSF, then reset the szs array to be of the 
+    // bigger than the PSF, then reset the szs array to be of the
     // size of the PSF.
     if( newdims[ii] > dims[ii] )
       newdims[ii] = dims[ii];
-    
+
     //
     // To try to eliminate algorithmic problems of 2D "centroid" PSFs and
     // 1D radial profile "one-sided" PSFs, I've implemented wrap-around in
@@ -558,7 +556,7 @@ static int _extract_kernel( const double* psf, const long* dims,
     //std::cout << "diff: " << diff << ", mid: " << mid << std::endl;
 
     //double mid = (xmin[ii]+xmax[ii])/2.0;
-    if( rad == 1) mid = 0.0; 
+    if( rad == 1) mid = 0.0;
 
     // Need to revisit--is size defined in image units, or number of bins?
     // (Moot for logical coord images.)
@@ -586,7 +584,7 @@ static int _extract_kernel( const double* psf, const long* dims,
     //size *= nsize[ii];
     nsize[ii] = newdims[ii];
     size *= newdims[ii];
-  
+
     //std::cout << "xlo[" << ii << "]: " << xlo[ii] << ", size[" << ii << "]: " << nsize[ii]
     //	      << std::endl;
 
@@ -596,15 +594,15 @@ static int _extract_kernel( const double* psf, const long* dims,
   npy_intp npydims[1];
   npydims[0] = size;
   if ( EXIT_SUCCESS != res.create( 1, npydims ) )
-    return EXIT_FAILURE;  
-  
+    return EXIT_FAILURE;
+
   // Extract y- and x-arrays from old PSF, centered on the
   // center position determined above.
   std::vector<long> coord(ndims);
   switch( ndims ) {
-    
+
   case 1:
-    
+
     for (long ii = 0 ; ii < nsize[0] ; ii++ ) {
       coord[0] = xlo[0] + ii;
       while ( coord[0] < 0 ) coord[0] += dims[0];
@@ -612,39 +610,39 @@ static int _extract_kernel( const double* psf, const long* dims,
       res[ ii ] = psf[ coord[0] ];
     }
     break;
-      
+
   case 2:
-    
+
     for (long jj = 0 ; jj < nsize[1] ; jj++ ) {
       coord[1] = xlo[1] + jj;
       while ( coord[1] < 0 ) coord[1] += dims[1];
       while ( coord[1] >= dims[1] ) coord[1] -= dims[1];
-      for (long ii = 0 ; ii < nsize[0] ; ii++ ) {    
+      for (long ii = 0 ; ii < nsize[0] ; ii++ ) {
 	coord[0] = xlo[0] + ii;
 	while ( coord[0] < 0 ) coord[0] += dims[0];
         while ( coord[0] >= dims[0] ) coord[0] -= dims[0];
-	
+
 	long newidx = jj * nsize[0] + ii;
 	// Find indices relevant for new bounds wrt old psf size (dims[0])
 	long oldidx = coord[1] * dims[0] + coord[0];
-	
+
 	res[ newidx  ] = psf[ oldidx ];
       }
     }
-    
+
     break;
-    
+
   default:
     return EXIT_FAILURE;
-    
+
   } // end switch
 
   // psffrac = std::accumulate( &res[0], &res[size], 0.0 );
   psffrac = 0.0;
   for(long ii = 0; ii < size; ii++ )
     psffrac += res[ii];
-  
-  return EXIT_SUCCESS;  
+
+  return EXIT_SUCCESS;
 }
 
 static void _set_origin( long* dims_kern, long* kOrigin, long max, long nAxes )
@@ -660,7 +658,7 @@ static void _set_origin( long* dims_kern, long* kOrigin, long max, long nAxes )
 	kOrigin[ii] = dims_kern[ii]/2;
     return;
   }
-  
+
   if ( nAxes == 1 ) {
     // Just in case, go back to the center ymaxpos is outside
     // the PSF data space for some reason.
@@ -672,11 +670,11 @@ static void _set_origin( long* dims_kern, long* kOrigin, long max, long nAxes )
     // Any bin number we get back is really the y-position * xsize +
     // x-position; therefore we must convert the bin number to x- and
     // y-positions.
-    
+
     // Can do this because it drops remainder
     long ybin = max / dims_kern[0];
     long xbin = max - (ybin * dims_kern[0]);
-    
+
     // Just in case, go back to the center if xbin, ybin turn out
     // to be outside the PSF data space for some reason.
     kOrigin[0] = ( xbin < 0 || xbin > dims_kern[0]-1 ) ? dims_kern[0]/2 : xbin;
@@ -688,7 +686,7 @@ static void _set_origin( long* dims_kern, long* kOrigin, long max, long nAxes )
 
 static PyObject* extract_kernel( PyObject* self, PyObject* args )
 {
-  
+
   DoubleArray kernel;
   DoubleArray res;
   DoubleArray xlo;
@@ -700,11 +698,11 @@ static PyObject* extract_kernel( PyObject* self, PyObject* args )
   LongArray hi;
   DoubleArray center;
   int radial;
-  
-  
+
+
   if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&O&O&i",
 			  CONVERTME( DoubleArray ),
-			  &kernel,			 
+			  &kernel,
 			  CONVERTME( LongArray ),
 			  &dims_kern,
 			  CONVERTME( LongArray ),
@@ -719,11 +717,11 @@ static PyObject* extract_kernel( PyObject* self, PyObject* args )
 			  &widths,
 			  &radial) )
     return NULL;
-  
+
   double frac = 0.0;
   const long nAxes = (long) dims_kern.get_size();
 
-  
+
   if( !same_size_arrays( dims_new.get_size(), nAxes,
                          "dims_new", "dims_kern" ) )
      return NULL;
@@ -758,7 +756,7 @@ static PyObject* extract_kernel( PyObject* self, PyObject* args )
 		     (char*)"kernel extraction failed" );
     return NULL;
   }
-  
+
   return Py_BuildValue( (char*)"(NNdNN)",
 			res.return_new_ref(),
 			dims_new.return_new_ref(),
@@ -770,48 +768,48 @@ static PyObject* extract_kernel( PyObject* self, PyObject* args )
 
 static PyObject* normalize( PyObject* self, PyObject* args )
 {
-  
+
   DoubleArray data;
-  
+
   if ( !PyArg_ParseTuple( args, (char*)"O&", CONVERTME(DoubleArray), &data) )
     return NULL;
-  
+
   _normalize_kernel( &data[0], (long) data.get_size() );
-  
+
   return data.return_new_ref();
 }
 
 
 static PyObject* set_origin( PyObject* self, PyObject* args )
 {
-  
+
   LongArray dims;
   LongArray res;
   long max=-1;
-  
+
   if ( !PyArg_ParseTuple( args, (char*)"O&|l", CONVERTME(LongArray), &dims,
 			  &max) )
     return NULL;
-  
+
   if( EXIT_SUCCESS != res.zeros( dims.get_ndim(), dims.get_dims() ) )
-    return NULL;      
-  
+    return NULL;
+
   _set_origin( &dims[0], &res[0], max, (long) dims.get_size() );
-  
+
   return res.return_new_ref();
 }
 
 
 static PyObject* get_padsize( PyObject* self, PyObject* args )
 {
-  
+
   long size, factor;
   if ( !PyArg_ParseTuple( args, (char*)"l", &size) )
     return NULL;
 
   if( EXIT_SUCCESS != _pad( size, factor  ) )
     return NULL;
-  
+
   return Py_BuildValue( (char*)"l", factor );
 }
 
@@ -832,12 +830,12 @@ static bool padshape_smaller_then_shape( npy_intp ii, long padshape,
 
 static PyObject* pad_data( PyObject* self, PyObject* args )
 {
-  
+
   DoubleArray kernel;
   LongArray shape;
   LongArray padshape;
   DoubleArray res;
-  
+
   if ( !PyArg_ParseTuple( args, (char*)"O&O&O&",
 			  CONVERTME(DoubleArray), &kernel,
 			  CONVERTME(LongArray), &shape,
@@ -847,21 +845,21 @@ static PyObject* pad_data( PyObject* self, PyObject* args )
   if( !same_size_arrays( shape.get_size(), padshape.get_size(),
                          "shape", "padshape" ) )
     return NULL;
-  
+
   long size=1, padsize=1;
   for( npy_intp ii = 0; ii < shape.get_size(); ii++ ) {
     size *= shape[ii];
 
     if( padshape_smaller_then_shape( ii, padshape[ii], shape[ii] ) )
       return NULL;
-    
+
     padsize *= padshape[ii];
   }
 
   if ( !same_size_arrays( kernel.get_size(), size,
                           "kernel size", "kernel dim", "dimensions" ) )
     return NULL;
-  
+
   npy_intp dims[1];
   dims[0] = padsize;
 
@@ -872,7 +870,7 @@ static PyObject* pad_data( PyObject* self, PyObject* args )
   if( EXIT_SUCCESS != _pad_data( (int)shape.get_size(), &res[0], &kernel[0],
 				 &padshape[0], &shape[0] ) )
     return NULL;
-  
+
   return res.return_new_ref();
 }
 
@@ -882,7 +880,7 @@ static PyObject* unpad_data( PyObject* self, PyObject* args )
   LongArray shape;
   LongArray padshape;
   DoubleArray res;
-  
+
   if ( !PyArg_ParseTuple( args, (char*)"O&O&O&",
 			  CONVERTME(DoubleArray), &kernel,
 			  CONVERTME(LongArray), &padshape,
@@ -892,21 +890,21 @@ static PyObject* unpad_data( PyObject* self, PyObject* args )
   if( !same_size_arrays( shape.get_size(), padshape.get_size(),
                         "shape", "padshape" ) )
     return NULL;
-  
+
   long size=1, padsize=1;
   for( npy_intp ii = 0; ii < shape.get_size(); ii++ ) {
     size *= shape[ii];
 
     if( padshape_smaller_then_shape( ii, padshape[ii], shape[ii] ) )
       return NULL;
-    
+
     padsize *= padshape[ii];
   }
 
   if ( !same_size_arrays( kernel.get_size(), padsize,
                           "kernel size",  "kernel dim",  "dimensions" ) )
     return NULL;
-  
+
   npy_intp dims[1];
   dims[0] = size;
 
@@ -919,8 +917,8 @@ static PyObject* unpad_data( PyObject* self, PyObject* args )
     PyErr_SetString( PyExc_TypeError,
 		     (char*)"unpadding kernel failed-dimension unsupported" );
     return NULL;
-  } 
-  
+  }
+
   return res.return_new_ref();
 }
 
@@ -932,11 +930,11 @@ static PyObject* unpad_data( PyObject* self, PyObject* args )
 //
 static PyObject* pad_bounding_box( PyObject* self, PyObject* args )
 {
-  
+
   DoubleArray kernel;
   DoubleArray res;
   IntArray mask;
-   
+
   if ( !PyArg_ParseTuple( args, (char*)"O&O&",
 			  CONVERTME(DoubleArray), &kernel,
 			  CONVERTME(IntArray), &mask) )
@@ -944,7 +942,7 @@ static PyObject* pad_bounding_box( PyObject* self, PyObject* args )
 
   int msize = mask.get_size();
   int ksize = kernel.get_size();
-  
+
   if ( ksize > msize ) {
     std::ostringstream err;
     err << "kernel size: " << ksize
@@ -956,7 +954,7 @@ static PyObject* pad_bounding_box( PyObject* self, PyObject* args )
   // Create a zeros array to padding size
   if( EXIT_SUCCESS != res.zeros( mask.get_ndim(), mask.get_dims() ) )
     return NULL;
-  
+
   int jj = 0;
   for( int ii = 0; ii < msize; ++ii ) {
     if( mask[ ii ] )
@@ -966,14 +964,14 @@ static PyObject* pad_bounding_box( PyObject* self, PyObject* args )
     if( jj >= ksize )
       break;
   }
-  
+
   return res.return_new_ref();
 }
 
 static PyMethodDef PsfFcts[] = {
 
   FCTSPEC(extract_kernel, extract_kernel),
- 
+
   FCTSPEC(normalize, normalize),
 
   FCTSPEC(set_origin, set_origin),
@@ -983,9 +981,9 @@ static PyMethodDef PsfFcts[] = {
   FCTSPEC(pad_data, pad_data),
 
   FCTSPEC(unpad_data, unpad_data),
-  
+
   FCTSPEC( pad_bounding_box, pad_bounding_box ),
-  
+
   { NULL, NULL, 0, NULL }
 
 };
