@@ -22,6 +22,7 @@
 from setuptools import Command
 import os
 import sys
+from sysconfig import get_config_var
 
 from .extensions import build_ext
 from .deps import build_deps
@@ -104,11 +105,14 @@ class sherpa_config(Command):
         if self.wcs_lib_dirs is None:
             self.wcs_lib_dirs = libdir
 
-        # Note that the directory is not assumed to be called
-        # "lib", unlike libdir above.
+        # Is there documentation to explain how this path is
+        # created (to make sure this is correct)?
         #
+        abi_thread = 't' if get_config_var("Py_GIL_DISABLED") else ''
+        pyname = f'python{version}{abi_thread}'
+
         pydir = os.path.join(self.install_dir, sys.platlibdir,
-                             f'python{version}', 'site-packages')
+                             pyname, 'site-packages')
 
         if self.group_location is None:
             self.group_location = os.path.join(pydir, 'group.so')
