@@ -29,6 +29,20 @@
 #define NAN quiet_nan(0)
 #endif
 
+#ifdef Py_GIL_DISABLED
+
+// lock access to stat/fit_func.
+//
+static PyMutex mutex = {0};
+#define LOCK()    PyMutex_Lock(&mutex)
+#define UNLOCK()  PyMutex_Unlock(&mutex)
+
+#else
+#define LOCK()
+#define UNLOCK()
+#endif
+
+
 // Keep pointers to the statistic and fitting functions used
 // by these methods.
 
@@ -173,6 +187,8 @@ static void _get_exception_objects()
     // http://docs.python.org/api/refcountDetails.html defines the
     // difference between ownership of borrowed and new references.
     // SMD 3/29/07
+    //
+    // TODO: review for the free-threading changes
     if (NULL == est_error)
       est_error = PyDict_GetItemString(est_dict, (char*)"EstMethodError");
     if (NULL == est_hardmin)
@@ -300,6 +316,8 @@ static PyObject* _wrap_info_matrix( PyObject* self, PyObject* args )
   int maxiters;
   double remin;
 
+  LOCK();
+
   if ( !PyArg_ParseTuple( args,(char *)"O&O&O&O&O&ddidO",
 			  (converter)sherpa::
 			  convert_to_contig_array< DoubleArray >,
@@ -320,8 +338,10 @@ static PyObject* _wrap_info_matrix( PyObject* self, PyObject* args )
 			  &eps,
 			  &maxiters,
 			  &remin,
-			  &stat_func ) )
+			  &stat_func ) ) {
+    UNLOCK();
     return NULL;
+  }
 
   npy_intp nelem = pars.get_size();
 
@@ -329,6 +349,7 @@ static PyObject* _wrap_info_matrix( PyObject* self, PyObject* args )
        nelem != pars_maxs.get_size() ||
        nelem != pars_hardmins.get_size() ||
        nelem != pars_hardmaxs.get_size() ) {
+    UNLOCK();
     PyErr_SetString( PyExc_RuntimeError,
 		     (char*)"input array sizes do not match" );
     return NULL;
@@ -341,8 +362,10 @@ static PyObject* _wrap_info_matrix( PyObject* self, PyObject* args )
   PyObject* info_obj = NULL;
   if ( NULL == ( info_obj = PyArray_New( &PyArray_Type, 2, dims,
 					 NPY_DOUBLE, NULL, NULL, 0, NPY_ARRAY_CARRAY,
-					 NULL ) ) )
+					 NULL ) ) ) {
+    UNLOCK();
     return NULL;
+  }
 
   est_return_code status = info_matrix( &(pars[0]), int( nelem ),
 					&(pars_mins[0]), int( nelem ),
@@ -356,6 +379,8 @@ static PyObject* _wrap_info_matrix( PyObject* self, PyObject* args )
 					maxiters,
 					remin,
 					statfcn );
+
+  UNLOCK();
 
   if ( EST_SUCCESS != status.status ) {
     if ( NULL == PyErr_Occurred() )
@@ -386,6 +411,8 @@ static PyObject* _wrap_projection( PyObject* self, PyObject* args )
   int maxiters;
   double remin;
 
+  LOCK();
+
   if ( !PyArg_ParseTuple( args,(char *)"O&O&O&O&O&dddidO&OO",
 			  (converter)sherpa::
 			  convert_to_contig_array< DoubleArray >,
@@ -411,8 +438,10 @@ static PyObject* _wrap_projection( PyObject* self, PyObject* args )
 			  convert_to_contig_array< IntArray >,
 			  &parnums,
 			  &stat_func,
-			  &fit_func ) )
+			  &fit_func ) ) {
+    UNLOCK();
     return NULL;
+  }
 
   npy_intp nelem = pars.get_size();
   npy_intp parnumsize = parnums.get_size();
@@ -421,6 +450,7 @@ static PyObject* _wrap_projection( PyObject* self, PyObject* args )
        nelem != pars_maxs.get_size() ||
        nelem != pars_hardmins.get_size() ||
        nelem != pars_hardmaxs.get_size() ) {
+    UNLOCK();
     PyErr_SetString( PyExc_RuntimeError,
 		     (char*)"input array sizes do not match" );
     return NULL;
@@ -430,16 +460,22 @@ static PyObject* _wrap_projection( PyObject* self, PyObject* args )
   dims[0] = parnumsize;
 
   DoubleArray pars_elow;
-  if ( EXIT_SUCCESS != pars_elow.create( 1, dims ) )
+  if ( EXIT_SUCCESS != pars_elow.create( 1, dims ) ) {
+    UNLOCK();
     return NULL;
+  }
 
   DoubleArray pars_ehi;
-  if ( EXIT_SUCCESS != pars_ehi.create( 1, dims ) )
+  if ( EXIT_SUCCESS != pars_ehi.create( 1, dims ) ) {
+    UNLOCK();
     return NULL;
+  }
 
   IntArray pars_eflags;
-  if ( EXIT_SUCCESS != pars_eflags.create( 1, dims ) )
+  if ( EXIT_SUCCESS != pars_eflags.create( 1, dims ) ) {
+    UNLOCK();
     return NULL;
+  }
 
   est_return_code status = projection( &(pars[0]), int( nelem ),
 				       &(pars_mins[0]), int( nelem ),
@@ -457,6 +493,8 @@ static PyObject* _wrap_projection( PyObject* self, PyObject* args )
 				       &(parnums[0]), int ( parnumsize ),
 				       statfcn,
 				       fitfcn );
+
+  UNLOCK();
 
   if ( EST_SUCCESS != status.status ) {
     if ( NULL == PyErr_Occurred() )
