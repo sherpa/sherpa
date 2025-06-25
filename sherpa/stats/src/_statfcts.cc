@@ -1,5 +1,6 @@
-// 
-//  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2007, 2015, 2016, 2025
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -20,10 +21,6 @@
 
 #include "sherpa/stat_extension.hh"
 #include "sherpa/stats.hh"
-
-extern "C" {
-	void init_statfcts();
-}
 
 static PyMethodDef StatFcts[] = {
 
