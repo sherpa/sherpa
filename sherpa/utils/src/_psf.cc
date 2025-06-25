@@ -1000,20 +1000,22 @@ static struct PyModuleDef psf = {
 };
 
 PyMODINIT_FUNC PyInit__psf(void) {
-  if( PyType_Ready(&tcdPyData_Type) < 0 )
+  if( PyType_Ready(&tcdPyData_Type) < 0 ) {
     return NULL;
+  }
 
-   import_array();
+  import_array();
 
-   PyObject* m;
-   m = PyModule_Create(&psf);
-
-  if( m == NULL )
-    return NULL;
+  PyObject* m = PyModule_Create(&psf);
+  if( m == NULL ) { return NULL; }
 
   Py_INCREF(&tcdPyData_Type);
 
   PyModule_AddObject(m, (char*)"tcdData", (PyObject*)&tcdPyData_Type);
+
+#ifdef Py_GIL_DISABLED
+  PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED);
+#endif
 
   return m;
 }
