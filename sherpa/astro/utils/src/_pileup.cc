@@ -1,5 +1,6 @@
-// 
-//  Copyright (C) 2009, 2021  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2009, 2021, 2025
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -21,12 +22,8 @@
 #include <sherpa/extension.hh>
 #include <memory>
 #include <iostream>
-#include "pileup.hh"	     
+#include "pileup.hh"
 #include "PyWrapper.hh"
-
-extern "C" {
-  void init_pileup();
-}
 
 static int pileup_model_func( double* x0, double* x1, double* res, int len,
 			      sherpa::PyWrapper* wrapper ) {
@@ -49,9 +46,9 @@ static int pileup_model_func( double* x0, double* x1, double* res, int len,
   dims[0] = npy_intp( len );
 
   DoubleArray n_x0, n_x1, n_res;
-  if ( EXIT_SUCCESS != n_x0.create( 1, dims, x0 ) )    
+  if ( EXIT_SUCCESS != n_x0.create( 1, dims, x0 ) )
     return EXIT_FAILURE;
-  
+
   if ( EXIT_SUCCESS != n_x1.create( 1, dims, x1 ) )
     return EXIT_FAILURE;
 
@@ -65,16 +62,16 @@ static int pileup_model_func( double* x0, double* x1, double* res, int len,
 		     (char*)"model evaluation failed\n");
     return EXIT_FAILURE;
   }
-  
+
   // convert pyobject into double array obj
   CONVERTME(DoubleArray)(rv_obj, &n_res);
 
   // fill res pointer
   for( int ii = 0; ii < len; ii++ )
     res[ii] = n_res[ii];
-  
+
   Py_DECREF( rv_obj );
-  
+
   return EXIT_SUCCESS;
 }
 
@@ -173,7 +170,7 @@ static PyObject* _apply_pileup( PyObject* self, PyObject* args )
 static PyMethodDef PileupFcts[] = {
 
   FCTSPEC( apply_pileup, _apply_pileup ),
-  
+
   { NULL, NULL, 0, NULL }
 
 };

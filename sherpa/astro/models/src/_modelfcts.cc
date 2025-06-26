@@ -1,5 +1,6 @@
 //
-//  Copyright (C) 2007, 2020  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2020, 2025
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -17,17 +18,12 @@
 //  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 
-// QUESTIONL is this used anywhere?
+// Override the default setting
 #define _MODELFCTPTR(name) \
   sherpa::astro::models::name< SherpaFloat, SherpaFloatArray >
 
 #include "sherpa/model_extension.hh"
 #include "sherpa/astro/models.hh"
-
-extern "C" {
-  void init_modelfcts();
-}
-
 
 static PyMethodDef ModelFcts[] = {
 
