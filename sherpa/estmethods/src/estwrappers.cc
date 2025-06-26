@@ -1,5 +1,6 @@
-// 
-//  Copyright (C) 2007, 2016  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2007, 2016, 2025
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -28,10 +29,6 @@
 #define NAN quiet_nan(0)
 #endif
 
-extern "C" {
-  void init_est_funcs();
-}
-
 // Keep pointers to the statistic and fitting functions used
 // by these methods.
 
@@ -39,13 +36,13 @@ static PyObject* stat_func = NULL;
 static PyObject* fit_func = NULL;
 
 // These objects are class objects that are references to various
-// estmethod module exceptions.  The idea is that from this C++ code, 
-// we want to raise particular types of exceptions--whether a new 
+// estmethod module exceptions.  The idea is that from this C++ code,
+// we want to raise particular types of exceptions--whether a new
 // minimum is found, hard parameter limits are hit, and so on.
 // To raise new Python exceptions of these types, we need references
 // to the exception classes from which the new exceptions will derive;
 // the estmethods exceptions are not pre-defined.  Therefore we need
-// to give a reference to the relevant class object, to 
+// to give a reference to the relevant class object, to
 // PyErr_NewException().
 
 static PyObject* est_error = NULL;     // Base error, no more info
@@ -76,14 +73,14 @@ static double statfcn( double* pars, int npars )
   if ( NULL == ( rv_obj = PyObject_CallFunction( stat_func, (char*)"N",
 						 pars_obj.new_ref() ) ) )
     return NAN;
-  
+
   if ( !PyFloat_Check( rv_obj ) ) {
     PyErr_SetString( PyExc_TypeError,
 		     (char*)"statistic callback did not return a float" );
     Py_DECREF( rv_obj );
     return NAN;
   }
-  
+
   double rv = PyFloat_AsDouble( rv_obj );
   Py_DECREF( rv_obj );
 
@@ -93,7 +90,7 @@ static double statfcn( double* pars, int npars )
 
 
 static double fitfcn( double (*dummyfunc)(double*, int),
-		      double* pars, double* parmins, 
+		      double* pars, double* parmins,
 		      double* parmaxs, int npars, int parnum )
 {
 
@@ -129,9 +126,9 @@ static double fitfcn( double (*dummyfunc)(double*, int),
   DoubleArray parmaxs_obj;
   if ( EXIT_SUCCESS != parmaxs_obj.create( 1, dims, parmaxs ) )
     return NAN;
-				   
+
   PyObject* rv_obj = NULL;
-  if ( NULL == ( rv_obj = PyObject_CallFunction( fit_func, (char*)"NNNi", 
+  if ( NULL == ( rv_obj = PyObject_CallFunction( fit_func, (char*)"NNNi",
 						 pars_obj.new_ref(),
 						 parmins_obj.new_ref(),
 						 parmaxs_obj.new_ref(),
@@ -144,7 +141,7 @@ static double fitfcn( double (*dummyfunc)(double*, int),
     Py_DECREF( rv_obj );
     return NAN;
   }
-  
+
   double rv = PyFloat_AsDouble( rv_obj );
   Py_DECREF( rv_obj );
 
@@ -194,7 +191,7 @@ static void _get_exception_objects()
 }
 
 
-static void _raise_python_error(const char* base_message, 
+static void _raise_python_error(const char* base_message,
 				const est_return_code status)
 {
   _get_exception_objects();
@@ -237,12 +234,12 @@ static void _raise_python_error(const char* base_message,
     if (NULL == est_newmin || NULL == est_exception)
       ;
     else {
-      PyErr_SetString(est_exception, 
+      PyErr_SetString(est_exception,
 		      (char*)"new minimum found, restarting error method");
       set_correct_error = EXIT_SUCCESS;
     }
     break;
-    
+
   case EST_MAXITER:
     est_exception = PyErr_NewException((char*)"sherpa.estmethods.EstMaxIter",
 				       est_maxiter,
@@ -250,7 +247,7 @@ static void _raise_python_error(const char* base_message,
     if (NULL == est_maxiter || NULL == est_exception)
       ;
     else {
-      PyErr_SetString(est_exception, 
+      PyErr_SetString(est_exception,
 		      (char*)"maximum number of iterations in scaling function");
       set_correct_error = EXIT_SUCCESS;
     }
@@ -263,7 +260,7 @@ static void _raise_python_error(const char* base_message,
     if (NULL == est_hitnan || NULL == est_exception)
       ;
     else {
-      PyErr_SetString(est_exception, 
+      PyErr_SetString(est_exception,
 		      (char*)"NaN encountered during error method");
       set_correct_error = EXIT_SUCCESS;
     }
@@ -360,13 +357,13 @@ static PyObject* _wrap_info_matrix( PyObject* self, PyObject* args )
 					remin,
 					statfcn );
 
-  if ( EST_SUCCESS != status.status ) { 
+  if ( EST_SUCCESS != status.status ) {
     if ( NULL == PyErr_Occurred() )
       _raise_python_error((char*)"covariance failed", status);
     Py_DECREF( info_obj );
-    return NULL; 
+    return NULL;
   }
- 
+
   // Use "N" (i.e. don't increment reference count) so that ownership of
   // info_obj passes to caller
   return Py_BuildValue( (char*)"N", info_obj );
@@ -428,7 +425,7 @@ static PyObject* _wrap_projection( PyObject* self, PyObject* args )
 		     (char*)"input array sizes do not match" );
     return NULL;
   }
- 
+
   npy_intp dims[1];
   dims[0] = parnumsize;
 
@@ -443,13 +440,13 @@ static PyObject* _wrap_projection( PyObject* self, PyObject* args )
   IntArray pars_eflags;
   if ( EXIT_SUCCESS != pars_eflags.create( 1, dims ) )
     return NULL;
-  
+
   est_return_code status = projection( &(pars[0]), int( nelem ),
 				       &(pars_mins[0]), int( nelem ),
 				       &(pars_maxs[0]), int( nelem ),
 				       &(pars_hardmins[0]), int( nelem ),
 				       &(pars_hardmaxs[0]), int( nelem ),
-				       &(pars_elow[0]), int( parnumsize ), 
+				       &(pars_elow[0]), int( parnumsize ),
 				       &(pars_ehi[0]), int( parnumsize ),
 				       &(pars_eflags[0]), int( parnumsize ),
 				       sigma,
@@ -461,14 +458,14 @@ static PyObject* _wrap_projection( PyObject* self, PyObject* args )
 				       statfcn,
 				       fitfcn );
 
-  if ( EST_SUCCESS != status.status ) { 
+  if ( EST_SUCCESS != status.status ) {
     if ( NULL == PyErr_Occurred() )
       _raise_python_error((char*)"projection failed", status);
     return NULL;
   }
 
   return Py_BuildValue( (char*)"(NNNi)", pars_elow.return_new_ref(),
-			pars_ehi.return_new_ref(), 
+			pars_ehi.return_new_ref(),
 			pars_eflags.return_new_ref(),
 			status.nfits );
 

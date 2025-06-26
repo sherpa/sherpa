@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2010, 2020, 2021
+//  Copyright (C) 2010, 2020, 2021, 2025
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -20,10 +20,6 @@
 
 #include "sherpa/model_extension.hh"
 #include "sherpa/models.hh"
-
-extern "C" {
-  void init_modelfcts();
-}
 
 static PyMethodDef ModelFcts[] = {
 
