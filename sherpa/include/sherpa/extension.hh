@@ -39,6 +39,27 @@ typedef int (*converter)( PyObject*, void* );
 
 #define CONVERTME(arg) ((converter) sherpa::convert_to_contig_array<arg>)
 
+#ifdef Py_GIL_DISABLED
+
+#define _SHERPAMOD(name, fctlist, doc)	   \
+static struct PyModuleDef module##name = { \
+PyModuleDef_HEAD_INIT, \
+#name, \
+doc, \
+-1, \
+fctlist \
+}; \
+\
+PyMODINIT_FUNC PyInit_##name(void) { \
+  import_array(); \
+  PyObject *m = PyModule_Create(&module##name); \
+  if (m == NULL) return NULL; \
+  PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED); \
+  return m; \
+}
+
+#else
+
 #define _SHERPAMOD(name, fctlist, doc)	   \
 static struct PyModuleDef module##name = { \
 PyModuleDef_HEAD_INIT, \
@@ -52,6 +73,9 @@ PyMODINIT_FUNC PyInit_##name(void) { \
   import_array(); \
   return PyModule_Create(&module##name); \
 }
+
+#endif
+
 
 #define SHERPAMOD(name, fctlist) _SHERPAMOD(name, fctlist, NULL)
 #define SHERPAMODDOC(name, fctlist, doc) \
