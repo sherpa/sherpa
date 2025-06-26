@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2016, 2017, 2020, 2022, 2023
+//  Copyright (C) 2007, 2016-2017, 2020, 2022-2023, 2025
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -39,11 +39,11 @@ typedef int (*converter)( PyObject*, void* );
 
 #define CONVERTME(arg) ((converter) sherpa::convert_to_contig_array<arg>)
 
-#define SHERPAMOD(name, fctlist) \
+#define _SHERPAMOD(name, fctlist, doc)	   \
 static struct PyModuleDef module##name = { \
 PyModuleDef_HEAD_INIT, \
 #name, \
-NULL, \
+doc, \
 -1, \
 fctlist \
 }; \
@@ -53,19 +53,9 @@ PyMODINIT_FUNC PyInit_##name(void) { \
   return PyModule_Create(&module##name); \
 }
 
+#define SHERPAMOD(name, fctlist) _SHERPAMOD(name, fctlist, NULL)
 #define SHERPAMODDOC(name, fctlist, doc) \
-static struct PyModuleDef module##name = { \
-PyModuleDef_HEAD_INIT, \
-#name, \
-PyDoc_STR(doc), \
--1, \
-fctlist \
-}; \
-\
-PyMODINIT_FUNC PyInit_##name(void) { \
-  import_array(); \
-  return PyModule_Create(&module##name); \
-}
+  _SHERPAMOD(name, fctlist, PyDoc_STR(doc))
 
 #define FCTSPEC(name, func) \
  { (char*)#name, (PyCFunction)func, METH_VARARGS, NULL }
