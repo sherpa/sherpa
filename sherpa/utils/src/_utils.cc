@@ -29,6 +29,17 @@
 #include "sherpa/fcmp.hh"
 #include "Faddeeva.hh"
 
+#ifdef Py_GIL_DISABLED
+
+static PyMutex mutex_gamma = {0};
+#define LOCK()    PyMutex_Lock(&mutex_gamma)
+#define UNLOCK()  PyMutex_Unlock(&mutex_gamma)
+
+#else
+#define LOCK()
+#define UNLOCK()
+#endif
+
 extern "C" {
 
 #include "cephes.h"
@@ -180,6 +191,10 @@ static PyObject* mlr( PyObject* self, PyObject* args )
 
 }
 
+// cephes uses this symbol to determine the sign for gamma and lgam,
+// which marks these two as requiring a mutex for the free-threading
+// build.
+//
 extern int sgngam;
 
 static PyObject* gamma( PyObject* self, PyObject* args )
@@ -195,11 +210,15 @@ static PyObject* gamma( PyObject* self, PyObject* args )
   if ( EXIT_SUCCESS != result.create( x.get_ndim(), x.get_dims() ) )
     return NULL;
 
+  // Should this lock the per-element access instead rather than
+  // around the whole array?
+  LOCK();
   for ( npy_intp ii = 0; ii < x.get_size(); ii++ ) {
     result[ii] = Gamma(x[ii]);
     result[ii] *= sgngam;
   }
-  
+  UNLOCK();
+
   return result.return_new_ref();
 
 }
@@ -306,10 +325,14 @@ static PyObject* lgam( PyObject* self, PyObject* args )
 				      x.get_dims() ) )
     return NULL;
 
+  // Should this lock the per-element access instead rather than
+  // around the whole array?
+  LOCK();
   for ( npy_intp ii = 0; ii < x.get_size(); ii++ ) {
     result[ii] = lgam(x[ii]);
     result[ii] *= sgngam;
   }
+  UNLOCK();
 
   return result.return_new_ref();
 
