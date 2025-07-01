@@ -36,7 +36,7 @@ from sherpa.estmethods import Covariance
 from sherpa import sim
 from sherpa.utils.err import EstErr
 from sherpa.utils.logging import SherpaVerbosity
-from sherpa.utils.parallel import multi, ncpus
+# from sherpa.utils.parallel import multi, ncpus
 
 
 _max = np.finfo(np.float32).max
@@ -367,7 +367,8 @@ RATIOS_TWO = np.asarray([1.74752217e+00, 4.15056013,  3.96667032e+00, 1.45119325
                          6.28386219e+00])
 
 
-def test_lrt(setup):
+@pytest.mark.parametrize("numcores", [1, 2])
+def test_lrt(setup, numcores):
     """There is a limited check of the results.
 
     These are regression tests, so will need to be updated if the code
@@ -391,30 +392,8 @@ def test_lrt(setup):
     """
 
     results = sim.LikelihoodRatioTest.run(setup.fit, setup.fit.model.lhs,
-                                          setup.fit.model, niter=25, numcores=1,
-                                          rng=setup.rng)
-
-    assert results.null == pytest.approx(1376.9504116259966)
-    assert results.alt == pytest.approx(98.57840260844087)
-    assert results.lr == pytest.approx(1278.3720090175557)
-    assert results.ppp == pytest.approx(0.0)
-
-    assert results.samples.shape == (25, 2)
-    assert results.stats.shape == (25, 2)
-
-    # TODO: do we still need to restrict the elements being checked?
-    assert results.ratios[:3] == pytest.approx(RATIOS_ONE[:3])
-
-
-def test_lrt_multicore(setup):
-    """The multi-core version of test_lrt.
-
-    Testing this depends on how many cores were used, as that
-    determines how many separate generators were used.
-    """
-
-    results = sim.LikelihoodRatioTest.run(setup.fit, setup.fit.model.lhs,
-                                          setup.fit.model, niter=25, numcores=2,
+                                          setup.fit.model, niter=25,
+                                          numcores=numcores,
                                           rng=setup.rng)
 
     assert results.null == pytest.approx(1376.9504116259966)
@@ -427,12 +406,14 @@ def test_lrt_multicore(setup):
     assert results.samples.shape == (25, 2)
     assert results.stats.shape == (25, 2)
 
-    # The result depends on whether multi-processing is enabled and
-    # if there's more than one core available, which we can check with
-    # the _ncpus setting (although it appears that we still need to
-    # check whether multi-processing is enabled or not).
+    # The result used to depend on whether multi-processing is enabled
+    # and if there's more than one core available, which we can check
+    # with the ncpus setting (although it appears that we still need
+    # to check whether multi-processing is enabled or not). It
+    # no-longer appears to be the case, but the test is left in (but
+    # commented-out) for review.
     #
-    if multi and ncpus > 1:
+    if numcores == 2:  #  and multi and ncpus > 1:
         expected = RATIOS_TWO
     else:
         expected = RATIOS_ONE
