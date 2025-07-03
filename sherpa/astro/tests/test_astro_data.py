@@ -3923,8 +3923,8 @@ def test_eval_model_to_fit_when_all_ignored_dataimg():
                            "The size of 'empty' has not been set"),
                           (None, np.asarray([1, 2, 3]),
                            "data set 'empty' has no channel information"),
-                          pytest.param(np.asarray([1, 2, 3]), None,
-                                       "The dependent axis of 'empty' has not been set", marks=pytest.mark.xfail)  # TypeError: unsupported operand type(s) for /: 'NoneType' and 'int'
+                          (np.asarray([1, 2, 3]), None,
+                           "The dependent axis of 'empty' has not been set")
                           ])
 def test_to_guess_when_empty_datapha(chans, counts, emsg):
     """This is a regression test."""
@@ -3939,14 +3939,9 @@ def test_to_guess_when_empty_2d(data_class, args):
     """This is a regression test."""
 
     data = data_class("empty", *args)
-    resp = data.to_guess()
-
-    # Ensure there are n None values, where n is the number of
-    # independent + dependent axes - ie len(args)
-    #
-    assert len(resp) == len(args)
-    for r in resp:
-        assert r is None
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
+        _ = data.to_guess()
 
 
 def test_to_guess_when_all_ignored_datapha():
@@ -3973,20 +3968,18 @@ def test_to_fit_when_empty_datapha():
     """This is a regression test."""
 
     data = DataPHA("empty", None, None)
-    dep, staterr, syserr = data.to_fit()
-    assert dep is None
-    assert staterr is None
-    assert syserr is None
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
+        _ = data.to_fit()
 
 
 def test_to_fit_when_empty_dataimg():
     """This is a regression test."""
 
     data = DataIMG("empty", None, None, None)
-    dep, staterr, syserr = data.to_fit()
-    assert dep is None
-    assert staterr is None
-    assert syserr is None
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
+        _ = data.to_fit()
 
 
 def test_to_plot_when_empty_datapha():
@@ -3994,7 +3987,8 @@ def test_to_plot_when_empty_datapha():
 
     data = DataPHA("empty", None, None)
     with pytest.raises(DataErr,
-                       match="^The size of 'empty' has not been set$"):
+                       match="^The dependent axis of 'empty' "
+                       "has not been set$"):
         _ = data.to_plot()
 
 
