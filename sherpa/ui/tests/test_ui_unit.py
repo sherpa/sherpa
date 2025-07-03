@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020 - 2025
+#  Copyright (C) 2017, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -284,6 +284,89 @@ def test_guess_multiple_model_multiple(caplog, clean_ui):
     assert bmdl.ampl.val == pytest.approx(7)
     assert bmdl.ampl.min == pytest.approx(0.007)
     assert bmdl.ampl.max == pytest.approx(7000)
+
+    assert len(caplog.records) == 0
+
+
+def test_guess_single_dataset(caplog, clean_ui):
+    """Check the data/model used in test_guess_multiple_datasets as a single dataset"""
+
+    ui.load_arrays("foo", [10, 15, 20, 22, 30, 40, 45], [5, 8, 7, 9, 20, 3, 6])
+
+    # The guess is independent for each component.
+    mdl = ui.scale1d.smdl + ui.poisson.pmdl
+    ui.set_source("foo", mdl)
+
+    ui.guess(id="foo")
+
+    assert smdl.c0.val == pytest.approx(11.5)
+    assert smdl.c0.min == pytest.approx(0.03)
+    assert smdl.c0.max == pytest.approx(2000)
+
+    assert pmdl.mean.val == pytest.approx(30)
+    assert pmdl.mean.min == pytest.approx(10)
+    assert pmdl.mean.max == pytest.approx(45)
+    assert pmdl.ampl.val == pytest.approx(20)
+    assert pmdl.ampl.min == pytest.approx(0.02)
+    assert pmdl.ampl.max == pytest.approx(20000)
+
+    assert len(caplog.records) == 0
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("id1,id2", [(10, 20), (20, 10)])
+def test_guess_multiple_datasets(id1, id2, caplog, clean_ui):
+    """Do the different datasets change the guess?"""
+
+    ui.load_arrays(10, [10, 20, 40], [5, 7, 3])
+    ui.load_arrays(20, [15, 22, 30, 45], [8, 9, 20, 6])
+
+    mdl = ui.scale1d.smdl + ui.poisson.pmdl
+    ui.set_source(10, mdl)
+    ui.set_source(20, mdl)
+
+    # The guess should not care about the dataset order
+    ui.guess(id=id1, otherids=[id2])
+
+    assert smdl.c0.val == pytest.approx(11.5)
+    assert smdl.c0.min == pytest.approx(0.03)
+    assert smdl.c0.max == pytest.approx(2000)
+
+    assert pmdl.mean.val == pytest.approx(30)
+    assert pmdl.mean.min == pytest.approx(10)
+    assert pmdl.mean.max == pytest.approx(45)
+    assert pmdl.ampl.val == pytest.approx(20)
+    assert pmdl.ampl.min == pytest.approx(0.02)
+    assert pmdl.ampl.max == pytest.approx(20000)
+
+    assert len(caplog.records) == 0
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("id1,id2", [(10, 20), (20, 10)])
+def test_guess_multiple_datasets_single_component(id1, id2, caplog, clean_ui):
+    """Guess a single component?"""
+
+    ui.load_arrays(10, [10, 20, 40], [5, 7, 3])
+    ui.load_arrays(20, [15, 22, 30, 45], [8, 9, 20, 6])
+
+    mdl = ui.scale1d.smdl + ui.poisson.pmdl
+    ui.set_source(10, mdl)
+    ui.set_source(20, mdl)
+
+    # The guess should not care about the dataset order
+    ui.guess(id=id1, otherids=[id2], model=pmdl)
+
+    assert smdl.c0.val == pytest.approx(1.0)
+    assert smdl.c0.min < -3e38
+    assert smdl.c0.max > 3e38
+
+    assert pmdl.mean.val == pytest.approx(30)
+    assert pmdl.mean.min == pytest.approx(10)
+    assert pmdl.mean.max == pytest.approx(45)
+    assert pmdl.ampl.val == pytest.approx(20)
+    assert pmdl.ampl.min == pytest.approx(0.02)
+    assert pmdl.ampl.max == pytest.approx(20000)
 
     assert len(caplog.records) == 0
 

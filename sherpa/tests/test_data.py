@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2022, 2024
+#  Copyright (C) 2019-2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -2765,3 +2765,77 @@ def test_get_filter_when_empty_1d(data_class, args):
     with pytest.raises(TypeError,
                        match=r"object of type 'NoneType' has no len\(\)"):
         _ = data.get_filter()
+
+
+@pytest.mark.xfail
+def test_datasimulfit_to_guess_axis_difference():
+    """Very basic check that this fails"""
+
+    d1 = Data1D(*DATA1D_ARGS)
+    d1int = Data1DInt(*DATA1DINT_ARGS)
+
+    d = DataSimulFit("example", [d1, d1int])
+    emsg = "Unable to create guess when number of " + \
+        "independent axes varies"
+    with pytest.raises(DataErr, match=f"^{emsg}$"):
+        _ = d.to_guess()
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("d1,d2,emsg",
+                         [ # First dataset has no data
+                           (Data1D("d1", None, [3, 4, 5]),
+                            Data1D("d2", [10, 20, 30, 40], [3, 4, 5, 6]),
+                            "The independent axis of 'd1' has not been set"),
+                           (Data1D("d1", [1, 2, 3], None),
+                            Data1D("d2", [10, 20, 30, 40], [3, 4, 5, 6]),
+                            "The dependent axis of 'd1' has not been set"),
+                           (Data1D("d1", None, None),
+                            Data1D("d2", [10, 20, 30, 40], [3, 4, 5, 6]),
+                            "The size of 'd1' has not been set"),
+                           # Second dataset has no data
+                           (Data1D("d1", [1, 2, 3], [3, 4, 5]),
+                            Data1D("d2", None, [3, 4, 5, 6]),
+                            "The independent axis of 'd2' has not been set"),
+                           (Data1D("d1", [1, 2, 3], [3, 4, 5]),
+                            Data1D("d2", [10, 20, 30, 40], None),
+                            "The dependent axis of 'd2' has not been set"),
+                           (Data1D("d1", [1, 2, 3], [3, 4, 5]),
+                            Data1D("d2", None, None),
+                            "The size of 'd2' has not been set"),
+                         ])
+def test_datasimulfit_to_guess_missing_axis(d1, d2, emsg):
+    """Very basic check that this fails"""
+
+    d = DataSimulFit("example", [d1, d2])
+    with pytest.raises(DataErr, match=f"^{emsg}$"):
+        _ = d.to_guess()
+
+
+@pytest.mark.xfail
+def test_datasimulfit_to_guess():
+    """Very basic check"""
+
+    y1, x1 = numpy.mgrid[5:10, 200:220:2]
+    y1 = y1.flatten()
+    x1 = x1.flatten()
+    z1 = x1 + y1
+
+    y2, x2 = numpy.mgrid[3:5, 10:14]
+    y2 = y2.flatten()
+    x2 = x2.flatten()
+    z2 = x2 + y2
+
+    da = Data2D("a", x1, y1, z1)
+    db = Data2D("b", x2, y2, z2)
+
+    ex0 = numpy.append(x1, x2)
+    ex1 = numpy.append(y1, y2)
+    ey = numpy.append(z1, z2)
+
+    d = DataSimulFit("example", (da, db))
+    gy, gx0, gx1 = d.to_guess()
+
+    assert gx0 == pytest.approx(ex0)
+    assert gx1 == pytest.approx(ex1)
+    assert gy == pytest.approx(ey)
