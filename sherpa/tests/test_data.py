@@ -2705,14 +2705,9 @@ def test_to_guess_when_empty(data_class, args):
         pytest.xfail("test known to fail with Data1DInt")
 
     data = data_class("empty", *args)
-    resp = data.to_guess()
-
-    # Ensure there are n None values, where n is the number of
-    # independent + dependent axes - ie len(args)
-    #
-    assert len(resp) == len(args)
-    for r in resp:
-        assert r is None
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
+        _ = data.to_guess()
 
 
 @pytest.mark.parametrize("data_copy", ALL_DATA_CLASSES, indirect=True)
