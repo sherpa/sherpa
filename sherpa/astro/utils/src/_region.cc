@@ -32,6 +32,22 @@ extern "C" {
 #endif
 }
 
+// For now assume that all the region-library routines are unsafe to
+// use in threaded code. Treat this as a global requirement for now
+// (perhaps it can be per-region object?).
+//
+#ifdef Py_GIL_DISABLED
+
+static PyMutex mutex_region = {0};
+#define REGION_LOCK()    PyMutex_Lock(&mutex_region)
+#define REGION_UNLOCK()  PyMutex_Unlock(&mutex_region)
+
+#else
+#define REGION_LOCK()
+#define REGION_UNLOCK()
+#endif
+
+
 typedef struct {
   // Note that there is no semicolon after the PyObject_HEAD macro;
   // one is included in the macro definition.
@@ -61,15 +77,23 @@ static regRegion* parse_string( std::string input, int fileflag ) {
   if( fileflag )
     input = "region(" + input + ")";
 
+  // Should this be a different lock, as this is calling into the DM
+  // rather than region library?
+  //
+  REGION_LOCK();
   reg = dmRegParse( (char*)input.c_str() );
+  REGION_UNLOCK();
 
 #else
 
+  REGION_LOCK();
   if( fileflag ) {
     reg = regReadAsciiRegion( (char*)input.c_str(), 0 ); // Verbosity set to 0
   } else {
     reg = regParse( (char*)input.c_str() );
   }
+  REGION_UNLOCK();
+
 #endif
 
   return reg;
@@ -139,7 +163,9 @@ static PyObject* pyRegion_str(PyRegion* reg) {
   const char *ret = "";
 
   if ( region ) {
+    REGION_LOCK();
     ret = regAllocComposeRegion( region );
+    REGION_UNLOCK();
   }
 
   return Py_BuildValue("s", ret);
@@ -177,9 +203,13 @@ static PyObject* region_mask( PyRegion* self, PyObject* args, PyObject *kwargs )
   if ( EXIT_SUCCESS != mask.create( 1, dim ) )
     return NULL;
 
+  REGION_LOCK();
+
   // Create the mask
   for ( npy_intp ii = 0; ii < size; ii++)
     mask[ii] = regInsideRegion( self->region, xpos[ii], ypos[ii] );
+
+  REGION_UNLOCK();
 
   return mask.return_new_ref();
 
@@ -272,7 +302,9 @@ static PyObject* region_union( PyRegion* self, PyObject* args, PyObject *kwargs 
   regRegion *r1 = self->region;
   regRegion *r2 = reg2->region;
 
+  REGION_LOCK();
   regRegion *combined = regUnionRegion( r1, r2 );
+  REGION_UNLOCK();
   if ( NULL == combined ) {
     PyErr_SetString( PyExc_TypeError,
 		     (char*)"unable to union the regions" );
@@ -306,10 +338,15 @@ static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwar
   PyRegion *reg2 = (PyRegion*)(reg_obj2);
 
   regRegion *r1 = self->region;
+
+  REGION_LOCK();
+
   regRegion *r2 = regInvert( reg2->region );
 
   regRegion *combined = regIntersectRegion( r1, r2 );
   regFree( r2 );
+
+  REGION_UNLOCK();
 
   if ( NULL == combined ) {
     PyErr_SetString( PyExc_TypeError,
@@ -334,7 +371,9 @@ static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwar
 static PyObject* region_invert( PyRegion* self, PyObject* args )
 {
   regRegion *rold = self->region;
+  REGION_LOCK();
   regRegion *rnew = regInvert( rold );
+  REGION_UNLOCK();
   if ( NULL == rnew ) {
     PyErr_SetString( PyExc_TypeError,
 		     (char*)"unable to invert the region" );
@@ -387,6 +426,10 @@ PyInit__region(void)
   PyModule_AddIntConstant(m, "USE_CXCDM_PARSER", 1);
 #else
   PyModule_AddIntConstant(m, "USE_CXCDM_PARSER", 0);
+#endif
+
+#ifdef Py_GIL_DISABLED
+  PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED);
 #endif
 
   return m;

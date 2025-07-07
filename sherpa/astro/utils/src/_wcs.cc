@@ -1,5 +1,6 @@
-// 
-//  Copyright (C) 2009  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2009, 2025
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -24,8 +25,6 @@
 
 extern "C" {
 #include "wcs.h"
-
-  void init_wcs();
 }
 
 static PyObject* pix2world( PyObject* self, PyObject* args )
@@ -37,7 +36,7 @@ static PyObject* pix2world( PyObject* self, PyObject* args )
   DoubleArray cdelt;
   double crota = 0.0, epoch = 0.0, equinox = 0.0;
   const char *ctype = NULL;
-  
+
   if ( !PyArg_ParseTuple( args, (char*)"sO&O&O&O&O&ddd",
 			  &ctype,
 			  CONVERTME(DoubleArray), &x0,
@@ -49,7 +48,7 @@ static PyObject* pix2world( PyObject* self, PyObject* args )
 			  &equinox,
 			  &epoch ) )
     return NULL;
-  
+
   if ( ( cdelt.get_size() != crpix.get_size() ) ||
        ( crpix.get_size() != crval.get_size() ) ) {
     std::ostringstream err;
@@ -66,7 +65,7 @@ static PyObject* pix2world( PyObject* self, PyObject* args )
 		     (char*)"input pixel arrays x0,x1 not of equal length" );
     return NULL;
   }
-  
+
   long nsets = long(x0.get_size());
 
   char    ct1[80] = "";
@@ -77,7 +76,7 @@ static PyObject* pix2world( PyObject* self, PyObject* args )
 		     (char*)"WCS params failed" );
     return NULL;
   }
-  
+
   if ( strcmp(ctype,"LINEAR") == 0 )
   {
     strcpy(ct1, "LINEAR");
@@ -133,16 +132,16 @@ static PyObject* pix2world( PyObject* self, PyObject* args )
       wcs->cel.ref[2] = wcs->longpole;
     if ( wcs->latpole != 0.0 )
       wcs->cel.ref[3] = wcs->latpole;
-  }  
+  }
 
   for (int ii = 0; ii < nsets; ii++)
   {
-    // Convert to world coords 
+    // Convert to world coords
     pix2wcs(wcs, x0[ii], x1[ii], &x0[ii], &x1[ii]);
-  }    
+  }
 
   wcsfree(wcs);
-  
+
   return Py_BuildValue( (char*)"(NN)",
 			x0.return_new_ref(),
 			x1.return_new_ref() );
@@ -158,7 +157,7 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
   DoubleArray cdelt;
   double crota = 0.0, epoch = 0.0, equinox = 0.0;
   const char *ctype = NULL;
-  
+
   if ( !PyArg_ParseTuple( args, (char*)"sO&O&O&O&O&ddd",
 			  &ctype,
 			  CONVERTME(DoubleArray), &x0,
@@ -170,7 +169,7 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
 			  &equinox,
 			  &epoch ) )
     return NULL;
-  
+
   if ( ( cdelt.get_size() != crpix.get_size() ) ||
        ( crpix.get_size() != crval.get_size() ) ) {
     std::ostringstream err;
@@ -187,7 +186,7 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
 		     (char*)"input pixel arrays x0,x1 not of equal length" );
     return NULL;
   }
-  
+
   long nsets = long(x0.get_size());
 
   char    ct1[80] = "";
@@ -227,16 +226,16 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
 			     int(equinox),
 			     epoch
 			     );
-  
+
   int scale;
   for (int ii = 0; ii < nsets; ii++)
   {
-    // Convert to world coords 
+    // Convert to world coords
     wcs2pix(wcs, x0[ii], x1[ii], &x0[ii], &x1[ii], &scale);
-  }    
+  }
 
   wcsfree(wcs);
-  
+
   return Py_BuildValue( (char*)"(NN)",
 			x0.return_new_ref(),
 			x1.return_new_ref() );
@@ -248,7 +247,7 @@ static PyMethodDef WcsFcts[] = {
     METH_VARARGS, (char*)"Pixel to World Coordinates" },
   { (char*)"world2pix", (PyCFunction)world2pix,
     METH_VARARGS, (char*)"World to Pixel Coordinates" },
-  
+
   { NULL, NULL, 0, NULL }
 
 };

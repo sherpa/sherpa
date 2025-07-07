@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2016, 2019, 2020, 2023
+//  Copyright (C) 2007, 2016, 2019-2020, 2023, 2025
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -430,6 +430,29 @@ namespace sherpa { namespace models {
 
 }  }  /* namespace models, namespace sherpa */
 
+#ifdef Py_GIL_DISABLED
+
+#define SHERPAMODELMOD(name, fctlist) \
+static struct PyModuleDef module##name = {\
+PyModuleDef_HEAD_INIT, \
+#name, \
+NULL, \
+-1, \
+fctlist \
+}; \
+\
+PyMODINIT_FUNC PyInit_##name(void) { \
+  import_array(); \
+  if ( -1 == import_integration() ) \
+    return NULL; \
+  PyObject *m = PyModule_Create(&module##name); \
+  if (m == NULL) return NULL; \
+  PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED); \
+  return m; \
+}
+
+#else
+
 #define SHERPAMODELMOD(name, fctlist) \
 static struct PyModuleDef module##name = {\
 PyModuleDef_HEAD_INIT, \
@@ -445,6 +468,8 @@ PyMODINIT_FUNC PyInit_##name(void) { \
     return NULL; \
   return PyModule_Create(&module##name); \
 }
+
+#endif
 
 // Allow this to be customized on a per-file basis
 
