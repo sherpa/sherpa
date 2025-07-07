@@ -34,18 +34,36 @@ from typing import Any, Literal, TypeVar, overload
 
 import numpy as np
 
-from sherpa import get_config
+# This provides warning messages to the user when optional parts of
+# the system are not available, such as plotting and I/O backends. The
+# required modules are "re-loaded" below.
+#
 import sherpa.all
+
+from sherpa import get_config
+
+import sherpa.data
 from sherpa.data import Data, DataSimulFit
+import sherpa.estmethods
 from sherpa.estmethods import EstMethod
 from sherpa.fit import Fit, FitResults
+import sherpa.instrument
+import sherpa.io
+import sherpa.image
+import sherpa.models
 from sherpa.models.basic import TableModel
+import sherpa.models.model
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
+import sherpa.optmethods
 from sherpa.optmethods import OptMethod
+import sherpa.plot
 from sherpa.plot import Plot, MultiPlot, set_backend, get_per_plot_kwargs
+import sherpa.sim
+import sherpa.stats
 from sherpa.stats import Stat, UserStat
+import sherpa.utils
 from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -393,8 +411,8 @@ def reduce_ufunc(func):
     modname = getattr(func, '__module__', 'numpy')
     funcname = func.__name__
     if func is not getattr(sys.modules[modname], funcname, None):
-        raise ValueError("module '%s' does not contain ufunc '%s'" %
-                         (modname, funcname))
+        raise ValueError(f"module '{modname}' does not contain "
+                         f"ufunc '{funcname}'")
     return (construct_ufunc, (modname, funcname))
 
 
@@ -665,7 +683,8 @@ def _assign_model_to_main(name: str, model: Model) -> None:
     """
     # Ask sys what the __main__ module is; packages such
     # as IPython can add their own __main__ module.
-    model.name = '%s.%s' % (type(model).__name__.lower(), name)
+    lname = type(model).__name__.lower()
+    model.name = f'{lname}.{name}'
     _assign_obj_to_main(name, model)
 
 
@@ -1308,83 +1327,104 @@ class Session(NoNewAttributesAfterInit):
             for name, cmpt in self._model_components.items():
                 self._model_autoassign_func(name, cmpt)
 
+    def _get_show_helper(self,
+                         checkfunc: Callable[[IdType], bool] | None,
+                         labelfunc: Callable[[IdType], str],
+                         idarg: IdType | None = None,
+                         ) -> str:
+        """Helper return for _get_show_xxx calls with an id.
+
+        checkfunc determines whether the id value should be
+        processed (if None, there is no check), and labelfunc
+        returns the actual text for the identifier.
+
+        """
+
+        if idarg is None:
+            ids = self.list_data_ids()
+        else:
+            ids = [self._fix_id(idarg)]
+
+        out = ''
+        for idval in ids:
+            if checkfunc is None or checkfunc(idval):
+                out += f"{labelfunc(idval)}\n\n"
+
+        return out
+
     def _get_show_data(self, id: IdType | None = None) -> str:
-        data_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            data_str += 'Data Set: %s\n' % id
-            data_str += str(self.get_data(id)) + '\n\n'
-        return data_str
+
+        def get(idval):
+            istr = self.get_data(idval)
+            return f"Data Set: {idval}\n{istr}"
+
+        return self._get_show_helper(None, get, id)
 
     def _get_show_filter(self, id: IdType | None = None) -> str:
-        filt_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            filt_str += 'Data Set Filter: %s\n' % id
-            filt_str += self.get_data(id).get_filter_expr() + '\n\n'
-        return filt_str
+
+        def get(idval):
+            istr = self.get_data(idval).get_filter_expr()
+            return f"Data Set Filter: {idval}\n{istr}"
+
+        return self._get_show_helper(None, get, id)
 
     def _get_show_model(self, id: IdType | None = None) -> str:
-        model_str = ''
-        ids = self.list_data_ids()
+
         mdl_ids = self.list_model_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            if id in mdl_ids:
-                model_str += 'Model: %s\n' % id
-                model_str += str(self.get_model(id)) + '\n\n'
-        return model_str
+        def check(idval):
+            return idval in mdl_ids
+
+        def get(idval):
+            istr = self.get_model(idval)
+            return f"Model: {idval}\n{istr}"
+
+        return self._get_show_helper(check, get, id)
 
     def _get_show_source(self, id: IdType | None = None) -> str:
-        model_str = ''
-        ids = self.list_data_ids()
+
         src_ids = self._sources.keys()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            if id in src_ids:
-                model_str += 'Model: %s\n' % id
-                model_str += str(self.get_source(id)) + '\n\n'
-        return model_str
+        def check(idval):
+            return idval in src_ids
+
+        def get(idval):
+            istr = self.get_source(idval)
+            return f"Model: {idval}\n{istr}"
+
+        return self._get_show_helper(check, get, id)
 
     def _get_show_kernel(self, id: IdType | None = None) -> str:
-        kernel_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            if id in self._psf.keys():
-                kernel_str += 'PSF Kernel: %s\n' % id
-                # Show the PSF parameters
-                kernel_str += str(self.get_psf(id)) + '\n\n'
-        return kernel_str
+
+        psf_ids = self._psf.keys()
+        def check(idval):
+            return idval in psf_ids
+
+        def get(idval):
+            istr = self.get_psf(idval)
+            return f"PSF Kernel: {idval}\n{istr}"
+
+        return self._get_show_helper(check, get, id)
 
     def _get_show_psf(self, id: IdType | None = None) -> str:
-        psf_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            if id in self._psf.keys():
-                psf_str += 'PSF Model: %s\n' % id
-                # Show the PSF dataset or PSF model
-                psf_str += str(self.get_psf(id).kernel) + '\n\n'
-        return psf_str
+
+        psf_ids = self._psf.keys()
+        def check(idval):
+            return idval in psf_ids
+
+        def get(idval):
+            istr = self.get_psf(idval).kernel
+            return f"PSF Model: {idval}\n{istr}"
+
+        return self._get_show_helper(check, get, id)
 
     def _get_show_method(self) -> str:
-        return ('Optimization Method: %s\n%s\n' %
-                (type(self._current_method).__name__,
-                 str(self._current_method)))
+        n1 = type(self._current_method).__name__
+        n2 = self._current_method
+        return f'Optimization Method: {n1}\n{n2}\n'
 
     def _get_show_stat(self) -> str:
-        return ('Statistic: %s\n%s\n' %
-                (type(self._current_stat).__name__,
-                 str(self._current_stat)))
+        n1 = type(self._current_stat).__name__
+        n2 = self._current_stat
+        return f'Statistic: {n1}\n{n2}\n'
 
     def _get_show_fit(self) -> str:
         if self._fit_results is None:
@@ -2031,10 +2071,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         funcs_list = self.get_functions()
-        funcs = ''
-        for func in funcs_list:
-            funcs += '%s\n' % func
-
+        funcs = '\n'.join(funcs_list) + '\n'
         send_to_pager(funcs, outfile, clobber)
 
     ###########################################################################
@@ -3655,7 +3692,6 @@ class Session(NoNewAttributesAfterInit):
         """
         if val is None:
             val, id = id, val
-        err = None
 
         d = self.get_data(id)
         set_error(d, "syserror", val, fractional=fractional)
@@ -5735,7 +5771,8 @@ class Session(NoNewAttributesAfterInit):
 
         # TODO: do we still expect to get bytes here?
         if lo is not None and isinstance(lo, (str, np.bytes_)):
-            return self._notice_expr(lo, **kwargs)
+            self._notice_expr(lo, **kwargs)
+            return
 
         # Jump through the data sets in "order".
         #
@@ -5958,7 +5995,8 @@ class Session(NoNewAttributesAfterInit):
 
         # TODO: do we still expect to get bytes here?
         if lo is not None and isinstance(lo, (str, np.bytes_)):
-            return self._notice_expr_id(idvals, lo, **kwargs)
+            self._notice_expr_id(idvals, lo, **kwargs)
+            return
 
         # Unlike notice() we do not sort the id list as this
         # was set by the user.
@@ -6721,8 +6759,8 @@ class Session(NoNewAttributesAfterInit):
             has_source = key in self._sources and mod in self._sources[key]
 
             if has_model or has_source:
-                warning(f"the model component '{mod.name}' is found in model {key}" +
-                        " and cannot be deleted")
+                warning("the model component '%s' is found in model %s"
+                        " and cannot be deleted", mod.name, key)
                 # restore the model component in use and return
                 self._model_components[name] = mod
                 return
@@ -9579,13 +9617,13 @@ class Session(NoNewAttributesAfterInit):
         fit. The final fit results are displayed to the screen and can
         be retrieved with `get_fit_results`.
 
-        .. versionchanged:: 4.17.0
-           The outfile parameter can now be sent a Path object or a
-           file handle instead of a string.
-
         .. versionchanged:: 4.17.1
            The parameter ``record_steps`` was added to keep parameter
            values of each iteration with the fit results.
+
+        .. versionchanged:: 4.17.0
+           The outfile parameter can now be sent a Path object or a
+           file handle instead of a string.
 
         Parameters
         ----------
@@ -9655,6 +9693,17 @@ class Session(NoNewAttributesAfterInit):
         Simultaneously fit data sets 1, 2, and 3:
 
         >>> fit(1, 2, 3)
+
+        Fit the dataset 'jet' and keep the values for each parameter
+        in every optimization step (this example assumes that the
+        model for the data set 'jet' has a parameter called
+        'const1d.c0'):
+
+        >>> fit('jet', record_steps=True)
+        >>> fres = get_fit_results()
+        >>> for row in fres.record_steps:
+        ...     print(f"{row['nfev']} {row['statistic']:8.6e} {row['const1d.c0']:6.4f}")
+        [... output here ...]
 
         Fit data set 'jet' and write the fit results to the text file
         'jet.fit', over-writing it if it already exists:

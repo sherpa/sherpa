@@ -35,12 +35,15 @@ import pytest
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro import io
+import sherpa.astro.models
+import sherpa.astro.plot
 from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.instrument import ConvolutionKernel
 from sherpa.io import get_ascii_data
 from sherpa.models import ArithmeticModel, Const1D
 import sherpa.models.basic
+import sherpa.plot
 from sherpa.ui.utils import Session
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, IOErr, ModelErr, PlotErr, SessionErr
@@ -2722,7 +2725,7 @@ def test_load_template_model_error_mismatched_header(session, tmp_path):
 
     mfile = tmp_path / "model.dat"
     mfile.write_text("# XPAR YPAR MODELFLAG FILENAME\n" +
-                     f"1 2 foo.dat\n")
+                     "1 2 foo.dat\n")
 
     s = session()
     with pytest.raises(IOErr,
@@ -2736,7 +2739,7 @@ def test_load_template_model_error_no_pars(session, tmp_path):
 
     mfile = tmp_path / "model.dat"
     mfile.write_text("# MODELFLAG FILENAME\n" +
-                     f"1 foo.dat\n")
+                     "1 foo.dat\n")
 
     s = session()
     with pytest.raises(IOErr,
@@ -2750,7 +2753,7 @@ def test_load_template_model_error_no_modelfile(session, tmp_path):
 
     mfile = tmp_path / "model.dat"
     mfile.write_text("# XPAR YPAR\n" +
-                     f"1 2\n1 3\n")
+                     "1 2\n1 3\n")
 
     s = session()
     with pytest.raises(IOErr,
@@ -2764,7 +2767,7 @@ def test_load_template_model_error_no_modelflag(session, tmp_path):
 
     mfile = tmp_path / "model.dat"
     mfile.write_text("# XPAR YPAR FILENAME\n" +
-                     f"1 2 a.dat\n1 3 b.dat\n")
+                     "1 2 a.dat\n1 3 b.dat\n")
 
     s = session()
     with pytest.raises(IOErr,
@@ -3249,7 +3252,6 @@ def check_text_output(path, header, coldata):
 
     # Use the same logic as test_astro_ui_unit.py.
     #
-    from sherpa.astro import io
     if io.backend.name == "crates":
         expected = f"#TEXT/SIMPLE\n# {header}\n"
     elif io.backend.name == "pyfits":
@@ -3929,10 +3931,10 @@ def test_load_conv_model_instance(session):
     s._add_model_types(sherpa.models.basic)
 
     ngl = s.create_model_component("normgauss1d", "ngl")
-    s.list_model_components() == ["ngl"]
+    assert s.list_model_components() == ["ngl"]
 
     s.load_conv("bobby", ngl)
-    s.list_model_components() == ["ngl", "bobby"]
+    assert s.list_model_components() == ["bobby", "ngl"]
 
     got = s.get_model_component("bobby")
     assert isinstance(got, ConvolutionKernel)
@@ -4279,9 +4281,9 @@ def test_dataspace1d_datapha_offset_bkg(offset):
 @pytest.mark.parametrize("start,stop,step,numbins",
                          [[1, 1, 1, None],
                           [1, 0, 1, None],
-                          [1, 5, 20, None]
+                          # [1, 5, 20, None]  raises a DataErr, see below
                           ])
-def test_dataspace1d_datapha_invalid_args(start, stop, step, numbins):
+def test_dataspace1d_datapha_invalid_args_type(start, stop, step, numbins):
     """What happens with invalid arguments?
 
     These errors come from sherpa.utils.dataspace1d
@@ -4299,6 +4301,7 @@ def test_dataspace1d_datapha_invalid_args(start, stop, step, numbins):
 @pytest.mark.parametrize("start,stop,step,numbins",
                          [[1, 5, 0.5, None],
                           [1, 5, 1.1, None],
+                          [1, 5, 20, None],
                           [1, 5, 1, 2],
                           [1.1, 5, 1, None],
                           # Note: the following does not fail as the
@@ -4307,7 +4310,7 @@ def test_dataspace1d_datapha_invalid_args(start, stop, step, numbins):
                           # not seem worth doing
                           # [1, 5.1, 1, None]
                           ])
-def test_dataspace1d_datapha_invalid_args(start, stop, step, numbins):
+def test_dataspace1d_datapha_invalid_args_data(start, stop, step, numbins):
     """What happens with invalid arguments?
 
     These errors come from sherpa.astro.ui.utils.dataspace1d
@@ -4566,3 +4569,66 @@ def test_method_numcores_moncar(session, ncores):
     assert fr.succeeded
     assert fr.statval == pytest.approx(36.36138580050819)
     check_moncar(ncores, fr, g1, g2)
+
+
+# It is important to check Session as well as AstroSession here, hence
+# no pytest.mark.session. The test is fast.
+#
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_send_fit_record_steps(session):
+    """Check we can send the record_steps argument to fit.
+
+    See issue #2318.
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.load_arrays(1, [1, 2, 3], [4, 5, 7])
+    mdl = s.create_model_component("scale1d", "mdl")
+    s.set_source(mdl)
+
+    # Explicit settings for the fit; the idea is just to get a quick
+    # fit, not be statistically rigorous.
+    #
+    s.set_stat("leastsq")
+    s.set_method("levmar")
+
+    s.fit(record_steps=True)
+    fr = s.get_fit_results()
+    assert fr.succeeded
+
+    steps = fr.record_steps
+    assert steps is not None
+
+    # Check that the number of elements in record_steps matches the
+    # number of evaluations plus 1. Unfortunately, for levmar this
+    # does not hold and we get an extra iteration. As this is just
+    # to check we get sensible values back treat this as a regression
+    # test.
+    #
+    assert fr.nfev == 4
+    # assert len(steps) == (fr.nfev + 1)
+    assert len(steps) == (fr.nfev + 2)
+
+    # Do we have the expected columns?
+    #
+    assert steps.dtype.names == ('nfev', 'statistic', 'mdl.c0')
+
+    # The column values depend on the optimization and other parts
+    # of the system, so these checks may need to be changed or
+    # possibly not done here (as this is not really a test of the
+    # optimizer, just that we can get the data).
+    #
+    assert steps['nfev'] == pytest.approx(np.arange(6))
+
+    c0s = np.asarray([1, 1, 1.00034527, 5.33333333, 5.33517476,
+                      5.33333333])
+    assert steps['mdl.c0'] == pytest.approx(c0s)
+
+    # The stats field could be calculated from c0s and calling
+    # calc_stat, as an external check, but leave that for now.
+    #
+    stats = np.asarray([61, 61, 60.99102342, 4.66666667, 4.66667684,
+                        4.66666667])
+    assert steps['statistic'] == pytest.approx(stats)
