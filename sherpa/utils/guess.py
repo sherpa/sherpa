@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018 - 2024
+#  Copyright (C) 2007, 2015-2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -26,7 +26,7 @@ Routines related to estimating initial parameter values and limits.
 
 """
 
-from typing import Any, Optional, Literal, TypedDict, cast, overload
+from typing import Any, Literal, TypedDict, cast, overload
 
 import numpy as np
 
@@ -45,8 +45,8 @@ __all__ = ("_guess_ampl_scale", "get_midpoint", "get_peak",
 class ValueAndRange(TypedDict):
     """Represent a value and range as a dict."""
     val: float
-    min: Optional[float]
-    max: Optional[float]
+    min: float | None
+    max: float | None
 
 
 _guess_ampl_scale: float = 1.e+3
@@ -94,7 +94,7 @@ def get_midpoint(a: np.ndarray) -> float:
 #
 def get_peak(y: np.ndarray,
              x: np.ndarray,
-             xhi: Optional[np.ndarray] = None) -> float:
+             xhi: np.ndarray | None = None) -> float:
     """Estimate the peak position of the data.
 
     Parameters
@@ -125,7 +125,7 @@ def get_peak(y: np.ndarray,
 
 def get_valley(y: np.ndarray,
                x: np.ndarray,
-               xhi: Optional[np.ndarray] = None) -> float:
+               xhi: np.ndarray | None = None) -> float:
     """Estimate the position of the minimum of the data.
 
     Parameters
@@ -155,7 +155,7 @@ def get_valley(y: np.ndarray,
 
 def get_fwhm(y: np.ndarray,
              x: np.ndarray,
-             xhi: Optional[np.ndarray] = None) -> float:
+             xhi: np.ndarray | None = None) -> float:
     """Estimate the width of the data.
 
     This is only valid for positive data values (``y``).
@@ -198,11 +198,11 @@ def get_fwhm(y: np.ndarray,
     # The x array is required to be ordered, so we can just
     # take the first and last points.
     #
-    guess_fwhm = (x[-1] - x[0]) / 2
+    fwhm_g = (x[-1] - x[0]) / 2
 
     y_argmax = y.argmax()
     if y[y_argmax] <= 0:
-        return guess_fwhm
+        return fwhm_g
 
     half_max_val = y[y_argmax] / 2.0
     x_max = x[y_argmax]
@@ -247,12 +247,12 @@ def get_fwhm(y: np.ndarray,
 
     # No value, so use the guess.
     #
-    return guess_fwhm
+    return fwhm_g
 
 
 def guess_fwhm(y: np.ndarray,
                x: np.ndarray,
-               xhi: Optional[np.ndarray] = None,
+               xhi: np.ndarray | None = None,
                scale: float = 1000) -> ValueAndRange:
     """Estimate the value and valid range for the FWHM of the data.
 
@@ -414,7 +414,7 @@ def get_amplitude_position(arr: np.ndarray,
 
 def guess_amplitude(y: np.ndarray,
                     x: np.ndarray,
-                    xhi: Optional[np.ndarray] = None
+                    xhi: np.ndarray | None = None
                     ) -> ValueAndRange:
     """
     Guess model parameter amplitude (val, min, max)
@@ -445,7 +445,7 @@ def guess_amplitude(y: np.ndarray,
 def guess_amplitude_at_ref(r: float,
                            y: np.ndarray,
                            x: np.ndarray,
-                           xhi: Optional[np.ndarray] = None
+                           xhi: np.ndarray | None = None
                            ) -> ValueAndRange:
     """
     Guess model parameter amplitude (val, min, max)
@@ -524,7 +524,7 @@ def guess_amplitude2d(y, x0lo, x1lo, x0hi=None, x1hi=None):
 def guess_reference(pmin: float,
                     pmax: float,
                     x: np.ndarray,
-                    xhi: Optional[np.ndarray] = None
+                    xhi: np.ndarray | None = None
                     ) -> ValueAndRange:
     """
     Guess model parameter reference (val, min, max)
@@ -553,7 +553,7 @@ def guess_reference(pmin: float,
 
 def get_position(y: np.ndarray,
                  x: np.ndarray,
-                 xhi: Optional[np.ndarray] = None
+                 xhi: np.ndarray | None = None
                  ) -> ValueAndRange:
     """
     Get 1D model parameter positions pos (val, min, max)
