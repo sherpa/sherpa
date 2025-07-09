@@ -628,6 +628,16 @@ def test_data_1d_to_fit(data):
     numpy.testing.assert_array_equal(actual, expected)
 
 
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+def test_data_1d_to_fit_no_data(data_class, args):
+    """Regression test"""
+    data = data_class("empty", *args)
+    dep, staterr, syserr = data.to_fit()
+    assert dep is None
+    assert staterr is None
+    assert syserr is None
+
+
 @pytest.mark.parametrize("data", (Data1D, ), indirect=True)
 def test_data_1d_to_plot(data):
     actual = data.to_plot()
@@ -652,6 +662,17 @@ def test_data_1d_to_component_plot(data):
     numpy.testing.assert_array_equal(actual[3], expected[3])
     numpy.testing.assert_array_equal(actual[4], expected[4])
     numpy.testing.assert_array_equal(actual[5], expected[5])
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_1D)
+def test_data_1d_to_plot_no_data(data_class, args):
+    """Regression test"""
+    if data_class is Data1DInt:
+        pytest.xfail("Data1DInt data access when no independent axis")
+
+    data = data_class("empty", *args)
+    res = data.to_plot()
+    assert res[0] is None
 
 
 @pytest.mark.parametrize("data", (Data, Data1D, Data1DInt), indirect=True)
