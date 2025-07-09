@@ -628,6 +628,31 @@ def test_data_1d_to_fit(data):
     numpy.testing.assert_array_equal(actual, expected)
 
 
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+def test_data_1d_to_fit_no_data(data_class, args):
+    """Regression test"""
+    data = data_class("empty", *args)
+    dep, staterr, syserr = data.to_fit()
+    assert dep is None
+    assert staterr is None
+    assert syserr is None
+
+
+@pytest.mark.parametrize("x,y", [([1, 2], None), (None, [1, 2])])
+def test_to_fit_data1d_one_axis_empty(x, y):
+    """Regression test to check corner cases."""
+
+    # This could be parametrized over the different classes but is it
+    # worth the complexity?
+    #
+    data = Data1D("test", x, y)
+    yf, _, _ = data.to_fit()
+    if x is None:
+        assert yf == pytest.approx(y)
+    else:
+        assert yf is None
+
+
 @pytest.mark.parametrize("data", (Data1D, ), indirect=True)
 def test_data_1d_to_plot(data):
     actual = data.to_plot()
@@ -652,6 +677,62 @@ def test_data_1d_to_component_plot(data):
     numpy.testing.assert_array_equal(actual[3], expected[3])
     numpy.testing.assert_array_equal(actual[4], expected[4])
     numpy.testing.assert_array_equal(actual[5], expected[5])
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_1D)
+def test_data_1d_to_plot_no_data(data_class, args):
+    """Regression test"""
+    if data_class is Data1DInt:
+        pytest.xfail("Data1DInt data access when no independent axis")
+
+    data = data_class("empty", *args)
+    res = data.to_plot()
+    assert res[0] is None
+
+
+@pytest.mark.parametrize("x,y", [([1, 2], None), (None, [1, 2])])
+def test_to_plot_data1d_one_axis_empty(x, y):
+    """Regression test to check corner cases."""
+
+    # This could be parametrized over the different classes but is it
+    # worth the complexity?
+    #
+    data = Data1D("test", x, y)
+    xp, yp, _, _, _, _ = data.to_plot()
+    if x is None:
+        assert yp == pytest.approx(y)
+        assert xp is None
+    else:
+        assert yp is None
+        assert xp == pytest.approx(x)
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_1D)
+def test_data_1d_to_component_plot_no_data(data_class, args):
+    """Regression test"""
+    if data_class is Data1DInt:
+        pytest.xfail("Data1DInt data access when no independent axis")
+
+    data = data_class("empty", *args)
+    res = data.to_component_plot()
+    assert res[0] is None
+
+
+@pytest.mark.parametrize("x,y", [([1, 2], None), (None, [1, 2])])
+def test_to_component_plot_data1d_one_axis_empty(x, y):
+    """Regression test to check corner cases."""
+
+    # This could be parametrized over the different classes but is it
+    # worth the complexity?
+    #
+    data = Data1D("test", x, y)
+    xp, yp, _, _, _, _ = data.to_component_plot()
+    if x is None:
+        assert yp == pytest.approx(y)
+        assert xp is None
+    else:
+        assert yp is None
+        assert xp == pytest.approx(x)
 
 
 @pytest.mark.parametrize("data", (Data, Data1D, Data1DInt), indirect=True)
@@ -2713,6 +2794,23 @@ def test_to_guess_when_empty(data_class, args):
     assert len(resp) == len(args)
     for r in resp:
         assert r is None
+
+
+@pytest.mark.parametrize("x,y", [([1, 2], None), (None, [1, 2])])
+def test_to_guess_data1d_one_axis_empty(x, y):
+    """Regression test to check corner cases."""
+
+    # This could be parametrized over the different classes but is it
+    # worth the complexity?
+    #
+    data = Data1D("test", x, y)
+    yg, xg = data.to_guess()
+    if x is None:
+        assert yg == pytest.approx(y)
+        assert xg is None
+    else:
+        assert yg is None
+        assert xg == pytest.approx(x)
 
 
 @pytest.mark.parametrize("data_copy", ALL_DATA_CLASSES, indirect=True)

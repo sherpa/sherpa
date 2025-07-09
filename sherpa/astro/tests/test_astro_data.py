@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018, 2020 - 2025
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -3918,12 +3918,19 @@ def test_eval_model_to_fit_when_all_ignored_dataimg():
         _ = data.eval_model_to_fit(Gauss2D())
 
 
-def test_to_guess_when_empty_datapha():
+@pytest.mark.parametrize("chans,counts,emsg",
+                         [(None, None,
+                           "The size of 'empty' has not been set"),
+                          (None, np.asarray([1, 2, 3]),
+                           "data set 'empty' has no channel information"),
+                          pytest.param(np.asarray([1, 2, 3]), None,
+                                       "The dependent axis of 'empty' has not been set", marks=pytest.mark.xfail)  # TypeError: unsupported operand type(s) for /: 'NoneType' and 'int'
+                          ])
+def test_to_guess_when_empty_datapha(chans, counts, emsg):
     """This is a regression test."""
 
-    data = DataPHA("empty", None, None)
-    with pytest.raises(DataErr,
-                       match="The size of 'empty' has not been set"):
+    data = DataPHA("empty", chans, counts)
+    with pytest.raises(DataErr, match=f"^{emsg}$"):
         _ = data.to_guess()
 
 
@@ -3960,6 +3967,35 @@ def test_to_guess_when_all_ignored_dataimg():
     with pytest.raises(DataErr,
                        match="mask excludes all data"):
         _ = data.to_guess()
+
+
+def test_to_fit_when_empty_datapha():
+    """This is a regression test."""
+
+    data = DataPHA("empty", None, None)
+    dep, staterr, syserr = data.to_fit()
+    assert dep is None
+    assert staterr is None
+    assert syserr is None
+
+
+def test_to_fit_when_empty_dataimg():
+    """This is a regression test."""
+
+    data = DataIMG("empty", None, None, None)
+    dep, staterr, syserr = data.to_fit()
+    assert dep is None
+    assert staterr is None
+    assert syserr is None
+
+
+def test_to_plot_when_empty_datapha():
+    """This is a regression test."""
+
+    data = DataPHA("empty", None, None)
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
+        _ = data.to_plot()
 
 
 def make_pha_for_guess():
