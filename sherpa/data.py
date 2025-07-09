@@ -1511,20 +1511,49 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self._can_apply_model(modelfunc)
         return modelfunc(*self.get_indep(filter=True))
 
-    def to_guess(self) -> tuple[np.ndarray | None, ...]:
+    def to_guess(self) -> tuple[np.ndarray, ...]:
+        """Return the dependent and independent axes for guessing.
 
-        # Should this also check whether the independent and dependent
-        # axes are set?
+        .. versionchanged:: 4.18.0
+           It is now an error to call this with either the independent
+           or dependent axes unset.
+
+        Return
+        ------
+        axes : tuple of ndarray
+           The dependent axis and then the independent axes, including
+           any data filtering.
+
+        """
+
+        # This check is technically not needed, as there are explicit
+        # checks for both indepedent and dependent axes below, but
+        # this attempts to remain as similar to the pre-4.18.0
+        # behaviour as possible.
         #
-        arrays: list[np.ndarray | None]
+        if self.size is None:
+            raise DataErr("sizenotset", self.name)
+
+        arrays: list[np.ndarray]
         arrays = [self.get_y(filter=True, yfunc=None)]
+        if arrays[0] is None:
+            raise DataErr("The dependent axis of "
+                          f"'{self.name}' has not been set")
+
+        # The check for each element not being None should not be
+        # needed with the check on self.size
         arrays.extend(self.get_indep(True))
+        for array in arrays[1:]:
+            if array is None:
+                raise DataErr("The independent axis of "
+                              f"'{self.name}' has not been set")
+
         return tuple(arrays)
 
     def to_fit(self,
                staterrfunc: StatErrFunc | None = None
                ) -> tuple[np.ndarray | None,
-                          ArrayType | None,
+                          ArrayType | None,  # should this be np.ndarray?
                           np.ndarray | None]:
         return (self.get_dep(True),
                 self.get_staterror(True, staterrfunc),
