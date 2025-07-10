@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, overload
 
 import numpy as np
@@ -314,3 +315,18 @@ class IntegratedAxis(Axis):
             return 0
 
         return self.lo.size
+
+
+# TODO: how best to send in metadata, such as axis information (e.g.
+# grouping data, units, or WCS information)? Does it make sense to
+# include any or all of this? How about a generic "metadata" field?
+#
+# This could include the dependent axis as well, but there are many
+# times this would not be useful, so leave out for now.
+#
+@dataclass(kw_only=True)
+class Axes:
+    """Represent a set of axes."""
+
+    axes: list[Axis]
+    """The axis or axes."""
