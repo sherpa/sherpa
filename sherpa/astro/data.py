@@ -135,9 +135,9 @@ from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
 from sherpa.utils import pad_bounding_box, interpolate, \
     create_expr, create_expr_integrated, parse_expr, bool_cast, \
-    rebin, filter_bins
+    rebin, filter_bins, formatting
+from sherpa.utils.axes import Axes, IntegratedAxis
 from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
-from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.types import ArrayType, IdType, ModelFunc, StatErrFunc
 
@@ -5152,16 +5152,16 @@ It is an integer or string.
                                        (elo, ehi), ignore=ignore,
                                        integrated=True)
 
-    def to_guess(self) -> tuple[np.ndarray, ...]:
+    def to_guess(self) -> tuple[np.ndarray, Axes]:
         """Return the dependent and independent axes for guessing.
 
         .. versionchanged:: 4.18.0
            It is now an error to call this with either the independent
-           or dependent axes unset.
+           or dependent axes unset. The return type has changed.
 
         Return
         ------
-        axes : tuple of ndarray
+        axes
            The dependent axis and then the independent axes, including
            any data filtering, grouping, and analysis setting. The
            dependent axis is a rate if the exposure is set, and
@@ -5190,7 +5190,8 @@ It is an integer or string.
         # y = cnt/arf/self.exposure
         if arf is not None:
             y /= arf  # photons/keV/cm^2/sec or photons/Ang/cm^2/sec
-        return (y, elo, ehi)
+
+        return (y, Axes(axes=[IntegratedAxis(elo, ehi)]))
 
     def to_fit(self,
                staterrfunc: StatErrFunc | None = None

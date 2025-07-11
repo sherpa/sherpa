@@ -869,7 +869,7 @@ class Model(NoNewAttributesAfterInit):
         """
         raise NotImplementedError
 
-    def guess(self, dep, *args, **kwargs):
+    def guess(self, dep, *args, **kwargs) -> None:
         """Set an initial guess for the parameter values.
 
         Attempt to set the parameter values, and ranges, for
@@ -878,6 +878,26 @@ class Model(NoNewAttributesAfterInit):
         is only evaluated a small number of times, if at all.
         """
         raise NotImplementedError
+
+    def guess_axes(self, dep, indep, **kwargs) -> None:
+        """Set an initial guess for the parameter values.
+
+        .. versionadded:: 4.18.0
+           Hopefully temporary.
+
+        """
+        # Extract the independent axis information
+        def get(ax: Axis) -> list[np.ndarray]:
+            try:
+                return [ax.lo, ax.hi]
+            except AttributeError:
+                return [ax.x]
+
+        args = []
+        for ax in indep.axes:
+            args.extend(get(ax))
+
+        self.guess(dep, *args, **kwargs)
 
     def get_center(self):
         raise NotImplementedError

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018, 2020 - 2025
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -3940,7 +3940,7 @@ def test_to_guess_when_empty_2d(data_class, args):
 
     data = data_class("empty", *args)
     with pytest.raises(DataErr,
-                       match="^The size of 'empty' has not been set$"):
+                       match="^The dependent axis of 'empty' has not been set$"):
         _ = data.to_guess()
 
 
@@ -4017,10 +4017,11 @@ def test_datapha_to_guess(units, lo, hi, y):
 
     pha = make_pha_for_guess()
     pha.set_analysis(units)
-    a, b, c = pha.to_guess()
-    assert a == pytest.approx(y)
-    assert b == pytest.approx(lo)
-    assert c == pytest.approx(hi)
+    dep, indep = pha.to_guess()
+    assert dep == pytest.approx(y)
+    assert len(indep.axes) == 1
+    assert indep.axes[0].lo == pytest.approx(lo)
+    assert indep.axes[0].hi == pytest.approx(hi)
 
 
 def test_get_x_when_empty_datapha():

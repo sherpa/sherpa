@@ -9469,7 +9469,7 @@ class Session(NoNewAttributesAfterInit):
         if model is not None:
             model = self._check_model(model)
             try:
-                model.guess(*self.get_data(idval).to_guess(), **kwargs)
+                model.guess_axes(*self.get_data(idval).to_guess(), **kwargs)
             except NotImplementedError:
                 warning('No guess found for %s', model.name)
             return
