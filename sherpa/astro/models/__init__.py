@@ -1025,6 +1025,7 @@ class Beta2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.r0, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl, self.alpha))
+        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1107,6 +1108,7 @@ class DeVaucouleurs2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.r0, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl))
+        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1193,6 +1195,7 @@ class HubbleReynolds(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.r0, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl))
+        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1269,6 +1272,7 @@ class Lorentz2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl))
+        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1484,6 +1488,7 @@ class Sersic2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.r0, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl, self.n))
+        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1551,7 +1556,9 @@ class Disk2D(RegriddableModel2D):
         self.ampl = Parameter(name, 'ampl', 1)  # p[2]
         self.r0 = Parameter(name, 'r0', 1, 0)  # p[3]
         ArithmeticModel.__init__(self, name, (self.xpos, self.ypos, self.ampl, self.r0))
+        self.cache = 0
 
+    @modelCacher
     def calc(self, p, x, y, *args, **kwargs):
         # Compute radii
         r2 = (x - p[0]) ** 2 + (y - p[1]) ** 2
@@ -1606,6 +1613,7 @@ class Shell2D(RegriddableModel2D):
         self.r0 = Parameter(name, 'r0', 1, 0)  # p[3]
         self.width = Parameter(name, 'width', 0.1, 0)
         ArithmeticModel.__init__(self, name, (self.xpos, self.ypos, self.ampl, self.r0, self.width))
+        self.cache = 0
 
     @modelCacher
     def calc(self, p, x, y, *args, **kwargs):

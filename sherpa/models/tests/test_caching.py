@@ -35,7 +35,7 @@ def test_default_cache_size(modelclass):
     """Check the default cache size for some models."""
 
     mdl = modelclass()
-    assert mdl.cache == 5
+    assert mdl.cache == 0
 
 
 def test_evaluate_no_cache2d():
@@ -175,6 +175,7 @@ def test_evaluate_cache1dint():
     x1hi = np.array([-10, 1, -8])
 
     mdl = Polynom2D()
+    mdl.cache = 12
     assert len(mdl._cache) == 0
 
     # Check the default values

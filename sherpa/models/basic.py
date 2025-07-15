@@ -1335,6 +1335,7 @@ class Box2D(RegriddableModel2D):
         param_apply_limits(yhi, self.yhi, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.box2d(p, *args, **kwargs)
@@ -1369,6 +1370,7 @@ class Const2D(RegriddableModel2D, Const):
         Const.__init__(self, name)
         self.cache = 0
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.const2d(p, *args, **kwargs)
@@ -1467,6 +1469,7 @@ class Delta2D(RegriddableModel2D):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.delta2d(p, *args, **kwargs)
@@ -1539,6 +1542,7 @@ class Gauss2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl))
+        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1626,6 +1630,7 @@ class SigmaGauss2D(Gauss2D):
         ArithmeticModel.__init__(self, name,
                                  (self.sigma_a, self.sigma_b, self.xpos,
                                   self.ypos, self.theta, self.ampl))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         xpos, ypos = guess_position(dep, *args)
@@ -1637,7 +1642,6 @@ class SigmaGauss2D(Gauss2D):
         param_apply_limits(fwhm, self.sigma_b, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.sigmagauss2d(p, *args, **kwargs)
@@ -1713,6 +1717,7 @@ class NormGauss2D(RegriddableModel2D):
         ArithmeticModel.__init__(self, name,
                                  (self.fwhm, self.xpos, self.ypos, self.ellip,
                                   self.theta, self.ampl))
+        self.cache = 0
 
     def get_center(self):
         return (self.xpos.val, self.ypos.val)
@@ -1802,6 +1807,7 @@ class Polynom2D(RegriddableModel2D):
                                  (self.c, self.cy1, self.cy2, self.cx1,
                                   self.cx1y1, self.cx1y2, self.cx2,
                                   self.cx2y1, self.cx2y2))
+        self.cache = 0
 
     def guess(self, dep, *args, **kwargs):
         x0min = args[0].min()

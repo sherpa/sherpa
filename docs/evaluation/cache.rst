@@ -43,6 +43,12 @@ a value in the cache. An obvious example is a scale or constant model
 but this also applies to some fast analytical
 models such as an XSPEC black body (`sherpa.astro.xspec.XSbbody`).
 
+The cache is also switched off for models in 2D, because in 2D we often have much
+larger arrays and thus the cache would use more memory. On the other hand, there is
+also the potential to save more time, given the longer computations needed for 2D models.
+So, for 2D models, the user needs to explicitly set the cache size to a positive number
+(`mdl.cache=3` for example) to turn on the cache.
+
 Can I turn off this behavior for other models?
 ==============================================
 
