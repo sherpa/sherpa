@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015 - 2025
+#  Copyright (C) 2010, 2015-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -242,8 +242,8 @@ def get_xsabundances(table: str | None = None) -> dict[str, float]:
 
     .. versionadded:: 4.17.0
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     table : optional
         The table to use. Leave as None to use the selected abundance
         table.
