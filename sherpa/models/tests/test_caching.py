@@ -19,7 +19,7 @@
 #
 """Tests related to caching model evaluations
 
-Test with 1D data are in test_model.py and might be moved here at a later point.
+More tests with 1D data are in test_model.py and might be moved here at a later point.
 """
 import numpy as np
 import pytest
@@ -114,6 +114,43 @@ def test_cache_is_actually_used():
     # Manipulate the values in the cache
     mdl._cache[list(mdl._cache.keys())[0]] = 2 * expected
     assert mdl(x0grid, x1grid) == pytest.approx(2 * expected)
+
+
+def test_evaluate_cache_many_parameters():
+    """Check that we cache correctly with > 2 parameters, e.g.
+    for a Data2DInt (with x0lo, x1lo, x0hi, x1hi) or an ND model.
+    Since Data2DInt is used more often, there are models defined for
+    that in Sherpa already and that's an easier approach to write this test.
+    """
+    x0lo = np.arange(-20, -10, 1)
+    x0hi = x0lo + 1
+    x1lo = np.arange(-3.2, 8.4, 1.2)
+    x1hi = x1lo + 1
+
+    mdl = Polynom2D()
+    mdl.integrate = True
+    mdl.cache = 5
+
+    assert len(mdl._cache) == 0
+    out = mdl(x0lo, x1lo, x0hi, x1hi)
+    assert len(mdl._cache) == 1
+    # Manipulate the values in the cache to check if it's used
+    mdl._cache[list(mdl._cache.keys())[0]] = 2 * out
+
+    # second call should return value from cache
+    out1 = mdl(x0lo, x1lo, x0hi, x1hi)
+    assert len(mdl._cache) == 1
+    assert pytest.approx(out1) == 2 * out
+    # Call with third array different, so should not return cached value
+    x0hi2 = x1hi + 0.1
+    out2 = mdl(x0lo, x1lo, x0hi2, x1hi)
+    assert len(mdl._cache) == 2
+    assert pytest.approx(out2) != out1
+    assert pytest.approx(out2) != 2 * out
+    # And just for good measure, try the first call again
+    out3 = mdl(x0lo, x1lo, x0hi, x1hi)
+    assert len(mdl._cache) == 2
+    assert pytest.approx(out3) == 2 * out
 
 
 def test_evaluate_cache_regrid2d():
