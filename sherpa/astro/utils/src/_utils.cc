@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2017, 2021, 2022, 2024
+//  Copyright (C) 2009, 2017, 2021-2022, 2024-2025
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -23,10 +23,6 @@
 #include <sstream>
 #include <iostream>
 #include <stdexcept>
-
-extern "C" {
-  void init_utils();
-}
 
 typedef sherpa::Array< npy_bool, NPY_BOOL > BoolArray;
 
