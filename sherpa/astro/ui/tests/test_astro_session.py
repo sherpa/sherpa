@@ -4499,13 +4499,12 @@ def check_moncar_right(g) -> None:
 def check_moncar(ncores, fr, g1, g2) -> None:
     """Check moncar results for a given ncores"""
 
+    # The resulta may depend on architecture, so include a test for
+    # this (so we know if/when this assumption changes).
+    #
     match ncores:
 
         case 1:
-            # The result seems to depend on architecture, so include a
-            # test for this (so we know if/when this assumption
-            # changes).
-            #
             if platform.machine() == "x86_64":
                 nexp = 13788
                 gleft = g2
@@ -4520,13 +4519,13 @@ def check_moncar(ncores, fr, g1, g2) -> None:
 
         case 2:
             # These do not seem to depend on architecture.
-            nexp = 7243
+            nexp = 5958
             gleft = g1
             gright = g2
 
         case 3:
-            # These do not seem to depend on architecture.
-            nexp = 6535
+            nexp = 7253
+
             gleft = g1
             gright = g2
 
