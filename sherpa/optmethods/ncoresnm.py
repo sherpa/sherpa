@@ -282,7 +282,7 @@ class NelderMead1(NelderMead0):
 class NelderMead2(NelderMead0):
 
     def calc_step(self, x: np.ndarray) -> np.ndarray:
-        return np.abs(x)
+        return abs(x)
 
 
 class NelderMead3(NelderMead0):
@@ -341,7 +341,7 @@ class NelderMead4(NelderMead0):
         x0 = np.asarray(xpar)
         n = len(x0)
         if step is None:
-            step = np.abs(x0) + 1.2
+            step = abs(x0) + 1.2
 
         maxnfev = self.get_maxnfev(maxnfev, n)
         init = 0

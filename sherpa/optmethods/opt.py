@@ -267,8 +267,8 @@ class SimplexBase:
                  rng: RandomType | None = None
                  ) -> None:
         self.func = func
-        self.xmin = np.asarray(xmin)
-        self.xmax = np.asarray(xmax)
+        self.xmin = np.asanyarray(xmin)
+        self.xmax = np.asanyarray(xmax)
         self.npar = len(xpar)
         self.rng = rng
 
