@@ -74,7 +74,7 @@ from typing import SupportsFloat
 
 import numpy as np
 
-from sherpa.stats import StatCallback
+from sherpa.stats import StatCallback, PerBinStatCallback
 from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import FuncCounter, random
 from sherpa.utils.parallel import parallel_map
@@ -1270,8 +1270,7 @@ def lmdif(fcn: StatFunc,
     if maxfev is None:
         maxfev = 256 * len(x)
 
-    def stat_cb1(pars):
-        return fcn(pars)[1]
+    stat_cb1 = PerBinStatCallback(fcn)
 
     def fcn_parallel(pars, fvec):
         fd_jac = fdJac(stat_cb1, fvec, pars)

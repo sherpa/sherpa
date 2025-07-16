@@ -1178,6 +1178,10 @@ class StatCallback:
 
     .. versionadded:: 4.18.0
 
+    See Also
+    --------
+    PerBinStatCallback
+
     """
 
     __slots__ = ("func", )
@@ -1191,3 +1195,27 @@ class StatCallback:
                  pars: np.ndarray
                  ) -> float:
         return self.func(pars)[0]
+
+
+class PerBinStatCallback:
+     """Return the per-bin statistic values for a set of parameters.
+
+     .. versionadded:: 4.18.0
+
+     See Also
+     --------
+     StatCallback
+
+     """
+
+     __slots__ = ("func", )
+
+     def __init__(self,
+                  func: StatFunc
+                  ) -> None:
+         self.func = func
+
+     def __call__(self,
+                  pars: np.ndarray
+                  ) -> np.ndarray:
+         return self.func(pars)[1]
