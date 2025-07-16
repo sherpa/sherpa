@@ -36,8 +36,8 @@ def init(name, npar):
 
 def tst_opt(opt, fcn, npar, reltol=1.0e-3, abstol=1.0e-3):
     x0, xmin, xmax, fmin = init(fcn.__name__, npar)
-    nfev, fval, par = opt(StatCallback(fcn), x0, xmin, xmax)
-    assert fmin == pytest.approx(fval, rel=reltol, abs=abstol)
+    res = opt(StatCallback(fcn), x0, xmin, xmax)
+    assert fmin == pytest.approx(res.statval, rel=reltol, abs=abstol)
 
 
 @pytest.mark.parametrize("opt", [NCORES_NM, NCORES_DE])

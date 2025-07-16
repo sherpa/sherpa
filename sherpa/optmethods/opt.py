@@ -19,6 +19,7 @@
 #
 
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 import operator
 
 import numpy as np
@@ -43,12 +44,23 @@ FUNC_MAX = float(np.finfo(np.float64).max)
 #
 OptimizerFunc = Callable[[np.ndarray], float]
 
-# Represent the data sent around by the optimizers:
-# - the number of function evaluations
-# - the statistic value
-# - the parameter values
-#
-OptOutput = tuple[int, float, np.ndarray]
+@dataclass(kw_only=True)
+class OptOutput:
+    """Represent the data sent around by the optimizers.
+
+    .. versionadded:: 4.18.0
+
+    """
+
+    nfev: int
+    """The number of function evaluations."""
+
+    statval: float
+    """The statistic value."""
+
+    pars: np.ndarray
+    """The parameter values."""
+
 
 # WorkerFunc could be done as a Protocol, but the argument names are
 # not consistent, and it also requires **kwargs, which has not been

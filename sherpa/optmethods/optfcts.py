@@ -712,8 +712,11 @@ def montecarlo(fcn: StatFunc,
             nfev = result[4]['nfev']
         else:
             ncores_nm = ncoresNelderMead()
-            nfev, nfval, x = \
-                ncores_nm(stat_cb0, x, xmin, xmax, ftol, mymaxfev, numcores)
+            result = ncores_nm(stat_cb0, x, xmin, xmax, ftol,
+                               mymaxfev, numcores)
+            nfev = result.nfev
+            nfval = result.statval
+            x = result.pars
 
         if verbose:
             print(f'f_nm{x}={nfval:.14e} in {nfev} nfev')
@@ -732,13 +735,13 @@ def montecarlo(fcn: StatFunc,
         else:
             ncores_de = ncoresDifEvo()
             mystep = None
-            tmp_nfev, tmp_fmin, tmp_par = \
-                ncores_de(stat_cb0, x, xmin, xmax, ftol, mymaxfev, mystep,
-                          numcores, pop, seed, weight, xprob, verbose)
-            nfev += tmp_nfev
-            if tmp_fmin < nfval:
-                nfval = tmp_fmin
-                x = tmp_par
+            result = ncores_de(stat_cb0, x, xmin, xmax, ftol,
+                               mymaxfev, mystep, numcores, pop, seed,
+                               weight, xprob, verbose)
+            nfev += result.nfev
+            if result.statval < nfval:
+                nfval = result.statval
+                x = result.pars
 
         if verbose:
             print(f'f_de_nm{x}={nfval:.14e} in {nfev} nfev')
@@ -797,14 +800,13 @@ def montecarlo(fcn: StatFunc,
             nfev += result[4]['nfev']
         else:
             ncores_nm = ncoresNelderMead()
-            tmp_nfev, tmp_fmin, tmp_par = \
-                ncores_nm(stat_cb0, x, xmin, xmax, ftol, maxfev - nfev,
-                          numcores)
-            nfev += tmp_nfev
+            result = ncores_nm(stat_cb0, x, xmin, xmax, ftol, maxfev - nfev,
+                               numcores)
+            nfev += result.nfev
             # There is a bug here somewhere using broyden_tridiagonal
-            if tmp_fmin < fval:
-                fval = tmp_fmin
-                x = tmp_par
+            if result.statval < fval:
+                fval = result.statval
+                x = result.pars
 
     ierr = 0
     if nfev >= maxfev:

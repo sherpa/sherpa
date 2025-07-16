@@ -185,7 +185,9 @@ class MyNelderMead(Opt):
         best_vertex = simplex[0]
         best_par = best_vertex[:-1]
         best_val = best_vertex[-1]
-        return self.nfev, best_val, best_par
+        return OptOutput(nfev=self.nfev,
+                         statval=best_val,
+                         pars=best_par)
 
 
 class NelderMeadBase:
@@ -312,7 +314,9 @@ class NelderMead3(NelderMead0):
             _saoopt.neldermead(verbose, maxnfev, init, finalsimplex,
                                tol, step, xmin, xmax, x0, fcn)
 
-        return nfev, fmin, par
+        return OptOutput(nfev=nfev,
+                         statval=fmin,
+                         pars=par)
 
 
 class NelderMead4(NelderMead0):
@@ -351,7 +355,9 @@ class NelderMead4(NelderMead0):
             _saoopt.minim(reflect, verbose, maxnfev - nfev, init, iquad, simp,
                           tol*10, step, xmin, xmax, x0, fcn)
         nfev += tmpnfev
-        return nfev, fmin, par
+        return OptOutput(nfev=nfev,
+                         statval=fmin,
+                         pars=par)
 
 
 class NelderMead5(NelderMead0):
@@ -380,7 +386,9 @@ class NelderMead5(NelderMead0):
         par, fmin, nfev, ifault = \
             _saoopt.minim(reflect, verbose, maxnfev, init, iquad, simp, tol*10,
                           step, xmin, xmax, x0, fcn)
-        return nfev, fmin, par
+        return OptOutput(nfev=nfev,
+                         statval=fmin,
+                         pars=par)
 
 
 # This is only used by tests/test_opt_original.py when run directly,
@@ -509,14 +517,18 @@ class ncoresNelderMead:
         #
         assert len(results) > 0
 
-        nfev, fmin, par = results[0]
-        for nfev1, fmin1, par1 in results[1:]:
-            nfev += nfev1
-            if fmin1 < fmin:
-                fmin = fmin1
-                par = par1
+        nfev = results[0].nfev
+        fmin = results[0].statval
+        par = results[0].pars
+        for res in results[1:]:
+            nfev += res.nfev
+            if res.statval < fmin:
+                fmin = res.statval
+                par = res.pars
 
-        return nfev, fmin, par
+        return OptOutput(nfev=nfev,
+                         statval=fmin,
+                         pars=par)
 
 
 # This code is currently unused. Left commented out to make it easier

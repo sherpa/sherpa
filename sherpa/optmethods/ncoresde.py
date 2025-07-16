@@ -120,7 +120,9 @@ class Strategy:
 
         funcval = self.func(arg[:-1])
         nfev = 1 if funcval != FUNC_MAX else 0
-        return (nfev, funcval, arg[:-1])
+        return OptOutput(nfev=nfev,
+                         statval=funcval,
+                         pars=arg[:-1])
 
     def init(self, num: int) -> np.ndarray:
         return random.choice(self.rng, range(self.npop), num)
@@ -437,10 +439,10 @@ class MyDifEvo(Opt):
         best_trial = self.strategies[0](mypop, index)
         for ii in range(1, len(self.strategies)):
             trial = self.strategies[ii](mypop, index)
-            if trial[1] < best_trial[1]:
+            if trial.statval < best_trial.statval:
                 best_trial = trial
 
-        if best_trial[1] < mypop[0][-1]:
+        if best_trial.statval < mypop[0][-1]:
             return self.apply_local_opt(best_trial, index)
 
         return best_trial
@@ -450,7 +452,7 @@ class MyDifEvo(Opt):
                         index: int
                         ) -> OptOutput:
         local_opt = self.local_opt[index % len(self.local_opt)]
-        return local_opt(self.func, arg[2], self.xmin, self.xmax)
+        return local_opt(self.func, arg.pars, self.xmin, self.xmax)
 
     def calc_key(self,
                  indices,
@@ -507,12 +509,12 @@ class ncoresMyDifEvo(MyDifEvo):
             results: list[OptOutput] = \
                 parallel_map(self.all_strategies, keys, numcores)
 
-            for index, (nfev_r, fval_r, pars_r) in enumerate(results):
-                nfev += int(nfev_r)
-                if fval_r < mypop[index][-1]:
+            for index, res in enumerate(results):
+                nfev += res.nfev
+                if res.statval < mypop[index][-1]:
                     # SimplexRandom stores <par1, ..., parN, statval>
                     # in each row (index vaue).
-                    tmp = np.append(pars_r, fval_r)
+                    tmp = np.append(res.pars, res.statval)
                     mypop[index] = tmp
 
             self.polytope.sort()
@@ -523,22 +525,23 @@ class ncoresMyDifEvo(MyDifEvo):
             best_fval = best[-1]
             if best_fval < old_fval:
                 best_par = best[:-1]
-                tmp_nfev, tmp_fval, tmp_par = \
-                    self.ncores_nm(self.func, best_par, self.xmin,
-                                   self.xmax, tol=ftol)
-                nfev += tmp_nfev
-                if tmp_fval < best_fval:
-                    best_par = np.append(tmp_par, tmp_fval)
+                tmp = self.ncores_nm(self.func, best_par, self.xmin,
+                                     self.xmax, tol=ftol)
+                nfev += tmp.nfev
+                if tmp.statval < best_fval:
+                    best_par = np.append(tmp.pars, tmp.statval)
                     mypop[1] = best_par[:]
                     self.polytope.sort()
-                    old_fval = tmp_fval
+                    old_fval = tmp.statval
                 else:
                     old_fval = best_fval
 
         best_vertex = self.polytope[0]
         best_par = best_vertex[:-1]
         best_fval = best_vertex[-1]
-        return nfev, best_fval, best_par
+        return OptOutput(nfev=nfev,
+                         statval=best_fval,
+                         pars=best_par)
 
 
 # This is only used by tests/test_opt_original.py when run directly,
