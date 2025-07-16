@@ -341,7 +341,7 @@ class Strategy9(Strategy):
 class MyDifEvo(Opt):
     """
 
-    .. versionchanged:: 4.17.1
+    .. versionchanged:: 4.18.0
        Some of the methods now use more-structured return types.
 
     """
@@ -476,7 +476,7 @@ class MyDifEvo(Opt):
 class ncoresMyDifEvo(MyDifEvo):
     """
 
-    .. versionchanged:: 4.17.1
+    .. versionchanged:: 4.18.0
        The calling convention has been changed to match its superclass.
 
     """

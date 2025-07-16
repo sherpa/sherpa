@@ -48,7 +48,7 @@ statistic values (note that per-bin here refers to the independent
 axis of the data being fit, and not the number of parameters being
 fit).
 
-.. versionchanged:: 4.17.1
+.. versionchanged:: 4.18.0
    The callback is no-longer sent extra information (that is,
    the statargs and statkwargs values) and is just sent an array
    of parameter values.
@@ -246,7 +246,7 @@ class OptMethod(NoNewAttributesAfterInit):
             ) -> OptReturn:
         """Run the optimiser.
 
-        .. versionchanged:: 4.17.1
+        .. versionchanged:: 4.18.0
            The statargs and statkwargs arguments are now ignored.
 
         .. versionchanged:: 4.16.0
@@ -284,7 +284,7 @@ class OptMethod(NoNewAttributesAfterInit):
 
         """
 
-        if statargs is not None and statkwargs is not None:
+        if statargs is not None or statkwargs is not None:
             warning("statargs/kwargs set but values unused")
 
         output = self._optfunc(statfunc, pars, parmins, parmaxes,

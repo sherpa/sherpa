@@ -734,9 +734,6 @@ def create_seeds(rng: RandomType | None,
 
     """
 
-    # TODO: Should the seed be created for a larger (i.e. more bits)
-    # data type?
-    #
     maxval = np.iinfo(np.uint64).max
     if rng is None:
         root_seed = np.random.randint(maxval, dtype=np.uint64)

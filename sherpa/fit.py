@@ -807,7 +807,7 @@ class IterFit:
         The error removal can be asymmetric, since there are separate
         options for the lower and upper limits.
 
-        .. versionchanged:: 4.17.1
+        .. versionchanged:: 4.18.0
            The statargs and statkwargs arguments are now ignored.
 
         Raises
@@ -1015,7 +1015,7 @@ class IterFit:
             ) -> OptReturn:
         """
 
-        .. versionchanged:: 4.17.1
+        .. versionchanged:: 4.18.0
            The statargs and statkwargs arguments are now ignored.
 
         """

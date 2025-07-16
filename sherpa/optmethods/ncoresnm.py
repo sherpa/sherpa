@@ -48,7 +48,7 @@ EPSILON = float(np.finfo(np.float32).eps)
 class MyNelderMead(Opt):
     """
 
-    .. versionchanged:: 4.17.1
+    .. versionchanged:: 4.18.0
        The calling convention has changed to match its superclass.
 
     """
@@ -256,7 +256,7 @@ class NelderMead0(NelderMeadBase):
                     ) -> MyOptOutput:
         """
 
-        .. versionchanged:: 4.17.1
+        .. versionchanged:: 4.18.0
            Most of the arguments must now be given by name.
 
         """
@@ -463,7 +463,7 @@ class nmNcores(MyNcores):
 class ncoresNelderMead:
     """
 
-    .. versionchanged:: 4.17.1
+    .. versionchanged:: 4.18.0
        The default for the algo parameter is now None.
 
     """
@@ -499,7 +499,7 @@ class ncoresNelderMead:
                        ) -> MyOptOutput:
         """
 
-        .. versionchanged:: 4.17.1
+        .. versionchanged:: 4.18.0
            The num arguments has been removed.
 
         """
