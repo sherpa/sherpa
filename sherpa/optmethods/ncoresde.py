@@ -517,8 +517,8 @@ class ncoresMyDifEvo(MyDifEvo):
                     tmp = np.append(res.pars, res.statval)
                     mypop[index] = tmp
 
-            self.polytope.sort()
-            if self.polytope.check_convergence(ftol, 0):
+            mypop.sort()
+            if mypop.check_convergence(ftol, 0):
                 break
 
             best = mypop[0]
@@ -531,12 +531,12 @@ class ncoresMyDifEvo(MyDifEvo):
                 if tmp.statval < best_fval:
                     best_par = np.append(tmp.pars, tmp.statval)
                     mypop[1] = best_par[:]
-                    self.polytope.sort()
+                    mypop.sort()
                     old_fval = tmp.statval
                 else:
                     old_fval = best_fval
 
-        best_vertex = self.polytope[0]
+        best_vertex = mypop[0]
         best_par = best_vertex[:-1]
         best_fval = best_vertex[-1]
         return OptOutput(nfev=nfev,
