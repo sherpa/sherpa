@@ -25,7 +25,7 @@ moved, changed, or removed.
 
 """
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping, Sequence
 import inspect
 import logging
 import operator
@@ -34,7 +34,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Any, Generic, Sequence, TypeVar
+from typing import Any, Generic, TypeVar
 import warnings
 
 import numpy as np
@@ -92,6 +92,9 @@ __all__ = ('NoNewAttributesAfterInit',
 # Types
 #
 ###############################################################################
+
+
+T = TypeVar("T")
 
 
 # This logic was found in several modules so centralize it. Note that
@@ -1114,14 +1117,19 @@ def bool_cast(val):
     return bool(val)
 
 
-# Telling the type system that the signature of meth is "the same" as
-# the signature of the return value probably needs Python 3.10 for
-# ParamSpec and then maybe Python 3.12 for the generic support.
+# This could take and return "Callable[P, T]" where P is
+# ParamSpec("P"), but
 #
-def export_method(meth: Callable,
+# - the typing is probably not-quite correct here, as some calling
+#   conventions are not (yet?) supported, such as keyword-only,
+#
+# - and this method removes the self argument, and it is not clear
+#   how to handle this.
+#
+def export_method(meth: Callable[..., T],
                   name: str | None = None,
                   modname: str | None = None
-                  ) -> Callable:
+                  ) -> Callable[..., T]:
     """
     Given a bound instance method, return a simple function that wraps
     it.  The only difference between the interface of the original
@@ -1223,7 +1231,9 @@ def export_method(meth: Callable,
     return new_meth
 
 
-def get_keyword_names(func, skip=0):
+def get_keyword_names(func: Callable,
+                      skip: int = 0
+                      ) -> list[str]:
     """Return the names of the keyword arguments.
 
     Parameters
@@ -1256,7 +1266,9 @@ def get_keyword_names(func, skip=0):
     return kwargs[skip:]
 
 
-def get_keyword_defaults(func, skip=0):
+def get_keyword_defaults(func: Callable,
+                         skip: int = 0
+                         ) -> dict[str, Any]:
     """Return the keyword arguments and their default values.
 
     Note that a similar function `sherpa.plot.backend_utils.get_keyword_defaults`
@@ -1295,7 +1307,7 @@ def get_keyword_defaults(func, skip=0):
     return dict(kwargs[skip:])
 
 
-def get_num_args(func):
+def get_num_args(func: Callable) -> tuple[int, int, int]:
     """Return the number of arguments for a function.
 
     Parameters
@@ -1333,7 +1345,10 @@ def get_num_args(func):
     return (npos + nkw, npos, nkw)
 
 
-def print_fields(names, vals, converters=None):
+def print_fields(names: Sequence[str],
+                 vals: Mapping[str, Any],
+                 converters: Mapping[type, str] | None = None
+                 ) -> str:
     """
 
     Given a list of strings names and mapping vals, where names is a
@@ -1616,7 +1631,7 @@ def create_expr_integrated(lovals, hivals, mask=None,
     return out
 
 
-def parse_expr(expr):
+def parse_expr(expr: str) -> list[tuple[float | None, float | None]]:
     """Convert a filter expression into its parts.
 
     This is intended for parsing a notice or ignore expression
@@ -2239,7 +2254,7 @@ def interpolate(xout, xin, yin, function=linear_interp):
     return function(xout, xin, yin)
 
 
-def is_binary_file(filename):
+def is_binary_file(filename: str) -> bool:
     """Estimate if a file is a binary file.
 
     Parameters
@@ -2565,14 +2580,6 @@ def symmetric_to_low_triangle(matrix, num):
     # print_low_triangle( matrix, num )
     # print low_triangle
     return low_triangle
-
-
-# With ParamSpec, added in Python 3.10, we might be able to annotate
-# this so that we can match the arguments that `func` uses are the
-# same as are sent to the __call__ method, although it might be easier
-# to do after the generics changes added in Python 3.12.
-#
-T = TypeVar("T")
 
 
 class FuncCounter(Generic[T]):
@@ -3610,7 +3617,9 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
         return [[xb, fb], [[xa, fa], [xc, fc]], myfcn.nfev]
 
 
-def send_to_pager(txt: str, filename=None, clobber: bool = False) -> None:
+def send_to_pager(txt: str,
+                  filename=None,
+                  clobber: bool = False) -> None:
     """Write out the given string, using pagination if supported.
 
     This used to call out to using less/more but now is handled

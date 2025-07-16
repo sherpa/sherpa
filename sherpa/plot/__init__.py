@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018 - 2024
+#  Copyright (C) 2009, 2015, 2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -67,13 +67,13 @@ and then ends the session.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from configparser import ConfigParser
 import contextlib
 import copy
 import logging
 import importlib
-from typing import Any, Literal, Optional, Sequence, Union, \
-    overload
+from typing import Any, Literal, overload
 
 import numpy as np
 
@@ -90,6 +90,7 @@ from sherpa.utils import NoNewAttributesAfterInit, erf, \
 from sherpa.utils.err import ArgumentTypeErr, ConfidenceErr, \
     IdentifierErr, PlotErr, StatErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.types import ArrayType, PrefsType
 
 # PLOT_BACKENDS only contains backends in modules that are imported successfully
 # but modules are not discovered by itself. Entrypoints would solve this problem
@@ -182,7 +183,7 @@ _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
 """Statistics that do not make use of uncertainties."""
 
 
-def set_backend(new_backend: Union[str, BaseBackend, type[BaseBackend]]) -> None:
+def set_backend(new_backend: str | BaseBackend | type[BaseBackend]) -> None:
     '''Set the Sherpa plotting backend.
 
     Plotting backends are registered in Sherpa with a string name.
@@ -291,7 +292,7 @@ class TemporaryPlottingBackend(contextlib.AbstractContextManager):
         return False
 
 
-def _make_title(title: str, name: Optional[str] = '') -> str:
+def _make_title(title: str, name: str | None = '') -> str:
     """Return the plot title to use.
 
     Parameters
@@ -337,7 +338,7 @@ def _errorbar_warning(stat: Stat) -> str:
 def calculate_errors(data: Data,
                      stat: Stat,
                      yerrorbars: bool = True
-                     ) -> Optional[np.ndarray]:
+                     ) -> np.ndarray | None:
     """Calculate errors from the statistics object."""
 
     if stat is None:
@@ -407,7 +408,7 @@ def arr2str(x: None) -> None:
 def arr2str(x: ArrayType) -> str:
     ...
 
-def arr2str(x):
+def arr2str(x: ArrayType | None) -> str | None:
     """Convert an array to a string for __str__ calls
 
     Parameters
@@ -487,7 +488,7 @@ def display_fields(obj,  # hard to provide an accurate type
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
 
-    plot_prefs = basicbackend.get_plot_defaults()
+    plot_prefs: PrefsType = basicbackend.get_plot_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -582,7 +583,7 @@ class Plot(NoNewAttributesAfterInit):
 class Contour(NoNewAttributesAfterInit):
     "Base class for contour plots"
 
-    contour_prefs = basicbackend.get_contour_defaults()
+    contour_prefs: PrefsType = basicbackend.get_contour_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -619,7 +620,7 @@ class Contour(NoNewAttributesAfterInit):
 class Point(NoNewAttributesAfterInit):
     "Base class for point plots"
 
-    point_prefs = basicbackend.get_point_defaults()
+    point_prefs: PrefsType = basicbackend.get_point_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -672,7 +673,7 @@ class Image(NoNewAttributesAfterInit):
         Currently, is is only used within _repr_html_ methods.
     """
 
-    image_prefs = basicbackend.get_image_defaults()
+    image_prefs: PrefsType = basicbackend.get_image_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -719,7 +720,7 @@ class Image(NoNewAttributesAfterInit):
 class Histogram(NoNewAttributesAfterInit):
     "Base class for histogram plots"
 
-    histo_prefs = basicbackend.get_histo_defaults()
+    histo_prefs: PrefsType = basicbackend.get_histo_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -877,7 +878,7 @@ class HistogramPlot(Histogram):
 # I think we want slightly different histogram preferences
 # than most (mark by point rather than line).
 #
-def get_data_hist_prefs():
+def get_data_hist_prefs() -> PrefsType:
     """Copy the data preferences to the histogram class"""
 
     hprefs = basicbackend.get_model_histo_defaults()
@@ -1004,7 +1005,7 @@ class ModelHistogramPlot(HistogramPlot):
     def prepare(self,
                 data: Data1DInt,
                 model: Model,
-                stat: Optional[Stat] = None) -> None:
+                stat: Stat | None = None) -> None:
         """Create the plot.
 
         The stat parameter is ignored.
@@ -1812,7 +1813,7 @@ class ModelPlot(Plot):
     def prepare(self,
                 data: Data1D,
                 model: Model,
-                stat: Optional[Stat] = None) -> None:
+                stat: Stat | None = None) -> None:
         """Create the data to plot
 
         Parameters
@@ -2275,7 +2276,7 @@ class BaseResidualPlot(ModelPlot):
                 data: Data1D,
                 stat: Stat,
                 ylist: tuple[np.ndarray, np.ndarray],
-                staterr: Optional[np.ndarray]) -> None:
+                staterr: np.ndarray | None) -> None:
         """Define the self.y and self.yerr fields"""
         raise NotImplementedError()
 
@@ -2352,7 +2353,7 @@ class BaseResidualHistogramPlot(ModelHistogramPlot):
     """The line width of the residual line."""
 
     def __init__(self) -> None:
-        self.yerr: Optional[np.ndarray]
+        self.yerr: np.ndarray | None
         self.yerr = None
         super().__init__()
 
@@ -2368,7 +2369,7 @@ class BaseResidualHistogramPlot(ModelHistogramPlot):
                 data: Data1DInt,
                 stat: Stat,
                 ylist: tuple[np.ndarray, np.ndarray],
-                staterr: Optional[np.ndarray]) -> None:
+                staterr: np.ndarray | None) -> None:
         """Define the self.y and self.yerr fields"""
         raise NotImplementedError()
 
@@ -2483,7 +2484,7 @@ class DelchiPlot(BaseResidualPlot):
                 data: Data1D,
                 stat: Stat,
                 ylist: tuple[np.ndarray, np.ndarray],
-                staterr: Optional[np.ndarray]) -> None:
+                staterr: np.ndarray | None) -> None:
         """Define the self.y and self.yerr fields"""
 
         if staterr is None:
@@ -2511,7 +2512,7 @@ class DelchiHistogramPlot(BaseResidualHistogramPlot):
                 data: Data1DInt,
                 stat: Stat,
                 ylist: tuple[np.ndarray, np.ndarray],
-                staterr: Optional[np.ndarray]) -> None:
+                staterr: np.ndarray | None) -> None:
 
         if staterr is None:
             if stat.name in _stats_noerr:
@@ -2645,7 +2646,7 @@ class ResidPlot(BaseResidualPlot):
                 data: Data1D,
                 stat: Stat,
                 ylist: tuple[np.ndarray, np.ndarray],
-                staterr: Optional[np.ndarray]) -> None:
+                staterr: np.ndarray | None) -> None:
         """Define the self.y and self.yerr fields"""
 
         self.y = ylist[0] - ylist[1]
@@ -2676,7 +2677,7 @@ class ResidHistogramPlot(BaseResidualHistogramPlot):
                 data: Data1DInt,
                 stat: Stat,
                 ylist: tuple[np.ndarray, np.ndarray],
-                staterr: Optional[np.ndarray]) -> None:
+                staterr: np.ndarray | None) -> None:
 
         self.y = ylist[0] - ylist[1]
 
@@ -2751,7 +2752,7 @@ class RatioPlot(BaseResidualPlot):
                 data: Data1D,
                 stat: Stat,
                 ylist: tuple[np.ndarray, np.ndarray],
-                staterr: Optional[np.ndarray]) -> None:
+                staterr: np.ndarray | None) -> None:
         """Define the self.y and self.yerr fields"""
 
         dvals = np.array(ylist[0])
@@ -2792,7 +2793,7 @@ class RatioHistogramPlot(BaseResidualHistogramPlot):
                 data: Data1DInt,
                 stat: Stat,
                 ylist: tuple[np.ndarray, np.ndarray],
-                staterr: Optional[np.ndarray]) -> None:
+                staterr: np.ndarray | None) -> None:
 
         # should not need np.asarray here but leave in for safety
         dvals = np.asarray(ylist[0])
@@ -2847,8 +2848,8 @@ class RatioContour(BaseResidualContour):
 def calc_par_range(minval: float,
                    maxval: float,
                    nloop: int,
-                   delv: Optional[float] = None,
-                   log: Optional[bool] = False) -> np.ndarray:
+                   delv: float | None = None,
+                   log: bool | None = False) -> np.ndarray:
     """Calculate the parameter range to use.
 
     This assumes that the arguments have already been checked for
@@ -3956,7 +3957,7 @@ class MultiPlot:
     __slots__ = ("plots", "title")
 
     def __init__(self) -> None:
-        self.plots: list[Union[Plot, HistogramPlot]] = []
+        self.plots: list[Plot | HistogramPlot] = []
         self.title = ""
 
     # The typing here says Plot but we actually want the sub-classes
@@ -3964,7 +3965,7 @@ class MultiPlot:
     # the data to plot so that the plot method requires no data
     # arguments) rather than the actual Plot class.
     #
-    def add(self, plot: Union[Plot, HistogramPlot]) -> None:
+    def add(self, plot: Plot | HistogramPlot) -> None:
         """Add the plot to the list of data to plot.
 
         A copy of the plot object is stored, rather than the
