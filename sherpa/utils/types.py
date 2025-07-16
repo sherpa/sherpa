@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2024, 2025
+#  Copyright (C) 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -26,7 +26,7 @@ in Python matures.
 
 """
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Sequence
 from typing import Any, Concatenate, ParamSpec, Protocol
 
 import numpy as np
