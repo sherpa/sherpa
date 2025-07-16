@@ -159,8 +159,19 @@ class Opt:
         if len(self.xmax) != self.npar:
             raise ValueError("xmin and xmax must be the same size")
 
-        # The function count should only be done on "valid" ranges,
-        # hence the ordering here.
+        # The function counter - that is FuncCounter(func) - should
+        # only be evaluated after checking whether the parameter
+        # values are valid - which is handled by self.func_bounds.
+        # That is,
+        #
+        #    self.func = self.func_bounds(FuncCounter(func), ...)
+        #
+        # rather than
+        #
+        #    self.func = FuncCounter(self.func_bounds(func, ...))
+        #
+        # which would count proposed parameter values which were out
+        # of bounds.
         #
         self.func_count = FuncCounter(func)
         self.func = self.func_bounds(self.func_count, self.npar,
