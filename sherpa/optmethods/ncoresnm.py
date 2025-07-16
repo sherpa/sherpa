@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2021, 2023 - 2025
+#  Copyright (C) 2019-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,7 +25,7 @@ import numpy as np
 from sherpa.utils.parallel import SupportsQueue, ncpus
 
 from . import _saoopt  # type: ignore
-from .opt import MyNcores, Opt, OptimizerFunc, WorkerFunc, MyOptOutput, \
+from .opt import MyNcores, Opt, OptimizerFunc, WorkerFunc, OptOutput, \
     SimplexBase, SimplexStep
 
 __all__ = ('ncoresNelderMead', )
@@ -72,7 +72,7 @@ class MyNelderMead(Opt):
                  step: np.ndarray,
                  finalsimplex: int,
                  verbose: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
 
         # SimplexStep does not use factor when npop=npar + 1.
         #
@@ -135,7 +135,7 @@ class MyNelderMead(Opt):
                  tol: float,
                  finalsimplex: int,
                  verbose: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
 
         rho_chi = self.reflection_coef * self.expansion_coef
         rho_gamma = self.reflection_coef * self.contraction_coef
@@ -211,7 +211,7 @@ class NelderMeadBase:
                  step: np.ndarray | None = None,
                  finalsimplex: int | None = 1,
                  verbose: int = 0
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         raise NotImplementedError()
 
     def get_maxnfev(self, maxnfev: int | None, npar: int) -> int:
@@ -233,7 +233,7 @@ class NelderMead0(NelderMeadBase):
                  step: np.ndarray | None = None,
                  finalsimplex: int | None = 1,
                  verbose: int = 0
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         return self.neldermead0(fcn, xpar, xmin, xmax, step=step,
                                 finalsimplex=finalsimplex,
                                 maxnfev=maxnfev, tol=tol,
@@ -253,7 +253,7 @@ class NelderMead0(NelderMeadBase):
                     maxnfev: int | None = None,
                     tol: float = 1.0e-6,
                     verbose: int = 0
-                    ) -> MyOptOutput:
+                    ) -> OptOutput:
         """
 
         .. versionchanged:: 4.18.0
@@ -295,7 +295,7 @@ class NelderMead3(NelderMead0):
                  step: np.ndarray | None = None,
                  finalsimplex: int | None = None,
                  verbose: int = 0
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
 
         # Avoid having a mutable argument
         if finalsimplex is None:
@@ -328,7 +328,7 @@ class NelderMead4(NelderMead0):
                  finalsimplex: int | None = None,
                  verbose: int = 0,
                  reflect: bool = True
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
 
         # Avoid having a mutable argument
         if finalsimplex is None:
@@ -367,7 +367,7 @@ class NelderMead5(NelderMead0):
                  finalsimplex: int | None = 1,
                  verbose: int = 0,
                  reflect: bool = True
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         init = 0
         iquad = 1
         simp = 1.0e-2 * tol
@@ -438,7 +438,7 @@ class nmNcores(MyNcores):
     def my_worker(self,
                   opt: WorkerFunc,
                   idval: int,
-                  out_q: SupportsQueue[tuple[int, list[MyOptOutput]]],
+                  out_q: SupportsQueue[tuple[int, list[OptOutput]]],
                   err_q: SupportsQueue[Exception],
                   fcn: OptimizerFunc,
                   x: np.ndarray,
@@ -487,7 +487,7 @@ class ncoresNelderMead:
                  tol: float = EPSILON,
                  maxnfev: int | None = None,
                  numcores=ncpus
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
 
         nm_ncores = nmNcores()
         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin,
@@ -495,8 +495,8 @@ class ncoresNelderMead:
         return self.unpack_results(results)
 
     def unpack_results(self,
-                       results: list[MyOptOutput]
-                       ) -> MyOptOutput:
+                       results: list[OptOutput]
+                       ) -> OptOutput:
         """
 
         .. versionchanged:: 4.18.0
@@ -540,7 +540,7 @@ class ncoresNelderMead:
 #                  tol: float = EPSILON,
 #                  maxnfev: int | None = None,
 #                  numcores=ncpus
-#                  ) -> MyOptOutput:
+#                  ) -> OptOutput:
 #
 #         return self.calc(fcn, x, xmin, xmax, tol, maxnfev, numcores)
 #
@@ -554,7 +554,7 @@ class ncoresNelderMead:
 #              numcores=ncpus,
 #              fval: float = np.inf,
 #              nfev: int = 0
-#              ) -> MyOptOutput:
+#              ) -> OptOutput:
 #
 #         nm_ncores = nmNcores()
 #         results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin,

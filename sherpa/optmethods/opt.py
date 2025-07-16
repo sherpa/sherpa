@@ -43,13 +43,19 @@ FUNC_MAX = float(np.finfo(np.float64).max)
 #
 OptimizerFunc = Callable[[np.ndarray], float]
 
+# Represent the data sent around by the optimizers:
+# - the number of function evaluations
+# - the statistic value
+# - the parameter values
+#
+OptOutput = tuple[int, float, np.ndarray]
+
 # WorkerFunc could be done as a Protocol, but the argument names are
 # not consistent, and it also requires **kwargs, which has not been
 # handled well by pyright. Concatenate could be used to at least
 # indicate the extra arguments but that requires Python 3.11 (as
 # Concatenate in Python 3.10 can not end with an ellipsis).
 #
-MyOptOutput = tuple[int, float, np.ndarray]
 WorkerFunc = Callable[[OptimizerFunc,
                        np.ndarray,
                        np.ndarray,
@@ -57,7 +63,7 @@ WorkerFunc = Callable[[OptimizerFunc,
                        float,
                        int | None
                        ],
-                      MyOptOutput]
+                      OptOutput]
 
 
 class MyNcores:
@@ -76,7 +82,7 @@ class MyNcores:
              xmax: np.ndarray,
              tol: float,
              maxnfev: int | None
-             ) -> list[MyOptOutput]:
+             ) -> list[OptOutput]:
         """Apply each function to the arguments, running in parallel."""
 
         # Safety check
@@ -109,7 +115,7 @@ class MyNcores:
     def my_worker(self,
                   opt: WorkerFunc,
                   idval: int,
-                  out_q: SupportsQueue[tuple[int, list[MyOptOutput]]],
+                  out_q: SupportsQueue[tuple[int, list[OptOutput]]],
                   err_q: SupportsQueue[Exception],
                   fcn: OptimizerFunc,
                   x: np.ndarray,
@@ -155,7 +161,7 @@ class Opt:
                  maxnfev: int,
                  ftol: float,
                  *args,
-                 **kwargs) -> MyOptOutput:
+                 **kwargs) -> OptOutput:
         raise NotImplementedError
 
     @property

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2021, 2023 - 2025
+#  Copyright (C) 2019-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -26,7 +26,7 @@ from sherpa.utils.parallel import parallel_map, ncpus
 from sherpa.utils import random
 
 from .ncoresnm import ncoresNelderMead
-from .opt import FUNC_MAX, Opt, OptimizerFunc, MyOptOutput, SimplexRandom
+from .opt import FUNC_MAX, Opt, OptimizerFunc, OptOutput, SimplexRandom
 
 
 class Key2:
@@ -76,7 +76,7 @@ class Strategy:
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
 
         # The subclasses are assumed to follow:
         #
@@ -116,7 +116,7 @@ class Strategy:
     def calc(self,
              arg: np.ndarray,
              pop: Any  # unused
-             ) -> MyOptOutput:
+             ) -> OptOutput:
 
         funcval = self.func(arg[:-1])
         nfev = 1 if funcval != FUNC_MAX else 0
@@ -149,7 +149,7 @@ class Strategy0(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         # Although only two numbers are needed, leave as is since the
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
@@ -169,7 +169,7 @@ class Strategy1(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         # Although only two numbers are needed, leave as is since the
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
@@ -189,7 +189,7 @@ class Strategy2(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         r1, r2 = self.init(2)
         trial = pop[icurrent].copy()
         n = self.select_par()
@@ -208,7 +208,7 @@ class Strategy3(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         r1, r2, r3, r4 = self.init(4)
         trial = pop[icurrent].copy()
         n = self.select_par()
@@ -228,7 +228,7 @@ class Strategy4(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         r1, r2, r3, r4, r5 = self.init(5)
         trial = pop[icurrent].copy()
         n = self.select_par()
@@ -248,7 +248,7 @@ class Strategy5(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         # Although only two numbers are needed, leave as is since the
         # code has been tested using this call.
         _, r2, r3 = self.init(3)
@@ -268,7 +268,7 @@ class Strategy6(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         r1, r2, r3 = self.init(3)
         trial = pop[icurrent].copy()
         n = self.select_par()
@@ -286,7 +286,7 @@ class Strategy7(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         r1, r2 = self.init(2)
         trial = pop[icurrent].copy()
         n = self.select_par()
@@ -304,7 +304,7 @@ class Strategy8(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         # Although only three numbers are needed, leave as is since the
         # code has been tested using this call.
         _, r2, r3, r4 = self.init(4)
@@ -324,7 +324,7 @@ class Strategy9(Strategy):
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
         r1, r2, r3, r4, r5 = self.init(5)
         trial = pop[icurrent].copy()
         n = self.select_par()
@@ -422,7 +422,7 @@ class MyDifEvo(Opt):
     #     best_val = best_vertex[-1]
     #     return self.nfev, best_val, best_par
 
-    def all_strategies(self, key: int) -> MyOptOutput:
+    def all_strategies(self, key: int) -> OptOutput:
         _, index = self.key2.parse(key)
 
         # Set the seed if RNG is not sent in. This used to change
@@ -446,9 +446,9 @@ class MyDifEvo(Opt):
         return best_trial
 
     def apply_local_opt(self,
-                        arg: MyOptOutput,
+                        arg: OptOutput,
                         index: int
-                        ) -> MyOptOutput:
+                        ) -> OptOutput:
         local_opt = self.local_opt[index % len(self.local_opt)]
         return local_opt(self.func, arg[2], self.xmin, self.xmax)
 
@@ -485,7 +485,7 @@ class ncoresMyDifEvo(MyDifEvo):
                  maxnfev: int,
                  ftol: float,
                  numcores: int | None = ncpus
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
 
         nfev = 0
 
@@ -504,7 +504,7 @@ class ncoresMyDifEvo(MyDifEvo):
             # and not have to think about parallel_map_rng.
             #
             keys = self.calc_key(range(self.npop))
-            results: list[MyOptOutput] = \
+            results: list[OptOutput] = \
                 parallel_map(self.all_strategies, keys, numcores)
 
             for index, (nfev_r, fval_r, pars_r) in enumerate(results):
@@ -593,7 +593,7 @@ class ncoresDifEvo:
                  sfactor: float = 0.85,
                  xprob: float = 0.7,
                  verbose: Any = 0  # unused
-                 ) -> MyOptOutput:
+                 ) -> OptOutput:
 
         npar = len(x)
         if npop is None:
