@@ -435,14 +435,13 @@ class MyDifEvo(Opt):
         if self.rng is None:
             np.random.seed(int(self.seed))
 
-        mypop = self.polytope
-        best_trial = self.strategies[0](mypop, index)
+        best_trial = self.strategies[0](self.polytope, index)
         for ii in range(1, len(self.strategies)):
-            trial = self.strategies[ii](mypop, index)
+            trial = self.strategies[ii](self.polytope, index)
             if trial.statval < best_trial.statval:
                 best_trial = trial
 
-        if best_trial.statval < mypop[0][-1]:
+        if best_trial.statval < self.polytope[0][-1]:
             return self.apply_local_opt(best_trial, index)
 
         return best_trial
@@ -497,7 +496,6 @@ class ncoresMyDifEvo(MyDifEvo):
         if self.rng is None:
             np.random.seed(self.seed)
 
-        mypop = self.polytope
         old_fval = np.inf
         while nfev < maxnfev:
 
@@ -511,17 +509,17 @@ class ncoresMyDifEvo(MyDifEvo):
 
             for index, res in enumerate(results):
                 nfev += res.nfev
-                if res.statval < mypop[index][-1]:
+                if res.statval < self.polytope[index][-1]:
                     # SimplexRandom stores <par1, ..., parN, statval>
                     # in each row (index vaue).
                     tmp = np.append(res.pars, res.statval)
-                    mypop[index] = tmp
+                    self.polytope[index] = tmp
 
-            mypop.sort()
-            if mypop.check_convergence(ftol, 0):
+            self.polytope.sort()
+            if self.polytope.check_convergence(ftol, 0):
                 break
 
-            best = mypop[0]
+            best = self.polytope[0]
             best_fval = best[-1]
             if best_fval < old_fval:
                 best_par = best[:-1]
@@ -530,13 +528,13 @@ class ncoresMyDifEvo(MyDifEvo):
                 nfev += tmp.nfev
                 if tmp.statval < best_fval:
                     best_par = np.append(tmp.pars, tmp.statval)
-                    mypop[1] = best_par[:]
-                    mypop.sort()
+                    self.polytope[1] = best_par[:]
+                    self.polytope.sort()
                     old_fval = tmp.statval
                 else:
                     old_fval = best_fval
 
-        best_vertex = mypop[0]
+        best_vertex = self.polytope[0]
         best_par = best_vertex[:-1]
         best_fval = best_vertex[-1]
         return OptOutput(nfev=nfev,
