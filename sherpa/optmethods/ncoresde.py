@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from abc import ABCMeta, abstractmethod
 from typing import Any
 
 import numpy as np
@@ -53,7 +54,7 @@ class Key2:
         return arg1 - 1, arg2
 
 
-class Strategy:
+class Strategy(metaclass=ABCMeta):
     """Create a trial set of parameters.
 
     """
@@ -73,6 +74,7 @@ class Strategy:
         self.xprob = xprob
         self.rng = rng
 
+    @abstractmethod
     def __call__(self,
                  pop: SimplexRandom,
                  icurrent: int
@@ -436,8 +438,8 @@ class MyDifEvo(Opt):
             np.random.seed(int(self.seed))
 
         best_trial = self.strategies[0](self.polytope, index)
-        for ii in range(1, len(self.strategies)):
-            trial = self.strategies[ii](self.polytope, index)
+        for strategy in self.strategies[1:]:
+            trial = strategy(self.polytope, index)
             if trial.statval < best_trial.statval:
                 best_trial = trial
 

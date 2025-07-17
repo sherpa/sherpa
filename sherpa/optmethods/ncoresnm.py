@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from abc import ABCMeta, abstractmethod
 from collections.abc import Sequence
 
 import numpy as np
@@ -91,7 +92,7 @@ class MyNelderMead(Opt):
                         rho_gamma: float,
                         contraction_coef: float,
                         badindex: int,
-                        maxnfev: int,
+                        maxnfev: int,  # this is not used
                         verbose: int
                         ) -> bool:
 
@@ -176,11 +177,10 @@ class MyNelderMead(Opt):
                     if verbose > 2:
                         print('\taccept reflection point')
 
-            else:
-                if self.contract_in_out(simplex, centroid, reflection_pt,
-                                        rho_gamma, self.contraction_coef,
-                                        bad_index, maxnfev, verbose):
-                    simplex.shrink(self.shrink_coef)
+            elif self.contract_in_out(simplex, centroid, reflection_pt,
+                                      rho_gamma, self.contraction_coef,
+                                      bad_index, maxnfev, verbose):
+                simplex.shrink(self.shrink_coef)
 
         best_vertex = simplex[0]
         best_par = best_vertex[:-1]
@@ -190,7 +190,7 @@ class MyNelderMead(Opt):
                          pars=best_par)
 
 
-class NelderMeadBase:
+class NelderMeadBase(metaclass=ABCMeta):
 
     def __init__(self) -> None:
         self.nfev = 0
@@ -203,6 +203,7 @@ class NelderMeadBase:
         np.seterr(over='ignore', divide='ignore', under='ignore',
                   invalid='ignore')
 
+    @abstractmethod
     def __call__(self,
                  fcn: OptimizerFunc,
                  xpar: np.ndarray,
@@ -310,7 +311,7 @@ class NelderMead3(NelderMead0):
 
         maxnfev = self.get_maxnfev(maxnfev, n)
         init = 0
-        par, fmin, nfev, err = \
+        par, fmin, nfev, _ = \
             _saoopt.neldermead(verbose, maxnfev, init, finalsimplex,
                                tol, step, xmin, xmax, x0, fcn)
 
@@ -345,13 +346,13 @@ class NelderMead4(NelderMead0):
 
         maxnfev = self.get_maxnfev(maxnfev, n)
         init = 0
-        x0, fval, nfev, err = \
+        x0, _, nfev, _ = \
             _saoopt.neldermead(verbose, maxnfev, init, finalsimplex, tol, step,
                                xmin, xmax, x0, fcn)
         iquad = 1
         simp = 1.0e-2 * tol
         step = np.full(n, 0.4)
-        par, fmin, tmpnfev, ifault = \
+        par, fmin, tmpnfev, _ = \
             _saoopt.minim(reflect, verbose, maxnfev - nfev, init, iquad, simp,
                           tol*10, step, xmin, xmax, x0, fcn)
         nfev += tmpnfev
@@ -383,7 +384,7 @@ class NelderMead5(NelderMead0):
             step = np.full(n, 0.4)
 
         maxnfev = self.get_maxnfev(maxnfev, n)
-        par, fmin, nfev, ifault = \
+        par, fmin, nfev, _ = \
             _saoopt.minim(reflect, verbose, maxnfev, init, iquad, simp, tol*10,
                           step, xmin, xmax, x0, fcn)
         return OptOutput(nfev=nfev,
@@ -508,7 +509,7 @@ class ncoresNelderMead:
         """
 
         .. versionchanged:: 4.18.0
-           The num arguments has been removed.
+           The num argument has been removed.
 
         """
 
