@@ -455,7 +455,7 @@ class Cash(Likelihood):
     .sherpa.rc file:
 
     - if `truncate` is `True` (the default value), then
-      `log(trunc_value)` is used whenever the data value is <= 0.  The
+      `log(trunc_value)` is used whenever the model value is <= 0.  The
       default is `trunc_value=1.0e-25`.
 
     - when `truncate` is `False` an error is raised.
@@ -528,7 +528,7 @@ class CStat(Likelihood):
     .sherpa.rc file:
 
     - if `truncate` is `True` (the default value), then
-      `log(trunc_value)` is used whenever the data value is <= 0.  The
+      `log(trunc_value)` is used whenever the model value is <= 0.  The
       default is `trunc_value=1.0e-25`.
 
     - when `truncate` is `False` an error is raised.
