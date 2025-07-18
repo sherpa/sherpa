@@ -3,3 +3,5 @@ branch = True
 omit =
     */tests/*
     _version.py
+concurrency = multiprocessing
+sigterm = True
