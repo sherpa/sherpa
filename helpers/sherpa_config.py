@@ -22,6 +22,7 @@
 from setuptools import Command
 import os
 import sys
+from sysconfig import get_config_var
 
 from .extensions import build_ext
 from .deps import build_deps
@@ -79,7 +80,6 @@ class sherpa_config(Command):
     def finalize_options(self):
         incdir = os.path.join(self.install_dir, 'include')
         libdir = os.path.join(self.install_dir, 'lib')
-        pydir = os.path.join(libdir, f'python{version}', 'site-packages')
 
         if self.fftw_include_dirs is None:
             self.fftw_include_dirs = incdir
@@ -104,6 +104,15 @@ class sherpa_config(Command):
 
         if self.wcs_lib_dirs is None:
             self.wcs_lib_dirs = libdir
+
+        # Is there documentation to explain how this path is
+        # created (to make sure this is correct)?
+        #
+        abi_thread = 't' if get_config_var("Py_GIL_DISABLED") else ''
+        pyname = f'python{version}{abi_thread}'
+
+        pydir = os.path.join(self.install_dir, sys.platlibdir,
+                             pyname, 'site-packages')
 
         if self.group_location is None:
             self.group_location = os.path.join(pydir, 'group.so')
