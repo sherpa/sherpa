@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018 - 2025
+#  Copyright (C) 2007, 2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -87,6 +87,7 @@ from typing import SupportsFloat
 
 import numpy as np
 
+from sherpa.stats import StatCallback, PerBinStatCallback
 from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import FuncCounter, random
 from sherpa.utils.parallel import parallel_map
@@ -210,23 +211,31 @@ def _update_reported_nfev(result: OptReturn,
     result[4]['nfev'] += nfev
 
 
-class Callback:
-    """Handle the callback argument for the optimizers.
+# Left in in case anyone is using it.
+#
+class Callback(StatCallback):
+    """This class is deprecated.
 
-    See Also
-    --------
-    InfinitePotential
+    .. deprecated:: 4.18.0
+       Use StatCallback instead.
+
+    .. versionadded:: 4.17.1
 
     """
 
-    __slots__ = ("func",)
-
-    def __init__(self,
-                 func: StatFunc) -> None:
-        self.func = func
-
-    def __call__(self, pars: np.ndarray) -> float:
-        return self.func(pars)[0]
+    def __init__(self, func: StatFunc) -> None:
+        # Since:
+        #
+        # - warnings.deprecated needs Python 3.13
+        # - warnings.warn(..., category=DeprecationWarning) does not
+        #   create a message in normal use, so is easy to miss
+        #
+        # just go with an explicit log message. As this class is new
+        # it is not expected to have been used, so the exact method of
+        # getting a warning to the user is hoped not to be important.
+        #
+        warning("Callback is deprecated: use StatCallback instead")
+        super().__init__(func)
 
 
 class InfinitePotential:
@@ -236,10 +245,6 @@ class InfinitePotential:
     return "infinity" (here defined to be the maximum value we'd
     expect rather than inf, to avoid causing problems to the
     optimizer).
-
-    See Also
-    --------
-    Callback
 
     Notes
     -----
@@ -373,7 +378,7 @@ def difevo_nm(fcn: StatFunc,
               weighting_factor: float
               ) -> OptReturn:
 
-    stat_cb0 = Callback(fcn)
+    stat_cb0 = StatCallback(fcn)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -683,7 +688,7 @@ def montecarlo(fcn: StatFunc,
 
     """
 
-    stat_cb0 = Callback(fcn)
+    stat_cb0 = StatCallback(fcn)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -730,8 +735,11 @@ def montecarlo(fcn: StatFunc,
             nfev = result[4]['nfev']
         else:
             ncores_nm = ncoresNelderMead()
-            nfev, nfval, x = \
-                ncores_nm(stat_cb0, x, xmin, xmax, ftol, mymaxfev, numcores)
+            result = ncores_nm(stat_cb0, x, xmin, xmax, ftol,
+                               mymaxfev, numcores)
+            nfev = result.nfev
+            nfval = result.statval
+            x = result.pars
 
         if verbose:
             print(f'f_nm{x}={nfval:.14e} in {nfev} nfev')
@@ -750,19 +758,21 @@ def montecarlo(fcn: StatFunc,
         else:
             ncores_de = ncoresDifEvo()
             mystep = None
-            tmp_nfev, tmp_fmin, tmp_par = \
-                ncores_de(stat_cb0, x, xmin, xmax, ftol, mymaxfev, mystep,
-                          numcores, pop, seed, weight, xprob, verbose)
-            nfev += tmp_nfev
-            if tmp_fmin < nfval:
-                nfval = tmp_fmin
-                x = tmp_par
+            result = ncores_de(stat_cb0, x, xmin, xmax, ftol,
+                               mymaxfev, mystep, numcores, pop, seed,
+                               weight, xprob, verbose)
+            nfev += result.nfev
+            if result.statval < nfval:
+                nfval = result.statval
+                x = result.pars
 
         if verbose:
             print(f'f_de_nm{x}={nfval:.14e} in {nfev} nfev')
 
         ############################## nmDifEvo #############################
 
+        # TODO: what happens here when numcores > 1?
+        #
         ofval = FUNC_MAX
         while nfev < maxfev:
 
@@ -813,14 +823,13 @@ def montecarlo(fcn: StatFunc,
             nfev += result[4]['nfev']
         else:
             ncores_nm = ncoresNelderMead()
-            tmp_nfev, tmp_fmin, tmp_par = \
-                ncores_nm(stat_cb0, x, xmin, xmax, ftol, maxfev - nfev,
-                          numcores)
-            nfev += tmp_nfev
+            result = ncores_nm(stat_cb0, x, xmin, xmax, ftol, maxfev - nfev,
+                               numcores)
+            nfev += result.nfev
             # There is a bug here somewhere using broyden_tridiagonal
-            if tmp_fmin < fval:
-                fval = tmp_fmin
-                x = tmp_par
+            if result.statval < fval:
+                fval = result.statval
+                x = result.pars
 
     ierr = 0
     if nfev >= maxfev:
@@ -1284,8 +1293,7 @@ def lmdif(fcn: StatFunc,
     if maxfev is None:
         maxfev = 256 * len(x)
 
-    def stat_cb1(pars):
-        return fcn(pars)[1]
+    stat_cb1 = PerBinStatCallback(fcn)
 
     def fcn_parallel(pars, fvec):
         fd_jac = fdJac(stat_cb1, fvec, pars)
