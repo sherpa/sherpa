@@ -137,7 +137,7 @@ def calc_flux(data, src, samples, method=calc_energy_flux,
 
 
 def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
-                                         num, clip='hard', rng=None):
+                                         num, clip='hard', rng=None, est_method_args=None):
     """Return the parameter samples given the parameter scales.
 
     Parameters
@@ -258,16 +258,16 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
 
     if correlated:
         sampler = NormalParameterSampleFromScaleMatrix()
-        samples = sampler.get_sample(fit, mycov=scales, num=num, rng=rng)
+        samples = sampler.get_sample(fit, mycov=scales, num=num, rng=rng, est_method_args=est_method_args)
     else:
         sampler = NormalParameterSampleFromScaleVector()
-        samples = sampler.get_sample(fit, myscales=scales, num=num, rng=rng)
+        samples = sampler.get_sample(fit, myscales=scales, num=num, rng=rng, est_method_args=est_method_args)
 
     clipped = sampler.clip(fit, samples, clip=clip)
     return samples, clipped
 
 
-def _sample_flux_get_samples(fit, src, correlated, num, clip='hard', rng=None):
+def _sample_flux_get_samples(fit, src, correlated, num, clip='hard', rng=None, est_method_args=None):
     """Return the parameter samples, using fit to define the scales.
 
     The covariance method is used to estimate the errors for the
@@ -326,7 +326,7 @@ def _sample_flux_get_samples(fit, src, correlated, num, clip='hard', rng=None):
     else:
         sampler = NormalParameterSampleFromScaleVector()
 
-    samples = sampler.get_sample(fit, num=num, rng=rng)
+    samples = sampler.get_sample(fit, num=num, rng=rng, est_method_args=est_method_args)
     clipped = sampler.clip(fit, samples, clip=clip)
     return samples, clipped
 
@@ -377,7 +377,7 @@ def decompose(mdl):
 def sample_flux(fit, data, src,
                 method=calc_energy_flux, correlated=False,
                 num=1, lo=None, hi=None, numcores=None, samples=None,
-                clip='hard', rng=None):
+                clip='hard', rng=None, est_method_args=None):
     """Calculate model fluxes from a sample of parameter values.
 
     Draw parameter values from a normal distribution and then calculate
@@ -505,11 +505,11 @@ def sample_flux(fit, data, src,
     scales = samples
     if scales is None:
         samples, clipped = _sample_flux_get_samples(fit, src, correlated,
-                                                    num, clip=clip, rng=rng)
+                                                    num, clip=clip, rng=rng, est_method_args=est_method_args)
     else:
         samples, clipped = _sample_flux_get_samples_with_scales(fit, src, correlated,
                                                                 scales, num, clip=clip,
-                                                                rng=rng)
+                                                                rng=rng, est_method_args=est_method_args)
 
     # When a subset of the full model is used we need to know how
     # to select which rows in the samples array refer to the
