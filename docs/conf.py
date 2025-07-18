@@ -600,8 +600,10 @@ def setup(app):
     #
     # Guessing at rebuild and types arguments.
     #
-    githash = sherpa._version.get_versions()['full-revisionid']
-    if githash.endswith('.dirty'):
-        githash = githash[:-6]
+    #githash = sherpa._version.get_versions()['full-revisionid']
+    #if githash.endswith('.dirty'):
+    #    githash = githash[:-6]
+
+    githash = "deadbeef"  # need to resolve version info
 
     app.config.add('githash', githash, rebuild=False, types=None)

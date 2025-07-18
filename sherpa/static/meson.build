@@ -1,0 +1,3 @@
+# sherpa/static
+
+subdir('css')

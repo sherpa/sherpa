@@ -49,13 +49,16 @@ Before you issue a pull request, we ask to run the test suite locally.
 Assuming everything is set up to install Sherpa from source, it can be
 installed in development mode with ``pip``::
 
-  pip install -e .[test]
+  pip install meson-python numpy ninja
+  pip install -e .[test] --no-build-isolation
 
-"Development mode" means that the tests will pick up changes in the
-Python source files without running ``pip`` again (which can take some
-time). Only if you change the C++ code, you will have to explicitly run
-the installation again to see the changes in the tests. After the installation,
-``pytest`` can run all the tests. In the sherpa root directory call::
+Any changes to the code, including the C++ code used to build the
+extensions, should be picked up whenever ``pytest`` is run. This
+is a change from the ``setuptools``-based workflow in Sherpa 4.17.0
+and earlier.
+
+After the installation, ``pytest`` can run all the tests. In the
+sherpa root directory call::
 
   pytest
 
@@ -195,73 +198,30 @@ activated the environment)::
    does not need to be installed (although it would be needed to build
    the documentation).
 
-As described in :ref:`build-from-source`, the file ``setup.cfg`` in
-the root directory of the sherpa source needs to be modified to
-configure the build. This is particularly easy in this setup, where
-all external dependencies are installed in conda and the environment
-variable ``ASCDS_INSTALL`` (or ``CONDA_PREFIX``, which has the same
-value) can be used. For most cases, the ``scripts/use_ciao_config``
-script can be used::
+As described in :ref:`build-from-source`, the file ``meson.options``
+list the supported build options. To build against CIAO you set::
 
-  % ./scripts/use_ciao_config
-  Found XSPEC version: 12.12.0
-  Updating setup.cfg
-  % git diff setup.cfg
-  ...
+  build-group=false
+  build-stk=false
+  build-region=false
+  region-prefix=$CONDA_PREFIX
+  build-wcssubs=false
+  wcssubs-prefix=$CONDA_PREFIX
+  xspec-prefix=$CONDA_PREFIX
+  xspec-libraries=XSFunctions,XSUtil,XS
 
-Otherwise the file can be edited manually. First find out what
-XSPEC version is present with::
+Unfortunately each option has to be supplied separately using the
+syntax ``-Csetup-args=-D<value>``, which leads to a final installation
+line of::
 
-  % conda list xspec-modelsonly --json | grep version
-      "version": "12.12.0"
-
-then change the ``setup.cfg`` to change the following lines, noting
-that the `${ASCDS_INSTALL}` environment variable **must** be
-replaced by its actual value, and the ``xspec_version`` line
-should be updated to match the output above::
-
-    install_dir=${ASCDS_INSTALL}
-
-    configure=None
-
-    disable_group=True
-    disable_stk=True
-
-    fftw=local
-    fftw_include_dirs=${ASCDS_INSTALL}/include
-    fftw_lib_dirs=${ASCDS_INSTALL}/lib
-    fftw_libraries=fftw3
-
-    region=local
-    region_include_dirs=${ASCDS_INSTALL}/include
-    region_lib_dirs=${ASCDS_INSTALL}/lib
-    region_libraries=region ascdm
-    region_use_cxc_parser=True
-
-    wcs=local
-    wcs_include_dirs=${ASCDS_INSTALL}/include
-    wcs_lib_dirs=${ASCDS_INSTALL}/lib
-    wcs_libraries=wcs
-
-    with_xspec=True
-    xspec_version = 12.12.0
-    xspec_lib_dirs = ${ASCDS_INSTALL}/lib
-    xspec_include_dirs = ${ASCDS_INSTALL}/include
-
-.. note::
-   The XSPEC version may include the patch level, such as ``12.12.0e``,
-   and this can be included in the configuration file.
-
-To avoid accidentally committing the modified ``setup.cfg`` into git,
-the file can be marked as "assumed unchanged".
-
-::
-
-    git update-index --assume-unchanged setup.cfg
-
-After these steps, Sherpa can be built from source::
-
-    pip install .
+  pip install . -Csetup-args=build-group=false \
+    -Csetup-args=build-stk=false \
+    -Csetup-args=build-region=false \
+    -Csetup-args=region-prefix=$CONDA_PREFIX \
+    -Csetup-args=build-wcssubs=false \
+    -Csetup-args=wcssubs-prefix=$CONDA_PREFIX \
+    -Csetup-args=xspec-prefix=$CONDA_PREFIX \
+    -Csetup-args=xspec-libraries=XSFunctions,XSUtil,XS
 
 .. warning::
 
@@ -272,6 +232,9 @@ After these steps, Sherpa can be built from source::
      export PYTHON_LDFLAGS=' '
 
    That is, the variable is set to a space, not the empty string.
+
+   It is not clear whether this is still needed with the meson-python
+   backend.
 
 .. warning::
 

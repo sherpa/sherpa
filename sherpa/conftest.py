@@ -778,8 +778,13 @@ class NumberChecker:
         lhs, value, rhs = self.split(got)
         assert lhs == self.lhs
         assert rhs == self.rhs
+        # With the change to meson the assert no-longer creates the
+        # expected output, so manually add something that is somewhat
+        # close to the pytest version.
+        #
         assert value == pytest.approx(self.number,
-                                      rel=self.rtol, abs=self.atol)
+                                      rel=self.rtol, abs=self.atol), \
+                f"assert {value} == {self.number} += {self.rtol} / {self.atol}"
 
 
 def check_str_fixture(out, expecteds):
@@ -825,7 +830,11 @@ def check_str_fixture(out, expecteds):
                 pat.check(tok)
                 continue
 
-            assert tok == expected
+            # Before usig meson this used the pytest assert, but it
+            # now seems to use the standart assert, so add a warning
+            # message to try and replicate pytest's assert rewrite.
+            #
+            assert tok == expected, f"assert '{tok}' == '{expected}'"
 
     assert len(toks) == len(expecteds)
 
