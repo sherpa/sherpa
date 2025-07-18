@@ -41,6 +41,7 @@ jobs:
             fits-pkg: 'astropy'
             matplotlib-pkg: 'matplotlib>=3,<4'
             bokeh-pkg: 'bokeh>=3,<4'
+            ncores: 1
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
@@ -117,6 +118,21 @@ jobs:
         pip install pytest-cov
         cd $HOME
         sherpa_test --cov=sherpa --cov-report=xml:${{ github.workspace }}/coverage.xml
+
+    # Need a better way to do this
+    - name: sherpa_test with ncores=1
+      if: matrix.test-data == 'package' && matrix.ncores == 1
+      env:
+        TEST: ${{ matrix.test-data }}
+      run: |
+        cd $HOME
+        orig=`python -c 'import sherpa; print(sherpa.get_config())'`
+        sed -e "s/numcores : None/numcores : 1/" $orig > single.rc
+        echo "** check multiprocessing setting"
+        python -c 'from sherpa.utils import parallel; print(parallel.ncpus);'
+        SHERPARC=single.rc python -c 'from sherpa.utils import parallel; print(parallel.ncpus);'
+        echo "** end check"
+        SHERPARC=single.rc sherpa_test --cov=sherpa --cov-report=xml:${{ github.workspace }}/coverage.xml
 
     - name: Submodule test with pytest
       if: matrix.test-data == 'submodule'

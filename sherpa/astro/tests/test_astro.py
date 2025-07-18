@@ -402,17 +402,25 @@ def test_spectrum(parallel, run_thread, fix_xspec):
         assert fres.numpoints == 446
         assert fres.dof == 441
 
-        assert covarerr[0] == approx(0.00148391, rel=1e-3)
-        assert covarerr[1] == approx(0.0011518, rel=1e-3)
-        assert covarerr[2] == approx(0.00377755, rel=1e-3)
-        assert covarerr[3] == approx(0.00370543, rel=1e-3)
-        assert covarerr[4] == approx(0.0016608, rel=1e-3)
+        print(f"statval={fres.statval}")
+        print(abs2)
+        print(mek1)
+        print(mek2)
+        print(covarerr)
+        print("----")
+
         assert fres.statval == approx(0.0496819, rel=1e-4)
         assert abs2.nh.val == approx(1.1015, rel=1e-4)
         assert mek1.kt.val == approx(0.841025, rel=1e-4)
         assert mek1.norm.val == approx(0.699761, rel=1e-4)
         assert mek2.kt.val == approx(2.35845, rel=1e-4)
         assert mek2.norm.val == approx(1.03724, rel=1e-4)
+
+        assert covarerr[0] == approx(0.00148391, rel=1e-3)
+        assert covarerr[1] == approx(0.0011518, rel=1e-3)
+        assert covarerr[2] == approx(0.00377755, rel=1e-3)
+        assert covarerr[3] == approx(0.00370543, rel=1e-3)
+        assert covarerr[4] == approx(0.0016608, rel=1e-3)
 
     check_thread(run_thread, 'spectrum', parallel, cmp_thread,
                  ['abs2', 'mek1', 'mek2'])
