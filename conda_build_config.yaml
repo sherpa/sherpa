@@ -1,2 +1,8 @@
 CONDA_BUILD_SYSROOT:
   - /opt/MacOSX11.0.sdk        # [osx]
+
+c_compiler_version:    # [linux]
+    - 14.2             # [linux]
+cxx_compiler_version:  # [linux]
+    - 14.2             # [linux]
+

@@ -22,7 +22,7 @@ if [ "`uname -s`" == "Darwin" ] ; then
     tar -C ${GITHUB_WORKSPACE}/11.0SDK -xf MacOSX11.0.sdk.tar.xz
 
 else
-    compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
+    compilers="gcc_linux-64=14.2 gxx_linux-64=14.2 gfortran_linux-64"
 
     if [ -n "${MATPLOTLIBVER}" ]; then
         #Installed for qt-main deps which is needed for the QtAgg backend to work for matplotlib

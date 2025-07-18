@@ -26,10 +26,11 @@ import numpy as np
 import pytest
 
 from sherpa.data import Data1D
+from sherpa.models.model import ArithmeticModel, Parameter
 from sherpa.models import Gauss1D, PowLaw1D
 from sherpa.fit import Fit
 from sherpa.stats import Cash, Chi2DataVar, CStat
-from sherpa.optmethods import NelderMead, LevMar
+from sherpa.optmethods import NelderMead, LevMar, MonCar
 from sherpa.estmethods import Covariance
 from sherpa import sim
 from sherpa.utils.err import EstErr
@@ -562,6 +563,66 @@ def test_metropolisMH(setup, caplog):
     means = np.asarray([1.06278015, 9.21533855, 2.5736483, 2.5853907, 47.27058904])
     assert params.mean(axis=1) == pytest.approx(means)
 
+def test_get_draws():
+    class MyIntensity(ArithmeticModel):
+        
+        def __init__(self, name='myintensity'):
+
+            intensities = np.array([6.16783998e-14, 0.0, 1.10089656e-14,
+                                       3.05143264e-19])
+            intensity_sigma = np.array([3.16762199e-15, 3.61623403e-16,
+                                           1.45172494e-15, 5.12478214e-20])
+            # parmins = np.array([4.58402898e-14, -1.80811702e-15,
+            #                        3.75034087e-15, 4.89041566e-20])
+            parmins = np.array([4.58402898e-14, 0.0,
+                                   3.75034087e-15, 4.89041566e-20])
+            parmaxs = intensities + 5.0 * intensity_sigma
+            self.s1 = Parameter(name, 's1', intensities[0], parmins[0],
+                                parmaxs[0])
+            self.s2 = Parameter(name, 's2', intensities[1], parmins[1],
+                                parmaxs[1])
+            self.s3 = Parameter(name, 's3', intensities[2], parmins[2],
+                                parmaxs[2])
+            self.b4 = Parameter(name, 'b4', intensities[3], parmins[3],
+                                parmaxs[3])
+            
+            self.matrix = np.array([[6.17970278e+15, 8.08528651e+13,
+                                        1.19660778e+12, 2.86373348e+18],
+                                       [9.33040128e+13, 5.60438018e+15,
+                                        8.37625449e+12, 3.30606732e+18],
+                                       [6.13842189e+11, 2.88269978e+12,
+                                        5.34697541e+15, 3.60139047e+18],
+                                       [5.83150080e+14, 3.62945629e+14,
+                                        5.52566884e+14, 2.03622376e+20]])
+            return ArithmeticModel.__init__(self, name,
+                                            (self.s1, self.s2, self.s3,
+                                             self.b4))
+
+        def calc(self, pars, x, *args, **kwargs):
+            npars = len(pars)
+            calculated_counts = np.zeros(npars)
+            for ii in range(npars):
+                for jj in range(npars):
+                    calculated_counts[ii] += self.matrix[ii][jj] * pars[jj]
+            return calculated_counts
+
+    y = np.array([382, 4, 60, 104])
+    x = np.arange(len(y))
+    data = Data1D('test', x, y)
+    model = MyIntensity()
+    fit = Fit(data, model, stat=Cash(), method=MonCar())
+    result = fit.fit()
+    covar = fit.est_errors()
+    covar_matrix = covar.extra_output
+    for par in model.pars:
+        par._hard_min = 0.0
+
+    np.random.seed(1943)
+    mcmc = sim.MCMC()
+    stats, accept, params = mcmc.get_draws(fit, covar_matrix, niter=5000)
+    inten2 = params[1]
+    negs = np.where(inten2 < 0)
+    assert len(negs[0]) == 0
 
 def setup_no_fit():
     """Simplified version of the setup fixture that does not perform a fit or confidence
