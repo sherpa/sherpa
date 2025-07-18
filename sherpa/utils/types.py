@@ -42,6 +42,7 @@ P = ParamSpec('P')
 # Represent identifiers; mainly used in the UI code.
 #
 IdType = int | str
+IdTypes = Sequence[IdType]
 
 # Try to be generic when using arrays as input or output. There is no
 # attempt to encode the data type or shape for ndarrays at this time.

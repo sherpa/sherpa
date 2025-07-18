@@ -3987,6 +3987,23 @@ class MultiPlot:
         #
         self.plots.append(copy.deepcopy(plot))
 
+    # Preferences are delegated to the first plot, so
+    #   a) they will fail if no plots have been added
+    #   b) the choice of plot_prefs or histo_prefs depents on
+    #      the plot type
+    #
+    @property
+    def histo_prefs(self):
+        if len(self.plots) == 0:
+            raise AttributeError("no plots have been added")
+        return self.plots[0].histo_prefs
+
+    @property
+    def plot_prefs(self):
+        if len(self.plots) == 0:
+            raise AttributeError("no plots have been added")
+        return self.plots[0].plot_prefs
+
     def plot(self,
              overplot: bool = False,
              clearwindow: bool = True,

@@ -3548,3 +3548,88 @@ def test_plot_overplot_smaller(session, requires_pylab):
     assert fig.axes[0].lines[1].get_alpha() == 0.5
 
     plt.close()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_fit_resid_kwargs_mpl(session, requires_pylab):
+    """Can we have per-plot kwargs? matplotlib"""
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("const1d", "c1")
+    c1.c0 = 3
+    s.set_source(c1)
+
+    s.plot_fit_resid(color=["orange", "black"],
+                     alpha=0.5,
+                     linestyle=["dashed", "dotted"]
+                     )
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 2
+
+    # fit plot
+    axes = fig.axes[0]
+    assert len(axes.lines) == 2
+
+    assert axes.lines[0].get_color() == "orange"
+    assert axes.lines[1].get_color() == "orange"
+
+    assert axes.lines[0].get_alpha() == 0.5
+    assert axes.lines[1].get_alpha() == 0.5
+
+    assert axes.lines[0].get_linestyle() == "--"
+    assert axes.lines[1].get_linestyle() == "--"
+
+    # residual plot; there's two lines, the data and then the y axis
+    # line. The y-axis should not be changed by the kwargs: is
+    # checking the actual values returned worth it, as it could be
+    # depentent on the mpl version? For now let's check them.
+    #
+    axes = fig.axes[1]
+    assert len(axes.lines) == 2
+
+    assert axes.lines[0].get_color() == "black"
+    assert axes.lines[1].get_color() == "k"
+
+    assert axes.lines[0].get_alpha() == 0.5
+    assert axes.lines[1].get_alpha() is None
+
+    assert axes.lines[0].get_linestyle() == ":"
+    assert axes.lines[1].get_linestyle() == "-"
+
+    assert axes.lines[0].get_ydata() == pytest.approx([-1, 0, 1])
+    assert axes.lines[1].get_ydata() == pytest.approx([0, 0])
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_can_handle_per_plot_kwargs(session, all_plot_backends):
+    """Check we can run these commands.
+
+    Since we want this to run whatever the plot backend is, this just
+    checks that the commands work, not what the result is. It is also
+    very limited on what plots are created.
+
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    # Pick a 1D integrated dataset just for fun.
+    s.load_arrays(1, [1, 5, 9], [4, 9, 12], [2, 4, 8], Data1DInt)
+    s.set_source(s.create_model_component("const1d", "bob"))
+
+    # Mix up scalar and sequences in the kwargs.
+    # The color values are limited to support the IndepOnlyBackend.
+    #
+    kwargs = {"color": ["k", "g"],
+              "alpha": 0.5,
+              "label": ["fit", "residuals"]}
+
+    s.plot("fit", "resid", **kwargs)
+    s.plot_fit_resid(**kwargs)
