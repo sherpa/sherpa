@@ -1642,6 +1642,7 @@ class SigmaGauss2D(Gauss2D):
         param_apply_limits(fwhm, self.sigma_b, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.sigmagauss2d(p, *args, **kwargs)

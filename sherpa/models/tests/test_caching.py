@@ -166,8 +166,8 @@ def test_evaluate_cache_regrid2d():
     assert not hasattr(rmdl, 'cache')
 
 
-def test_evaluate_cache1dint():
-    """Check we run with caching on: 1dint"""
+def test_evaluate_cache2dint():
+    """Check we run with caching on: 2dint"""
 
     x0lo = np.array([-20, -1, 10])
     x1lo = np.array([-25, -1, -10])
