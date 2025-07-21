@@ -17755,12 +17755,6 @@ class Session(NoNewAttributesAfterInit):
                                    numcores=numcores)
         self._contour(plotobj, overcontour=overplot)
 
-    # Aliases
-    # interval_projection = int_proj
-    # interval_uncertainty = int_unc
-    # region_projection = reg_proj
-    # region_uncertainty = reg_unc
-
     ###########################################################################
     # Basic imaging
     ###########################################################################
