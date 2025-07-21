@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018 - 2025
+#  Copyright (C) 2009, 2015, 2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -41,8 +41,8 @@ from sherpa.stats import Stat, Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_iterable, list_to_open_interval, sao_fcmp, formatting
 from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
-from sherpa.utils.types import ArrayType, FitFunc, IdType, OptReturn, \
-    StatFunc, StatResults
+from sherpa.utils.types import ArrayType, FitFunc, IdType, IdTypes, \
+    OptReturn, StatFunc, StatResults
 
 
 warning = logging.getLogger(__name__).warning
@@ -86,11 +86,11 @@ class StatInfoResults(NoNewAttributesAfterInit):
         self.name: str = ''
         """The name of the data set, or sets."""
 
-        self.ids: Sequence[IdType] | None = None
+        self.ids: IdTypes | None = None
         """The data set ids (it may be a tuple or array) included
         in the results."""
 
-        self.bkg_ids: Sequence[IdType] | None = None
+        self.bkg_ids: IdTypes | None = None
         """The background data set ids (it may be a tuple or array)
         included in the results, if any."""
 

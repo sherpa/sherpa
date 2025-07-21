@@ -71,7 +71,7 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.random import RandomType
-from sherpa.utils.types import IdType, PrefsType
+from sherpa.utils.types import IdType, IdTypes, PrefsType
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -289,7 +289,7 @@ def report_filter_change(idstr: str,
 
 
 def notice_data_range(get_data: Callable[[IdType], Data],
-                      ids: Sequence[IdType],
+                      ids: IdTypes,
                       lo, hi,
                       kwargs) -> None:
     """Filter each dataset and report the change in filter.
@@ -5638,7 +5638,7 @@ class Session(NoNewAttributesAfterInit):
             self.notice_id(ids, *vals, **kwargs)
 
     def _notice_expr_id(self,
-                        ids: IdType | Sequence[IdType],
+                        ids: IdType | IdTypes,
                         expr: str | None = None,
                         **kwargs) -> None:
         for vals in sherpa.utils.parse_expr(expr):
@@ -5893,7 +5893,7 @@ class Session(NoNewAttributesAfterInit):
     # worth creating a copy of the routine just for this.
     #
     def notice_id(self,
-                  ids: IdType | Sequence[IdType],
+                  ids: IdType | IdTypes,
                   lo=None, hi=None, **kwargs
                   ) -> None:
         """Include data from the fit for a data set.
@@ -6008,7 +6008,7 @@ class Session(NoNewAttributesAfterInit):
     # worth creating a copy of the routine just for this.
     #
     def ignore_id(self,
-                  ids: IdType | Sequence[IdType],
+                  ids: IdType | IdTypes,
                   lo=None, hi=None, **kwargs
                   ) -> None:
         """Exclude data from the fit for a data set.
@@ -8849,7 +8849,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_fit_ids(self,
                      id: IdType | None,
-                     otherids: Sequence[IdType] | None = None
+                     otherids: IdTypes | None = None
                      ) -> list[IdType]:
         """Return the identifiers that will be used for a fit.
 
@@ -8953,7 +8953,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _prepare_fit(self,
                      id: IdType | None,
-                     otherids: Sequence[IdType] = ()
+                     otherids: IdTypes = ()
                      ) -> list[FitStore]:
         """Ensure we have all the requested ids, datasets, and models.
 
@@ -9006,7 +9006,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_fit(self,
                  id: IdType | None,
-                 otherids: Sequence[IdType] = (),
+                 otherids: IdTypes = (),
                  estmethod=None, numcores=1
                  ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object for the given identifiers.
@@ -9850,7 +9850,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: improve discussion of how the simulations are done.
     def plot_pvalue(self, null_model, alt_model, conv_model=None,
                     id: IdType = 1,
-                    otherids: Sequence[IdType] = (),
+                    otherids: IdTypes = (),
                     num=500, bins=25, numcores=None,
                     replot=False, overplot=False, clearwindow=True,
                     **kwargs):
@@ -9960,7 +9960,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id: IdType = 1,
-                        otherids: Sequence[IdType] = (),
+                        otherids: IdTypes = (),
                         num=500, bins=25, numcores=None,
                         recalc=False):
         """Return the data used by plot_pvalue.
@@ -10069,7 +10069,7 @@ class Session(NoNewAttributesAfterInit):
 
     def normal_sample(self, num=1, sigma=1, correlate=True,
                       id: IdType | None = None,
-                      otherids: Sequence[IdType] = (),
+                      otherids: IdTypes = (),
                       numcores=None):
         """Sample the fit statistic by taking the parameter values
         from a normal distribution.
@@ -10141,7 +10141,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: improve the description of factor parameter
     def uniform_sample(self, num=1, factor=4,
                        id: IdType | None = None,
-                       otherids: Sequence[IdType] = (),
+                       otherids: IdTypes = (),
                        numcores=None):
         """Sample the fit statistic by taking the parameter values
         from an uniform distribution.
@@ -10198,7 +10198,7 @@ class Session(NoNewAttributesAfterInit):
 
     def t_sample(self, num=1, dof=None,
                  id: IdType | None = None,
-                 otherids: Sequence[IdType] = (),
+                 otherids: IdTypes = (),
                  numcores=None):
         """Sample the fit statistic by taking the parameter values from
         a Student's t-distribution.
@@ -11946,7 +11946,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: add pointers on what to do with the return values
     def get_draws(self,
                   id: IdType | None = None,
-                  otherids: Sequence[IdType] = (),
+                  otherids: IdTypes = (),
                   niter=1000, covar_matrix=None):
         """Run the pyBLoCXS MCMC algorithm.
 
@@ -13788,7 +13788,7 @@ class Session(NoNewAttributesAfterInit):
     # Line plots
     #
     def _multi_plot(self,
-                    args: Sequence[IdType],
+                    args: IdTypes,
                     plotmeth: Literal["plot", "contour"] = "plot",
                     rows: int | None = None,
                     cols: int | None = None,
@@ -16727,7 +16727,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: needs to support the fast option of int_proj
     def get_int_proj(self, par=None,
                      id: IdType | None = None,
-                     otherids: Sequence[IdType] | None = None,
+                     otherids: IdTypes | None = None,
                      recalc=False,
                      fast=True, min=None, max=None, nloop=20, delv=None, fac=1,
                      log=False, numcores=None):
@@ -16845,7 +16845,7 @@ class Session(NoNewAttributesAfterInit):
     # recalc=True
     def get_int_unc(self, par=None,
                     id: IdType | None = None,
-                    otherids: Sequence[IdType] | None = None,
+                    otherids: IdTypes | None = None,
                     recalc=False,
                     min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                     numcores=None):
@@ -16958,7 +16958,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_reg_proj(self, par0=None, par1=None,
                      id: IdType | None = None,
-                     otherids: Sequence[IdType] | None = None,
+                     otherids: IdTypes | None = None,
                      recalc=False, fast=True, min=None, max=None,
                      nloop=(10, 10), delv=None, fac=4, log=(False, False),
                      sigma=(1, 2, 3), levels=None, numcores=None):
@@ -17090,7 +17090,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_reg_unc(self, par0=None, par1=None,
                     id: IdType | None = None,
-                    otherids: Sequence[IdType] | None = None,
+                    otherids: IdTypes | None = None,
                     recalc=False, min=None, max=None, nloop=(10, 10),
                     delv=None, fac=4, log=(False, False), sigma=(1, 2, 3),
                     levels=None, numcores=None):
@@ -17225,7 +17225,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: same synopsis as int_unc
     def int_proj(self, par,
                  id: IdType | None = None,
-                 otherids: Sequence[IdType] | None = None,
+                 otherids: IdTypes | None = None,
                  replot=False, fast=True,
                  min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                  numcores=None,
@@ -17351,7 +17351,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: same synopsis as int_proj
     def int_unc(self, par,
                 id: IdType | None = None,
-                otherids: Sequence[IdType] | None = None,
+                otherids: IdTypes | None = None,
                 replot=False, min=None,
                 max=None, nloop=20, delv=None, fac=1, log=False,
                 numcores=None,
@@ -17474,7 +17474,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self, par0, par1,
                  id: IdType | None = None,
-                 otherids: Sequence[IdType] | None = None,
+                 otherids: IdTypes | None = None,
                  replot=False,
                  fast=True, min=None, max=None, nloop=(10, 10), delv=None,
                  fac=4, log=(False, False), sigma=(1, 2, 3), levels=None,
@@ -17610,7 +17610,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_unc(self, par0, par1,
                 id: IdType | None = None,
-                otherids: Sequence[IdType] | None = None,
+                otherids: IdTypes | None = None,
                 replot=False,
                 min=None, max=None, nloop=(10, 10), delv=None, fac=4,
                 log=(False, False), sigma=(1, 2, 3), levels=None,
