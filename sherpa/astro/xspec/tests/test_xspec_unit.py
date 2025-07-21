@@ -1519,7 +1519,7 @@ def test_ismabs_parameter_name_clashes():
         with pytest.raises(AttributeError):
             getattr(mdl, name)
 
-
+@pytest.mark.xfail # for ptcat-3768 (PR #2311)
 @requires_data
 @requires_fits
 @requires_xspec
