@@ -30,8 +30,11 @@ from sherpa.utils.guess import get_position, guess_amplitude, \
     guess_fwhm, guess_position, guess_reference, param_apply_limits
 
 from .parameter import Parameter, tinyval
-from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
-    ArithmeticFunctionModel, RegriddableModel2D, RegriddableModel1D
+from .model import (ArithmeticModel,
+                    modelCacher1d, modelCacher,
+                    CompositeModel, ArithmeticFunctionModel,
+                    RegriddableModel2D, RegriddableModel1D,
+)
 from . import _modelfcts  # type: ignore
 
 warning = logging.getLogger(__name__).warning
@@ -1332,6 +1335,7 @@ class Box2D(RegriddableModel2D):
         param_apply_limits(yhi, self.yhi, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.box2d(p, *args, **kwargs)
@@ -1366,6 +1370,7 @@ class Const2D(RegriddableModel2D, Const):
         Const.__init__(self, name)
         self.cache = 0
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.const2d(p, *args, **kwargs)
@@ -1464,6 +1469,7 @@ class Delta2D(RegriddableModel2D):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.delta2d(p, *args, **kwargs)
@@ -1554,6 +1560,7 @@ class Gauss2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(fwhm, self.fwhm, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.gauss2d(p, *args, **kwargs)
@@ -1635,6 +1642,7 @@ class SigmaGauss2D(Gauss2D):
         param_apply_limits(fwhm, self.sigma_b, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.sigmagauss2d(p, *args, **kwargs)
@@ -1735,6 +1743,7 @@ class NormGauss2D(RegriddableModel2D):
                 ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.ngauss2d(p, *args, **kwargs)
@@ -1845,6 +1854,7 @@ class Polynom2D(RegriddableModel2D):
         param_apply_limits(c22, self.cx2y1, **kwargs)
         param_apply_limits(c22, self.cx2y2, **kwargs)
 
+    @modelCacher
     def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.poly2d(p, *args, **kwargs)
