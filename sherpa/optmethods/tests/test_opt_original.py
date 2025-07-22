@@ -90,12 +90,12 @@ import numpy as np
 
 import pytest
 
-from sherpa.optmethods.ncoresde import DifEvo, ncoresDifEvo, ncoresDifEvoNelderMead
+from sherpa.optmethods.ncoresde import ncoresDifEvo #, DifEvo, ncoresDifEvoNelderMead
 from sherpa.optmethods.ncoresnm import ncoresNelderMead, NelderMead0, NelderMead1, \
-    NelderMead2, NelderMead3, NelderMead4, NelderMead5, NelderMead6, NelderMead7
+    NelderMead2, NelderMead3, NelderMead4, NelderMead5 #, NelderMead6, NelderMead7
 from sherpa.optmethods.opt import SimplexNoStep, SimplexStep, SimplexRandom
-from sherpa.optmethods.optfcts import Callback
 from sherpa.optmethods import _tstoptfct  # type: ignore
+from sherpa.stats import StatCallback
 
 
 def Ackley(x):
@@ -541,7 +541,7 @@ def tst_unc_opt(algorithms, npar):
 
     def tst_algo(opt, fcn, name, num):
         x0, xmin, xmax, fmin = _tstoptfct.init(name, num)
-        result = opt(Callback(fcn), x0, xmin, xmax)
+        result = opt(StatCallback(fcn), x0, xmin, xmax)
         opt_name = opt.__class__.__name__
         print(opt_name, result[2], '=', result[1], 'in', result[0], 'nfevs')
 
@@ -946,9 +946,11 @@ if __name__ == "__main__":
     algo_nm: list[Any]
 
     if options.difevo:
-        algo_de = [DifEvo()]
+        # algo_de = [DifEvo()]
+        raise ValueError("DifEvo is currently commented out as unused in Sherpa")
     elif options.combine:
-        algo_de = [ncoresDifEvoNelderMead()]
+        # algo_de = [ncoresDifEvoNelderMead()]
+        raise ValueError("ncoresDifEvoNelderMead is currently broken")
     else:
         algo_de = [ncoresDifEvo()]
 
@@ -958,7 +960,9 @@ if __name__ == "__main__":
     else:
         algo_nm = [NelderMead0(), NelderMead1(), NelderMead2(),
                    NelderMead3(), NelderMead4(), NelderMead5(),
-                   NelderMead6(), NelderMead7()]
+                   # Comment out as these classes are currently unused by Sherpa
+                   # NelderMead6(), NelderMead7()]
+                   ]
 
     if options.unc_opt:
         if options.run_de:

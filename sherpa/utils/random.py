@@ -33,6 +33,7 @@ from typing import Literal, SupportsFloat, overload
 import numpy as np
 
 from .numeric_types import SherpaFloat
+from .types import ArrayType
 
 # This should probably be an explicit type alias but for now leave it
 # like this. Users are expected to use the Generator rather than
@@ -155,7 +156,7 @@ SizeType = int | Sequence[int] | np.ndarray
 def uniform(rng: RandomType | None,
             low: float,
             high: float,
-            size: Literal[None]
+            size: Literal[None] = None
             ) -> float:
     ...
 
@@ -167,9 +168,19 @@ def uniform(rng: RandomType | None,
             ) -> np.ndarray:
     ...
 
+# Technically size can be given here but assume this is not used
+# in Sherpa.
+@overload
 def uniform(rng: RandomType | None,
-            low: float,
-            high: float,
+            low: ArrayType,
+            high: ArrayType,
+            size: Literal[None] = None
+            ) -> np.ndarray:
+    ...
+
+def uniform(rng: RandomType | None,
+            low: float | ArrayType,
+            high: float | ArrayType,
             size: SizeType | None = None
             ) -> float | np.ndarray:
     """Create a random value within a uniform range.

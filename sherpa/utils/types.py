@@ -26,7 +26,7 @@ in Python matures.
 
 """
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Sequence
 from typing import Any, Concatenate, ParamSpec, Protocol
 
 import numpy as np
@@ -54,15 +54,11 @@ StatResults = tuple[float, np.ndarray]
 
 # Represent statistic evaluation.
 #
-# There is partial support for sending extra information to the
-# statistics function. At present all that is required is that the
-# first argument is ArrayType and the rest are ignored.
-#
-StatFunc = Callable[Concatenate[ArrayType, P], StatResults]
+StatFunc = Callable[[ArrayType], StatResults]
 
 # What is the best typing rule here?
 #
-StatErrFunc = Callable[..., ArrayType]
+StatErrFunc = Callable[[ArrayType], ArrayType]
 
 # What do the optimization functions return?
 #
@@ -101,8 +97,8 @@ class FitFunc(Protocol):
                  pars: ArrayType,
                  parmins: ArrayType,
                  parmaxes: ArrayType,
-                 statargs: Sequence[Any] = (),
-                 statkwargs: Mapping[str, Any] | None = None
+                 statargs: Any = None,
+                 statkwargs: Any = None
                  ) -> OptReturn:
         ...
 
