@@ -1372,9 +1372,9 @@ def test_badstat_data1ding(pcls, scls):
 @pytest.mark.parametrize("contents,expected",
                          [([], ""),
                           ([sherpaplot.DataPlot(), sherpaplot.ModelPlot()],
-                           ""),
+                           None),
                           ([sherpaplot.ModelPlot(), sherpaplot.DataPlot()],
-                           ""),
+                           "Model"),
                           ])
 def test_multiplot_title(contents, expected):
     """Do we get the multiplot title?
@@ -1400,7 +1400,6 @@ def test_multiplot_title(contents, expected):
         assert p.title == expected
 
 
-@pytest.mark.xfail  # MultiPlot object has no attribute plot_prefs
 def test_multiplot_plot_prefs_empty():
     """Do we get the plot prefs when no plots have been added?"""
 
@@ -1410,7 +1409,6 @@ def test_multiplot_plot_prefs_empty():
         _ = p.plot_prefs["xlog"]
 
 
-@pytest.mark.xfail  # MultiPlot object has no attribute plot_prefs
 def test_multiplot_plot_prefs():
     """Can we get the plot prefs from the first plot?"""
 
