@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018 - 2022, 2024
+#  Copyright (C) 2007, 2015, 2018-2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1367,3 +1367,58 @@ def test_badstat_data1ding(pcls, scls):
     with pytest.raises(StatErr,
                        match=f"^{pcls.__name__} not applicable using current statistic: {s.name}$"):
         p.prepare(data=d, model=m, stat=s)
+
+
+@pytest.mark.parametrize("contents,expected",
+                         [([], ""),
+                          ([sherpaplot.DataPlot(), sherpaplot.ModelPlot()],
+                           ""),
+                          ([sherpaplot.ModelPlot(), sherpaplot.DataPlot()],
+                           ""),
+                          ])
+def test_multiplot_title(contents, expected):
+    """Do we get the multiplot title?
+
+    This is a regression test, so it may need to be updated if the
+    code is changed (e.g. to take the title of the first plot).
+
+    """
+
+    p = sherpaplot.MultiPlot()
+    for c in contents:
+        p.add(c)
+
+    # With the title set, we use that.
+    p.title = "x x"
+    assert p.title == "x x"
+
+    # With the title unset, use the title from the first plot
+    p.title = ""
+    if expected is None:
+        assert p.title is None
+    else:
+        assert p.title == expected
+
+
+@pytest.mark.xfail  # MultiPlot object has no attribute plot_prefs
+def test_multiplot_plot_prefs_empty():
+    """Do we get the plot prefs when no plots have been added?"""
+
+    p = sherpaplot.MultiPlot()
+    with pytest.raises(AttributeError,
+                       match="^Need a plot to define the 'plot_prefs' attribute$"):
+        _ = p.plot_prefs["xlog"]
+
+
+@pytest.mark.xfail  # MultiPlot object has no attribute plot_prefs
+def test_multiplot_plot_prefs():
+    """Can we get the plot prefs from the first plot?"""
+
+    p = sherpaplot.MultiPlot()
+    d = sherpaplot.DataPlot()
+
+    # Ensure we have a known value for the preferences
+    d.plot_prefs["xlog"] = False
+    p.add(d)
+
+    assert not p.plot_prefs["xlog"]
