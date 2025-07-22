@@ -571,6 +571,46 @@ def test_get_rmf_plot_recalc(idval, clean_astro_ui):
     assert rp.title is None
 
 
+def test_plot_rmf_mpl(clean_astro_ui, requires_pylab):
+    """Very basic check of plot_rmf.
+
+    Requires matplotlib to check the plot output.
+
+    """
+
+    from matplotlib import pyplot as plt
+
+    setup_example(1)
+    ui.plot_rmf()
+
+    fig = plt.gcf()
+    axes = fig.axes
+    assert len(axes) == 1
+    assert axes[0].xaxis.get_scale() == 'log'
+    assert axes[0].yaxis.get_scale() == 'log'
+
+    # Check the lines
+    assert len(axes[0].lines) == 10
+    colors = set()
+    for idx, lbl in enumerate(["0.6 keV",
+                               "0.72 keV",
+                               "0.87 keV",
+                               "1 keV",
+                               "1.2 keV"]):
+        l1 = axes[0].lines[idx * 2]
+        l2 = axes[0].lines[idx * 2 + 1]
+        assert l1.get_label() == lbl
+        col = l1.get_color()
+        assert col == l2.get_color()
+
+        # check we haven't seen this color
+        assert col not in colors
+        colors.add(col)
+
+        assert l1.get_ls() == '-'
+        assert l2.get_ls() == 'None'
+
+
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 def test_get_order_plot(idval, clean_astro_ui):
     """Basic testing of get_order_plot: orders=None
