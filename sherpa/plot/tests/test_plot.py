@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018 - 2022, 2024
+#  Copyright (C) 2007, 2015, 2018-2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1367,3 +1367,70 @@ def test_badstat_data1ding(pcls, scls):
     with pytest.raises(StatErr,
                        match=f"^{pcls.__name__} not applicable using current statistic: {s.name}$"):
         p.prepare(data=d, model=m, stat=s)
+
+
+@pytest.mark.parametrize("contents,expected",
+                         [([], ""),
+                          ([sherpaplot.DataPlot(), sherpaplot.ModelPlot()],
+                           ""),
+                          ([sherpaplot.ModelPlot(), sherpaplot.DataPlot()],
+                           ""),
+                          ])
+def test_multiplot_title(contents, expected):
+    """Do we get the multiplot title?
+
+    This is a regression test, so it may need to be updated if the
+    code is changed (e.g. to take the title of the first plot).
+
+    """
+
+    p = sherpaplot.MultiPlot()
+    for c in contents:
+        p.add(c)
+
+    # With the title set, we use that.
+    p.title = "x x"
+    assert p.title == "x x"
+
+    # With the title unset, use the title from the first plot
+    p.title = ""
+    if expected is None:
+        assert p.title is None
+    else:
+        assert p.title == expected
+
+
+@pytest.mark.parametrize("ptype", ["plot", "histo"])
+def test_multiplot_xxx_prefs_empty(ptype):
+    """Do we get the plot prefs when no plots have been added?
+
+    This is a regression test.
+    """
+
+    p = sherpaplot.MultiPlot()
+
+    # AttributeError: 'MultiPlot' object has no attribute 'xxx_prefs'
+    with pytest.raises(AttributeError):
+        _ = getattr(p, f"{ptype}_prefs")
+
+
+@pytest.mark.parametrize("ptype,cls",
+                         [("plot", sherpaplot.DataPlot),
+                          ("histo", sherpaplot.DataHistogramPlot)])
+def test_multiplot_xxx_prefs(ptype, cls):
+    """Can we get the prefs from the first plot?
+
+    This is a regression test.
+    """
+
+    p = sherpaplot.MultiPlot()
+    d = cls()
+
+    # Ensure we have a known value for the preferences
+    prefs = getattr(d, f"{ptype}_prefs")
+    prefs["xlog"] = False
+    p.add(d)
+
+    # AttributeError: 'MultiPlot' object has no attribute 'xxx_prefs'
+    with pytest.raises(AttributeError):
+        _ = getattr(p, f"{ptype}_prefs")
