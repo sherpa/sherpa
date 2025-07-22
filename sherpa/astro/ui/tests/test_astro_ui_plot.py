@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2025
+#  Copyright (C) 2019-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -4621,3 +4621,30 @@ def test_when_reset_backend_settings_clear_datapha(clean_astro_ui, all_plot_back
     # Check back to the original.
     #
     check_start()
+
+
+@pytest.mark.parametrize("call", [False, pytest.param(True, marks=pytest.mark.xfail)])
+def test_can_handle_per_plot_kwargs(call, clean_astro_ui):
+    """Check we can run these commands.
+
+    A PHA specific version of test_can_handle_per_plot_kwargs from
+    sherpa/ui/tests/test_ui_plot.
+
+    Rely on CI runs to check the backend behaviour (rather than use
+    all_plot_backends).
+
+    """
+
+    setup_example_bkg_model(1, direct=True)
+
+    # Mix up scalar and sequences in the kwargs.
+    # The color values are limited to support the IndepOnlyBackend.
+    #
+    kwargs = {"color": ["k", "g"],
+              "alpha": 0.5,
+              "label": ["fit", "residuals"]}
+
+    if call:
+        ui.plot_bkg_fit_resid(**kwargs)
+    else:
+        ui.plot("bkg_fit", "bkg_resid", **kwargs)
