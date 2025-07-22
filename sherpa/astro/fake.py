@@ -228,8 +228,8 @@ def fake_pha(data, model,
         # exposure time (as units=counts), scaling factors, and the number
         # of background components.
         #
-        for bkg_id in data.background_ids:
-            cts = data.get_background(bkg_id).counts
+        for bkg_id, bkg in data.get_backgrounds():
+            cts = bkg.counts
             scale = data.get_background_scale(bkg_id, units="counts")
             model_prediction += scale * cts
 

@@ -1993,6 +1993,78 @@ def test_get_background_scale_missing_option(is_bkg, option, expected):
     assert scale == pytest.approx(expected)
 
 
+def test_pha_get_backgrounds_is_empty():
+    """Check we get the empty list when there's no background"""
+
+    d = DataPHA('x', [1, 2], [1, 2])
+    assert d.get_backgrounds() == []
+
+
+def test_pha_get_backgrounds_default():
+    """Check we get the default id"""
+
+    d = DataPHA('x', [1, 2], [1, 2])
+    b = DataPHA('y', [1, 2], [0, 1])
+    d.set_background(b)
+
+    bkgs = d.get_backgrounds()
+    assert len(bkgs) == 1
+    assert len(bkgs[0]) == 2
+    assert bkgs[0][0] == 1
+    assert bkgs[0][1] == b
+
+
+def test_pha_get_backgrounds_explicit():
+    """Check we get the given id"""
+
+    d = DataPHA('x', [1, 2], [1, 2])
+    b = DataPHA('y', [1, 2], [0, 1])
+    d.set_background(b, id="up")
+
+    bkgs = d.get_backgrounds()
+    assert len(bkgs) == 1
+    assert len(bkgs[0]) == 2
+    assert bkgs[0][0] == "up"
+    assert bkgs[0][1] == b
+
+
+def test_pha_get_backgrounds_multiple():
+    """Check we get the given id"""
+
+    d = DataPHA('x', [1, 2], [1, 2])
+    b1 = DataPHA('y1', [1, 2], [0, 1])
+    b2 = DataPHA('y2', [1, 2], [1, 0])
+    d.set_background(b1, id="up")
+    d.set_background(b2, id="down")
+
+    bkgs = d.get_backgrounds()
+    assert len(bkgs) == 2
+    assert len(bkgs[0]) == 2
+    assert bkgs[0][0] == "up"
+    assert bkgs[0][1] == b1
+    assert len(bkgs[1]) == 2
+    assert bkgs[1][0] == "down"
+    assert bkgs[1][1] == b2
+
+
+def test_pha_get_backgrounds_after_deletion():
+    """Check we do not get the deleted background"""
+
+    d = DataPHA('x', [1, 2], [1, 2])
+    b1 = DataPHA('y1', [1, 2], [0, 1])
+    b2 = DataPHA('y2', [1, 2], [1, 0])
+    d.set_background(b1, id="up")
+    d.set_background(b2, id="down")
+
+    d.delete_background("up")
+
+    bkgs = d.get_backgrounds()
+    assert len(bkgs) == 1
+    assert len(bkgs[0]) == 2
+    assert bkgs[0][0] == "down"
+    assert bkgs[0][1] == b2
+
+
 @pytest.mark.parametrize("lo,hi,emsg", [("1:20", None, 'lower'), (None, "2", 'upper'), ("0.5", "7", 'lower')])
 @pytest.mark.parametrize("ignore", [False, True])
 def test_pha_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
