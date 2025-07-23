@@ -28,8 +28,7 @@ from .extensions import build_ext
 # major, minor, and micro. We drop the patch level - e.g.
 # "c" in "12.12.0c" as that is not helpful to track here.
 #
-SUPPORTED_VERSIONS = [(12, 12, 0), (12, 12, 1),
-                      (12, 13, 0), (12, 13, 1),
+SUPPORTED_VERSIONS = [(12, 13, 0), (12, 13, 1),
                       (12, 14, 0), (12, 14, 1),
                       (12, 15, 0)]
 
@@ -96,7 +95,7 @@ class xspec_config(Command):
 
     def initialize_options(self):
         self.with_xspec = False
-        self.xspec_version = '12.12.0'
+        self.xspec_version = '12.14.1'
         self.xspec_include_dirs = ''
         self.xspec_lib_dirs = ''
         # This is set up for how CIAO builds XSPEC; other users may require more libraries
