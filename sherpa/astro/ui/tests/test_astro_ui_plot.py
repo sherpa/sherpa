@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2025
+#  Copyright (C) 2019-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -569,6 +569,46 @@ def test_get_rmf_plot_recalc(idval, clean_astro_ui):
     assert rp.xlo is None
     assert rp.y is None
     assert rp.title is None
+
+
+def test_plot_rmf_mpl(clean_astro_ui, requires_pylab):
+    """Very basic check of plot_rmf.
+
+    Requires matplotlib to check the plot output.
+
+    """
+
+    from matplotlib import pyplot as plt
+
+    setup_example(1)
+    ui.plot_rmf()
+
+    fig = plt.gcf()
+    axes = fig.axes
+    assert len(axes) == 1
+    assert axes[0].xaxis.get_scale() == 'log'
+    assert axes[0].yaxis.get_scale() == 'log'
+
+    # Check the lines
+    assert len(axes[0].lines) == 10
+    colors = set()
+    for idx, lbl in enumerate(["0.6 keV",
+                               "0.72 keV",
+                               "0.87 keV",
+                               "1 keV",
+                               "1.2 keV"]):
+        l1 = axes[0].lines[idx * 2]
+        l2 = axes[0].lines[idx * 2 + 1]
+        assert l1.get_label() == lbl
+        col = l1.get_color()
+        assert col == l2.get_color()
+
+        # check we haven't seen this color
+        assert col not in colors
+        colors.add(col)
+
+        assert l1.get_ls() == '-'
+        assert l2.get_ls() == 'None'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -4621,3 +4661,30 @@ def test_when_reset_backend_settings_clear_datapha(clean_astro_ui, all_plot_back
     # Check back to the original.
     #
     check_start()
+
+
+@pytest.mark.parametrize("call", [False, True])
+def test_can_handle_per_plot_kwargs(call, clean_astro_ui):
+    """Check we can run these commands.
+
+    A PHA specific version of test_can_handle_per_plot_kwargs from
+    sherpa/ui/tests/test_ui_plot.
+
+    Rely on CI runs to check the backend behaviour (rather than use
+    all_plot_backends).
+
+    """
+
+    setup_example_bkg_model(1, direct=True)
+
+    # Mix up scalar and sequences in the kwargs.
+    # The color values are limited to support the IndepOnlyBackend.
+    #
+    kwargs = {"color": ["k", "g"],
+              "alpha": 0.5,
+              "label": ["fit", "residuals"]}
+
+    if call:
+        ui.plot_bkg_fit_resid(**kwargs)
+    else:
+        ui.plot("bkg_fit", "bkg_resid", **kwargs)

@@ -71,7 +71,7 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.random import RandomType
-from sherpa.utils.types import IdType, PrefsType
+from sherpa.utils.types import IdType, IdTypes, PrefsType
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -289,7 +289,7 @@ def report_filter_change(idstr: str,
 
 
 def notice_data_range(get_data: Callable[[IdType], Data],
-                      ids: Sequence[IdType],
+                      ids: IdTypes,
                       lo, hi,
                       kwargs) -> None:
     """Filter each dataset and report the change in filter.
@@ -5638,7 +5638,7 @@ class Session(NoNewAttributesAfterInit):
             self.notice_id(ids, *vals, **kwargs)
 
     def _notice_expr_id(self,
-                        ids: IdType | Sequence[IdType],
+                        ids: IdType | IdTypes,
                         expr: str | None = None,
                         **kwargs) -> None:
         for vals in sherpa.utils.parse_expr(expr):
@@ -5893,7 +5893,7 @@ class Session(NoNewAttributesAfterInit):
     # worth creating a copy of the routine just for this.
     #
     def notice_id(self,
-                  ids: IdType | Sequence[IdType],
+                  ids: IdType | IdTypes,
                   lo=None, hi=None, **kwargs
                   ) -> None:
         """Include data from the fit for a data set.
@@ -6008,7 +6008,7 @@ class Session(NoNewAttributesAfterInit):
     # worth creating a copy of the routine just for this.
     #
     def ignore_id(self,
-                  ids: IdType | Sequence[IdType],
+                  ids: IdType | IdTypes,
                   lo=None, hi=None, **kwargs
                   ) -> None:
         """Exclude data from the fit for a data set.
@@ -8849,7 +8849,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_fit_ids(self,
                      id: IdType | None,
-                     otherids: Sequence[IdType] | None = None
+                     otherids: IdTypes | None = None
                      ) -> list[IdType]:
         """Return the identifiers that will be used for a fit.
 
@@ -8953,7 +8953,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _prepare_fit(self,
                      id: IdType | None,
-                     otherids: Sequence[IdType] = ()
+                     otherids: IdTypes = ()
                      ) -> list[FitStore]:
         """Ensure we have all the requested ids, datasets, and models.
 
@@ -9006,7 +9006,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_fit(self,
                  id: IdType | None,
-                 otherids: Sequence[IdType] = (),
+                 otherids: IdTypes = (),
                  estmethod=None, numcores=1
                  ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object for the given identifiers.
@@ -9850,7 +9850,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: improve discussion of how the simulations are done.
     def plot_pvalue(self, null_model, alt_model, conv_model=None,
                     id: IdType = 1,
-                    otherids: Sequence[IdType] = (),
+                    otherids: IdTypes = (),
                     num=500, bins=25, numcores=None,
                     replot=False, overplot=False, clearwindow=True,
                     **kwargs):
@@ -9960,7 +9960,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id: IdType = 1,
-                        otherids: Sequence[IdType] = (),
+                        otherids: IdTypes = (),
                         num=500, bins=25, numcores=None,
                         recalc=False):
         """Return the data used by plot_pvalue.
@@ -10069,7 +10069,7 @@ class Session(NoNewAttributesAfterInit):
 
     def normal_sample(self, num=1, sigma=1, correlate=True,
                       id: IdType | None = None,
-                      otherids: Sequence[IdType] = (),
+                      otherids: IdTypes = (),
                       numcores=None):
         """Sample the fit statistic by taking the parameter values
         from a normal distribution.
@@ -10141,7 +10141,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: improve the description of factor parameter
     def uniform_sample(self, num=1, factor=4,
                        id: IdType | None = None,
-                       otherids: Sequence[IdType] = (),
+                       otherids: IdTypes = (),
                        numcores=None):
         """Sample the fit statistic by taking the parameter values
         from an uniform distribution.
@@ -10198,7 +10198,7 @@ class Session(NoNewAttributesAfterInit):
 
     def t_sample(self, num=1, dof=None,
                  id: IdType | None = None,
-                 otherids: Sequence[IdType] = (),
+                 otherids: IdTypes = (),
                  numcores=None):
         """Sample the fit statistic by taking the parameter values from
         a Student's t-distribution.
@@ -11946,7 +11946,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: add pointers on what to do with the return values
     def get_draws(self,
                   id: IdType | None = None,
-                  otherids: Sequence[IdType] = (),
+                  otherids: IdTypes = (),
                   niter=1000, covar_matrix=None):
         """Run the pyBLoCXS MCMC algorithm.
 
@@ -13788,7 +13788,7 @@ class Session(NoNewAttributesAfterInit):
     # Line plots
     #
     def _multi_plot(self,
-                    args: Sequence[IdType],
+                    args: IdTypes,
                     plotmeth: Literal["plot", "contour"] = "plot",
                     rows: int | None = None,
                     cols: int | None = None,
@@ -14531,8 +14531,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_data_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils
     #  - we include a description of the DataPHA handling here
@@ -14617,8 +14617,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_model_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
@@ -14692,8 +14692,8 @@ class Session(NoNewAttributesAfterInit):
 
         # Note: if replot=True then the value of model is ignored,
         #       which is probably surprising to users
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_source_components(self,
                                id: IdType | None = None,
@@ -14846,8 +14846,8 @@ class Session(NoNewAttributesAfterInit):
 
         # Note: if replot=True then the value of model is ignored,
         #       which is probably surprising to users
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_model_components(self,
                               id: IdType | None = None,
@@ -14992,8 +14992,8 @@ class Session(NoNewAttributesAfterInit):
                                 "You should use plot_model instead.")
 
         plotobj = self.get_source_plot(idval, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_fit(self,
                  id: IdType | None = None,
@@ -15082,8 +15082,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_fit_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_resid(self,
                    id: IdType | None = None,
@@ -15167,8 +15167,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_resid_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_chisqr(self,
                     id: IdType | None = None,
@@ -15231,8 +15231,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_chisqr_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_delchi(self,
                     id: IdType | None = None,
@@ -15312,8 +15312,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_delchi_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_ratio(self,
                    id: IdType | None = None,
@@ -15391,8 +15391,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_ratio_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_psf(self,
                  id: IdType | None = None,
@@ -15453,8 +15453,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_psf_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_kernel(self,
                     id: IdType | None = None,
@@ -15517,11 +15517,12 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plotobj = self.get_kernel_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def _jointplot2(self, plot1, plot2,
-                    overplot=False, clearwindow=True,
+                    overplot: bool = False,
+                    clearwindow: bool = True,
                     **kwargs) -> None:
         """Create a joint plot, vertically aligned, fit data on the top.
 
@@ -15540,14 +15541,18 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        self._jointplot.reset()
+        # Split up the kwargs so that they are per-plot.
+        #
+        kwstore = get_per_plot_kwargs(2, kwargs)
 
+        self._jointplot.reset()
         with sherpa.plot.backend:
 
             # Note: the user preferences are set to both plots
             #
             self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow, **kwargs)
+                                    clearwindow=clearwindow,
+                                    **kwstore[0])
 
             # The two plots are intended to have the same scaling
             # on the X axis (log or linear), and the approach is
@@ -15567,7 +15572,8 @@ class Session(NoNewAttributesAfterInit):
             if dprefs['xlog'] or mprefs['xlog']:
                 p2prefs['xlog'] = True
 
-            self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
+            self._jointplot.plotbot(plot2, overplot=overplot,
+                                    **kwstore[1])
 
             p2prefs['xlog'] = oldval
 
@@ -15580,6 +15586,10 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_resid` - for a data set.
+
+        .. versionchanged:: 4.18.0
+           Per-plot options can now be given by using a pair of
+           values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15657,13 +15667,17 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot_fit_resid(capsize=4, color='skyblue', xerrorbars=False)
 
+        Add a label for the components of both plots:
+
+        >>> plot_fit_resid(label=['fit', 'resid'], alpha=0.5)
+
         """
 
-        plot1obj = self.get_fit_plot(id, recalc=not replot)
-        plot2obj = self.get_resid_plot(id, recalc=not replot)
-        self._jointplot2(plot1obj, plot2obj,
-                         overplot=overplot, clearwindow=clearwindow,
-                         **kwargs)
+        recalc = not replot
+        plot1obj = self.get_fit_plot(id, recalc=recalc)
+        plot2obj = self.get_resid_plot(id, recalc=recalc)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     def plot_fit_ratio(self,
                        id: IdType | None = None,
@@ -15674,6 +15688,10 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_ratio` - for a data set.
+
+        .. versionchanged:: 4.18.0
+           Per-plot options can now be given by using a pair of
+           values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15749,13 +15767,17 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot_fit_ratio(marker='s', linestyle='none')
 
+        Add a label for the components of both plots:
+
+        >>> plot_fit_ratio(label=['fit', 'resid'], alpha=0.5)
+
         """
 
-        plot1obj = self.get_fit_plot(id, recalc=not replot)
-        plot2obj = self.get_ratio_plot(id, recalc=not replot)
-        self._jointplot2(plot1obj, plot2obj,
-                         overplot=overplot, clearwindow=clearwindow,
-                         **kwargs)
+        recalc = not replot
+        plot1obj = self.get_fit_plot(id, recalc=recalc)
+        plot2obj = self.get_ratio_plot(id, recalc=recalc)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     def plot_fit_delchi(self,
                         id: IdType | None = None,
@@ -15766,6 +15788,10 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_delchi` - for a data set.
+
+        .. versionchanged:: 4.18.0
+           Per-plot options can now be given by using a pair of
+           values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15842,13 +15868,17 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot_fit_delchi(ecolor='gray')
 
+        Add a label for the components of both plots:
+
+        >>> plot_fit_delchi(label=['fit', 'resid'], alpha=0.5)
+
         """
 
-        plot1obj = self.get_fit_plot(id, recalc=not replot)
-        plot2obj = self.get_delchi_plot(id, recalc=not replot)
-        self._jointplot2(plot1obj, plot2obj,
-                         overplot=overplot, clearwindow=clearwindow,
-                         **kwargs)
+        recalc = not replot
+        plot1obj = self.get_fit_plot(id, recalc=recalc)
+        plot2obj = self.get_delchi_plot(id, recalc=recalc)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     #
     # Statistical plotting routines
@@ -15906,8 +15936,8 @@ class Session(NoNewAttributesAfterInit):
         if not replot:
             plotobj.prepare(points, bins, normed, xlabel, name)
 
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def get_pdf_plot(self):
         """Return the data used to plot the last PDF.
@@ -15975,8 +16005,8 @@ class Session(NoNewAttributesAfterInit):
         if not replot:
             plotobj.prepare(points, xlabel, name)
 
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def get_cdf_plot(self):
         """Return the data used to plot the last CDF.
@@ -16051,8 +16081,8 @@ class Session(NoNewAttributesAfterInit):
         if not replot:
             plotobj.prepare(points, xlabel, name)
 
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def get_trace_plot(self):
         """Return the data used to plot the last trace.
@@ -16124,8 +16154,8 @@ class Session(NoNewAttributesAfterInit):
         if not replot:
             plotobj.prepare(x, y, xlabel, ylabel, name)
 
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def get_scatter_plot(self):
         """Return the data used to plot the last scatter plot.
@@ -16675,8 +16705,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot1obj = self.get_fit_contour(id, recalc=not replot)
-        plot2obj = self.get_resid_contour(id, recalc=not replot)
+        recalc = not replot
+        plot1obj = self.get_fit_contour(id, recalc=recalc)
+        plot2obj = self.get_resid_contour(id, recalc=recalc)
 
         # This does not use _jointplot because the X axis is not
         # obviously shared between the two plots.
@@ -16685,8 +16716,12 @@ class Session(NoNewAttributesAfterInit):
         with sherpa.plot.backend:
 
             # Note: the user settings are applied to both contours
-            self._splitplot.addcontour(plot1obj, overcontour=overcontour, **kwargs)
-            self._splitplot.addcontour(plot2obj, overcontour=overcontour, **kwargs)
+            self._splitplot.addcontour(plot1obj,
+                                       overcontour=overcontour,
+                                       **kwargs)
+            self._splitplot.addcontour(plot2obj,
+                                       overcontour=overcontour,
+                                       **kwargs)
 
 
     ###########################################################################
@@ -16697,7 +16732,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: needs to support the fast option of int_proj
     def get_int_proj(self, par=None,
                      id: IdType | None = None,
-                     otherids: Sequence[IdType] | None = None,
+                     otherids: IdTypes | None = None,
                      recalc=False,
                      fast=True, min=None, max=None, nloop=20, delv=None, fac=1,
                      log=False, numcores=None):
@@ -16815,7 +16850,7 @@ class Session(NoNewAttributesAfterInit):
     # recalc=True
     def get_int_unc(self, par=None,
                     id: IdType | None = None,
-                    otherids: Sequence[IdType] | None = None,
+                    otherids: IdTypes | None = None,
                     recalc=False,
                     min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                     numcores=None):
@@ -16928,7 +16963,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_reg_proj(self, par0=None, par1=None,
                      id: IdType | None = None,
-                     otherids: Sequence[IdType] | None = None,
+                     otherids: IdTypes | None = None,
                      recalc=False, fast=True, min=None, max=None,
                      nloop=(10, 10), delv=None, fac=4, log=(False, False),
                      sigma=(1, 2, 3), levels=None, numcores=None):
@@ -17060,7 +17095,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_reg_unc(self, par0=None, par1=None,
                     id: IdType | None = None,
-                    otherids: Sequence[IdType] | None = None,
+                    otherids: IdTypes | None = None,
                     recalc=False, min=None, max=None, nloop=(10, 10),
                     delv=None, fac=4, log=(False, False), sigma=(1, 2, 3),
                     levels=None, numcores=None):
@@ -17195,7 +17230,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: same synopsis as int_unc
     def int_proj(self, par,
                  id: IdType | None = None,
-                 otherids: Sequence[IdType] | None = None,
+                 otherids: IdTypes | None = None,
                  replot=False, fast=True,
                  min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                  numcores=None,
@@ -17314,14 +17349,15 @@ class Session(NoNewAttributesAfterInit):
         plotobj = self.get_int_proj(par=par, id=id, otherids=otherids,
                                     recalc=not replot, fast=fast,
                                     min=min, max=max, nloop=nloop,
-                                    delv=delv, fac=fac, log=log, numcores=numcores)
+                                    delv=delv, fac=fac, log=log,
+                                    numcores=numcores)
         self._plot(plotobj, overplot=overplot)
 
     # DOC-NOTE: I am not convinced I have fac described correctly
     # DOC-NOTE: same synopsis as int_proj
     def int_unc(self, par,
                 id: IdType | None = None,
-                otherids: Sequence[IdType] | None = None,
+                otherids: IdTypes | None = None,
                 replot=False, min=None,
                 max=None, nloop=20, delv=None, fac=1, log=False,
                 numcores=None,
@@ -17435,8 +17471,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
+        recalc = not replot
         plotobj = self.get_int_unc(par=par, id=id, otherids=otherids,
-                                   recalc=not replot, min=min, max=max,
+                                   recalc=recalc, min=min, max=max,
                                    nloop=nloop, delv=delv, fac=fac,
                                    log=log, numcores=numcores)
         self._plot(plotobj, overplot=overplot)
@@ -17444,7 +17481,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self, par0, par1,
                  id: IdType | None = None,
-                 otherids: Sequence[IdType] | None = None,
+                 otherids: IdTypes | None = None,
                  replot=False,
                  fast=True, min=None, max=None, nloop=(10, 10), delv=None,
                  fac=4, log=(False, False), sigma=(1, 2, 3), levels=None,
@@ -17569,18 +17606,19 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_reg_proj(par0, par1, id=id, otherids=otherids,
-                                    recalc=not replot, fast=fast,
-                                    min=min, max=max, nloop=nloop,
-                                    delv=delv, fac=fac, log=log,
-                                    sigma=sigma, levels=levels,
-                                    numcores=numcores)
+        recalc = not replot
+        plotobj = self.get_reg_proj(par0, par1, id=id,
+                                    otherids=otherids, recalc=recalc,
+                                    fast=fast, min=min, max=max,
+                                    nloop=nloop, delv=delv, fac=fac,
+                                    log=log, sigma=sigma,
+                                    levels=levels, numcores=numcores)
         self._contour(plotobj, overcontour=overplot)
 
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_unc(self, par0, par1,
                 id: IdType | None = None,
-                otherids: Sequence[IdType] | None = None,
+                otherids: IdTypes | None = None,
                 replot=False,
                 min=None, max=None, nloop=(10, 10), delv=None, fac=4,
                 log=(False, False), sigma=(1, 2, 3), levels=None,
@@ -17708,18 +17746,14 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_reg_unc(par0, par1, id=id, otherids=otherids,
-                                   recalc=not replot, min=min, max=max, nloop=nloop,
+        recalc = not replot
+        plotobj = self.get_reg_unc(par0, par1, id=id,
+                                   otherids=otherids, recalc=recalc,
+                                   min=min, max=max, nloop=nloop,
                                    delv=delv, fac=fac, log=log,
                                    sigma=sigma, levels=levels,
                                    numcores=numcores)
         self._contour(plotobj, overcontour=overplot)
-
-    # Aliases
-    # interval_projection = int_proj
-    # interval_uncertainty = int_unc
-    # region_projection = reg_proj
-    # region_uncertainty = reg_unc
 
     ###########################################################################
     # Basic imaging

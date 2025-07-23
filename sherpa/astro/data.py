@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015 - 2025
+#  Copyright (C) 2008, 2015-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -139,7 +139,8 @@ from sherpa.utils import pad_bounding_box, interpolate, \
 from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
 from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
-from sherpa.utils.types import ArrayType, IdType, ModelFunc, StatErrFunc
+from sherpa.utils.types import ArrayType, IdType, IdTypes, \
+    ModelFunc, StatErrFunc
 
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid symbols.
@@ -1765,7 +1766,7 @@ must be an integer.""")
     def _get_response_ids(self) -> list[IdType]:
         return self._response_ids
 
-    def _set_response_ids(self, ids: Sequence[IdType]) -> None:
+    def _set_response_ids(self, ids: IdTypes) -> None:
         if not np.iterable(ids):
             raise DataErr('idsnotarray', 'response', str(ids))
 
@@ -1786,7 +1787,7 @@ will be removed. The identifiers can be integers or strings.
     def _get_background_ids(self) -> list[IdType]:
         return self._background_ids
 
-    def _set_background_ids(self, ids: Sequence[IdType]) -> None:
+    def _set_background_ids(self, ids: IdTypes) -> None:
         if not np.iterable(ids):
             raise DataErr('idsnotarray', 'background', str(ids))
 
@@ -4928,7 +4929,7 @@ It is an integer or string.
                lo: float | None = None,
                hi: float | None = None,
                ignore: bool = False,
-               bkg_id: IdType | Sequence[IdType] | None = None
+               bkg_id: IdType | IdTypes | None = None
                ) -> None:
         """Notice or ignore the given range.
 
