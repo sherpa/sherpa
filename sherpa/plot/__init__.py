@@ -3950,15 +3950,48 @@ class MultiPlot:
     that use the `plot` method to display - to be drawn in
     the same area. Each plot is added with the add method.
 
+    .. versionchanged:: 4.18.0
+       A number of attributes are now taken from the first plot,
+       once it has been added.
+
     .. versionadded:: 4.16.1
 
     """
 
-    __slots__ = ("plots", "title")
+    __slots__ = ("plots", "_title")
 
     def __init__(self) -> None:
         self.plots: list[Plot | HistogramPlot] = []
         self.title = ""
+
+    # Take the labels and preferences from the first element of plots
+    # (assuming it is set). For now hard-code the supported
+    # attributes. The title attribute is special-cased, since
+    # it can be set for this object - in which case we want to
+    # use this value - otherwise it is taken from self.plots[0].
+    #
+    @property
+    def title(self):
+        if self._title != "" or len(self.plots) == 0:
+            return self._title
+
+        return self.plots[0].title
+
+    @title.setter
+    def title(self, value):
+        self._title = value
+
+    def __getattr__(self, attr):
+        if attr not in ["title", "xlabel", "ylabel", "plot_prefs",
+                        "histo_prefs"]:
+            raise AttributeError(f"'{self.__class__.__name__}' "
+                                 f"object has no attribute '{attr}'")
+
+        if len(self.plots) == 0:
+            raise AttributeError("Need a plot to define the "
+                                 f"'{attr}' attribute")
+
+        return getattr(self.plots[0], attr)
 
     # The typing here says Plot but we actually want the sub-classes
     # like DataPlot (i.e.  those that use the prepare method to set up
@@ -3986,6 +4019,23 @@ class MultiPlot:
         # calling code.
         #
         self.plots.append(copy.deepcopy(plot))
+
+    # Preferences are delegated to the first plot, so
+    #   a) they will fail if no plots have been added
+    #   b) the choice of plot_prefs or histo_prefs depents on
+    #      the plot type
+    #
+    @property
+    def histo_prefs(self):
+        if len(self.plots) == 0:
+            raise AttributeError("no plots have been added")
+        return self.plots[0].histo_prefs
+
+    @property
+    def plot_prefs(self):
+        if len(self.plots) == 0:
+            raise AttributeError("no plots have been added")
+        return self.plots[0].plot_prefs
 
     def plot(self,
              overplot: bool = False,
@@ -4017,6 +4067,7 @@ class MultiPlot:
 
         kwstore = get_per_plot_kwargs(len(self.plots),
                                       kwargs)
+
         for plot, store in zip(self.plots, kwstore):
             plot.plot(overplot=overplot, clearwindow=clearwindow,
                       **store)
@@ -4028,7 +4079,12 @@ class MultiPlot:
             # whether to add in the title or not.
             #
             if not overplot:
-                backend.set_title(self.title)
+                try:
+                    backend.set_title(self.title)
+                except AttributeError:
+                    # The first plot may not have a title attribute
+                    # (e.g. FitPlot).
+                    pass
 
             overplot = True
             clearwindow = False
