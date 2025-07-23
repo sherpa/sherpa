@@ -298,6 +298,10 @@ def test_filter_bad_grouped(make_data_path, clean_astro_ui, caplog):
     assert pha.get_mask() == pytest.approx(expected)
 
 
+# Do not use pytest.param(Session, marks=pytest.mark.session) as these
+# tests are quick to run and historically there has been differences
+# to how the filtering works in the two session classes.
+#
 @pytest.mark.parametrize("session", [Session, AstroSession])
 @pytest.mark.parametrize("expr,result",
                          [("4:13", "5:13"),
@@ -340,6 +344,10 @@ def test_notice_string_data1d(session, expr, result, caplog):
     clc_filter(caplog, expected)
 
 
+# Do not use pytest.param(Session, marks=pytest.mark.session) as these
+# tests are quick to run and historically there has been differences
+# to how the filtering works in the two session classes.
+#
 @pytest.mark.parametrize("session", [Session, AstroSession])
 @pytest.mark.parametrize("expr,result",
                          [("4:13", "5:13"),
@@ -422,6 +430,10 @@ def test_notice_string_datapha(expr, result, caplog):
     clc_filter(caplog, expected)
 
 
+# Do not use pytest.param(Session, marks=pytest.mark.session) as these
+# tests are quick to run and historically there has been differences
+# to how the filtering works in the two session classes.
+#
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_notice_reporting_data1d(session, caplog):
     """Unit-style test of logging of notice/ignore: Data1D"""
@@ -458,6 +470,10 @@ def test_notice_reporting_data1d(session, caplog):
     clc_filter(caplog, "dataset 1: no data (unchanged)")
 
 
+# Do not use pytest.param(Session, marks=pytest.mark.session) as these
+# tests are quick to run and historically there has been differences
+# to how the filtering works in the two session classes.
+#
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_notice_reporting_data1dint(session, caplog):
     """Unit-style test of logging of notice/ignore: Data1DInt"""
@@ -572,6 +588,10 @@ def test_notice_reporting_datapha_with_response(caplog):
     clc_filter(caplog, "dataset 1: 10:15 -> 1:19 Channel")
 
 
+# Do not use pytest.param(Session, marks=pytest.mark.session) as these
+# tests are quick to run and historically there has been differences
+# to how the filtering works in the two session classes.
+#
 @pytest.mark.parametrize("session", [Session, AstroSession])
 def test_notice_reporting_data2d(session, caplog):
     """Unit-style test of logging of notice/ignore: Data2D
