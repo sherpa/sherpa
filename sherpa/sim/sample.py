@@ -419,8 +419,9 @@ class ParameterSample(NoNewAttributesAfterInit):
         Returns
         -------
         clipped : 1D numpy array
-            The clipped samples (may be unchanged) and a 1D boolean
-            array indicating whether any sample in a row was clipped.
+            A 1D boolean array indicating whether any sample in a row
+            was clipped. Note that the input samples array will have
+            been updated if any element in clipped is True.
 
         """
 
