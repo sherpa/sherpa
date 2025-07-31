@@ -32,9 +32,10 @@ import numpy as np
 
 import pytest
 
-from sherpa import ui
+from sherpa.fit import ErrorEstResults, FitResults
 from sherpa.models.parameter import Parameter
 from sherpa.models.model import ArithmeticModel
+from sherpa import ui
 from sherpa.utils.err import ArgumentTypeErr, DataErr, IdentifierErr, ParameterErr
 from sherpa.utils.logging import SherpaVerbosity
 
@@ -1579,3 +1580,200 @@ def test_normal_sample_correlate(setrng, clean_ui):
     stat_t = e1t[:, 0]
     stat_f = e1f[:, 0]
     assert not stat_f == pytest.approx(stat_t)
+
+
+def setup_linked_pars(swap: bool = False
+                      ) -> tuple[ArithmeticModel, ArithmeticModel]:
+    """Create simple setup for test_normal_sample_linked_par_xxx
+
+    If swap is False then the linked par version and the original
+    have the same order of thawedpars, otherwise they are swapped.
+    """
+
+    # Fit the same data with the same model.
+    #
+    # This data is best-described with a poisson process. It was
+    # generated from a model with c0=-3, c1=4.
+    #
+    x = [1, 2, 3, 4, 5]
+    y = [1, 4, 12, 19, 12]
+
+    ui.load_arrays(1, x, y)
+    ui.set_source(1, ui.polynom1d.mdl1)
+    mdl1.c1.thaw()
+
+    ui.load_arrays(2, x, y)
+    ui.set_source(2, ui.polynom1d.mdl2)
+    mdl2.c1.thaw()
+
+    linkedpar = ui.create_model_component("scale1d", "linkedpar")
+    if swap:
+        mdl2.c0 = linkedpar.c0
+    else:
+        mdl2.c1 = linkedpar.c0
+
+    return mdl1, mdl2
+
+def basic_linked_par_validation(mdl1: ArithmeticModel,
+                                mdl2: ArithmeticModel,
+                                f1: FitResults,
+                                f2: FitResults,
+                                c1: ErrorEstResults,
+                                c2: ErrorEstResults,
+                                swap: bool = False) -> None:
+    """Simple checks that the fit results match for linked pars.
+
+    This is just pulled out of the test to avoid complication, and is
+    just a test that the lniked-parameter fit is working as expected.
+
+    swap indicates whether the thawed pars are in the same order
+    in the two cases (False) or swapped (True).
+    """
+
+    # We have the same fit results
+    assert f1.datasets == (1, )
+    assert f2.datasets == (2, )
+    assert f2.statval == pytest.approx(f1.statval)
+    assert f2.dof == f1.dof
+
+    assert len(mdl2.thawedpars) == len(mdl1.thawedpars)
+    assert len(mdl1.get_thawed_pars()) == len(mdl2.get_thawed_pars())
+
+    assert mdl1.get_thawed_pars()[0].fullname == "mdl1.c0"
+    assert mdl1.get_thawed_pars()[1].fullname == "mdl1.c1"
+
+    if swap:
+        assert mdl2.get_thawed_pars()[0].fullname == "mdl2.c1"
+    else:
+        assert mdl2.get_thawed_pars()[0].fullname == "mdl2.c0"
+
+    assert mdl2.get_thawed_pars()[1].fullname == "linkedpar.c0"
+
+    if swap:
+        assert mdl2.thawedpars[0] == pytest.approx(mdl1.c1.val)
+        assert mdl2.thawedpars[1] == pytest.approx(mdl1.c0.val)
+        assert linkedpar.c0.val == pytest.approx(mdl1.c0.val)
+    else:
+        assert mdl2.thawedpars[0] == pytest.approx(mdl1.c0.val)
+        assert mdl2.thawedpars[1] == pytest.approx(mdl1.c1.val)
+        assert linkedpar.c0.val == pytest.approx(mdl1.c1.val)
+
+    assert c1.parnames == ('mdl1.c0', 'mdl1.c1')
+    if swap:
+        assert c2.parnames == ('mdl2.c1', 'linkedpar.c0')
+    else:
+        assert c2.parnames == ('mdl2.c0', 'linkedpar.c0')
+
+    if swap:
+        assert c2.parmins[0] == pytest.approx(c1.parmins[1])
+        assert c2.parmins[1] == pytest.approx(c1.parmins[0])
+        assert c2.parmaxes[0] == pytest.approx(c1.parmaxes[1])
+        assert c2.parmaxes[1] == pytest.approx(c1.parmaxes[0])
+    else:
+        assert c2.parmins == pytest.approx(c1.parmins)
+        assert c2.parmaxes == pytest.approx(c1.parmaxes)
+
+
+@pytest.mark.parametrize("correlate", [pytest.param(False, marks=pytest.mark.xfail), True])  # See issue #2332
+@pytest.mark.parametrize("method", ["levmar", "simplex"])
+@pytest.mark.parametrize("swap", [False, True])
+def test_normal_sample_linked_par_chisq(swap, method, correlate, clean_ui):
+    """Does it work with a linked parameter?
+
+    Although the data is best described by a Poisson process,
+    use chi-square statistic for the fit.
+    """
+
+    mdl1, mdl2 = setup_linked_pars(swap=swap)
+
+    # Since the error estimation may depend on the optimizer, make
+    # sure we check.
+    #
+    ui.set_stat("chi2datavar")
+    ui.set_method(method)
+
+    ui.fit(1)
+    f1 = ui.get_fit_results()
+
+    ui.fit(2)
+    f2 = ui.get_fit_results()
+
+    ui.covar(1)
+    c1 = ui.get_covar_results()
+
+    ui.covar(2)
+    c2 = ui.get_covar_results()
+
+    basic_linked_par_validation(mdl1, mdl2, f1, f2, c1, c2,
+                                swap=swap)
+
+    set_rng_local()
+    s1 = ui.normal_sample(id=1, num=5, correlate=correlate)
+
+    set_rng_local()
+    s2 = ui.normal_sample(id=2, num=5, correlate=correlate)
+
+    if not swap:
+        # Since the thwedpars should have the same order for the
+        # original and linked-par version, the results should match.
+        #
+        assert s2 == pytest.approx(s1)
+        return
+
+    # Since the parameter order is swapped we do not expect
+    # the same results for the two calls. There are some things
+    # we can check however.
+    #
+    # TODO: somehow the statistic values actually match, which DJB
+    # does not understand! Although we want to be rng_i * sigma_j away
+    # from the best-fit location with the sampled parameter values,
+    # the sigma_j values (which are per-model parameter) have nothing
+    # to do with the calculation of the statistic, which is from
+    # chi2datavar in this case, and calculated per-data point.
+    #
+    assert s2[:, 0] == pytest.approx(s1[:, 0])
+
+    if not correlate:
+        # Since the thawed parameters are swapped for the two datasets,
+        # the sampled values will be different. However, since we used
+        # correlate=False, so the samples are drawn from the sigma value
+        # from the covar run - i.e. the cX.parmaxes values - we can
+        # reverse calculate what the random values would have been,
+        # and so we can check that these are as expected.
+        #
+        d1 = (s1[:, 1:] - mdl1.thawedpars) / c1.parmaxes
+        d2 = (s2[:, 1:] - mdl2.thawedpars) / c2.parmaxes
+
+        assert d2 == pytest.approx(d1)
+
+    # Safety check: we should be at the best-fit location here.
+    #
+    orig1 = ui.calc_stat(1)
+    orig2 = ui.calc_stat(2)
+    assert orig2 == pytest.approx(orig1)
+    assert orig1 == pytest.approx(f1.statval)
+
+    # Apply the first row of the sample values and check the
+    # statistic.
+    #
+    # This is to check that we get the actual statistic values and
+    # that, even though the parameter values are different, the stats
+    # are the same. As mentioned, DJB does not understand why this is
+    # so, so if this starts to fail in the future this may not be a
+    # bad thing.
+    #
+    mdl2.thawedpars = s2[0, 1:]
+    check2 = ui.calc_stat(2)
+
+    mdl1.thawedpars = s1[0, 1:]
+    check1 = ui.calc_stat(1)
+
+    # Just check they are not the same.
+    assert mdl2.thawedpars != pytest.approx(mdl1.thawedpars)
+
+    assert check2 == pytest.approx(check1)
+    assert check1 == pytest.approx(s1[0, 0])
+
+    # This location should be worse than the best-fit location.
+    #
+    assert check1 > f1.statval

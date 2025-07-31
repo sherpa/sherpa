@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2021, 2023, 2024
+#  Copyright (C) 2017, 2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -27,9 +27,13 @@ import numpy as np
 
 import pytest
 
+from sherpa.data import Data1D
+from sherpa.fit import Fit
+from sherpa.models.basic import Polynom1D
 from sherpa import sim
 from sherpa.sim.mh import dmvnorm, dmvt, rmvt
 from sherpa.stats import Chi2DataVar, LeastSq
+from sherpa.utils.err import EstErr
 
 
 # This is part of #397
@@ -151,3 +155,42 @@ def test_dmvnorm_checks_symmetry():
     with pytest.raises(ValueError,
                        match="^Error: sigma is not symmetric$"):
         dmvnorm(14.3, 2.3, sigma)
+
+
+@pytest.mark.parametrize("myscales", [True, pytest.param([1, 2, 3], marks=pytest.mark.xfail)])  # does not check length
+def test_parameterscale_checks_samples_size_vector(myscales):
+    """Do we error out?"""
+
+    d = Data1D("x", [1, 2, 3], [5, 2, 3])
+    m = Polynom1D("m")
+    assert len(m.thawedpars) == 1
+
+    f = Fit(data=d, model=m)
+
+    p = sim.ParameterScaleVector()
+    with pytest.raises(TypeError,
+                       match="^scales option must be "
+                       "iterable of length 1$"):
+        _ = p.get_scales(f, myscales=myscales)
+
+
+@pytest.mark.parametrize("myscales", [True,
+                                      [1, 2],
+                                      [[1, 2, 3],
+                                       [4, 5, 6]]
+                                      ])
+def test_parameterscale_checks_samples_size_matrix(myscales):
+    """Do we error out?"""
+
+    d = Data1D("x", [1, 2, 3, 4, 5], [5, 2, 3, 7, 12])
+    m = Polynom1D("m")
+    m.c1.thaw()
+    assert len(m.thawedpars) == 2
+
+    f = Fit(data=d, model=m)
+
+    p = sim.ParameterScaleMatrix()
+    with pytest.raises(EstErr,
+                       match="^scales must be a numpy array "
+                       r"of size \(2,2\)$"):
+        _ = p.get_scales(f, myscales=myscales)
