@@ -219,34 +219,46 @@ class ParameterScaleVector(ParameterScale):
                     fit.estmethod = conf
                     try:
                         t = fit.est_errors(parlist=(par,))
-                        if t.parmins[0] is not None and t.parmaxes[0] is not None:
-                            scale = abs(t.parmins[0])
 
-                        else:
-
-                            if t.parmins[0] is None and t.parmaxes[0] is not None:
+                        # QUS: could this not be
+                        #
+                        #   if parmin is not None:
+                        #      use abs(parmin)
+                        #   elif parmax is not None
+                        #      use abs(parmax)
+                        #   else
+                        #      ...
+                        #
+                        # It would potentially change the results from
+                        # some analyses.
+                        #
+                        if t.parmaxes[0] is not None:
+                            if t.parmins[0] is not None:
+                                scale = abs(t.parmins[0])
+                            else:
                                 scale = abs(t.parmaxes[0])
 
+                        else:
+                            warning('1 sigma bounds for parameter %s'
+                                    ' could not be found, using soft limit minimum',
+                                    par.fullname)
+                            if 0.0 == abs(par.min):
+                                scale = 1.0e-16
                             else:
-                                warning('1 sigma bounds for parameter %s'
-                                        ' could not be found, using soft limit minimum',
-                                        par.fullname)
-                                if 0.0 == abs(par.min):
-                                    scale = 1.0e-16
-                                else:
-                                    scale = abs(par.min)
+                                scale = abs(par.min)
 
                     finally:
                         fit.estmethod = oldestmethod
+
                 scales.append(scale)
 
-        else:
-            if not np.iterable(myscales):
-                emsg = "scales option must be iterable of " + \
-                       f"length {len(thawedpars)}"
-                raise TypeError(emsg)
-
+        elif np.iterable(myscales):
             scales = abs(np.asarray(myscales))
+
+        else:
+            emsg = "scales option must be iterable of " + \
+                f"length {len(thawedpars)}"
+            raise TypeError(emsg)
 
         return np.asarray(scales).transpose()
 
@@ -312,11 +324,12 @@ class ParameterScaleMatrix(ParameterScale):
 
         cov = np.asarray(cov)
 
-        # Investigate spectral decomposition to avoid requirement that the cov be
-        # semi-positive definite.  Nevermind, NumPy already uses SVD to generate
-        # deviates from a multivariate normal.  An alternative is to use Cholesky
-        # decomposition, but it assumes that the matrix is semi-positive
-        # definite.
+        # Investigate spectral decomposition to avoid requirement that
+        # the cov be semi-positive definite.  Nevermind, NumPy already
+        # uses SVD to generate deviates from a multivariate normal.
+        # An alternative is to use Cholesky decomposition, but it
+        # assumes that the matrix is semi-positive definite.
+        #
         if np.min(np.linalg.eigvalsh(cov)) <= 0:
             raise TypeError("The covariance matrix is not positive definite")
 
