@@ -1090,6 +1090,10 @@ def _check_length(dep) -> int:
 class Fit(NoNewAttributesAfterInit):
     """Fit a model to a data set.
 
+    .. versionchanged:: 4.18.0
+       Prior to 4.18.0 changing the method field would not change the method used
+       by fit and esterrors, just the label shown when a ``Fit`` object is printed.
+
     .. versionchanged:: 4.17.0
        Changing the stat field now changes the internal IterFit
        object as well.
@@ -1166,22 +1170,20 @@ class Fit(NoNewAttributesAfterInit):
 
     @property
     def stat(self) -> Stat:
-        """Return the statistic object"""
+        """Set or get the statistic object"""
         return self._iterfit.stat
 
     @stat.setter
     def stat(self, stat: Stat) -> None:
-        """Ensure that we use a consistent stat object."""
         self._iterfit.stat = stat
 
     @property
     def method(self) -> OptMethod:
-        """Return the method object"""
+        """Set or get the method object"""
         return self._iterfit.method
 
     @method.setter
     def method(self, method: OptMethod) -> None:
-        """Ensure that we use a consistent method object."""
         self._iterfit.method = method
 
     def __setstate__(self, state):
