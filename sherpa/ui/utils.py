@@ -10204,7 +10204,7 @@ class Session(NoNewAttributesAfterInit):
         parameters. The median value of the statistic calculated by
         `uniform_sample` is returned:
 
-        >>> ans = uniform_sample(num=10000)
+        >>> ans = uniform_sample(num=1000)
         >>> ans.shape
         (1000, 4)
         >>> np.median(ans[:,0])
@@ -10271,7 +10271,7 @@ class Session(NoNewAttributesAfterInit):
         parameters. The median value of the statistic calculated by
         `t_sample` is returned:
 
-        >>> ans = t_sample(num=10000)
+        >>> ans = t_sample(num=1000)
         >>> ans.shape
         (1000, 4)
         >>> np.median(ans[:,0])
