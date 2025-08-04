@@ -178,15 +178,20 @@ class ParameterScaleVector(ParameterScale):
             generate the samples, along with any possible error
             analysis.
         myscales : numpy array or None, optional
-            The scales to use. If None then they are
-            calculated from the fit.
+            The scales to use: a one-dimensional array of the standard
+            deviation for each parameter (so there is no correlation
+            between the parameters). If None then they are calculated
+            from the fit, using the object's sigma attribute to scale
+            the results.
 
         Returns
         -------
         scales : numpy array
-            One-dimensional scales array (npar elements, matching the
-            free parameters in fit). The values are the sigma errors
-            for the parameters (or the input values if given).
+            One-dimensional array with npar elements, where npar is
+            the number of free parameters in the fit. The values are
+            the standard deviations for the free parameters, scaled by
+            the sigma value (or the input values if myscales is not
+            None).
 
         """
 
@@ -264,7 +269,7 @@ class ParameterScaleVector(ParameterScale):
             raise TypeError("scales option must be iterable of "
                             f"length {npar}")
 
-        return np.asarray(scales).transpose()
+        return np.asarray(scales)
 
 
 class ParameterScaleMatrix(ParameterScale):
@@ -285,16 +290,19 @@ class ParameterScaleMatrix(ParameterScale):
             generate the samples, along with any possible error
             analysis.
         myscales : numpy array or None, optional
-            The scales to use. If None then they are
-            calculated from the fit.
+            The scales to use: the two-dimensional covariance matrix
+            for the parameters.  If None then they are calculated from
+            the fit, using the object's sigma attribute to scale the
+            results.
 
         Returns
         -------
         scales : numpy array
-            Two-dimensional scales array (npar by npar elements,
-            matching the free parameters in fit). The values are the
-            covariance matrix for the parameters (or the input values
-            if given).
+            Two-dimensional square array of side npar, where npar is
+            the number of free parameters in the fit. The values are
+            the covariance matrix for the free parameters, scaled by
+            the sigma value (or the input values if myscales is not
+            None).
 
         """
 
@@ -310,12 +318,14 @@ class ParameterScaleMatrix(ParameterScale):
                 fit.estmethod = oldestmethod
 
             cov = r.extra_output
-            if cov is not None:
-                # Scale the covariance matrix by the square of the
-                # sigma value (which is expected to be 1, although it
-                # can be changed).
-                #
-                cov = self.sigma * self.sigma * cov
+            if cov is None:
+                raise EstErr('nocov')
+
+            # Scale the covariance matrix by the square of the
+            # sigma value (which is expected to be 1, although it
+            # can be changed).
+            #
+            cov = self.sigma * self.sigma * cov
 
         else:
             # NOTE: the self.sigma value is not used when the scales
@@ -331,12 +341,7 @@ class ParameterScaleMatrix(ParameterScale):
             if (npar, npar) != myscales.shape:
                 raise EstErr(msg)
 
-            cov = myscales
-
-        if cov is None:
-            raise EstErr('nocov')
-
-        cov = np.asarray(cov)
+            cov = np.asarray(myscales)
 
         # Investigate spectral decomposition to avoid requirement that
         # the cov be semi-positive definite.  Nevermind, NumPy already
@@ -550,8 +555,9 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
            This defines the thawed parameters that are used to generate
            the samples, along with any possible error analysis.
         myscales : 1D numpy array or None, optional
-           The error values (one sigma values) to use. If None then
-           it is calculated from the fit object.
+           The standard deviation values for the free parameters in
+           the fit. If None then the values are calculated from the
+           fit and scaled by the sigma value of the scale object.
         num : int, optional
            The number of samples to return.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
@@ -567,10 +573,10 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
         """
         vals = np.array(fit.model.thawedpars)
-        scales = self.scale.get_scales(fit, myscales)
+        scales = self.scale.get_scales(fit, myscales=myscales)
         size = int(num)
 
-        samples = [random.normal(rng, val, scale, size=size)
+        samples = [random.normal(rng, loc=val, scale=scale, size=size)
                    for val, scale in zip(vals, scales)]
         return np.asarray(samples).T
 
@@ -604,8 +610,9 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
            This defines the thawed parameters that are used to generate
            the samples, along with any possible error analysis.
         mycov : 2D numpy array or None, optional
-           The covariance matrix to use. If None then it is
-           calculated from the fit object.
+           The covariance matrix for the free parameters in the
+           fit. If None then the values are calculated from the fit
+           and scaled by the sigma value of the scale object.
         num : int, optional
            The number of samples to return.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
@@ -621,8 +628,9 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
         """
         vals = np.array(fit.model.thawedpars)
-        cov = self.scale.get_scales(fit, mycov)
-        return random.multivariate_normal(rng, vals, cov, size=int(num))
+        cov = self.scale.get_scales(fit, myscales=mycov)
+        return random.multivariate_normal(rng, mean=vals, cov=cov,
+                                          size=int(num))
 
 
 class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
@@ -671,7 +679,8 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
         """
         vals = np.array(fit.model.thawedpars)
         cov = self.scale.get_scales(fit)
-        return multivariate_t(vals, cov, dof, int(num), rng=rng)
+        return multivariate_t(vals, cov=cov, df=dof, size=int(num),
+                              rng=rng)
 
 
 class Evaluate:
@@ -723,6 +732,7 @@ def _sample_stat(fit: Fit,
 
     oldvals = fit.model.thawedpars
 
+    # QUS: does the cache really help when run in parallel?
     try:
         fit.model.startup(cache=cache)
         stats = np.asarray(parallel_map(Evaluate(fit), samples, numcores))
@@ -1065,6 +1075,8 @@ def uniform_sample(fit: Fit,
 
     """
     sampler = UniformSampleFromScaleVector()
+    # The factor and sigma arguments have the same effect, so fix
+    # sigma at 1.
     sampler.scale.sigma = 1
     return sampler.get_sample(fit, num=num, factor=factor,
                               numcores=numcores, rng=rng)
