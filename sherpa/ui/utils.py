@@ -61,6 +61,7 @@ from sherpa.optmethods import OptMethod
 import sherpa.plot
 from sherpa.plot import Plot, MultiPlot, set_backend, get_per_plot_kwargs
 import sherpa.sim
+from sherpa.sim.sample import ClipValue
 import sherpa.stats
 from sherpa.stats import Stat, UserStat
 import sherpa.utils
@@ -10068,7 +10069,8 @@ class Session(NoNewAttributesAfterInit):
                       correlate: bool = True,
                       id: IdType | None = None,
                       otherids: IdTypes = (),
-                      numcores: int | None = None
+                      numcores: int | None = None,
+                      clip: ClipValue = "hard"
                       ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values
         from a normal distribution.
@@ -10081,7 +10083,8 @@ class Session(NoNewAttributesAfterInit):
            The sigma parameter has been renamed to scale, and the code
            has been updated so that changing it will change the
            sampled values. The random state returned by get_rng is now
-           used for the sampling.
+           used for the sampling. The clip parameter has been added
+           (to match earlier versions change clip to "none").
 
         Parameters
         ----------
@@ -10102,6 +10105,11 @@ class Session(NoNewAttributesAfterInit):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('hard') is to fix values at their
+           hard limits if they exceed them. A value of 'soft' uses the
+           soft limits instead, and 'none' applies no clipping.
 
         Returns
         -------
@@ -10175,7 +10183,8 @@ class Session(NoNewAttributesAfterInit):
         rng = self.get_rng()
         return sherpa.sim.normal_sample(fit, num=num, scale=scale,
                                         correlate=correlate,
-                                        numcores=numcores, rng=rng)
+                                        numcores=numcores, rng=rng,
+                                        clip=clip)
 
     # DOC-TODO: improve the description of factor parameter
     def uniform_sample(self,
@@ -10183,7 +10192,8 @@ class Session(NoNewAttributesAfterInit):
                        factor: float = 4,
                        id: IdType | None = None,
                        otherids: IdTypes = (),
-                       numcores: int | None = None
+                       numcores: int | None = None,
+                       clip: ClipValue = "hard"
                        ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values
         from an uniform distribution.
@@ -10194,7 +10204,8 @@ class Session(NoNewAttributesAfterInit):
 
         .. versionchanged:: 4.18.0
            The random state returned by get_rng is now used for the
-           sampling.
+           sampling. The clip parameter has been added (to match
+           earlier versions change clip to "none").
 
         Parameters
         ----------
@@ -10210,6 +10221,11 @@ class Session(NoNewAttributesAfterInit):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('hard') is to fix values at their
+           hard limits if they exceed them. A value of 'soft' uses the
+           soft limits instead, and 'none' applies no clipping.
 
         Returns
         -------
@@ -10242,14 +10258,16 @@ class Session(NoNewAttributesAfterInit):
         ids, fit = self._get_fit(id, otherids)
         rng = self.get_rng()
         return sherpa.sim.uniform_sample(fit, num=num, factor=factor,
-                                         numcores=numcores, rng=rng)
+                                         numcores=numcores, rng=rng,
+                                         clip=clip)
 
     def t_sample(self,
                  num: int = 1,
                  dof: int | None = None,
                  id: IdType | None = None,
                  otherids: IdTypes = (),
-                 numcores: int | None = None
+                 numcores: int | None = None,
+                 clip: ClipValue = "hard"
                  ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values from
         a Student's t-distribution.
@@ -10260,7 +10278,8 @@ class Session(NoNewAttributesAfterInit):
 
         .. versionchanged:: 4.18.0
            The random state returned by get_rng is now used for the
-           sampling.
+           sampling. The clip parameter has been added (to match
+           earlier versions change clip to "none").
 
         Parameters
         ----------
@@ -10277,6 +10296,11 @@ class Session(NoNewAttributesAfterInit):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('hard') is to fix values at their
+           hard limits if they exceed them. A value of 'soft' uses the
+           soft limits instead, and 'none' applies no clipping.
 
         Returns
         -------
@@ -10313,7 +10337,8 @@ class Session(NoNewAttributesAfterInit):
 
         rng = self.get_rng()
         return sherpa.sim.t_sample(fit, num=num, dof=dof,
-                                   numcores=numcores, rng=rng)
+                                   numcores=numcores, rng=rng,
+                                   clip=clip)
 
     ###########################################################################
     # Error estimation
