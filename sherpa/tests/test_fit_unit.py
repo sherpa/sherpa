@@ -1876,22 +1876,22 @@ def test_fit_single(stat, usestat, usesys, finalstat):
     assert fr.statval == pytest.approx(finalstat, rel=7e-5)
 
 
-@pytest.mark.parametrize("stat,usestat,usesys,finalstat", [
-    (LeastSq, False, False, fit_lsq),
-    (Chi2, True, True, fit_chi2_tt),
-    (Chi2Gehrels, True, True, fit_chi2_tt),
-    (Chi2Gehrels, False, False, fit_gehrels_ff),
-    (Chi2XspecVar, False, True, fit_xvar_ft),
-    (Chi2ConstVar, False, True, fit_cvar_ft),
-    (Chi2ModVar, True, True, fit_mvar_xt),
-    (Chi2ModVar, True, False, fit_mvar_xf),
-    (Chi2ModVar, False, False, fit_mvar_xf),
-    (Chi2ModVar, False, True, fit_mvar_xt),
+@pytest.mark.parametrize("stat,usestat,usesys,finalstat,rel", [
+    (LeastSq, False, False, fit_lsq, 1e-6),
+    (Chi2, True, True, fit_chi2_tt, 1e-6),
+    (Chi2Gehrels, True, True, fit_chi2_tt, 1e-6),
+    (Chi2Gehrels, False, False, fit_gehrels_ff, 1e-6),
+    (Chi2XspecVar, False, True, fit_xvar_ft, 1e-6),
+    (Chi2ConstVar, False, True, fit_cvar_ft, 1e-6),
+    (Chi2ModVar, True, True, fit_mvar_xt, 1e-6),
+    (Chi2ModVar, True, False, fit_mvar_xf, 1e-6),
+    (Chi2ModVar, False, False, fit_mvar_xf, 1e-6),
+    (Chi2ModVar, False, True, fit_mvar_xt, 1e-6),
 
-    (Cash, True, True, fit_cash),
-    (CStat, True, True, fit_cstat),
+    (Cash, True, True, fit_cash, 1e-6),
+    (CStat, True, True, fit_cstat, 2e-4),  # This tests gives different results on Linux and ARM
 ])
-def test_fit_single_nm(stat, usestat, usesys, finalstat):
+def test_fit_single_nm(stat, usestat, usesys, finalstat, rel):
     """Check that the fit method works: single dataset, successful fit, simplex
 
     Test several cases from test_fit_single but using the
@@ -1903,7 +1903,7 @@ def test_fit_single_nm(stat, usestat, usesys, finalstat):
     fit.method = NelderMead()
     fr = fit.fit()
     assert fr.succeeded
-    assert fr.statval == pytest.approx(finalstat)
+    assert fr.statval == pytest.approx(finalstat, rel=rel)
 
 
 # Since the background is being ignored in this fit (except for
