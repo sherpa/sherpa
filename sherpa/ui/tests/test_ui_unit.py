@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020 - 2025
+#  Copyright (C) 2017, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1466,3 +1466,116 @@ def test_num_pars_links(clean_ui):
     assert ui.get_num_par() == 5
     assert ui.get_num_par_thawed() == 3
     assert ui.get_num_par_frozen() == 2
+
+
+SEEDVAL = 1327
+
+def set_rng_global():
+    # Ensure no RNG is set
+    ui.set_rng(None)
+    np.random.seed(SEEDVAL)
+
+
+def set_rng_local():
+    # Set the global RNG state to a random state to make sure it isn't
+    # being used (the assumption is that this will not match SEEDVAL).
+    np.random.seed()
+    ui.set_rng(np.random.RandomState(SEEDVAL))
+
+
+# The uniform sampling creates a model value < 0 which is allowed,
+# but unphysical. Really should have changed the parameter range.
+#
+N_SAMPLE = np.asarray([[2.9013215,  4.4862895 ],
+                       [1.55735165, 3.86432178],
+                       [0.42363933, 2.35716076]])
+U_SAMPLE = np.asarray([[ 5.97118671e-01,  3.20748789e+00],
+                       [ 9.39240153e-01,  3.48835118e+00],
+                       [ 9.21034037e+02, -2.67949604e-01]])
+T_SAMPLE = np.asarray([[9.75190011, 6.69601813],
+                       [8.60285233, 6.37242034],
+                       [0.46611989, 2.30776257]])
+
+@pytest.mark.parametrize("xxx,expected,setrng",
+                         [("normal", N_SAMPLE, set_rng_global),
+                          ("normal", N_SAMPLE, set_rng_local),
+                          ("uniform", U_SAMPLE, set_rng_global),
+                          ("uniform", U_SAMPLE, set_rng_local),
+                          ("t", T_SAMPLE, set_rng_global),
+                          ("t", T_SAMPLE, set_rng_local),
+                         ])
+def test_xxx_sample_random(xxx, expected, setrng, clean_ui):
+    """Check if xxx_sample is repeatable.
+
+    At the moment we allow the global RNG (np.random.seed)
+
+    """
+
+    ui.load_arrays(1, [2, 3, 10], [3, 4, 1])
+    ui.set_stat('cash')
+    ui.set_source(ui.const1d.mdl)
+    ui.fit()
+
+    setrng()
+
+    func = getattr(ui, f"{xxx}_sample")
+    answer = func(num=3)
+
+    # clear out the RNG state
+    np.random.seed()
+    ui.set_rng(None)
+
+    assert answer == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("setrng", [set_rng_global, set_rng_local])
+def test_normal_sample_correlate(setrng, clean_ui):
+    """Does the correlate setting change anything with normal_sample?"""
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [2, 4, 7, 15, 19])
+    ui.set_source(ui.polynom1d.mdl)
+    mdl.c1.thaw()
+    ui.fit()
+
+    bestfit = np.asarray([mdl.c0.val, mdl.c1.val])
+
+    setrng()
+    e1t = ui.normal_sample(num=3, sigma=1, correlate=True)
+
+    setrng()
+    e1f = ui.normal_sample(num=3, sigma=1, correlate=False)
+
+    setrng()
+    e2t = ui.normal_sample(num=3, sigma=2, correlate=True)
+
+    setrng()
+    e2f = ui.normal_sample(num=3, sigma=2, correlate=False)
+
+    # Are the sigma=2 values twice those of sigma=1, after subtracting
+    # off the best-fit? The first column is dropped as it is the
+    # statistic column.
+    #
+    # The scalevalue should be 2.0, but at present the sigma value
+    # does not get sent through to the correct classes, so it is
+    # actually unused (at least in some cases).
+    #
+    scalevalue = 1.0
+    expected = np.full((3, 2), scalevalue)
+
+    def check_ratio(v1, v2):
+        """Check sigma=1 and sigma=2 results scale"""
+
+        d1 = v1 - bestfit
+        d2 = v2 - bestfit
+        r = d2 / d1
+        assert r == pytest.approx(expected)
+
+    check_ratio(e1t[:, 1:], e2t[:, 1:])
+    check_ratio(e1f[:, 1:], e2f[:, 1:])
+
+    # Assume that the correlated=true/false results are different,
+    # which can be checked by comparing the statistic columns.
+    #
+    stat_t = e1t[:, 0]
+    stat_f = e1f[:, 0]
+    assert not stat_f == pytest.approx(stat_t)
