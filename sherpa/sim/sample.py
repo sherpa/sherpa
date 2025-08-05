@@ -744,6 +744,15 @@ def _sample_stat(fit: Fit,
     return np.concatenate([stats[:, np.newaxis], samples], axis=1)
 
 
+# Note:
+#
+# NormalParameterSampleFromScaleXXX does not take a clip argument,
+# since this is handled explicitly by the called (e.g. in #866 where
+# explicit calls to .clip are made for the flux code in sherpa.astro.flux).
+# However, since the clipping needs to be done *before* calculating the
+# sample values (or, it makes sense to do so), clip has been added to
+# the get_sample call here. This is less-than ideal.
+#
 class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
     """Use a normal distribution to sample statistic and parameters (correlated),
 
@@ -759,9 +768,14 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
                    *,
                    num: int = 1,
                    numcores: int | None = None,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   clip: ClipValue = "hard"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.18.0
+           The clip argument has been added. To match earlier versions
+           set clip to "none".
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -782,6 +796,11 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('hard') is to fix values at their
+           hard limits if they exceed them. A value of 'soft' uses the
+           soft limits instead, and 'none' applies no clipping.
 
         Returns
         -------
@@ -793,7 +812,9 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
 
         """
 
+        # Knowledge of whether a row has been clipped is dropped
         samples = super().get_sample(fit, num=num, rng=rng)
+        _ = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, numcores)
 
 
@@ -812,9 +833,14 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
                    *,
                    num: int = 1,
                    numcores: int | None = None,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   clip: ClipValue = "hard"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.18.0
+           The clip argument has been added. To match earlier versions
+           set clip to "none".
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -835,6 +861,11 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('hard') is to fix values at their
+           hard limits if they exceed them. A value of 'soft' uses the
+           soft limits instead, and 'none' applies no clipping.
 
         Returns
         -------
@@ -845,7 +876,10 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
             remaining are the parameter values.
 
         """
+
+        # Knowledge of whether a row has been clipped is dropped
         samples = super().get_sample(fit, num=num, rng=rng)
+        _ = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, numcores)
 
 
@@ -863,9 +897,14 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
                    num: int = 1,
                    factor: float = 4,
                    numcores: int | None = None,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   clip: ClipValue = "hard"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.18.0
+           The clip argument has been added. To match earlier versions
+           set clip to "none".
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -901,6 +940,7 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
         """
         samples = super().get_sample(fit, factor=factor, num=num,
                                      rng=rng)
+        _ = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, numcores)
 
 
@@ -920,9 +960,14 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
                    num: int = 1,
                    dof: int = 2,
                    numcores: int | None = None,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   clip: ClipValue = "hard"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.18.0
+           The clip argument has been added. To match earlier versions
+           set clip to "none".
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -945,6 +990,11 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('hard') is to fix values at their
+           hard limits if they exceed them. A value of 'soft' uses the
+           soft limits instead, and 'none' applies no clipping.
 
         Returns
         -------
@@ -956,7 +1006,9 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
 
         """
         samples = super().get_sample(fit, dof=dof, num=num, rng=rng)
+        _ = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, numcores)
+
 
 
 def normal_sample(fit: Fit,
@@ -964,7 +1016,8 @@ def normal_sample(fit: Fit,
                   scale: float = 1,
                   correlate: bool = True,
                   numcores: int | None = None,
-                  rng: random.RandomType | None = None
+                  rng: random.RandomType | None = None,
+                  clip: ClipValue = "hard"
                   ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values
     from a normal distribution.
@@ -973,10 +1026,11 @@ def normal_sample(fit: Fit,
     drawing values from a uni- or multi-variate normal (Gaussian)
     distribution, and calculate the fit statistic.
 
-    ..versionchanged:: 4.18.0
-      The sigma parameter has been renamed to scale, and the code
-      has been updated so that changing it will change the sampled
-      values.
+    .. versionchanged:: 4.18.0
+       The sigma parameter has been renamed to scale, and the code
+       has been updated so that changing it will change the sampled
+       values. The clip parameter has been added (to match
+       earlier versions change clip to "none").
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -1001,10 +1055,15 @@ def normal_sample(fit: Fit,
        Determines how random numbers are created. If set to None then
        the routines from `numpy.random` are used, and so can be
        controlled by calling `numpy.random.seed`.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses the
+        soft limits instead, and 'none' applies no clipping.
 
     Returns
     -------
-    samples :
+    samples
        A NumPy array table with the first column representing the
        statistic and later columns the parameters used.
 
@@ -1033,14 +1092,16 @@ def normal_sample(fit: Fit,
         sampler = NormalSampleFromScaleVector()
 
     sampler.scale.sigma = scale
-    return sampler.get_sample(fit, num=num, numcores=numcores, rng=rng)
+    return sampler.get_sample(fit, num=num, numcores=numcores,
+                              rng=rng, clip=clip)
 
 
 def uniform_sample(fit: Fit,
                    num: int = 1,
                    factor: float = 4,
                    numcores: int | None = None,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   clip: ClipValue = "hard"
                    ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values
     from an uniform distribution.
@@ -1048,6 +1109,11 @@ def uniform_sample(fit: Fit,
     For each iteration (sample), change the thawed parameters by
     drawing values from a uniform distribution, and calculate the
     fit statistic.
+
+    .. versionchanged:: 4.18.0
+       The sigma setting is now used (previously it was not guaranteed
+       to be used). The clip parameter has been added (to match
+       earlier versions change clip to "none").
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -1067,6 +1133,11 @@ def uniform_sample(fit: Fit,
        Determines how random numbers are created. If set to None then
        the routines from `numpy.random` are used, and so can be
        controlled by calling `numpy.random.seed`.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses the
+        soft limits instead, and 'none' applies no clipping.
 
     Returns
     -------
@@ -1085,14 +1156,16 @@ def uniform_sample(fit: Fit,
     # sigma at 1.
     sampler.scale.sigma = 1
     return sampler.get_sample(fit, num=num, factor=factor,
-                              numcores=numcores, rng=rng)
+                              numcores=numcores, rng=rng,
+                              clip=clip)
 
 
 def t_sample(fit: Fit,
              num: int = 1,
              dof: int = 2,
              numcores: int | None = None,
-             rng: random.RandomType | None = None
+             rng: random.RandomType | None = None,
+             clip: ClipValue = "hard"
              ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values from
     a Student's t-distribution.
@@ -1100,6 +1173,11 @@ def t_sample(fit: Fit,
     For each iteration (sample), change the thawed parameters
     by drawing values from a Student's t-distribution, and
     calculate the fit statistic.
+
+    .. versionchanged:: 4.18.0
+       The sigma setting is now used (previously it was not guaranteed
+       to be used). The clip parameter has been added (to match
+       earlier versions change clip to "none").
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -1120,6 +1198,11 @@ def t_sample(fit: Fit,
        Determines how random numbers are created. If set to None then
        the routines from `numpy.random` are used, and so can be
        controlled by calling `numpy.random.seed`.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses the
+        soft limits instead, and 'none' applies no clipping.
 
     Returns
     -------
@@ -1135,4 +1218,4 @@ def t_sample(fit: Fit,
     """
     sampler = StudentTSampleFromScaleMatrix()
     return sampler.get_sample(fit, num=num, dof=dof,
-                              numcores=numcores, rng=rng)
+                              numcores=numcores, rng=rng, clip=clip)

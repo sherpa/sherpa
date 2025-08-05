@@ -1941,7 +1941,7 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
     # correlate=False
     reset_seed()
     nlog1 = len(caplog.records)
-    res_false = ui.normal_sample(num=5, correlate=False)
+    res_false = ui.normal_sample(num=5, correlate=False, clip="none")
     nlog2 = len(caplog.records)
 
     # Check we get a message about switching to covariance and the
@@ -1971,19 +1971,21 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
 
     # Check the statistic values.
     #
-    assert res_false[:, 0] == pytest.approx([1.96756011,
-                                             5.17975686,
-                                             38.494826,
-                                             3.72584152,
-                                             12.42435527])
+    stat_false = [1.96756011,
+                  5.17975686,
+                  38.494826,
+                  3.72584152,
+                  12.42435527]
+    assert res_false[:, 0] == pytest.approx(stat_false)
 
     # We expect two values where c is less than the hard limit.
     #
-    assert res_false[:, 1] == pytest.approx([0.3972328,
-                                             -1.18409209,
-                                             2.39903626,
-                                             -0.59492707,
-                                             0.42605331])
+    c_false = [0.3972328,
+               -1.18409209,
+               2.39903626,
+               -0.59492707,
+               0.42605331]
+    assert res_false[:, 1] == pytest.approx(c_false)
 
     # Check that the second statistic value was calculated with c=0
     # and not c=-1.18.
@@ -2004,7 +2006,7 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
     # correlate=True
     reset_seed()
     nlog3 = len(caplog.records)
-    res_true = ui.normal_sample(num=5, correlate=True)
+    res_true = ui.normal_sample(num=5, correlate=True, clip="none")
     nlog4 = len(caplog.records)
 
     # Should have extra message(s) added to the log.
@@ -2022,11 +2024,35 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
                                             5.40581264,
                                             3.12139264])
 
-    assert res_true[:, 1] == pytest.approx([0.95056442,
-                                            -1.05177614,
-                                            0.92072754,
-                                            2.42574202,
-                                            0.37431964])
+    c_true = [0.95056442,
+              -1.05177614,
+              0.92072754,
+              2.42574202,
+              0.37431964]
+    assert res_true[:, 1] == pytest.approx(c_true)
+
+    # Since the statistic calculation follows the same code as with
+    # the correlate=False case assume that it is correct and do not
+    # test it here.
+
+    # Now check with the default clip setting. The checks
+    # are limited:
+    #  - do we get the same statistic values
+    #  - are the values clipped?
+    #
+    reset_seed()
+    res_false2 = ui.normal_sample(num=5, correlate=False)
+
+    assert res_false2[:, 0] == pytest.approx(stat_false)
+
+    c_false2 = np.clip(c_false, 0, None)
+    assert res_false2[:, 1] == pytest.approx(c_false2)
+
+    reset_seed()
+    res_true2 = ui.normal_sample(num=5, correlate=True)
+
+    c_true2 = np.clip(c_true, 0, None)
+    assert res_true2[:, 1] == pytest.approx(c_true2)
 
 
 def test_normal_sample_2335_lower_limit(clean_ui, caplog):
@@ -2047,7 +2073,7 @@ def test_normal_sample_2335_lower_limit(clean_ui, caplog):
     # correlate=False
     reset_seed()
     nlog1 = len(caplog.records)
-    res_false = ui.normal_sample(num=5, correlate=False)
+    res_false = ui.normal_sample(num=5, correlate=False, clip="none")
     nlog2 = len(caplog.records)
 
     # Check we get a message about switching to covariance and the
@@ -2076,26 +2102,28 @@ def test_normal_sample_2335_lower_limit(clean_ui, caplog):
     # Check the statistic values. These are significantly worse
     # than the upper-limit case.
     #
-    assert res_false[:, 0] == pytest.approx([1145.16881,
-                                             54074.8610,
-                                             20.8524903,
-                                             25915.2235,
-                                             1153.55855])
+    stat_false = [1145.16881,
+                  54074.8610,
+                  20.8524903,
+                  25915.2235,
+                  1153.55855]
+    assert res_false[:, 0] == pytest.approx(stat_false)
 
     # We expect one value where c is larger than the hard limit.  Note
     # that these c values are a lot "worse" than in the upper-limit
     # case because the soft-limit minimum was used.
     #
-    assert res_false[:, 1] == pytest.approx([-21.62566763,
-                                             -141.75157795,
-                                             130.44204801,
-                                             -96.99544622,
-                                             -19.43630701])
+    c_false = [-21.62566763,
+               -141.75157795,
+               130.44204801,
+               -96.99544622,
+               -19.43630701]
+    assert res_false[:, 1] == pytest.approx(c_false)
 
     # correlate=True
     reset_seed()
     nlog3 = len(caplog.records)
-    res_true = ui.normal_sample(num=5, correlate=True)
+    res_true = ui.normal_sample(num=5, correlate=True, clip="none")
     nlog4 = len(caplog.records)
 
     # Should have been one extra message added to the log.
@@ -2117,11 +2145,31 @@ def test_normal_sample_2335_lower_limit(clean_ui, caplog):
                                             1.49768585,
                                             3.12139264])
 
-    assert res_true[:, 1] == pytest.approx([-0.39553727,
-                                            -2.39787783,
-                                            -0.42537416,
-                                            1.07964032,
-                                            -0.97178205])
+    c_true = [-0.39553727,
+              -2.39787783,
+              -0.42537416,
+              1.07964032,
+              -0.97178205]
+    assert res_true[:, 1] == pytest.approx(c_true)
+
+    # Now check with the default clip setting. The checks
+    # are limited:
+    #  - do we get the same statistic values
+    #  - are the values clipped?
+    #
+    reset_seed()
+    res_false2 = ui.normal_sample(num=5, correlate=False)
+
+    assert res_false2[:, 0] == pytest.approx(stat_false)
+
+    c_false2 = np.clip(c_false, None, 0)
+    assert res_false2[:, 1] == pytest.approx(c_false2)
+
+    reset_seed()
+    res_true2 = ui.normal_sample(num=5, correlate=True)
+
+    c_true2 = np.clip(c_true, None, 0)
+    assert res_true2[:, 1] == pytest.approx(c_true2)
 
 
 def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
@@ -2196,9 +2244,9 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
     d16f = resf_sigma16[:, 1] - mdl.c.val
     d2f = resf_sigma2[:, 1] - mdl.c.val
 
-    assert d1f == pytest.approx([-0.27581805, -1.85714294, 1.72598541, -1.26797791, -0.24699754])
-    assert d16f == pytest.approx([-0.44130888, -2.9714287, 2.76157666, -2.02876466, -0.39519606])
-    assert d2f == pytest.approx([-0.5516361, -3.71428588, 3.45197083, -2.53595583, -0.49399507])
+    assert d1f == pytest.approx([-0.27581805, -0.6730508474511385, 1.72598541, -0.6730508474511385, -0.24699754])
+    assert d16f == pytest.approx([-0.44130888, -0.6730508474511385, 2.76157666, -0.6730508474511385, -0.39519606])
+    assert d2f == pytest.approx([-0.5516361, -0.6730508474511385, 3.45197083, -0.6730508474511385, -0.49399507])
 
     def check_m_ratio(vsigma, vsigma1, expected):
         r = vsigma / vsigma1
@@ -2228,10 +2276,12 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
         assert r.min() == pytest.approx(minval)
         assert r.max() == pytest.approx(maxval)
         # check the ratio for the c column
-        assert (r[:, 0] > 1.6).all()
+        assert (r[[0, 2, 3, 4], 0] > 1.6).all()
+        # This is the out-of-bounds value
+        assert r[1, 0] == pytest.approx(1.0)
 
     check_ratio(d16t, d1t, 0.5592601525645855, 2.38351205346464)
-    check_ratio(d2t, d1t, 0.6046847674045083, 3.9596727215871725)
+    check_ratio(d2t, d1t, 0.6046847691090992, 3.9596727228691004)
 
 
 def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
@@ -2343,7 +2393,9 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
         assert r.min() == pytest.approx(minval)
         assert r.max() == pytest.approx(maxval)
         # check the ratio for the c column
-        assert (r[:, 0] > 1.6).all()
+        assert (r[[0, 1, 2, 4], 0] > 1.6).all()
+        # This is the out-of-bounds value
+        assert r[3, 0] == pytest.approx(1.0)
 
     check_ratio(d16t, d1t, 0.5592601537154354, 2.3835120525988995)
     check_ratio(d2t, d1t, 0.6046847674045083, 3.9596727215871725)
@@ -2358,13 +2410,23 @@ def test_uniform_sample_upper_limit(clean_ui, caplog):
 
     setup_upper_limit()
 
+    # clip=none
     reset_seed()
-    res = ui.uniform_sample(num=5)
+    res = ui.uniform_sample(num=5, clip="none")
 
     stat = [23.09504763, 248.14278362, 3.84258011, 4.10371269, 2.52533989]
     c = [-1.52105109,  5.79701772, -2.45911342, 0.20786994, -0.93543076]
     m = [-0.39829977, -0.71934196, -0.57431753, -0.56908599, -0.55958875]
 
+    assert res[:, 0] == pytest.approx(stat)
+    assert res[:, 1] == pytest.approx(c)
+    assert res[:, 2] == pytest.approx(m)
+
+    # clip=hard
+    reset_seed()
+    res = ui.uniform_sample(num=5)
+
+    c = np.clip(c, 0, None)
     assert res[:, 0] == pytest.approx(stat)
     assert res[:, 1] == pytest.approx(c)
     assert res[:, 2] == pytest.approx(m)
@@ -2379,13 +2441,23 @@ def test_t_sample_upper_limit(clean_ui, caplog):
 
     setup_upper_limit()
 
+    # clip=none
     reset_seed()
-    res = ui.t_sample(num=5)
+    res = ui.t_sample(num=5, clip="none")
 
     stat = [8.6840743, 50.73089515, 2.06343103, 10.54354892, 1.6621687]
     c = [1.20415568, -3.25097801, 1.05196097, 3.29119311, 0.53070364]
     m = [-0.55668802, -0.73053488, -0.51084555, -0.4575194, -0.48985982]
 
+    assert res[:, 0] == pytest.approx(stat)
+    assert res[:, 1] == pytest.approx(c)
+    assert res[:, 2] == pytest.approx(m)
+
+    # clip=hard
+    reset_seed()
+    res = ui.t_sample(num=5)
+
+    c = np.clip(c, 0, None)
     assert res[:, 0] == pytest.approx(stat)
     assert res[:, 1] == pytest.approx(c)
     assert res[:, 2] == pytest.approx(m)
