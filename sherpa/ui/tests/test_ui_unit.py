@@ -1777,3 +1777,270 @@ def test_normal_sample_linked_par_chisq(swap, method, correlate, clean_ui):
     # This location should be worse than the best-fit location.
     #
     assert check1 > f1.statval
+
+
+class StraightLineU(ArithmeticModel):
+    """y = mx + c where c >= 0"""
+
+    def __init__(self, name="straight") -> None:
+        self.c = Parameter(name, 'c', 1, 0, 100, hard_min=0, hard_max=1000)
+        self.m = Parameter(name, 'm', 0, -10, 10, hard_min=-10, hard_max=10)
+        super().__init__(name, (self.c, self.m))
+
+    def calc(self, p, *args, **kwargs):
+        """returm m * args[0] + c"""
+        return self.m.val * (args[0] - 35) + self.c.val
+
+
+class StraightLineL(ArithmeticModel):
+    """y = mx + c where c <= 0"""
+
+    def __init__(self, name="straight") -> None:
+        self.c = Parameter(name, 'c', -1, -100, 0, hard_min=-1000, hard_max=0)
+        self.m = Parameter(name, 'm', 0, -10, 10, hard_min=-10, hard_max=10)
+        super().__init__(name, (self.c, self.m))
+
+    def calc(self, p, *args, **kwargs):
+        """returm m * args[0] + c"""
+        return self.m.val * (args[0] - 35) + self.c.val
+
+
+def test_normal_sample_2335_upper_limit(clean_ui, caplog):
+    """Are hard limits respected in the normal_sample output?
+
+    This is a regression test, just to see what happens.
+
+    See issue #2335.
+    """
+
+    # Create a dataset where we expect the c0 value to be an upper
+    # limit. This is done by fitting y = mx + c to data where c has a
+    # 1-sigma error that includes 0 and then setting the hard minimum
+    # to 0.
+    #
+    # The data was simulated from polynom1d with
+    #  c0 = 1  c1 = 0.5  offset=35
+    #
+    ui.load_arrays(1, [5, 10, 20, 30], [15.49, 14.02, 7.25, 3.60])
+    ui.set_staterror(1, 1.2)
+
+    # Note that the model has not been "asssociated" with the UI code,
+    # but it should be okay to use.
+    #
+    mdl = StraightLineU(name="mdl")
+    ui.set_source(mdl)
+
+    ui.set_stat('chi2datavar')
+    ui.set_method('levmar')
+
+    ui.fit()
+    ui.covar()
+
+    # The "c" parameter is an upper-limit.
+    expected_vals = [0.6730508474511385, -0.5022372881358701]
+    expected_mins = [None, -0.06249067727078889]
+    expected_maxs = [1.3163895152773046, 0.06249067727078889]
+
+    # Check in expected location
+    fr = ui.get_fit_results()
+    assert fr.succeeded
+    assert fr.parvals == pytest.approx(expected_vals)
+
+    cr = ui.get_covar_results()
+    assert cr.parmins == pytest.approx(expected_mins)
+    assert cr.parmaxes == pytest.approx(expected_maxs)
+
+    def reset_seed():
+        ui.set_rng(np.random.RandomState(234032))
+
+    # correlate=False
+    reset_seed()
+    nlog1 = len(caplog.records)
+    res_false = ui.normal_sample(num=5, correlate=False)
+    nlog2 = len(caplog.records)
+
+    # Check we get a message about switching to covariance and the
+    # hard limits.
+    #
+    assert (nlog2 - nlog1) == 5
+
+    r = caplog.records[nlog1]
+    assert r.getMessage() == "hard minimum hit for parameter mdl.c"
+    r = caplog.records[nlog1 + 1]
+    assert r.getMessage() == "Covariance failed for 'mdl.c', trying Confidence..."
+    r = caplog.records[nlog1 + 2]
+    assert r.getMessage().startswith("mdl.c lower bound:\t")
+    r = caplog.records[nlog1 + 3]
+    assert r.getMessage().startswith("mdl.c upper bound:\t")
+    r = caplog.records[nlog1 + 4]
+    assert r.getMessage() == "hard minimum hit for parameter mdl.c"
+
+    # Check the statistic values.
+    #
+    assert res_false[:, 0] == pytest.approx([1.96756011,
+                                             5.17975686,
+                                             38.494826,
+                                             3.72584152,
+                                             12.42435527])
+
+    # We expect two values where c is less than the hard limit.
+    #
+    assert res_false[:, 1] == pytest.approx([0.3972328,
+                                             -1.18409209,
+                                             2.39903626,
+                                             -0.59492707,
+                                             0.42605331])
+
+    # Check that the second statistic value was calculated with c=0
+    # and not c=-1.18.
+    #
+    stat = res_false[1, 0]
+    assert stat > fr.statval  # this is a worse fit than the best fit
+
+    # Setting c to a value < 0 gets reset to 0.
+    mdl.thawedpars = res_false[1, 1:]
+    assert mdl.c.val == pytest.approx(0.0)
+
+    # Using c=0 gets us the expected statistic
+    assert ui.calc_stat() == pytest.approx(stat)
+
+    # Reset the fit
+    mdl.thawedpars = expected_vals
+
+    # correlate=True
+    reset_seed()
+    nlog3 = len(caplog.records)
+    res_true = ui.normal_sample(num=5, correlate=True)
+    nlog4 = len(caplog.records)
+
+    # Should have been one extra message added to the log.
+    #
+    assert nlog3 == (nlog2 + 1)
+    assert nlog4 == (nlog3 + 1)
+
+    r = caplog.records[nlog3]
+    assert r.getMessage() == "hard minimum hit for parameter mdl.c"
+
+    assert res_true[:, 1] == pytest.approx([0.95056442,
+                                            -1.05177614,
+                                            0.92072754,
+                                            2.42574202,
+                                            0.37431964])
+
+    # Since the statistic calculation follows the same code as with
+    # the correlate=False case assume that it is correct and do not
+    # test it here.
+
+
+def test_normal_sample_2335_lower_limit(clean_ui, caplog):
+    """Are hard limits respected in the normal_sample output?
+
+    This is a regression test, just to see what happens.
+
+    See test_normal_sample_2335_upper_limit. The test results are
+    similar to the upper-limit version but not enough that it's worth
+    bundling the checks into a common routine.
+
+    """
+
+    # This uses the negative values for the data used in lower_limit
+    # so that c is now a lower-limit.
+    #
+    ui.load_arrays(1, [5, 10, 20, 30], [-15.49, -14.02, -7.25, -3.60])
+    ui.set_staterror(1, 1.2)
+
+    # Note that the model has not been "asssociated" with the UI code,
+    # but it should be okay to use.
+    #
+    mdl = StraightLineL(name="mdl")
+    ui.set_source(mdl)
+
+    ui.set_stat('chi2datavar')
+    ui.set_method('levmar')
+
+    ui.fit()
+    ui.covar()
+
+    # The "c" parameter is a lower-limit.
+    expected_vals = [-0.6730508474511385, 0.5022372881358701]
+    expected_mins = [-1.3163895152773046, -0.06249067727078889]
+    expected_maxs = [None, 0.06249067727078889]
+
+    # Check in expected location
+    fr = ui.get_fit_results()
+    assert fr.succeeded
+    assert fr.parvals == pytest.approx(expected_vals)
+
+    cr = ui.get_covar_results()
+    assert cr.parmins == pytest.approx(expected_mins)
+    assert cr.parmaxes == pytest.approx(expected_maxs)
+
+    def reset_seed():
+        ui.set_rng(np.random.RandomState(234032))
+
+    # correlate=False
+    reset_seed()
+    nlog1 = len(caplog.records)
+    res_false = ui.normal_sample(num=5, correlate=False)
+    nlog2 = len(caplog.records)
+
+    # Check we get a message about switching to covariance and the
+    # hard limits.
+    #
+    assert (nlog2 - nlog1) == 6
+
+    r = caplog.records[nlog1]
+    assert r.getMessage() == "hard maximum hit for parameter mdl.c"
+    r = caplog.records[nlog1 + 1]
+    assert r.getMessage() == "Covariance failed for 'mdl.c', trying Confidence..."
+    r = caplog.records[nlog1 + 2]
+    assert r.getMessage().startswith("mdl.c lower bound:\t")
+    r = caplog.records[nlog1 + 3]
+    assert r.getMessage().startswith("mdl.c upper bound:\t")
+    r = caplog.records[nlog1 + 4]
+    assert r.getMessage() == "hard maximum hit for parameter mdl.c"
+    r = caplog.records[nlog1 + 5]
+    assert r.getMessage() == "1 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"
+
+    # Check the statistic values. These are significantly worse
+    # than the upper-limit case.
+    #
+    assert res_false[:, 0] == pytest.approx([1145.16881,
+                                             54074.8610,
+                                             20.8524903,
+                                             25915.2235,
+                                             1153.55855])
+
+    # We expect one value where c is larger than the hard limit.  Note
+    # that these c values are a lot "worse" than in the upper-limit
+    # case because the soft-limit minimum was used.
+    #
+    assert res_false[:, 1] == pytest.approx([-21.62566763,
+                                             -141.75157795,
+                                             130.44204801,
+                                             -96.99544622,
+                                             -19.43630701])
+
+    # The checks that the statistic value are calulated correctly
+    # have already been done in the upper-limit case, so do not
+    # repeat them here.
+
+    # correlate=True
+    reset_seed()
+    nlog3 = len(caplog.records)
+    res_true = ui.normal_sample(num=5, correlate=True)
+    nlog4 = len(caplog.records)
+
+    # Should have been one extra message added to the log.
+    #
+    assert nlog3 == nlog2
+    assert nlog4 == (nlog3 + 1)
+
+    r = caplog.records[nlog3]
+    assert r.getMessage() == "hard maximum hit for parameter mdl.c"
+
+    assert res_true[:, 1] == pytest.approx([-0.39553727,
+                                            -2.39787783,
+                                            -0.42537416,
+                                            1.07964032,
+                                            -0.97178205])
