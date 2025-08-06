@@ -26,30 +26,40 @@ be used with other data classes.
 
 """
 
+from collections.abc import Callable
 import logging
 
 import numpy as np
 
 from sherpa.astro.utils import calc_energy_flux
-from sherpa.utils import parallel_map
-from sherpa.utils.err import ArgumentErr, FitErr, ModelErr
+from sherpa.fit import Fit
+from sherpa.models.model import ArithmeticModel, SimulFitModel
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     NormalParameterSampleFromScaleVector
-from sherpa.models.model import SimulFitModel
+from sherpa.sim.sample import ClipValue
+from sherpa.utils import parallel_map, random
+from sherpa.utils.err import ArgumentErr, FitErr, ModelErr
 
 info = logging.getLogger(__name__).info
 
 __all__ = ['calc_flux', 'sample_flux', 'calc_sample_flux']
 
 
-class CalcFluxWorker():
+class CalcFluxWorker:
     """Internal class for use by calc_flux.
 
     We always return the full sample, even when only
     a subset of them are needed to calculate the flux.
     """
 
-    def __init__(self, method, data, src, lo, hi, subset=None):
+    def __init__(self,
+                 method: Callable,
+                 data,
+                 src,
+                 lo: float | None,
+                 hi: float | None,
+                 subset=None
+                 ) -> None:
         self.method = method
         self.data = data
         self.src = src
@@ -57,7 +67,7 @@ class CalcFluxWorker():
         self.hi = hi
         self.subset = subset
 
-    def __call__(self, sample):
+    def __call__(self, sample: np.ndarray) -> np.ndarray:
         if self.subset is None:
             self.src.thawedpars = sample
         else:
@@ -67,8 +77,15 @@ class CalcFluxWorker():
         return np.asarray([flux] + list(sample))
 
 
-def calc_flux(data, src, samples, method=calc_energy_flux,
-              lo=None, hi=None, numcores=None, subset=None):
+def calc_flux(data,
+              src,
+              samples,
+              method: Callable = calc_energy_flux,
+              lo: float | None = None,
+              hi: float | None = None,
+              numcores: int | None = None,
+              subset = None
+              ) -> np.ndarray:
     """Calculate model fluxes from a sample of parameter values.
 
     Given a set of parameter values, calculate the model flux for
@@ -136,8 +153,14 @@ def calc_flux(data, src, samples, method=calc_energy_flux,
     return np.asarray(fluxes)
 
 
-def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
-                                         num, clip='hard', rng=None):
+def _sample_flux_get_samples_with_scales(fit: Fit,
+                                         src: ArithmeticModel,
+                                         correlated: bool,
+                                         scales: np.ndarray,
+                                         num: int,
+                                         clip: ClipValue = 'hard',
+                                         rng: random.RandomType | None = None
+                                         ) -> tuple[np.ndarray, np.ndarray]:
     """Return the parameter samples given the parameter scales.
 
     Parameters
@@ -267,7 +290,13 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
     return samples, clipped
 
 
-def _sample_flux_get_samples(fit, src, correlated, num, clip='hard', rng=None):
+def _sample_flux_get_samples(fit: Fit,
+                             src: ArithmeticModel,
+                             correlated: bool,
+                             num: int,
+                             clip: ClipValue = 'hard',
+                             rng: random.RandomType | None = None
+                             ) -> tuple[np.ndarray, np.ndarray]:
     """Return the parameter samples, using fit to define the scales.
 
     The covariance method is used to estimate the errors for the
@@ -374,10 +403,19 @@ def decompose(mdl):
     return out
 
 
-def sample_flux(fit, data, src,
-                method=calc_energy_flux, correlated=False,
-                num=1, lo=None, hi=None, numcores=None, samples=None,
-                clip='hard', rng=None):
+def sample_flux(fit: Fit,
+                data,
+                src,
+                method: Callable = calc_energy_flux,
+                correlated: bool = False,
+                num: int = 1,
+                lo: float | None = None,
+                hi: float | None = None,
+                numcores: int | None = None,
+                samples: np.ndarray | None = None,
+                clip: ClipValue = 'hard',
+                rng: random.RandomType | None = None
+                ) -> np.ndarray:
     """Calculate model fluxes from a sample of parameter values.
 
     Draw parameter values from a normal distribution and then calculate
@@ -517,6 +555,7 @@ def sample_flux(fit, data, src,
     # but is not sufficient to guarantee the match.
     #
     if npar < mpar:
+        # TODO: will this fail with linked parameters.
         full_pars = dict(map(reversed,
                              enumerate([p for p in fit.model.pars
                                         if not p.frozen])))
@@ -543,8 +582,14 @@ def sample_flux(fit, data, src,
     return np.concatenate((vals, np.expand_dims(clipped, 1)), axis=1)
 
 
-def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
-                     confidence):
+def calc_sample_flux(lo: float | None,
+                     hi: float | None,
+                     fit: Fit,
+                     data,
+                     samples,
+                     modelcomponent,
+                     confidence: float | None
+                     ):
     """Given a set of parameter samples, estimate the flux distribution.
 
     This is similar to sample_flux but returns values for both the full
