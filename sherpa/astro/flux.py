@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2009, 2015-2016, 2019-2020, 2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -28,7 +28,7 @@ be used with other data classes.
 
 import logging
 
-import numpy
+import numpy as np
 
 from sherpa.astro.utils import calc_energy_flux
 from sherpa.utils import parallel_map
@@ -64,7 +64,7 @@ class CalcFluxWorker():
             self.src.thawedpars = sample[self.subset]
 
         flux = self.method(self.data, self.src, self.lo, self.hi)
-        return numpy.asarray([flux] + list(sample))
+        return np.asarray([flux] + list(sample))
 
 
 def calc_flux(data, src, samples, method=calc_energy_flux,
@@ -133,7 +133,7 @@ def calc_flux(data, src, samples, method=calc_energy_flux,
     finally:
         src.thawedpars = old_vals
 
-    return numpy.asarray(fluxes)
+    return np.asarray(fluxes)
 
 
 def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
@@ -205,7 +205,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
     mpar = len(fit.model.thawedpars)
     assert mpar >= npar
 
-    scales = numpy.asarray(scales)
+    scales = np.asarray(scales)
 
     # A None value will cause scales to have a dtype of object,
     # which is not supported by isfinite, so check for this
@@ -216,7 +216,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
     # we want). To avoid this warning I use the suggestion from
     # https://github.com/numpy/numpy/issues/1608#issuecomment-9618150
     #
-    if numpy.equal(None, scales).any():
+    if np.equal(None, scales).any():
         raise ArgumentErr('bad', 'scales',
                           'must not contain None values')
 
@@ -225,7 +225,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
     # constraints, or deal with negative values (for the 1D case
     # uncorrelated case the absolute value is used).
     #
-    if not numpy.isfinite(scales).all():
+    if not np.isfinite(scales).all():
         raise ArgumentErr('bad', 'scales',
                           'must only contain finite values')
 
@@ -245,7 +245,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
                               'when correlated=True, scales must be 2D')
     elif scales.ndim == 2:
         # convert from covariance matrix
-        scales = numpy.sqrt(scales.diagonal())
+        scales = np.sqrt(scales.diagonal())
     elif scales.ndim != 1:
         raise ArgumentErr('bad', 'scales',
                           'when correlated=False, scales must be 1D or 2D')
@@ -530,7 +530,7 @@ def sample_flux(fit, data, src,
                 raise ArgumentErr('bad', 'src',
                                   f'unknown parameter "{src_par.fullname}"') from exc
 
-        cols = numpy.asarray(cols)
+        cols = np.asarray(cols)
         assert cols.size == npar, 'We have lost a parameter somewhere'
     else:
         cols = None
@@ -540,7 +540,7 @@ def sample_flux(fit, data, src,
     #
     vals = calc_flux(data, src, samples, method, lo, hi, numcores,
                      subset=cols)
-    return numpy.concatenate((vals, numpy.expand_dims(clipped, 1)), axis=1)
+    return np.concatenate((vals, np.expand_dims(clipped, 1)), axis=1)
 
 
 def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
@@ -648,9 +648,9 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     if modelcomponent is None:
         iflx = oflx
     else:
-        iflx = numpy.zeros(nrows)  # intrinsic/unabsorbed flux
+        iflx = np.zeros(nrows)  # intrinsic/unabsorbed flux
 
-    mystat = numpy.zeros((nrows, 1), dtype=samples.dtype)
+    mystat = np.zeros((nrows, 1), dtype=samples.dtype)
     try:
         for nn in range(nrows):
             # Need to extract the subset that contains the parameters
@@ -672,14 +672,14 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     hwidth = confidence / 2
     result = []
     for flx in [oflx, iflx]:
-        result.append(numpy.percentile(flx[valid],
+        result.append(np.percentile(flx[valid],
                                        [50, 50 + hwidth, 50 - hwidth]))
 
     for lbl, arg in zip(['original model', 'model component'], result):
         med, usig, lsig = arg
         info('%s flux = %g, + %g, - %g', lbl, med, usig - med, med - lsig)
 
-    samples = numpy.concatenate((samples, mystat), axis=1)
+    samples = np.concatenate((samples, mystat), axis=1)
     result.append(samples)
 
     return result
