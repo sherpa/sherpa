@@ -502,7 +502,7 @@ def sample_flux(fit: Fit,
     The ordering of the samples array, and the columns in the output,
     matches that of the free parameters in the fit.model expression. That is::
 
-        [p.fullname for p in fit.model.pars if not p.frozen]
+        [p.fullname for p in fit.model.get_thawed_pars()]
 
     If src is a subset of the full source expression then samples,
     when not None, must still match the number of free parameters in
@@ -557,10 +557,10 @@ def sample_flux(fit: Fit,
     if npar < mpar:
         # TODO: will this fail with linked parameters.
         full_pars = dict(map(reversed,
-                             enumerate([p for p in fit.model.pars
-                                        if not p.frozen])))
+                             enumerate(fit.model.get_thawed_pars())
+                             ))
         cols = []
-        for src_par in [p for p in src.pars if not p.frozen]:
+        for src_par in src.get_thawed_pars():
             try:
                 cols.append(full_pars[src_par])
             except KeyError as exc:
@@ -577,8 +577,8 @@ def sample_flux(fit: Fit,
     # Need to append the clipped array (it would be nice to retain
     # the boolean nature of this).
     #
-    vals = calc_flux(data, src, samples, method, lo, hi, numcores,
-                     subset=cols)
+    vals = calc_flux(data, src, samples, method=method, lo=lo, hi=hi,
+                     numcores=numcores, subset=cols)
     return np.concatenate((vals, np.expand_dims(clipped, 1)), axis=1)
 
 

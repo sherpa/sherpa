@@ -252,7 +252,7 @@ def test_sf_full_linked(setup, fluxes1, fluxes2, link, lo, hi):
                          [(0, 40),
                           (None, None)
                           ])
-@pytest.mark.parametrize("link", [False, pytest.param(True, marks=pytest.mark.xfail)])  # AssertionError: We have lost a parameter somewhere
+@pytest.mark.parametrize("link", [False, True])
 @pytest.mark.parametrize("setup,fluxes1,fluxes2",
                          [(setup_data1d_linked_par,
                            [0] * 5,

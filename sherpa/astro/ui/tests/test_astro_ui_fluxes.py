@@ -2657,7 +2657,7 @@ def test_2337_linked_par_full(setup, clean_astro_ui):
     assert res[:, 3] == pytest.approx([0] * 5)
 
 
-@pytest.mark.parametrize("setup", ["B", pytest.param("C", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("setup", ["B", "C"])
 def test_2337_linked_par_subset(setup, clean_astro_ui):
     """What happens when a linked-parameter is used for sampe_photon_flux?
 
