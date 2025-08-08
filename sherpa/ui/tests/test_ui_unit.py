@@ -32,9 +32,10 @@ import numpy as np
 
 import pytest
 
-from sherpa import ui
+from sherpa.fit import ErrorEstResults, FitResults
 from sherpa.models.parameter import Parameter
 from sherpa.models.model import ArithmeticModel
+from sherpa import ui
 from sherpa.utils.err import ArgumentTypeErr, DataErr, IdentifierErr, ParameterErr
 from sherpa.utils.logging import SherpaVerbosity
 
@@ -1555,11 +1556,7 @@ def test_normal_sample_correlate(setrng, clean_ui):
     # off the best-fit? The first column is dropped as it is the
     # statistic column.
     #
-    # The scalevalue should be 2.0, but at present the sigma value
-    # does not get sent through to the correct classes, so it is
-    # actually unused (at least in some cases).
-    #
-    scalevalue = 1.0
+    scalevalue = 2.0
     expected = np.full((3, 2), scalevalue)
 
     def check_ratio(v1, v2):
@@ -1579,3 +1576,860 @@ def test_normal_sample_correlate(setrng, clean_ui):
     stat_t = e1t[:, 0]
     stat_f = e1f[:, 0]
     assert not stat_f == pytest.approx(stat_t)
+
+
+def setup_linked_pars(swap: bool = False
+                      ) -> tuple[ArithmeticModel, ArithmeticModel]:
+    """Create simple setup for test_normal_sample_linked_par_xxx
+
+    If swap is False then the linked par version and the original
+    have the same order of thawedpars, otherwise they are swapped.
+    """
+
+    # Fit the same data with the same model.
+    #
+    # This data is best-described with a poisson process. It was
+    # generated from a model with c0=-3, c1=4.
+    #
+    x = [1, 2, 3, 4, 5]
+    y = [1, 4, 12, 19, 12]
+
+    ui.load_arrays(1, x, y)
+    ui.set_source(1, ui.polynom1d.mdl1)
+    mdl1.c1.thaw()
+
+    ui.load_arrays(2, x, y)
+    ui.set_source(2, ui.polynom1d.mdl2)
+    mdl2.c1.thaw()
+
+    linkedpar = ui.create_model_component("scale1d", "linkedpar")
+    if swap:
+        mdl2.c0 = linkedpar.c0
+    else:
+        mdl2.c1 = linkedpar.c0
+
+    return mdl1, mdl2
+
+def basic_linked_par_validation(mdl1: ArithmeticModel,
+                                mdl2: ArithmeticModel,
+                                f1: FitResults,
+                                f2: FitResults,
+                                c1: ErrorEstResults,
+                                c2: ErrorEstResults,
+                                swap: bool = False) -> None:
+    """Simple checks that the fit results match for linked pars.
+
+    This is just pulled out of the test to avoid complication, and is
+    just a test that the lniked-parameter fit is working as expected.
+
+    swap indicates whether the thawed pars are in the same order
+    in the two cases (False) or swapped (True).
+    """
+
+    # We have the same fit results
+    assert f1.datasets == (1, )
+    assert f2.datasets == (2, )
+    assert f2.statval == pytest.approx(f1.statval)
+    assert f2.dof == f1.dof
+
+    assert len(mdl2.thawedpars) == len(mdl1.thawedpars)
+    assert len(mdl1.get_thawed_pars()) == len(mdl2.get_thawed_pars())
+
+    assert mdl1.get_thawed_pars()[0].fullname == "mdl1.c0"
+    assert mdl1.get_thawed_pars()[1].fullname == "mdl1.c1"
+
+    if swap:
+        assert mdl2.get_thawed_pars()[0].fullname == "mdl2.c1"
+    else:
+        assert mdl2.get_thawed_pars()[0].fullname == "mdl2.c0"
+
+    assert mdl2.get_thawed_pars()[1].fullname == "linkedpar.c0"
+
+    if swap:
+        assert mdl2.thawedpars[0] == pytest.approx(mdl1.c1.val)
+        assert mdl2.thawedpars[1] == pytest.approx(mdl1.c0.val)
+        assert linkedpar.c0.val == pytest.approx(mdl1.c0.val)
+    else:
+        assert mdl2.thawedpars[0] == pytest.approx(mdl1.c0.val)
+        assert mdl2.thawedpars[1] == pytest.approx(mdl1.c1.val)
+        assert linkedpar.c0.val == pytest.approx(mdl1.c1.val)
+
+    assert c1.parnames == ('mdl1.c0', 'mdl1.c1')
+    if swap:
+        assert c2.parnames == ('mdl2.c1', 'linkedpar.c0')
+    else:
+        assert c2.parnames == ('mdl2.c0', 'linkedpar.c0')
+
+    if swap:
+        assert c2.parmins[0] == pytest.approx(c1.parmins[1])
+        assert c2.parmins[1] == pytest.approx(c1.parmins[0])
+        assert c2.parmaxes[0] == pytest.approx(c1.parmaxes[1])
+        assert c2.parmaxes[1] == pytest.approx(c1.parmaxes[0])
+    else:
+        assert c2.parmins == pytest.approx(c1.parmins)
+        assert c2.parmaxes == pytest.approx(c1.parmaxes)
+
+
+@pytest.mark.parametrize("correlate", [False, True])
+@pytest.mark.parametrize("method", ["levmar", "simplex"])
+@pytest.mark.parametrize("swap", [False, True])
+def test_normal_sample_linked_par_chisq(swap, method, correlate, clean_ui):
+    """Does it work with a linked parameter?
+
+    Although the data is best described by a Poisson process,
+    use chi-square statistic for the fit.
+    """
+
+    mdl1, mdl2 = setup_linked_pars(swap=swap)
+
+    # Since the error estimation may depend on the optimizer, make
+    # sure we check.
+    #
+    ui.set_stat("chi2datavar")
+    ui.set_method(method)
+
+    ui.fit(1)
+    f1 = ui.get_fit_results()
+
+    ui.fit(2)
+    f2 = ui.get_fit_results()
+
+    ui.covar(1)
+    c1 = ui.get_covar_results()
+
+    ui.covar(2)
+    c2 = ui.get_covar_results()
+
+    basic_linked_par_validation(mdl1, mdl2, f1, f2, c1, c2,
+                                swap=swap)
+
+    set_rng_local()
+    s1 = ui.normal_sample(id=1, num=5, correlate=correlate)
+
+    set_rng_local()
+    s2 = ui.normal_sample(id=2, num=5, correlate=correlate)
+
+    if not swap:
+        # Since the thwedpars should have the same order for the
+        # original and linked-par version, the results should match.
+        #
+        assert s2 == pytest.approx(s1)
+        return
+
+    # Since the parameter order is swapped we do not expect
+    # the same results for the two calls. There are some things
+    # we can check however.
+    #
+    # TODO: somehow the statistic values actually match, which DJB
+    # does not understand! Although we want to be rng_i * sigma_j away
+    # from the best-fit location with the sampled parameter values,
+    # the sigma_j values (which are per-model parameter) have nothing
+    # to do with the calculation of the statistic, which is from
+    # chi2datavar in this case, and calculated per-data point.
+    #
+    assert s2[:, 0] == pytest.approx(s1[:, 0])
+
+    if not correlate:
+        # Since the thawed parameters are swapped for the two datasets,
+        # the sampled values will be different. However, since we used
+        # correlate=False, so the samples are drawn from the sigma value
+        # from the covar run - i.e. the cX.parmaxes values - we can
+        # reverse calculate what the random values would have been,
+        # and so we can check that these are as expected.
+        #
+        d1 = (s1[:, 1:] - mdl1.thawedpars) / c1.parmaxes
+        d2 = (s2[:, 1:] - mdl2.thawedpars) / c2.parmaxes
+
+        assert d2 == pytest.approx(d1)
+
+    # Safety check: we should be at the best-fit location here.
+    #
+    orig1 = ui.calc_stat(1)
+    orig2 = ui.calc_stat(2)
+    assert orig2 == pytest.approx(orig1)
+    assert orig1 == pytest.approx(f1.statval)
+
+    # Apply the first row of the sample values and check the
+    # statistic.
+    #
+    # This is to check that we get the actual statistic values and
+    # that, even though the parameter values are different, the stats
+    # are the same. As mentioned, DJB does not understand why this is
+    # so, so if this starts to fail in the future this may not be a
+    # bad thing.
+    #
+    mdl2.thawedpars = s2[0, 1:]
+    check2 = ui.calc_stat(2)
+
+    mdl1.thawedpars = s1[0, 1:]
+    check1 = ui.calc_stat(1)
+
+    # Just check they are not the same.
+    assert mdl2.thawedpars != pytest.approx(mdl1.thawedpars)
+
+    assert check2 == pytest.approx(check1)
+    assert check1 == pytest.approx(s1[0, 0])
+
+    # This location should be worse than the best-fit location.
+    #
+    assert check1 > f1.statval
+
+
+class StraightLineU(ArithmeticModel):
+    """y = mx + c where c >= 0"""
+
+    def __init__(self, name="straight") -> None:
+        self.c = Parameter(name, 'c', 1, 0, 100, hard_min=0, hard_max=1000)
+        self.m = Parameter(name, 'm', 0, -10, 10, hard_min=-10, hard_max=10)
+        super().__init__(name, (self.c, self.m))
+
+    def calc(self, p, *args, **kwargs):
+        """returm m * args[0] + c"""
+        return self.m.val * (args[0] - 35) + self.c.val
+
+
+class StraightLineL(ArithmeticModel):
+    """y = mx + c where c <= 0"""
+
+    def __init__(self, name="straight") -> None:
+        self.c = Parameter(name, 'c', -1, -100, 0, hard_min=-1000, hard_max=0)
+        self.m = Parameter(name, 'm', 0, -10, 10, hard_min=-10, hard_max=10)
+        super().__init__(name, (self.c, self.m))
+
+    def calc(self, p, *args, **kwargs):
+        """returm m * args[0] + c"""
+        return self.m.val * (args[0] - 35) + self.c.val
+
+
+def setup_upper_limit() -> None:
+    """Set up a fit where a parameter has an upper limit with covar."""
+
+    # Create a dataset where we expect the c0 value to be an upper
+    # limit. This is done by fitting y = mx + c to data where c has a
+    # 1-sigma error that includes 0 and then setting the hard minimum
+    # to 0.
+    #
+    # The data was simulated from polynom1d with
+    #  c0 = 1  c1 = 0.5  offset=35
+    #
+    ui.load_arrays(1, [5, 10, 20, 30], [15.49, 14.02, 7.25, 3.60])
+    ui.set_staterror(1, 1.2)
+
+    # Note that the model has not been "asssociated" with the UI code,
+    # but it should be okay to use.
+    #
+    mdl = StraightLineU(name="mdl")
+    ui.set_source(mdl)
+
+    ui.set_stat('chi2datavar')
+    ui.set_method('levmar')
+
+    ui.fit()
+
+
+def setup_lower_limit() -> None:
+    """Invert/negate the setup_upper_limit so we have a lower-limit parameter"""
+
+    # This uses the negative values for the data used in lower_limit
+    # so that c is now a lower-limit.
+    #
+    ui.load_arrays(1, [5, 10, 20, 30], [-15.49, -14.02, -7.25, -3.60])
+    ui.set_staterror(1, 1.2)
+
+    mdl = StraightLineL(name="mdl")
+    ui.set_source(mdl)
+
+    ui.set_stat('chi2datavar')
+    ui.set_method('levmar')
+
+    ui.fit()
+
+
+def check_c(val: float, is_upper: bool) -> None:
+    """Check the c value is as expected."""
+
+    expected = 0.6730508474511385
+    if not is_upper:
+        expected *= -1
+
+    assert val == pytest.approx(expected)
+
+
+def check_c_limits(lo: float | None,
+                   hi: float | None,
+                   is_upper: bool) -> None:
+    """Check the c limits."""
+
+    sigma = 1.3163895152773046
+    if is_upper:
+        assert lo is None
+        assert hi == pytest.approx(sigma)
+    else:
+        assert lo == pytest.approx(-sigma)
+        assert hi is None
+
+
+def check_m(val: float, is_upper: bool) -> None:
+    """Check the m value is as expected."""
+
+    expected = -0.5022372881358701
+    if not is_upper:
+        expected *= -1
+
+    assert val == pytest.approx(expected)
+
+
+def check_m_limits(lo: float | None,
+                   hi: float | None) -> None:
+    """Check the m limits."""
+
+    sigma = 0.06249067727078889
+    assert lo == pytest.approx(-sigma)
+    assert hi == pytest.approx(sigma)
+
+
+def validate_limits(is_upper: bool) -> None:
+    """Check the upper-limit fit and errors are as expected.
+
+    It is possible that these will change as the optimiser code
+    changes, or numerical changes in OTS code.
+
+    This code has been pulled out of the test since this is not
+    the main part of the test, so we can separate out these
+    checks logically without making the test code too complex.
+
+    """
+
+    # Check in expected location
+    fr = ui.get_fit_results()
+    assert fr.succeeded
+    assert len(fr.parvals) == 2
+    check_c(fr.parvals[0], is_upper)
+    check_m(fr.parvals[1], is_upper)
+
+    cr = ui.get_covar_results()
+    assert len(cr.parmins) == 2
+    check_c_limits(cr.parmins[0], cr.parmaxes[0], is_upper)
+    check_m_limits(cr.parmins[1], cr.parmaxes[1])
+
+
+def reset_seed() -> None:
+    """Ensure the Sherpa RNG state is at a known point."""
+
+    # Use randomState for repeatability as it is possible that
+    # default_rng() could change over time.
+    #
+    ui.set_rng(np.random.RandomState(234032))
+
+
+def test_normal_sample_2335_upper_limit(clean_ui, caplog):
+    """Are hard limits respected in the normal_sample output?
+
+    This is a regression test, just to see what happens.
+
+    See issue #2335.
+    """
+
+    setup_upper_limit()
+    ui.covar()
+    validate_limits(True)
+
+    mdl = ui.get_source()
+    bestfit = mdl.thawedpars
+    stat_bestfit = ui.calc_stat()
+
+    # correlate=False
+    reset_seed()
+    nlog1 = len(caplog.records)
+    res_false = ui.normal_sample(num=5, correlate=False, clip="none")
+    nlog2 = len(caplog.records)
+
+    # Check we get a message about switching to covariance and the
+    # hard limits.
+    #
+    assert (nlog2 - nlog1) == 5
+
+    r = caplog.records[nlog1]
+    assert r.getMessage() == "hard minimum hit for parameter mdl.c"
+    r = caplog.records[nlog1 + 1]
+    assert r.getMessage() == "Covariance failed for 'mdl.c', trying Confidence..."
+    r = caplog.records[nlog1 + 2]
+    assert r.getMessage().startswith("mdl.c lower bound:\t")
+    r = caplog.records[nlog1 + 3]
+    assert r.getMessage().startswith("mdl.c upper bound:\t")
+    r = caplog.records[nlog1 + 4]
+    assert r.getMessage() == "hard minimum hit for parameter mdl.c"
+
+    # Check the statistic values.
+    #
+    stat_false = [1.96756011,
+                  5.17975686,
+                  38.494826,
+                  3.72584152,
+                  12.42435527]
+    assert res_false[:, 0] == pytest.approx(stat_false)
+
+    # We expect two values where c is less than the hard limit.
+    #
+    c_false = [0.3972328,
+               -1.18409209,
+               2.39903626,
+               -0.59492707,
+               0.42605331]
+    assert res_false[:, 1] == pytest.approx(c_false)
+
+    # Check that the second statistic value was calculated with c=0
+    # and not c=-1.18.
+    #
+    stat = res_false[1, 0]
+    assert stat > stat_bestfit  # this is a worse fit than the best fit
+
+    # Setting c to a value < 0 gets reset to 0.
+    mdl.thawedpars = res_false[1, 1:]
+    assert mdl.c.val == pytest.approx(0.0)
+
+    # Using c=0 gets us the expected statistic
+    assert ui.calc_stat() == pytest.approx(stat)
+
+    # Reset the fit
+    mdl.thawedpars = bestfit
+
+    # correlate=True
+    reset_seed()
+    nlog3 = len(caplog.records)
+    res_true = ui.normal_sample(num=5, correlate=True, clip="none")
+    nlog4 = len(caplog.records)
+
+    # Should have been one extra message added to the log.
+    #
+    assert nlog3 == (nlog2 + 1)
+    assert nlog4 == (nlog3 + 1)
+
+    r = caplog.records[nlog3]
+    assert r.getMessage() == "hard minimum hit for parameter mdl.c"
+
+    assert res_true[:, 0] == pytest.approx([3.26772618,
+                                            7.86906547,
+                                            1.58810658,
+                                            5.40581264,
+                                            3.12139264])
+
+    c_true = [0.95056442,
+              -1.05177614,
+              0.92072754,
+              2.42574202,
+              0.37431964]
+    assert res_true[:, 1] == pytest.approx(c_true)
+
+    # Since the statistic calculation follows the same code as with
+    # the correlate=False case assume that it is correct and do not
+    # test it here.
+
+    # Now check with the default clip setting. The checks
+    # are limited:
+    #  - do we get the same statistic values
+    #  - are the values clipped?
+    #
+    reset_seed()
+    res_false2 = ui.normal_sample(num=5, correlate=False)
+
+    assert res_false2[:, 0] == pytest.approx(stat_false)
+
+    c_false2 = np.clip(c_false, 0, None)
+    assert res_false2[:, 1] == pytest.approx(c_false2)
+
+    reset_seed()
+    res_true2 = ui.normal_sample(num=5, correlate=True)
+
+    c_true2 = np.clip(c_true, 0, None)
+    assert res_true2[:, 1] == pytest.approx(c_true2)
+
+
+def test_normal_sample_2335_lower_limit(clean_ui, caplog):
+    """Are hard limits respected in the normal_sample output?
+
+    This is a regression test, just to see what happens.
+
+    See test_normal_sample_2335_upper_limit. The test results are
+    similar to the upper-limit version but not enough that it's worth
+    bundling the checks into a common routine.
+
+    """
+
+    setup_lower_limit()
+    ui.covar()
+    validate_limits(False)
+
+    # correlate=False
+    reset_seed()
+    nlog1 = len(caplog.records)
+    res_false = ui.normal_sample(num=5, correlate=False, clip="none")
+    nlog2 = len(caplog.records)
+
+    # Check we get a message about switching to covariance and the
+    # hard limits.
+    #
+    assert (nlog2 - nlog1) == 6
+
+    r = caplog.records[nlog1]
+    assert r.getMessage() == "hard maximum hit for parameter mdl.c"
+    r = caplog.records[nlog1 + 1]
+    assert r.getMessage() == "Covariance failed for 'mdl.c', trying Confidence..."
+    r = caplog.records[nlog1 + 2]
+    assert r.getMessage().startswith("mdl.c lower bound:\t")
+    r = caplog.records[nlog1 + 3]
+    assert r.getMessage().startswith("mdl.c upper bound:\t")
+    r = caplog.records[nlog1 + 4]
+    assert r.getMessage() == "hard maximum hit for parameter mdl.c"
+    r = caplog.records[nlog1 + 5]
+    assert r.getMessage() == "1 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"
+
+    # Check the statistic values. These are significantly worse
+    # than the upper-limit case.
+    #
+    stat_false = [1145.16881,
+                  54074.8610,
+                  20.8524903,
+                  25915.2235,
+                  1153.55855]
+    assert res_false[:, 0] == pytest.approx(stat_false)
+
+    # We expect one value where c is larger than the hard limit.  Note
+    # that these c values are a lot "worse" than in the upper-limit
+    # case because the soft-limit minimum was used.
+    #
+    c_false = [-21.62566763,
+               -141.75157795,
+               130.44204801,
+               -96.99544622,
+               -19.43630701]
+    assert res_false[:, 1] == pytest.approx(c_false)
+
+    # correlate=True
+    reset_seed()
+    nlog3 = len(caplog.records)
+    res_true = ui.normal_sample(num=5, correlate=True, clip="none")
+    nlog4 = len(caplog.records)
+
+    # Should have been one extra message added to the log.
+    #
+    assert nlog3 == nlog2
+    assert nlog4 == (nlog3 + 1)
+
+    r = caplog.records[nlog3]
+    assert r.getMessage() == "hard maximum hit for parameter mdl.c"
+
+    # Note that these are significantly "better" than the
+    # correlate=False results, as the scaling used is
+    # more-appropriate when using the covariance matrix.
+    #
+    assert res_true[:, 0] == pytest.approx([3.26772618,
+                                            3.88042719,
+                                            1.58810658,
+                                            1.49768585,
+                                            3.12139264])
+
+    c_true = [-0.39553727,
+              -2.39787783,
+              -0.42537416,
+              1.07964032,
+              -0.97178205]
+    assert res_true[:, 1] == pytest.approx(c_true)
+
+    # Now check with the default clip setting. The checks
+    # are limited:
+    #  - do we get the same statistic values
+    #  - are the values clipped?
+    #
+    reset_seed()
+    res_false2 = ui.normal_sample(num=5, correlate=False)
+
+    assert res_false2[:, 0] == pytest.approx(stat_false)
+
+    c_false2 = np.clip(c_false, None, 0)
+    assert res_false2[:, 1] == pytest.approx(c_false2)
+
+    reset_seed()
+    res_true2 = ui.normal_sample(num=5, correlate=True)
+
+    c_true2 = np.clip(c_true, None, 0)
+    assert res_true2[:, 1] == pytest.approx(c_true2)
+
+
+def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
+    """Check we correctly report the sigma limit.
+
+    Note that test_normal_sample_sigma_warning_message_upper
+    checks the upper-limit version, as it is subtly-different.
+
+    """
+
+    setup_upper_limit()
+    mdl = ui.get_source()
+
+    # correlate=False
+    reset_seed()
+    nlog1 = len(caplog.records)
+    resf_sigma1 = ui.normal_sample(num=5, correlate=False)
+    nlog2 = len(caplog.records)
+
+    reset_seed()
+    resf_sigma16 = ui.normal_sample(num=5, sigma=1.6, correlate=False)
+    nlog3 = len(caplog.records)
+
+    reset_seed()
+    resf_sigma2 = ui.normal_sample(num=5, sigma=2, correlate=False)
+    nlog4 = len(caplog.records)
+
+    reset_seed()
+    rest_sigma1 = ui.normal_sample(num=5, correlate=True)
+    nlog5 = len(caplog.records)
+
+    reset_seed()
+    rest_sigma16 = ui.normal_sample(num=5, sigma=1.6, correlate=True)
+    nlog6 = len(caplog.records)
+
+    reset_seed()
+    rest_sigma2 = ui.normal_sample(num=5, sigma=2, correlate=True)
+    nlog7 = len(caplog.records)
+
+    # This does not have the "x sigma bounds not found" message,
+    # unlike the _lower version.
+    #
+    assert (nlog2 - nlog1) == 5
+    assert (nlog3 - nlog2) == 5
+    assert (nlog4 - nlog3) == 5
+    assert (nlog5 - nlog4) == 1
+    assert (nlog6 - nlog5) == 1
+    assert (nlog7 - nlog6) == 1
+
+    # Check how the statistic values vary. As sigma increases you
+    # might expect the statistic to increase. At the moment just
+    # treat as a regression test.
+    #
+    assert resf_sigma1[:, 0] == pytest.approx([1.96756011, 5.17975686, 38.494826, 3.72584152, 12.42435527])
+    assert resf_sigma16[:, 0] == pytest.approx([2.21202788, 8.96141072, 76.96112604, 4.15693761, 20.58014045])
+    assert resf_sigma2[:, 0] == pytest.approx([1.93025625, 8.39272471, 95.45773131, 4.09849966, 20.96955128])
+
+    assert rest_sigma1[:, 0] == pytest.approx([3.26772618, 7.86906547, 1.58810658, 5.40581264, 3.12139264])
+    assert rest_sigma16[:, 0] == pytest.approx([7.31972735, 14.19471891, 2.47293905, 19.31488558, 6.98017826])
+    assert rest_sigma2[:, 0] == pytest.approx([11.77709675, 12.75671961, 3.57858166, 39.53542143, 11.29312376])
+
+    # The c values are hard to check for correlate=False, so just
+    # check the offsets from the expected value.
+    #
+    d1f = resf_sigma1[:, 1] - mdl.c.val
+    d16f = resf_sigma16[:, 1] - mdl.c.val
+    d2f = resf_sigma2[:, 1] - mdl.c.val
+
+    assert d1f == pytest.approx([-0.27581805, -0.6730508474511385, 1.72598541, -0.6730508474511385, -0.24699754])
+    assert d16f == pytest.approx([-0.44130888, -0.6730508474511385, 2.76157666, -0.6730508474511385, -0.39519606])
+    assert d2f == pytest.approx([-0.5516361, -0.6730508474511385, 3.45197083, -0.6730508474511385, -0.49399507])
+
+    def check_m_ratio(vsigma, vsigma1, expected):
+        r = vsigma / vsigma1
+        assert r == pytest.approx(np.full(5, expected))
+
+    d1f = resf_sigma1[:, 2] - mdl.m.val
+    d16f = resf_sigma16[:, 2] - mdl.m.val
+    d2f = resf_sigma2[:, 2] - mdl.m.val
+
+    # TODO: Why are these ratios not 1.6 and 2, and why is sigma=2
+    # smaller than sigma=1.6?
+    #
+    check_m_ratio(d16f, d1f, 1.2785750682547592)
+    check_m_ratio(d2f, d1f, 1.2422080062609844)
+
+    # For correlate=True, there is no need to special case the
+    # c value. Since this uses the covariance matrix we check
+    # whether the separation from the best-fit location has
+    # increased with sigma.
+    #
+    d1t = abs(rest_sigma1[:, 1:] - mdl.thawedpars)
+    d16t = abs(rest_sigma16[:, 1:] - mdl.thawedpars)
+    d2t = abs(rest_sigma2[:, 1:] - mdl.thawedpars)
+
+    def check_ratio(vsigma, vsigma1, minval, maxval):
+        r = vsigma / vsigma1
+        assert r.min() == pytest.approx(minval)
+        assert r.max() == pytest.approx(maxval)
+        # check the ratio for the c column
+        assert (r[[0, 2, 3, 4], 0] > 1.6).all()
+        # This is the out-of-bounds value
+        assert r[1, 0] == pytest.approx(1.0)
+
+    check_ratio(d16t, d1t, 0.5592601525645855, 2.38351205346464)
+    check_ratio(d2t, d1t, 0.6046847691090992, 3.9596727228691004)
+
+
+def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
+    """Check we correctly report the sigma limit.
+
+    This is a tricky behaviour to test, so as
+    test_normal_sample_2335_lower_limit triggers the warning
+    message, use it for this test.
+
+    Note that test_normal_sample_sigma_warning_message_upper
+    checks the upper-limit version, as it is subtly-different.
+
+    """
+
+    setup_lower_limit()
+    mdl = ui.get_source()
+
+    # correlate=False
+    reset_seed()
+    nlog1 = len(caplog.records)
+    resf_sigma1 = ui.normal_sample(num=5, correlate=False)
+    nlog2 = len(caplog.records)
+
+    reset_seed()
+    resf_sigma16 = ui.normal_sample(num=5, sigma=1.6, correlate=False)
+    nlog3 = len(caplog.records)
+
+    reset_seed()
+    resf_sigma2 = ui.normal_sample(num=5, sigma=2, correlate=False)
+    nlog4 = len(caplog.records)
+
+    reset_seed()
+    rest_sigma1 = ui.normal_sample(num=5, correlate=True)
+    nlog5 = len(caplog.records)
+
+    reset_seed()
+    rest_sigma16 = ui.normal_sample(num=5, sigma=1.6, correlate=True)
+    nlog6 = len(caplog.records)
+
+    reset_seed()
+    rest_sigma2 = ui.normal_sample(num=5, sigma=2, correlate=True)
+    nlog7 = len(caplog.records)
+
+    assert (nlog2 - nlog1) == 6
+    assert (nlog3 - nlog2) == 6
+    assert (nlog4 - nlog3) == 6
+    assert (nlog5 - nlog4) == 1
+    assert (nlog6 - nlog5) == 1
+    assert (nlog7 - nlog6) == 1
+
+    r = caplog.records[nlog1 + 5]
+    assert r.getMessage() == "1 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"
+
+    r = caplog.records[nlog2 + 5]
+    assert r.getMessage() == "1.6 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"
+
+    r = caplog.records[nlog3 + 5]
+    assert r.getMessage() == "2 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"
+
+    # Check how the statistic values vary.
+    #
+    assert resf_sigma1[:, 0] == pytest.approx([1.14516881e+03, 5.40748610e+04, 2.08524903e+01, 2.59152235e+04, 1.15355855e+03])
+    assert resf_sigma16[:, 0] == pytest.approx([1.12467203e+03, 5.37400095e+04, 3.00878135e+01, 2.59548008e+04, 1.20528623e+03])
+    assert resf_sigma2[:, 0] == pytest.approx([1.12733428e+03, 5.37836483e+04, 2.87802714e+01, 2.59496320e+04, 1.19845547e+03])
+
+    assert rest_sigma1[:, 0] == pytest.approx([3.26772618, 3.88042719, 1.58810658, 1.49768585, 3.12139264])
+    assert rest_sigma16[:, 0] == pytest.approx([7.31972735, 5.95784881, 2.47293905, 1.66356551, 6.98017826])
+    assert rest_sigma2[:, 0] == pytest.approx([11.77709675, 7.91490779, 3.57858165, 4.16485202, 11.29312376])
+
+    # The c values should be the same, as they are drawn from the same
+    # distribution as this is a special case, when correlate=False.
+    # We should be able to compare the m values with sigma (again for
+    # the correlate=False).
+    #
+    assert resf_sigma16[:, 1] == pytest.approx(resf_sigma1[:, 1])
+    assert resf_sigma2[:, 1] == pytest.approx(resf_sigma1[:, 1])
+
+    def check_m_ratio(vsigma, vsigma1, expected):
+        r = vsigma / vsigma1
+        assert r == pytest.approx(np.full(5, expected))
+
+    d1f = resf_sigma1[:, 2] - mdl.m.val
+    d16f = resf_sigma16[:, 2] - mdl.m.val
+    d2f = resf_sigma2[:, 2] - mdl.m.val
+
+    # TODO: Why are these ratios not 1.6 and 2, and why is sigma=2
+    # smaller than sigma=1.6?
+    #
+    check_m_ratio(d16f, d1f, 1.2785750685947328)
+    check_m_ratio(d2f, d1f, 1.24220800667757)
+
+    # For correlate=True, there is no need to special case the
+    # c value. Since this uses the covariance matrix we check
+    # whether the separation from the best-fit location has
+    # increased with sigma.
+    #
+    d1t = abs(rest_sigma1[:, 1:] - mdl.thawedpars)
+    d16t = abs(rest_sigma16[:, 1:] - mdl.thawedpars)
+    d2t = abs(rest_sigma2[:, 1:] - mdl.thawedpars)
+
+    def check_ratio(vsigma, vsigma1, minval, maxval):
+        r = vsigma / vsigma1
+        assert r.min() == pytest.approx(minval)
+        assert r.max() == pytest.approx(maxval)
+        # check the ratio for the c column
+        assert (r[[0, 1, 2, 4], 0] > 1.6).all()
+        # This is the out-of-bounds value
+        assert r[3, 0] == pytest.approx(1.0)
+
+    check_ratio(d16t, d1t, 0.5592601537154354, 2.3835120525988995)
+    check_ratio(d2t, d1t, 0.6046847674045083, 3.9596727215871725)
+
+
+def test_uniform_sample_upper_limit(clean_ui, caplog):
+    """Are hard limits respected in the uniform_sample output?
+
+    This is a regression test, just to see what happens.
+
+    """
+
+    setup_upper_limit()
+
+    # clip=none
+    reset_seed()
+    res = ui.uniform_sample(num=5, clip="none")
+
+    stat = [23.09504763, 248.14278362, 3.84258011, 4.10371269, 2.52533989]
+    c = [-1.52105109,  5.79701772, -2.45911342, 0.20786994, -0.93543076]
+    m = [-0.39829977, -0.71934196, -0.57431753, -0.56908599, -0.55958875]
+
+    assert res[:, 0] == pytest.approx(stat)
+    assert res[:, 1] == pytest.approx(c)
+    assert res[:, 2] == pytest.approx(m)
+
+    # clip=hard
+    reset_seed()
+    res = ui.uniform_sample(num=5)
+
+    c = np.clip(c, 0, None)
+    assert res[:, 0] == pytest.approx(stat)
+    assert res[:, 1] == pytest.approx(c)
+    assert res[:, 2] == pytest.approx(m)
+
+
+def test_t_sample_upper_limit(clean_ui, caplog):
+    """Are hard limits respected in the t_sample output?
+
+    This is a regression test, just to see what happens.
+
+    """
+
+    setup_upper_limit()
+
+    # clip=none
+    reset_seed()
+    res = ui.t_sample(num=5, clip="none")
+
+    stat = [8.6840743, 50.73089515, 2.06343103, 10.54354892, 1.6621687]
+    c = [1.20415568, -3.25097801, 1.05196097, 3.29119311, 0.53070364]
+    m = [-0.55668802, -0.73053488, -0.51084555, -0.4575194, -0.48985982]
+
+    assert res[:, 0] == pytest.approx(stat)
+    assert res[:, 1] == pytest.approx(c)
+    assert res[:, 2] == pytest.approx(m)
+
+    # clip=hard
+    reset_seed()
+    res = ui.t_sample(num=5)
+
+    c = np.clip(c, 0, None)
+    assert res[:, 0] == pytest.approx(stat)
+    assert res[:, 1] == pytest.approx(c)
+    assert res[:, 2] == pytest.approx(m)
