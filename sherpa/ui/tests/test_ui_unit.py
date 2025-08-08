@@ -2347,3 +2347,45 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
 
     check_ratio(d16t, d1t, 0.5592601537154354, 2.3835120525988995)
     check_ratio(d2t, d1t, 0.6046847674045083, 3.9596727215871725)
+
+
+def test_uniform_sample_upper_limit(clean_ui, caplog):
+    """Are hard limits respected in the uniform_sample output?
+
+    This is a regression test, just to see what happens.
+
+    """
+
+    setup_upper_limit()
+
+    reset_seed()
+    res = ui.uniform_sample(num=5)
+
+    stat = [23.09504763, 248.14278362, 3.84258011, 4.10371269, 2.52533989]
+    c = [-1.52105109,  5.79701772, -2.45911342, 0.20786994, -0.93543076]
+    m = [-0.39829977, -0.71934196, -0.57431753, -0.56908599, -0.55958875]
+
+    assert res[:, 0] == pytest.approx(stat)
+    assert res[:, 1] == pytest.approx(c)
+    assert res[:, 2] == pytest.approx(m)
+
+
+def test_t_sample_upper_limit(clean_ui, caplog):
+    """Are hard limits respected in the t_sample output?
+
+    This is a regression test, just to see what happens.
+
+    """
+
+    setup_upper_limit()
+
+    reset_seed()
+    res = ui.t_sample(num=5)
+
+    stat = [8.6840743, 50.73089515, 2.06343103, 10.54354892, 1.6621687]
+    c = [1.20415568, -3.25097801, 1.05196097, 3.29119311, 0.53070364]
+    m = [-0.55668802, -0.73053488, -0.51084555, -0.4575194, -0.48985982]
+
+    assert res[:, 0] == pytest.approx(stat)
+    assert res[:, 1] == pytest.approx(c)
+    assert res[:, 2] == pytest.approx(m)
