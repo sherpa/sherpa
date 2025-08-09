@@ -1047,6 +1047,14 @@ as in previous versions you could change fields to any size). This
 field can also be accessed using `len`, with it returning 0 when no
 data has been set.
 
+The ability to create a Data object with either, or both, of the
+independent or dependent axes set to `None` is currently supported.
+This does cause a lot of down-stream checks, and it is not obvious if
+it is worth the complexity. However, the current
+`sherpa.astro.ui.Session.fake_pha` code relies on being able to create
+a `~sherpa.astro.data.DataPHA` object with no axes and no attempt has
+been made to change the design.
+
 .. _data_design_point_vs_integrated:
 
 Point versus Integrated
@@ -1055,6 +1063,18 @@ Point versus Integrated
 There is currently no easy way to identify whether a data object
 requires integrated (low and high edges) or point axes (the coordinate
 at which to evaluate the model).
+
+There are classes to handle the difference between the two: the base
+class is `sherpa.models.regrid.Axis` and the sub-classes are
+`~sherpa.models.regrid.PointAxis` and
+`~sherpa.models.regrid.IntegratedAxis`. However, there is currently no
+work being done to update the API to use these classes in some form,
+since it would be a significant change.
+
+At present there is no support for a dataset which combines integrated
+and point axes, but there could be in the future, which would suggest
+adding some container class to represent all the axes of an object
+(and it could include other metadata).
 
 .. _data_design_independent_axis:
 
