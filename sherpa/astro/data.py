@@ -5153,7 +5153,23 @@ It is an integer or string.
                                        (elo, ehi), ignore=ignore,
                                        integrated=True)
 
-    def to_guess(self):
+    def to_guess(self) -> tuple[np.ndarray, ...]:
+        """Return the dependent and independent axes for guessing.
+
+        .. versionchanged:: 4.18.0
+           It is now an error to call this with either the independent
+           or dependent axes unset.
+
+        Return
+        ------
+        axes : tuple of ndarray
+           The dependent axis and then the independent axes, including
+           any data filtering, grouping, and analysis setting. The
+           dependent axis is a rate if the exposure is set, and
+           corrected by the ARF if set.
+
+        """
+
         elo, ehi = self._get_ebins(group=False)
         elo = self.apply_filter(elo, self._min)
         ehi = self.apply_filter(ehi, self._max)
@@ -5163,6 +5179,10 @@ It is an integer or string.
             elo = lo
             ehi = hi
         cnt = self.get_dep(True)
+        if cnt is None:
+            raise DataErr("The dependent axis of "
+                          f"'{self.name}' has not been set")
+
         arf = self.get_specresp(filter=True)
 
         y = cnt / (ehi - elo)
@@ -5173,15 +5193,30 @@ It is an integer or string.
             y /= arf  # photons/keV/cm^2/sec or photons/Ang/cm^2/sec
         return (y, elo, ehi)
 
-    def to_fit(self, staterrfunc=None):
-        return (self.get_dep(True),
-                self.get_staterror(True, staterrfunc),
-                self.get_syserror(True))
+    def to_plot(self,
+                yfunc: ModelFunc | None = None,
+                staterrfunc: StatErrFunc | None = None,
+                response_id: IdType | None = None
+                ):
+        """Return data useful for plotting.
 
-    def to_plot(self, yfunc=None, staterrfunc=None, response_id=None):
-        return (self.apply_filter(self.get_x(response_id=response_id),
-                                  self._middle),
-                self.get_y(True, yfunc, response_id=response_id),
+        .. versionchanged:: 4.18.0
+           It is now an error to call this with either the independent
+           or dependent axes unset.
+
+        """
+
+        # This fails if the independent axis is not set.
+        x = self.apply_filter(self.get_x(response_id=response_id),
+                              self._middle)
+
+        y = self.get_y(True, yfunc, response_id=response_id)
+        if y is None:
+            raise DataErr("The dependent axis of "
+                          f"'{self.name}' has not been set")
+
+        return (x,
+                y,
                 self.get_yerr(True, staterrfunc, response_id=response_id),
                 self.get_xerr(True, response_id=response_id),
                 self.get_xlabel(),

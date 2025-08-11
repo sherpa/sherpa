@@ -1068,25 +1068,6 @@ def _add_fit_stats(outfile: str | Path | WriteableTextFile | None,
     return fh
 
 
-def _check_length(dep) -> int:
-    """Check there is data to fit (the array is not empty).
-
-    Returns the length of the data.
-    """
-
-    # This is partly written this way to appease mypy.
-    try:
-        ndep = len(dep)
-        if ndep > 0:
-            return ndep
-
-    except TypeError:
-        # Assume does not have a length.
-        pass
-
-    raise FitErr('nobins')
-
-
 class Fit(NoNewAttributesAfterInit):
     """Fit a model to a data set.
 
@@ -1429,14 +1410,16 @@ class Fit(NoNewAttributesAfterInit):
         5.000000e+00 4.600000e+01 7.000000e+00
         """
 
-        dep, staterror, _ = self.data.to_fit(self.stat.calc_staterror)
+        try:
+            dep, staterror, _ = self.data.to_fit(self.stat.calc_staterror)
+        except DataErr as de:
+            # Historically the error here has been handled differently
+            # depending on the error, so attempt to maintain this
+            #
+            if str(de) == "mask excludes all data":
+                raise de
 
-        # TODO: This test may already be handled by data.to_fit(),
-        #       which raises DataErr('notmask'), although I have not
-        #       investigated if it is possible to pass that check
-        #       but fail the following.
-        #
-        _check_length(dep)
+            raise FitErr('nobins') from de
 
         if ((np.iterable(staterror) and 0.0 in staterror) and
                 isinstance(self.stat, Chi2) and
@@ -1648,10 +1631,18 @@ class Fit(NoNewAttributesAfterInit):
             raise EstErr('noerr4least2', type(self.stat).__name__)
 
         if type(self.stat) is not Cash:
-            dep, staterror, syserror = self.data.to_fit(
-                self.stat.calc_staterror)
+            # Repeat the error-checking from Fit.fit.
+            #
+            try:
+                dep, staterror, syserror = self.data.to_fit(
+                    self.stat.calc_staterror)
+            except DataErr as de:
+                if str(de) == "mask excludes all data":
+                    raise de
 
-            ndep = _check_length(dep)
+                raise FitErr('nobins') from de
+
+            ndep = len(dep)
 
             # For chi-squared and C-stat, reduced statistic is
             # statistic value divided by number of degrees of

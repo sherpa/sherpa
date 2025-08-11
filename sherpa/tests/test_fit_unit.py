@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020 - 2025
+#  Copyright (C) 2016, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -442,6 +442,47 @@ def setup_pha_multiple(flo, fhi, stat=None):
     fit3 = Fit(src3, mexpr3, stat=statobj)
 
     return fit, [fit1, fit2, fit3]
+
+
+@pytest.mark.parametrize("x,y",
+                         [([1, 2, 3], None),
+                          pytest.param(None, [1, 2, 3], marks=pytest.mark.xfail),  # these error out but not with FitErr
+                          (None,None)])
+@pytest.mark.parametrize("data_class", [Data1D, DataPHA])
+def test_fit_fails_data_no_axis(data_class, x, y):
+    """Check the fit fails if the data has no axis.
+
+    This is primarily a regression test.
+
+    """
+
+    d = data_class("ee", x, y)
+    mdl = Const1D("mm")
+    f = Fit(d, mdl)
+    with pytest.raises(FitErr,
+                       match="^no noticed bins found in data set$"):
+        f.fit()
+
+
+@pytest.mark.parametrize("x,y",
+                         [([1, 2, 3], None),
+                          pytest.param(None, [1, 2, 3], marks=pytest.mark.xfail),  # these error out but not with FitErr
+                          (None,None)])
+@pytest.mark.parametrize("data_class", [Data1D, DataPHA])
+def test_est_errors_fails_data_no_axis(data_class, x, y):
+    """Check the error estimation fails if the data has no axis.
+
+    This is primarily a regression test, in part because
+    est_errors is not designed to be used like this.
+
+    """
+
+    d = data_class("ee", x, y)
+    mdl = Const1D("mm")
+    f = Fit(d, mdl)
+    with pytest.raises(FitErr,
+                       match="^no noticed bins found in data set$"):
+        f.est_errors()
 
 
 @pytest.mark.parametrize("stat", [Cash, CStat, WStat])
