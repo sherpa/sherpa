@@ -10073,14 +10073,9 @@ class Session(NoNewAttributesAfterInit):
     #
     # Sampling functions
     #
-    # DOC-TODO: This copies from sherpa/sim/sample.py, so can
-    # docstrings be shared (whether directly or via functools)?
-    # Unfortunately not quite a direct copy, so hard
-    # to see how to do
-
     def normal_sample(self,
                       num: int = 1,
-                      sigma: float = 1,
+                      scale: float = 1,
                       correlate: bool = True,
                       id: IdType | None = None,
                       otherids: IdTypes = (),
@@ -10094,16 +10089,18 @@ class Session(NoNewAttributesAfterInit):
         distribution, and calculate the fit statistic.
 
         .. versionchanged:: 4.18.0
-           The random state returned by get_rng is now used for the
-           sampling.
+           The sigma parameter has been renamed to scale, and the code
+           has been updated so that changing it will change the
+           sampled values. The random state returned by get_rng is now
+           used for the sampling.
 
         Parameters
         ----------
         num : int, optional
            The number of samples to use (default is 1).
-        sigma : number, optional
-           The width of the normal distribution (the default
-           is 1).
+        scale : number, optional
+           Scale factor applied to the sigma values from the fit
+           before sampling the normal distribution.
         correlate : bool, optional
            Should a multi-variate normal be used, with parameters
            set by the covariance matrix (``True``) or should a
@@ -10120,8 +10117,9 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         samples
-           A NumPy array table with the first column representing the
-           statistic and later columns the parameters used.
+           A 2D NumPy array table with the first column representing
+           the statistic and later columns the parameters used. The
+           number of rows is given by the num argument.
 
         See Also
         --------
@@ -10133,12 +10131,17 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
+
+        It is expected that the model has already been fit to the
+        data.
+
         All thawed model parameters are sampled from the Gaussian
-        distribution, where the mean is set as the best-fit parameter
-        value and the variance is determined by the diagonal elements
-        of the covariance matrix. The multi-variate Gaussian is
-        assumed by default for correlated parameters, using the
-        off-diagonal elements of the covariance matrix.
+        distribution. The mean is set as the current parameter
+        values. The variance is calculated from the covariance matrix
+        of the fit multiplied by scale * scale. When correlate is
+        False the diagonal of the matrix is used, so the parameters
+        are uncorrelated. When correlate is True the full matrix is
+        used, allowing for correlations between the parameters.
 
         Examples
         --------
@@ -10153,10 +10156,35 @@ class Session(NoNewAttributesAfterInit):
         >>> np.median(ans[:,0])
         119.82959326927781
 
+        Sample the thawed parameters using the covariance matrix, to
+        account for correlations between the parameters:
+
+        >>> ans = normal_sample(num=1000, correlate=True)
+
+        Ensure that the sampling is repeatable by fixing the random
+        number generator (RNG), and then plot the statistic value (y
+        axis) against the first thawed parmeter (x axis):
+
+        >>> set_rng(np.random.default_rng(2462357))
+        >>> res = normal_sample(id=1000)
+        >>> plot_scatter(res[:, 1], res[:, 0], ylabel="scatter")
+
+        Compare the PDF of the first thawed parameter when using the
+        calculated errors versus twice them:
+
+        >>> res1 = normal_sample(id=1000)
+        >>> res2 = normal_sample(id=1000, scale=2)
+        >>> plot_pdf(res1[:, 1], bins=20)
+        >>> plot_pdf(res2[:, 1], bins=20, overplot=True)
+
+        Sample the model fits for datasets 1, 2, and 3:
+
+        >>> res = normal_sample(num=1000, correlate=True, id=1, otherids=(2, 3))
+
         """
         ids, fit = self._get_fit(id, otherids)
         rng = self.get_rng()
-        return sherpa.sim.normal_sample(fit, num=num, sigma=sigma,
+        return sherpa.sim.normal_sample(fit, num=num, scale=scale,
                                         correlate=correlate,
                                         numcores=numcores, rng=rng)
 
