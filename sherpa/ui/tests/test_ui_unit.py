@@ -1541,16 +1541,16 @@ def test_normal_sample_correlate(setrng, clean_ui):
     bestfit = np.asarray([mdl.c0.val, mdl.c1.val])
 
     setrng()
-    e1t = ui.normal_sample(num=3, sigma=1, correlate=True)
+    e1t = ui.normal_sample(num=3, scale=1, correlate=True)
 
     setrng()
-    e1f = ui.normal_sample(num=3, sigma=1, correlate=False)
+    e1f = ui.normal_sample(num=3, scale=1, correlate=False)
 
     setrng()
-    e2t = ui.normal_sample(num=3, sigma=2, correlate=True)
+    e2t = ui.normal_sample(num=3, scale=2, correlate=True)
 
     setrng()
-    e2f = ui.normal_sample(num=3, sigma=2, correlate=False)
+    e2f = ui.normal_sample(num=3, scale=2, correlate=False)
 
     # Are the sigma=2 values twice those of sigma=1, after subtracting
     # off the best-fit? The first column is dropped as it is the
@@ -2126,11 +2126,11 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
     nlog2 = len(caplog.records)
 
     reset_seed()
-    resf_sigma16 = ui.normal_sample(num=5, sigma=1.6, correlate=False)
+    resf_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=False)
     nlog3 = len(caplog.records)
 
     reset_seed()
-    resf_sigma2 = ui.normal_sample(num=5, sigma=2, correlate=False)
+    resf_sigma2 = ui.normal_sample(num=5, scale=2, correlate=False)
     nlog4 = len(caplog.records)
 
     reset_seed()
@@ -2138,11 +2138,11 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
     nlog5 = len(caplog.records)
 
     reset_seed()
-    rest_sigma16 = ui.normal_sample(num=5, sigma=1.6, correlate=True)
+    rest_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=True)
     nlog6 = len(caplog.records)
 
     reset_seed()
-    rest_sigma2 = ui.normal_sample(num=5, sigma=2, correlate=True)
+    rest_sigma2 = ui.normal_sample(num=5, scale=2, correlate=True)
     nlog7 = len(caplog.records)
 
     # This does not have the "x sigma bounds not found" message,
@@ -2234,11 +2234,11 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
     nlog2 = len(caplog.records)
 
     reset_seed()
-    resf_sigma16 = ui.normal_sample(num=5, sigma=1.6, correlate=False)
+    resf_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=False)
     nlog3 = len(caplog.records)
 
     reset_seed()
-    resf_sigma2 = ui.normal_sample(num=5, sigma=2, correlate=False)
+    resf_sigma2 = ui.normal_sample(num=5, scale=2, correlate=False)
     nlog4 = len(caplog.records)
 
     reset_seed()
@@ -2246,11 +2246,11 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
     nlog5 = len(caplog.records)
 
     reset_seed()
-    rest_sigma16 = ui.normal_sample(num=5, sigma=1.6, correlate=True)
+    rest_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=True)
     nlog6 = len(caplog.records)
 
     reset_seed()
-    rest_sigma2 = ui.normal_sample(num=5, sigma=2, correlate=True)
+    rest_sigma2 = ui.normal_sample(num=5, scale=2, correlate=True)
     nlog7 = len(caplog.records)
 
     assert (nlog2 - nlog1) == 6

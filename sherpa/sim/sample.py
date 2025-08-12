@@ -960,7 +960,7 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
 
 def normal_sample(fit: Fit,
                   num: int = 1,
-                  sigma: float = 1,
+                  scale: float = 1,
                   correlate: bool = True,
                   numcores: int | None = None,
                   rng: random.RandomType | None = None
@@ -972,9 +972,10 @@ def normal_sample(fit: Fit,
     drawing values from a uni- or multi-variate normal (Gaussian)
     distribution, and calculate the fit statistic.
 
-    .. versionchanged:: 4.18.0
-       The sigma setting is now used (previously it was not guaranteed
-       to be used).
+    ..versionchanged:: 4.18.0
+      The sigma parameter has been renamed to scale, and the code
+      has been updated so that changing it will change the sampled
+      values.
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -985,9 +986,9 @@ def normal_sample(fit: Fit,
        The fit results.
     num : int, optional
        The number of samples to use (default is `1`).
-    sigma : number, optional
-       The width of the normal distribution (the default
-       is `1`).
+    scale : number, optional
+       Scale factor applied to the sigma values from the fit before
+       sampling the normal distribution.
     correlate : bool, optional
        Should a multi-variate normal be used, with parameters
        set by the covariance matrix (`True`) or should a
@@ -1013,12 +1014,16 @@ def normal_sample(fit: Fit,
 
     Notes
     -----
+
+    It is expected that the model has already been fit to the data.
+
     All thawed model parameters are sampled from the Gaussian
-    distribution, where the mean is set as the best-fit parameter
-    value and the variance is determined by the diagonal elements
-    of the covariance matrix. The multi-variate Gaussian is
-    assumed by default for correlated parameters, using the
-    off-diagonal elements of the covariance matrix.
+    distribution. The mean is set as the current parameter values. The
+    variance is calculated from the covariance matrix of the fit
+    multiplied by scale * scale. When correlate is False the diagonal
+    of the matrix is used, so the parameters are uncorrelated. When
+    correlate is True the full matrix is used, allowing for
+    correlations between the parameters.
 
     """
     if correlate:
@@ -1026,7 +1031,7 @@ def normal_sample(fit: Fit,
     else:
         sampler = NormalSampleFromScaleVector()
 
-    sampler.scale.sigma = sigma
+    sampler.scale.sigma = scale
     return sampler.get_sample(fit, num=num, numcores=numcores, rng=rng)
 
 
