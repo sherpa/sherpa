@@ -49,6 +49,9 @@ if installed:
   has only been limited testing. Please
   `report any problems <https://github.com/sherpa/sherpa/issues/>`_
   you find.
+* `scipy <https://www.scipy.org>`_ for the `sherpa.optmethods.optscipy`
+  module, which provides an interface to use several optimizers from Scipy
+  for Sherpa fitting.
 * `ArviZ <https://python.arviz.org>`_ for visualisation and analysis of
   `sherpa.sim.MCMC` results.
 

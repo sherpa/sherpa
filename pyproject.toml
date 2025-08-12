@@ -57,6 +57,7 @@ doc = [
   "astropy",
   "matplotlib",
   "bokeh",
+  "scipy",
   "arviz",
 ]
 
