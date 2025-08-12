@@ -704,6 +704,8 @@ class Evaluate:
 
 def _sample_stat(fit: Fit,
                  samples: np.ndarray,
+                 clipped: np.ndarray,
+                 *,
                  numcores: int | None = None,
                  cache: bool = True
                  ) -> np.ndarray:
@@ -716,6 +718,9 @@ def _sample_stat(fit: Fit,
         the samples, along with any possible error analysis.
     samples : 2D numpy array
         The samples array, stored as a npar by niter matrix.
+    clipped : numpy array
+        Whether the parameter row included clipped parameters (1) or
+        not (0).
     numcores : int or None, optional
         Should the calculation be done on multiple CPUs?  The default
         (None) is to rely on the parallel.numcores setting of the
@@ -727,7 +732,8 @@ def _sample_stat(fit: Fit,
     -------
     vals : 2D numpy array
         A copy of the samples input with an extra row added to its
-        start, giving the statistic value for that row.
+        start, giving the statistic value for that row, and at the
+        end, containing the clipped array.
 
     """
 
@@ -741,7 +747,10 @@ def _sample_stat(fit: Fit,
         fit.model.teardown()
         fit.model.thawedpars = oldvals
 
-    return np.concatenate([stats[:, np.newaxis], samples], axis=1)
+    return np.concatenate([stats[:, np.newaxis],
+                           samples,
+                           clipped[:, np.newaxis]
+                           ], axis=1)
 
 
 # Note:
@@ -774,8 +783,10 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.18.0
-           The clip argument has been added. To match earlier versions
-           set clip to "none".
+           The clip argument has been added, and the return value now
+           has an extra column, indicating if the row was clipped. To
+           match earlier versions results set clip to "none", although
+           the clipped column will still be returned.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -805,17 +816,18 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
         Returns
         -------
         samples : 2D numpy array
-            The array is num by (npar + 1) size, where npar is the
-            number of free parameters in the fit argument. The first
-            element in each row is the statistic value, and the
-            remaining are the parameter values.
+           The array is num by (npar + 2) size, where npar is the
+           number of free parameters in the fit argument. The first
+           element in each row is the statistic value, the remaining
+           are the parameter values, and then the last column
+           indicates whether any parameters were clipped.
 
         """
 
         # Knowledge of whether a row has been clipped is dropped
         samples = super().get_sample(fit, num=num, rng=rng)
-        _ = self.clip(fit, samples, clip=clip)
-        return _sample_stat(fit, samples, numcores)
+        clipped = self.clip(fit, samples, clip=clip)
+        return _sample_stat(fit, samples, clipped, numcores=numcores)
 
 
 class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
@@ -839,8 +851,10 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.18.0
-           The clip argument has been added. To match earlier versions
-           set clip to "none".
+           The clip argument has been added, and the return value now
+           has an extra column, indicating if the row was clipped. To
+           match earlier versions results set clip to "none", although
+           the clipped column will still be returned.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -870,17 +884,18 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
         Returns
         -------
         samples : 2D numpy array
-            The array is num by (npar + 1) size, where npar is the
-            number of free parameters in the fit argument. The first
-            element in each row is the statistic value, and the
-            remaining are the parameter values.
+           The array is num by (npar + 2) size, where npar is the
+           number of free parameters in the fit argument. The first
+           element in each row is the statistic value, the remaining
+           are the parameter values, and then the last column
+           indicates whether any parameters were clipped.
 
         """
 
         # Knowledge of whether a row has been clipped is dropped
         samples = super().get_sample(fit, num=num, rng=rng)
-        _ = self.clip(fit, samples, clip=clip)
-        return _sample_stat(fit, samples, numcores)
+        clipped = self.clip(fit, samples, clip=clip)
+        return _sample_stat(fit, samples, clipped, numcores=numcores)
 
 
 class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
@@ -903,8 +918,10 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.18.0
-           The clip argument has been added. To match earlier versions
-           set clip to "none".
+           The clip argument has been added, and the return value now
+           has an extra column, indicating if the row was clipped. To
+           match earlier versions results set clip to "none", although
+           the clipped column will still be returned.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -932,16 +949,17 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
         Returns
         -------
         samples : 2D numpy array
-           The array is num by (npar + 1) size, where npar is the
+           The array is num by (npar + 2) size, where npar is the
            number of free parameters in the fit argument. The first
-           element in each row is the statistic value, and the
-           remaining are the parameter values.
+           element in each row is the statistic value, the remaining
+           are the parameter values, and then the last column
+           indicates whether any parameters were clipped.
 
         """
         samples = super().get_sample(fit, factor=factor, num=num,
                                      rng=rng)
-        _ = self.clip(fit, samples, clip=clip)
-        return _sample_stat(fit, samples, numcores)
+        clipped = self.clip(fit, samples, clip=clip)
+        return _sample_stat(fit, samples, clipped, numcores=numcores)
 
 
 class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
@@ -966,8 +984,10 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.18.0
-           The clip argument has been added. To match earlier versions
-           set clip to "none".
+           The clip argument has been added, and the return value now
+           has an extra column, indicating if the row was clipped. To
+           match earlier versions results set clip to "none", although
+           the clipped column will still be returned.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -999,15 +1019,16 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
         Returns
         -------
         samples : 2D numpy array
-            The array is num by (npar + 1) size, where npar is the
-            number of free parameters in the fit argument. The first
-            element in each row is the statistic value, and the
-            remaining are the parameter values.
+           The array is num by (npar + 2) size, where npar is the
+           number of free parameters in the fit argument. The first
+           element in each row is the statistic value, the remaining
+           are the parameter values, and then the last column
+           indicates whether any parameters were clipped.
 
         """
         samples = super().get_sample(fit, dof=dof, num=num, rng=rng)
-        _ = self.clip(fit, samples, clip=clip)
-        return _sample_stat(fit, samples, numcores)
+        clipped = self.clip(fit, samples, clip=clip)
+        return _sample_stat(fit, samples, clipped, numcores=numcores)
 
 
 
@@ -1030,7 +1051,9 @@ def normal_sample(fit: Fit,
        The sigma parameter has been renamed to scale, and the code
        has been updated so that changing it will change the sampled
        values. The clip parameter has been added (to match
-       earlier versions change clip to "none").
+       earlier versions change clip to "none"), and the return value
+       contains an extra column indicating whether a parameter in the
+       row was clipped.
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -1065,7 +1088,8 @@ def normal_sample(fit: Fit,
     -------
     samples
        A NumPy array table with the first column representing the
-       statistic and later columns the parameters used.
+       statistic, the later columns the parameters used, and the last
+       column indicating whether any parameter in the row was clipped.
 
     See Also
     --------
@@ -1111,9 +1135,12 @@ def uniform_sample(fit: Fit,
     fit statistic.
 
     .. versionchanged:: 4.18.0
-       The sigma setting is now used (previously it was not guaranteed
-       to be used). The clip parameter has been added (to match
-       earlier versions change clip to "none").
+       The sigma parameter has been renamed to scale, and the code
+       has been updated so that changing it will change the sampled
+       values. The clip parameter has been added (to match
+       earlier versions change clip to "none"), and the return value
+       contains an extra column indicating whether a parameter in the
+       row was clipped.
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -1143,7 +1170,8 @@ def uniform_sample(fit: Fit,
     -------
     samples :
        A NumPy array table with the first column representing the
-       statistic and later columns the parameters used.
+       statistic, the later columns the parameters used, and the last
+       column indicating whether any parameter in the row was clipped.
 
     See Also
     --------
@@ -1175,9 +1203,12 @@ def t_sample(fit: Fit,
     calculate the fit statistic.
 
     .. versionchanged:: 4.18.0
-       The sigma setting is now used (previously it was not guaranteed
-       to be used). The clip parameter has been added (to match
-       earlier versions change clip to "none").
+       The sigma parameter has been renamed to scale, and the code
+       has been updated so that changing it will change the sampled
+       values. The clip parameter has been added (to match
+       earlier versions change clip to "none"), and the return value
+       contains an extra column indicating whether a parameter in the
+       row was clipped.
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -1208,7 +1239,8 @@ def t_sample(fit: Fit,
     -------
     samples :
        A NumPy array table with the first column representing the
-       statistic and later columns the parameters used.
+       statistic, the later columns the parameters used, and the last
+       column indicating whether any parameter in the row was clipped.
 
     See Also
     --------
