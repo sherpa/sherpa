@@ -1526,7 +1526,8 @@ def test_xxx_sample_random(xxx, expected, setrng, clean_ui):
     np.random.seed()
     ui.set_rng(None)
 
-    assert answer == pytest.approx(expected)
+    assert answer[:, 0:2] == pytest.approx(expected)
+    assert answer[:, 2] == pytest.approx([0] * 3)
 
 
 @pytest.mark.parametrize("setrng", [set_rng_global, set_rng_local])
@@ -1554,7 +1555,7 @@ def test_normal_sample_correlate(setrng, clean_ui):
 
     # Are the sigma=2 values twice those of sigma=1, after subtracting
     # off the best-fit? The first column is dropped as it is the
-    # statistic column.
+    # statistic column and the last column as it is the clipped column.
     #
     scalevalue = 2.0
     expected = np.full((3, 2), scalevalue)
@@ -1567,8 +1568,8 @@ def test_normal_sample_correlate(setrng, clean_ui):
         r = d2 / d1
         assert r == pytest.approx(expected)
 
-    check_ratio(e1t[:, 1:], e2t[:, 1:])
-    check_ratio(e1f[:, 1:], e2f[:, 1:])
+    check_ratio(e1t[:, 1:-1], e2t[:, 1:-1])
+    check_ratio(e1f[:, 1:-1], e2f[:, 1:-1])
 
     # Assume that the correlated=true/false results are different,
     # which can be checked by comparing the statistic columns.
@@ -1737,8 +1738,8 @@ def test_normal_sample_linked_par_chisq(swap, method, correlate, clean_ui):
         # reverse calculate what the random values would have been,
         # and so we can check that these are as expected.
         #
-        d1 = (s1[:, 1:] - mdl1.thawedpars) / c1.parmaxes
-        d2 = (s2[:, 1:] - mdl2.thawedpars) / c2.parmaxes
+        d1 = (s1[:, 1:-1] - mdl1.thawedpars) / c1.parmaxes
+        d2 = (s2[:, 1:-1] - mdl2.thawedpars) / c2.parmaxes
 
         assert d2 == pytest.approx(d1)
 
@@ -1758,10 +1759,10 @@ def test_normal_sample_linked_par_chisq(swap, method, correlate, clean_ui):
     # so, so if this starts to fail in the future this may not be a
     # bad thing.
     #
-    mdl2.thawedpars = s2[0, 1:]
+    mdl2.thawedpars = s2[0, 1:-1]
     check2 = ui.calc_stat(2)
 
-    mdl1.thawedpars = s1[0, 1:]
+    mdl1.thawedpars = s1[0, 1:-1]
     check1 = ui.calc_stat(1)
 
     # Just check they are not the same.
@@ -1994,7 +1995,7 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
     assert stat > stat_bestfit  # this is a worse fit than the best fit
 
     # Setting c to a value < 0 gets reset to 0.
-    mdl.thawedpars = res_false[1, 1:]
+    mdl.thawedpars = res_false[1, 1:-1]
     assert mdl.c.val == pytest.approx(0.0)
 
     # Using c=0 gets us the expected statistic
@@ -2053,6 +2054,9 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
 
     c_true2 = np.clip(c_true, 0, None)
     assert res_true2[:, 1] == pytest.approx(c_true2)
+
+    assert res_false2[:, 3] == pytest.approx([0, 1, 0, 1, 0])
+    assert res_true2[:, 3] == pytest.approx([0, 1, 0, 0, 0])
 
 
 def test_normal_sample_2335_lower_limit(clean_ui, caplog):
@@ -2267,9 +2271,9 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
     # whether the separation from the best-fit location has
     # increased with sigma.
     #
-    d1t = abs(rest_sigma1[:, 1:] - mdl.thawedpars)
-    d16t = abs(rest_sigma16[:, 1:] - mdl.thawedpars)
-    d2t = abs(rest_sigma2[:, 1:] - mdl.thawedpars)
+    d1t = abs(rest_sigma1[:, 1:-1] - mdl.thawedpars)
+    d16t = abs(rest_sigma16[:, 1:-1] - mdl.thawedpars)
+    d2t = abs(rest_sigma2[:, 1:-1] - mdl.thawedpars)
 
     def check_ratio(vsigma, vsigma1, minval, maxval):
         r = vsigma / vsigma1
@@ -2384,9 +2388,9 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
     # whether the separation from the best-fit location has
     # increased with sigma.
     #
-    d1t = abs(rest_sigma1[:, 1:] - mdl.thawedpars)
-    d16t = abs(rest_sigma16[:, 1:] - mdl.thawedpars)
-    d2t = abs(rest_sigma2[:, 1:] - mdl.thawedpars)
+    d1t = abs(rest_sigma1[:, 1:-1] - mdl.thawedpars)
+    d16t = abs(rest_sigma16[:, 1:-1] - mdl.thawedpars)
+    d2t = abs(rest_sigma2[:, 1:-1] - mdl.thawedpars)
 
     def check_ratio(vsigma, vsigma1, minval, maxval):
         r = vsigma / vsigma1
@@ -2421,6 +2425,7 @@ def test_uniform_sample_upper_limit(clean_ui, caplog):
     assert res[:, 0] == pytest.approx(stat)
     assert res[:, 1] == pytest.approx(c)
     assert res[:, 2] == pytest.approx(m)
+    assert res[:, 3] == pytest.approx([0] * 5)
 
     # clip=hard
     reset_seed()
@@ -2430,6 +2435,7 @@ def test_uniform_sample_upper_limit(clean_ui, caplog):
     assert res[:, 0] == pytest.approx(stat)
     assert res[:, 1] == pytest.approx(c)
     assert res[:, 2] == pytest.approx(m)
+    assert res[:, 3] == pytest.approx([1, 0, 1, 0, 1])
 
 
 def test_t_sample_upper_limit(clean_ui, caplog):

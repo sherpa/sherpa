@@ -10095,7 +10095,9 @@ class Session(NoNewAttributesAfterInit):
            has been updated so that changing it will change the
            sampled values. The random state returned by get_rng is now
            used for the sampling. The clip parameter has been added
-           (to match earlier versions change clip to "none").
+           (to match earlier versions change clip to "none"), and the
+           return array now ends in a column indicating whether any
+           parameter in the row was clipped.
 
         Parameters
         ----------
@@ -10125,9 +10127,10 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         samples
-           A 2D NumPy array table with the first column representing
-           the statistic and later columns the parameters used. The
-           number of rows is given by the num argument.
+           A NumPy array table with the first column representing the
+           statistic, the later columns the parameters used, and the
+           last column indicating whether any parameter in the row was
+           clipped. The number of rows is given by the num argument.
 
         See Also
         --------
@@ -10160,7 +10163,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> ans = normal_sample(num=10000)
         >>> ans.shape
-        (1000, 4)
+        (1000, 5)
         >>> np.median(ans[:,0])
         119.82959326927781
 
@@ -10216,7 +10219,9 @@ class Session(NoNewAttributesAfterInit):
         .. versionchanged:: 4.18.0
            The random state returned by get_rng is now used for the
            sampling. The clip parameter has been added (to match
-           earlier versions change clip to "none").
+           earlier versions change clip to "none"), and the return
+           array now ends in a column indicating whether any parameter
+           in the row was clipped.
 
         Parameters
         ----------
@@ -10242,7 +10247,9 @@ class Session(NoNewAttributesAfterInit):
         -------
         samples
            A NumPy array table with the first column representing the
-           statistic and later columns the parameters used.
+           statistic, the later columns the parameters used, and the
+           last column indicating whether any parameter in the row was
+           clipped.  The number of rows is given by the num argument.
 
         See Also
         --------
@@ -10261,7 +10268,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> ans = uniform_sample(num=1000)
         >>> ans.shape
-        (1000, 4)
+        (1000, 5)
         >>> np.median(ans[:,0])
         284.66534775948134
 
@@ -10290,7 +10297,9 @@ class Session(NoNewAttributesAfterInit):
         .. versionchanged:: 4.18.0
            The random state returned by get_rng is now used for the
            sampling. The clip parameter has been added (to match
-           earlier versions change clip to "none").
+           earlier versions change clip to "none"), and the return
+           array now ends in a column indicating whether any parameter
+           in the row was clipped.
 
         Parameters
         ----------
@@ -10317,7 +10326,9 @@ class Session(NoNewAttributesAfterInit):
         -------
         samples
            A NumPy array table with the first column representing the
-           statistic and later columns the parameters used.
+           statistic, the later columns the parameters used, and the
+           last column indicating whether any parameter in the row was
+           clipped.  The number of rows is given by the num argument.
 
         See Also
         --------
@@ -10336,7 +10347,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> ans = t_sample(num=1000)
         >>> ans.shape
-        (1000, 4)
+        (1000, 5)
         >>> np.median(ans[:,0])
         119.9764357725326
 
