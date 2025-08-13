@@ -12,6 +12,46 @@ There are a number of utility routines provided by Sherpa that may
 be useful. Unfortunately it is not always obvious whether a routine is for use
 with the Object-Oriented API or the Session API.
 
+.. _resource-file:
+
+The Sherpa resource file
+========================
+
+The `sherpa.get_config` routine returns the location of the default
+resource file used to configure Sherpa. The location of this file is
+taken from (in order):
+
+  1. the ``SHERPARC`` environment file,
+
+  2. the file ``.sherpa.rc`` in the user's home directory,
+
+  3. and the file returned by `~sherpa.get_config`.
+
+.. _multi-core:
+
+Taking advantage of multiple CPUs
+=================================
+
+The `sherpa.utils.parallel` module provides code to run code on
+multiple CPUs. There are two settings in the Sherpa resource file
+that can be changed:
+
+- ``parallel.numcores``
+- ``multiprocessing.multiprocessing_start_method``
+
+If ``parallel.numcores`` is set to 1 then the code will run in serial
+and not parallel.
+
+The ``multiprocessing.multiprocessing_start_method`` field controls
+how the parallel code is run. Using methods other than "fork" are
+unlikely to provide any benefit, and it is probably better to set
+``parallel.numcores`` to 1 if the "fork" method can not be used.
+
+Sherpa relies on mutable state, in particular for handling parameter
+values, and so is unlikely to benefit from using threads.
+
+.. _verbosity:
+
 Controlling the verbosity of Sherpa
 ===================================
 
