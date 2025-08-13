@@ -145,6 +145,11 @@ def test_optmethod_setattr(cls):
     #
     assert oldval != pytest.approx(newval)
 
+    # confirm that ftol is set on instance, not class by making a new
+    # instance and checking that it has the old value
+    opt2 = cls()
+    assert opt2.config["ftol"] == pytest.approx(oldval)
+
 @pytest.mark.parametrize("cls", [GridSearch, LevMar, MonCar, NelderMead])
 def test_optmethod_setattr_on_init(cls):
     """Check that config options are set on init"""
@@ -163,3 +168,9 @@ def test_optmethod_setattr_on_init(cls):
     # which would mean changing newval
     #
     assert oldval != pytest.approx(newval)
+
+    # confirm that ftol is set on instance, not class by making a new
+    # instance and checking that it has something like the old value
+    # (hardcoding here to be different from test_optmethod_setattr)
+    opt2 = cls()
+    assert opt2.config["ftol"] < 1e-6
