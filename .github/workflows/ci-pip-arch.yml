@@ -57,7 +57,15 @@ jobs:
         BOKEHVER: ${{ matrix.bokeh-pkg }}
         ARVIZVER: ${{ matrix.arviz-pkg }}
       run: |
-        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} ${BOKEHVER} ${ARVIZVER}
+        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} ${BOKEHVER} ${ARVIZVER} pytest-xvfb
+
+    - name: "Setup: DS9"
+      run: |
+        # Setup CONDA_PREFIX so that it maps to a location which
+        # contains a bin directory which is in the PATH (or will be).
+        #
+        mkdir $HOME/bin
+        CONDA_PREFIX=$HOME source .github/scripts/setup_ds9.sh
 
     - name: "Install Sherpa"
       run: |
@@ -67,16 +75,18 @@ jobs:
       run: |
         data_dir=`pwd`
         cd $HOME
+        PATH=$HOME/bin:$PATH
         sherpa_test -D ${data_dir}/sherpa-test-data/sherpatest
 
     - name: "Smoke Test"
       env:
         FITS: ${{ matrix.fits-pkg }}
       run: |
-        smokevars="-v 3"
+        smokevars="-d -v 3"
         if [ ${FITS} != '' ] ; then
             smokevars="-f ${FITS} ${smokevars}"
         fi
         echo "** smoke test: ${smokevars}"
         cd ${HOME}
+        PATH=$HOME/bin:$PATH
         sherpa_smoke ${smokevars}
