@@ -5,12 +5,12 @@ echo "** uname -s: `uname -s`"
 echo "** uname -m: `uname -m`"
 
 if [ "`uname -s`" == "Darwin" ] ; then
-
     if [ "`uname -m`" == "x86_64" ]; then
-	sys="64"
+        sys="64"
     else
-	sys="arm64"
+        sys="arm64"
     fi
+
     compilers="clang_osx-${sys} clangxx_osx-${sys} gfortran_osx-${sys}"
 
     #Download the macOS 11.0 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
@@ -22,7 +22,13 @@ if [ "`uname -s`" == "Darwin" ] ; then
     tar -C ${GITHUB_WORKSPACE}/11.0SDK -xf MacOSX11.0.sdk.tar.xz
 
 else
-    compilers="gcc_linux-64=14.2 gxx_linux-64=14.2 gfortran_linux-64"
+    if [ "`uname -m`" == "x86_64" ]; then
+        sys="64"
+    else
+        sys="aarch64"
+    fi
+
+    compilers="gcc_linux-${sys}=14.2 gxx_linux-${sys}=14.2 gfortran_linux-${sys}"
 
     if [ -n "${MATPLOTLIBVER}" ]; then
         #Installed for qt-main deps which is needed for the QtAgg backend to work for matplotlib
