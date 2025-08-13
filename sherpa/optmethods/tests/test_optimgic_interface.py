@@ -24,9 +24,9 @@ already tested in the optimagic library. Here, we only want to test that the
 interface works and parameters are passed to optimagic correctly.
 
 optimagic interfaces to optimizers in many different libraries, but of those
-only scipy is a required dependency. Thus, all tets are run with scipy 
-optimizers and we leave it to the optimagic library to text that their interface
-to the other backends work - after all the whole point of optimagic is to offer
+only scipy is a required dependency. Thus, all tests are run with scipy
+optimizers and we leave it to the optimagic library to test that their interface
+to the other backends works - after all the whole point of optimagic is to offer
 the same interface to all of them.
 """
 
@@ -167,7 +167,7 @@ def test_optimagic_set_options():
     assert result.succeeded is True
 
     gauss.reset()
-    opt.algo_options = {'stopping.maxiter': 2, 'display': True}
+    opt.algo_options = {'stopping.maxiter': 2, 'norm': 1000}
     result2 = fit.fit()
     # After just 2 steps, it's not converged yet, so the answers are different
     assert result2.nfev is None
