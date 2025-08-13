@@ -44,8 +44,10 @@ and not parallel.
 
 The ``multiprocessing.multiprocessing_start_method`` field controls
 how the parallel code is run. Using methods other than "fork" are
-unlikely to provide any benefit, and it is probably better to set
+unlikely to provide any benefit for Sherpa, and it is probably better to set
 ``parallel.numcores`` to 1 if the "fork" method can not be used.
+The `Python documentation on multiprocessing <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_
+explains the methods that Python offers and discusses some pitfalls.
 
 Sherpa relies on mutable state, in particular for handling parameter
 values, and so is unlikely to benefit from using threads.
