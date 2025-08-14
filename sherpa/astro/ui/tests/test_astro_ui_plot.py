@@ -3018,7 +3018,7 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("plottype,extraargs,title,plotcls",
                          [("model", [], "Model",
                            sherpa.plot.ModelPlot),
@@ -3083,7 +3083,7 @@ def create_template():
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("plottype,extraargs,title,plotcls",
                          [("model", [], "Model",
                            sherpa.plot.ModelPlot),
@@ -3142,7 +3142,7 @@ def test_data1d_get_model_plot_template(cls, plottype, extraargs, title, plotcls
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session,
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session),
                           sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("plottype,extraargs,title",
                          [("model", [], "Model"),
@@ -3201,7 +3201,7 @@ def test_data1d_plot_model(cls, plottype, extraargs, title,
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("plottype,extraargs,title",
                          [("model", [], "Model"),
                           ("model_component", ['tmdl'],
@@ -3267,7 +3267,7 @@ def test_data1d_plot_model_template(cls, plottype, extraargs, title,
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("plottype,extraargs,title,plotcls",
                          [("model", [], "Model",
                            sherpa.plot.ModelHistogramPlot),
@@ -3318,7 +3318,7 @@ def test_data1dint_get_model_plot(cls, plottype, extraargs, title, plotcls):
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("plottype,extraargs,title",
                          [("model", [], "Model"),
                           ("model_component", ['mdl'],
@@ -3628,7 +3628,7 @@ def test_datapha_plot_after_clean():
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("datafunc", [example_data1d,
                                       example_data1dint])
 @pytest.mark.parametrize("plotfunc",
@@ -3702,7 +3702,7 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc, all_plot_backends):
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("datafunc", [example_data1d,
                                       example_data1dint])
 @pytest.mark.parametrize("plotfunc,answer",
@@ -4004,7 +4004,7 @@ def test_set_plot_opt_with_plot_y(requires_pylab):
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("name", [None, 1, {}])
 def test_set_opt_not_string(cls, name):
     """Check we error out if called with an argument that is not a string."""
@@ -4017,7 +4017,7 @@ def test_set_opt_not_string(cls, name):
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("name", ["notdata",  "fit-allthe-things", " fi", "fi",
                                   # Comment-out those names which are currently aliases;
                                   # that is, they can be used in a call but are expected
@@ -4048,7 +4048,7 @@ def test_set_opt_invalid(cls, name):
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("name", ["all", " all", "all ", "  all   ",
                                   "data", " data", "data ", " data   ",
                                   "source", "model",
@@ -4091,7 +4091,7 @@ def test_set_opt_valid_astro(name):
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 def test_set_plot_opt_explicit(cls, requires_pylab):
     """Check we can call set_xlog('data').
 
@@ -4133,7 +4133,7 @@ def test_set_plot_opt_explicit(cls, requires_pylab):
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("name,extraargs",
                          [("data", []), ("model", []), ("source", []),
                           ("model_component", ["m1"]),
@@ -4247,7 +4247,7 @@ def test_set_plot_opt_explicit_astro(requires_pylab):
 
 
 @pytest.mark.parametrize("cls",
-                         [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
+                         [pytest.param(sherpa.ui.utils.Session, marks=pytest.mark.session), sherpa.astro.ui.utils.Session])
 def test_set_plot_opt_alias(cls, caplog):
     """Check that at least one alias works.
 
