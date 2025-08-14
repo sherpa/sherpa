@@ -307,7 +307,7 @@ class FitResults(NoNewAttributesAfterInit):
         self.extra_output = results[4]
         """The ``extra_output`` field from the fit."""
 
-        self.record_steps: None | dict = results[4].get('record_steps')
+        self.record_steps: np.ndarray | None = results[4].get('record_steps')
         """A record of all steps taken during the fit, if requested
         with `record_steps=True`."""
 
