@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018 - 2025
+#  Copyright (C) 2007, 2015, 2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,6 +19,15 @@
 #
 
 """Routines for running code in parallel.
+
+The Sherpa configuration file contains two settings that control how
+code can be run in parallel:
+
+- parallel.numcores
+- multiprocessing.multiprocessing_start_method
+
+Sherpa relies on mutable state, in particular for handling parameter
+values, and so is unlikely to benefit from using threads.
 
 .. versionchanged:: 4.16.1
    All `multiprocessing` calls are now done using an explicit context,
