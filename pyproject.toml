@@ -56,7 +56,9 @@ doc = [
   "astropy",
   "matplotlib",
   "bokeh",
+  "scipy",
   "arviz",
+  "optimagic",
 ]
 
 [project.urls]
