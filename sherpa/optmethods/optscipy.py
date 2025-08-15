@@ -94,9 +94,9 @@ def convert_bounds_to_scipy(parmins: ArrayType,
 def wrap_scipy_fcn(func: Callable,
                    requires_finite_bounds: bool,
                    stat: StatFunc,
-                   x0: np.ndarray,
-                   xmin: np.ndarray,
-                   xmax: np.ndarray,
+                   x0: ArrayType,
+                   xmin: ArrayType,
+                   xmax: ArrayType,
                    **kwargs) -> OptReturn:
     """Wrap a function in scipy.optimize to the Sherpa interface.
     """
@@ -126,6 +126,7 @@ SCIPY_KEYWORDS_NOT_APPLICABLE = ['fun', 'func',
                                  'jac', 'hess', 'hessp',
                                  'constraints',
                                  'integrality', 'vectorized',
+                                 'seed',  # in scipy > 1.16 some functions accept `seed` or `rng` but fail if both are provided. Use `rng` only.
                                  ]
 '''List of keywords NOT to expose when wrapping scipy optimization functions.
 
@@ -165,11 +166,11 @@ class ScipyBase(OptMethod):
 
     def __init__(self, name : str | None = None, **kwargs) -> None:
          super().__init__(name=f'scipy.optimize.{self._scipy_func.__name__}' if name is None else name,
-                         optfunc=functools.partial(wrap_scipy_fcn,
-                                                   self._scipy_func,
-                                                   self._requires_finite_bounds),
-                        **kwargs
-                        )
+                          optfunc=functools.partial(wrap_scipy_fcn,
+                                                    self._scipy_func,
+                                                    self._requires_finite_bounds),
+                          **kwargs
+                         )
 
 
 try:
