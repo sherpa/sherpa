@@ -307,7 +307,7 @@ class FitResults(NoNewAttributesAfterInit):
         self.extra_output = results[4]
         """The ``extra_output`` field from the fit."""
 
-        self.record_steps: None | dict = results[4].get('record_steps')
+        self.record_steps: np.ndarray | None = results[4].get('record_steps')
         """A record of all steps taken during the fit, if requested
         with `record_steps=True`."""
 
@@ -637,7 +637,7 @@ class IterCallback:
         self.stat = stat
         self.fh = fh
         self.nfev = 0
-        self.record_steps = [] if record_steps else None
+        self.record_steps: list | None = [] if record_steps else None
 
     def __call__(self,
                  pars: np.ndarray
