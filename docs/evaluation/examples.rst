@@ -287,8 +287,8 @@ We can overplot the new data onto the previous plot to
 show they match::
 
    >>> x = pha.get_x()
-   >>> x.min(), x.max()
-   (0.008030000200960785, 14.943099975585938)
+   >>> print(x.min(), x.max())
+   0.008030000200960785 14.943099975585938
    >>> x = pha.apply_filter(x, pha._middle)
    >>> y = pha.get_y(filter=True)
    >>> dplot.plot(xlog=True, ylog=True)
