@@ -1867,44 +1867,6 @@ def mkabund(name: str,
                        hard_min=minval, hard_max=maxval, frozen=True)
 
 
-def eval_xspec_with_fixed_norm(func: Callable) -> Callable:
-    """Decorator to cache `XSAdditiveModel` calls with norm=1.
-
-    Since the XSPEC additive models all have the form::
-
-        pars[-1] * calc(pars[:-1], *args, **kwargs)
-
-    then it is likely better to cache the results without including
-    norm parameter (the last parameter). This decorator takes
-    advantage of this by separating out the norm parameter from the
-    rest, and letting the cache code attached to the superclass
-    (XSModel.calc) handle the decision of what to cache.
-
-    See https://github.com/sherpa/sherpa/issues/767 for an extensive
-    discussion including performance benchmarks.
-
-    While some XSPEC models seem to have an internal cache for the
-    norm similar to this decorator, in other cases, we see 20%
-    speed-ups in the fitting time.  Details depend a lot on the data
-    and models in case. At the very least, no case has been found
-    where this decorator slows down the fitting process significantly,
-    thus it is justified to apply it broadly to all XSAdditiveModels.
-    See `sherpa/astro/xspec/tests/test_xspec_caching_performance.py`.
-
-    For some models, there is an additional benefit: Since it is
-    multiplied on in Python, the norm retains the full precision of a
-    float, while some XSPEC models use lower precision floats
-    internally. The higher precision can reduce the number of function
-    evaluations needed to reach the same accuracy in the fit.
-
-    """
-    @functools.wraps(func)
-    def cache_model(cls, pars, *args, **kwargs):
-        return pars[-1] * func(cls, pars[:-1], *args, **kwargs)
-
-    return cache_model
-
-
 class XSAdditiveModel(XSModel):
     """The base class for XSPEC additive models.
 
@@ -1947,9 +1909,24 @@ class XSAdditiveModel(XSModel):
         norm = get_xspec_norm(dep, self(*args))
         param_apply_limits(norm, self.norm, **kwargs)
 
-    @eval_xspec_with_fixed_norm
     def calc(self, p, *args, **kwargs):
-        return super().calc(p, *args, **kwargs)
+        # Apply the normalization here and pass the remaining
+        # parameters to the model (allowing for the possibility of
+        # caching).
+        #
+        # See https://github.com/sherpa/sherpa/issues/767 for an
+        # extensive discussion including performance benchmarks.
+        #
+        # While some XSPEC models seem to have an internal cache for
+        # the norm similar to this decorator, in other cases, we see
+        # 20% speed-ups in the fitting time.  Details depend a lot on
+        # the data and models in case. At the very least, no case has
+        # been found where this decorator slows down the fitting
+        # process significantly, thus it is justified to apply it
+        # broadly to all XSAdditiveModels.  See
+        # `sherpa/astro/xspec/tests/test_xspec_caching_performance.py`.
+        #
+        return p[-1] * super().calc(p[:-1], *args, **kwargs)
 
 
 class XSMultiplicativeModel(XSModel):
