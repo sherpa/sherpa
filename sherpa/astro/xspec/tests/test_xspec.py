@@ -783,12 +783,9 @@ def test_evaluate_xspec_model(modelcls):
     if not isinstance(mdl, xspec.XSAdditiveModel):
         return
 
-    # 2) Now, modify the model to remove
-    # `sherpa.astro.xspec.eval_xspec_with_fixed_norm` decorator.
+    # 2) Try to avoid using the cache by calling _calc directly.
     #
-    # This turns out to be hard to do, so instead just call the
-    # compiled function directly, which also avoids the cache code.
-    #
+    mdl.cache_clear()  # clear the cache, just in case
     pars = [p.val for p in mdl.pars]
     evals_no_wrapper = pars[-1] * mdl._calc(pars[:-1], elo, ehi)
 
