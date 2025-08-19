@@ -1878,7 +1878,7 @@ def eval_xspec_with_fixed_norm(func: Callable) -> Callable:
     norm parameter (the last parameter). This decorator takes
     advantage of this by separating out the norm parameter from the
     rest, and letting the cache code attached to the superclass
-    (XSModel.calc) handle the decison of what to cache.
+    (XSModel.calc) handle the decision of what to cache.
 
     See https://github.com/sherpa/sherpa/issues/767 for an extensive
     discussion including performance benchmarks.
@@ -1960,7 +1960,7 @@ class XSMultiplicativeModel(XSModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Multiplivative.html
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Multiplicative.html
 
     """
 

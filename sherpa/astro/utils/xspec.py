@@ -338,9 +338,7 @@ class BasicParameterDefinition(ParameterDefinition):
     Most XSPEC parameters use this.
 
     .. versionchanged:: 4.18.0
-       The norm parameter for additive models is automatically added
-       to the model and so is no-longer included in the parameter
-       list.
+       The norm parameter is no-longer included for additive models.
 
     """
 
@@ -392,15 +390,6 @@ class BasicParameterDefinition(ParameterDefinition):
 
     def param_string(self) -> str:
 
-        # We need to decide between
-        #   XSParameter
-        #   XSBaseParameter
-        #   Parameter
-        #
-        # For this case we don't need to bother with XSBaseParameter
-        # and Parameter is only for the norm parameter, which is
-        # automatically added by the XSAdditiveModel class.
-        #
         out = f"XSParameter(name, '{self.name}', {self.default}, "
         out += f"min={self.softmin}, max={self.softmax}, "
         out += f"hard_min={self.hardmin}, hard_max={self.hardmax}"
