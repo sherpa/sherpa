@@ -1,7 +1,6 @@
 /*                                                                
-**  Copyright (C) 2007-20012,2015,2016  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2007-2008,2010,2012,2015-2016,2025  Smithsonian Astrophysical Observatory 
 */                                                                
-
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
@@ -52,7 +51,7 @@
 #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
 #define MOD_DEF(ob, name, doc, methods) \
         static struct PyModuleDef moduledef = { \
-          PyModuleDef_HEAD_INIT, name, doc, -1, methods }; \
+          PyModuleDef_HEAD_INIT, name, doc, -1, methods, NULL, NULL, NULL, NULL }; \
         ob = PyModule_Create(&moduledef);
 #define MOD_NEWOBJ(newval, val) newval = PyCapsule_New((void *)val, NULL, NULL);
 
@@ -181,21 +180,22 @@ MOD_INIT(group)
   }
 
   // if module created then add version info
-  if (mod)
-  {
-     PyObject *vstr = NULL, *vm = PyImport_ImportModule("ciao_version");
-     if (!vm) 
-     {
-        PyErr_WarnEx(NULL, "Unable to load the ciao_version module to determine version number- defaulting 'group' version to 0.0.0", 0);
-        PyErr_Clear();
-        vstr = Py_BuildValue("s", "0.0.0");
-     }
-     else 
-     {
-        vstr =  PyObject_CallMethod(vm, "get_ciao_version", NULL); 
-     }
-     if (vstr)  PyModule_AddObject(mod, "__version__", vstr);
-  }
+  // this is handled in the __init__.py function
+  // if (mod)
+  // {
+  //    PyObject *vstr = NULL, *vm = PyImport_ImportModule("ciao_version");
+  //    if (!vm) 
+  //    {
+  //       PyErr_WarnEx(NULL, "Unable to load the ciao_version module to determine version number- defaulting 'group' version to 0.0.0", 0);
+  //       PyErr_Clear();
+  //       vstr = Py_BuildValue("s", "0.0.0");
+  //    }
+  //    else 
+  //    {
+  //       vstr =  PyObject_CallMethod(vm, "get_ciao_version", NULL); 
+  //    }
+  //    if (vstr)  PyModule_AddObject(mod, "__version__", vstr);
+  // }
   
   import_array(); /* Must be present for NumPy.  Called first after above line. */
 
@@ -256,6 +256,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"countsArray", "minCounts", "maxLength", "tabStops",
                            NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!d|dO!", kwlist,
                                    &PyArray_Type, &py_countsArray, &minCounts, /* mandatory args */
@@ -375,7 +376,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   /* Function called from grplib.c */
   isError = grp_do_adaptive(c_countsArray, numChans, minCounts, groupCol,
                             qualCol, c_tabStops, maxLength, NULL);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -453,6 +454,8 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"countsArray", "snr", "maxLength", "tabStops",
                            "errorCol", NULL};
+
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!d|dO!O!", kwlist,
                                    &PyArray_Type, &py_countsArray, &snr, /* mandatory args */
@@ -633,7 +636,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   isError = grp_do_adaptive_snr(c_countsArray, numChans, snr, groupCol,
                                 qualCol, c_tabStops, c_errorCol, useErrCols,
                                 maxLength, NULL);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -711,6 +714,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"dataArray", "binLowArray", "binHighArray",
                            "tabStops", NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!O!|O!", kwlist,
                                    &PyArray_Type, &py_dataArray, &PyArray_Type,
@@ -866,7 +870,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   isError = grp_do_bin(c_dataArray, numChans, c_binLowArray, c_binHighArray,
                        numBins, groupCol, qualCol, c_tabStops, NULL, 0,
                        colRealFlag);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -949,6 +953,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"dataArray", "fDataArray", "fGroupCol", "fQualCol",
                            "tabStops", NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!O!O!|O!", kwlist,
                                    &PyArray_Type, &py_dataArray, &PyArray_Type,
@@ -1118,7 +1123,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   isError = grp_do_bin_file(c_dataArray, numChans, groupCol, qualCol,
                             c_tabStops, c_fDataArray, fNumChans, c_fGroupCol,
                             c_fQualCol, colRealFlag, NULL);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -1184,6 +1189,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   PyArrayObject *quality = NULL; /* The result obtained from grplib.c */
 
   static char *kwlist[] = {"numChans", "binWidth", "tabStops", NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "ll|O!", kwlist, &numChans,
                                    &binWidth, /* mandatory args */
@@ -1265,7 +1271,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   /* Function called from grplib.c */
   isError = grp_do_bin_width(numChans, binWidth, groupCol, qualCol, c_tabStops,
                              NULL);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -1322,6 +1328,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   PyArrayObject *chansPerGrp = NULL; /* The result obtained from grplib.c */
 
   static char *kwlist[] = {"groupCol", NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!", kwlist, &PyArray_Type,
                                    &py_groupCol))
@@ -1378,7 +1385,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   /* Function called from grplib.c */
   isError = set_chans_per_grp(c_groupCol, chansPerGrpCol, numChans);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -1437,6 +1444,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   PyArrayObject *grpData = NULL; /* The result obtained from grplib.c */
 
   static char *kwlist[] = {"dataArray", "groupCol", NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!", kwlist, &PyArray_Type,
                                    &py_dataArray, &PyArray_Type, &py_groupCol))
@@ -1508,7 +1516,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   /* Function called from grplib.c */
   isError = set_grp_data(c_dataArray, c_groupCol, grpDataCol, numChans);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -1564,6 +1572,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   PyArrayObject *grpNum = NULL; /* The result obtained from grplib.c */
 
   static char *kwlist[] = {"groupCol", NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!", kwlist, &PyArray_Type,
                                    &py_groupCol))
@@ -1618,7 +1627,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   /* Function called from grplib.c */
   isError = set_grp_num(c_groupCol, grpNumCol, numChans);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -1689,6 +1698,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"dataArray", "binArray", "slope", "maxLength",
                            "tabStops", NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!d|dO!", kwlist,
                                    &PyArray_Type, &py_dataArray, &PyArray_Type,
@@ -1826,7 +1836,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   isError = grp_do_max_slope(c_dataArray, c_binArray, numChans, slope,
                              groupCol, qualCol, c_tabStops, maxLength, NULL);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -1901,6 +1911,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"dataArray", "binArray", "slope", "maxLength",
                            "tabStops", NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!d|dO!", kwlist,
                                    &PyArray_Type, &py_dataArray, &PyArray_Type,
@@ -2038,7 +2049,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   isError = grp_do_min_slope(c_dataArray, c_binArray, numChans, slope,
                              groupCol, qualCol, c_tabStops, maxLength, NULL);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -2101,6 +2112,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   PyArrayObject *quality = NULL; /* The result obtained from grplib.c */
 
   static char *kwlist[] = {"numChans", "numBins", "tabStops", NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "ll|O!", kwlist, &numChans,
                                    &numBins, /* mandatory args */
@@ -2180,7 +2192,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   /* Function called from grplib.c */
   isError = grp_do_num_bins(numChans, numBins, groupCol, qualCol, c_tabStops,
                             NULL);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -2251,6 +2263,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"countsArray", "numCounts", "maxLength", "tabStops",
                            NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!d|dO!", kwlist,
                                    &PyArray_Type, &py_countsArray, &numCounts, /* mandatory args */
@@ -2375,7 +2388,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   /* Function called from grplib.c */
   isError = grp_do_num_counts(c_countsArray, numChans, numCounts, groupCol,
                               qualCol, c_tabStops, maxLength, NULL);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
@@ -2455,6 +2468,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"countsArray", "snr", "maxLength", "tabStops",
                            "errorCol", NULL};
+  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!d|dO!O!", kwlist,
                                    &PyArray_Type, &py_countsArray, &snr, /* mandatory args */
@@ -2633,7 +2647,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
   /* Function called from grplib.c */
   isError = grp_do_snr(c_countsArray, numChans, snr, groupCol, qualCol,
                        c_tabStops, c_errorCol, useErrCols, maxLength, NULL);
-
+  if ( isError ){ /* do something? avoiding compiler warning with this */; }
   dims[0] = numChans;
   typenum = NPY_DOUBLE;
 
