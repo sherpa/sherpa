@@ -93,16 +93,19 @@ jobs:
           NUMPYVER='numpy'
         fi
         pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} ${BOKEHVER} ${ARVIZVER}
+        # These packages are not always needed, but the install should
+        # be relatively quick.
+        pip install pytest-xvfb pytest-cov
 
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
       run: |
-        pip install . --verbose
+        pip install .[test] --verbose
 
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
       run: |
-        pip install -e . --verbose
+        pip install -e .[test] --verbose
 
     # This isn't always going to be used, but it is easiest to
     # always create it.
@@ -123,12 +126,14 @@ jobs:
         SHERPARC=sherpa.rc python -c 'from sherpa.utils import parallel; print(f"rcfile ={parallel.ncpus}");'
         echo "** end check"
 
+    - name: Install the test data?
+      if: matrix.test-data == 'package'
+      run: |
+        pip install ./sherpa-test-data
+
     - name: setup
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
       run: |
-        # These packages are not always needed, but the install should
-        # be relatively quick.
-        pip install pytest-xvfb pytest-cov
         # Remove the submodule.
         git submodule deinit -f .
 
