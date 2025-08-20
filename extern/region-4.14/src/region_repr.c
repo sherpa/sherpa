@@ -1,7 +1,6 @@
 /*                                                                
-**  Copyright (C) 2007,2020  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2015,2018,2020,2024  Smithsonian Astrophysical Observatory 
 */                                                                
-
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
@@ -43,8 +42,8 @@ char *reg_token_advance(char *ptr, char *colname, char sep);
 void reg_strcat(char **ptr, long *maxlen, char sep, char *buf);
 char *reg_tokens_advance(char *ptr, char *colname, char *seps);
 void reg_areg_hdr(FILE * out, char *color);
-void reg_compose_alloc_shape(regShape * shape, long cpt, char **pbuf,
-			  char **pptr, long *size, int alloc);
+void reg_compose_alloc_region( const regRegion* region, char** strbuf, long bufsiz );
+
 
 regRegion* regReadAsciiRegion( char* filename, int verbose )
 {
@@ -145,7 +144,7 @@ int regWriteAsciiRegion( char* name, regRegion* region, char** names, long nn )
     while (Shape) {
         // Shapename
         if (Shape->include == regInclude) {
-            snprintf(shapeName, maxlen, "%s", Shape->name);
+  	    snprintf(shapeName, maxlen, "%s", Shape->name);
         }
         else {
             snprintf(shapeName, maxlen, "-%s", Shape->name);
@@ -176,38 +175,20 @@ int regWriteAsciiRegion( char* name, regRegion* region, char** names, long nn )
     return 1;
 }
 
-/*
- * The same as regToStringRegion, but takes a fixed length array instead of
- * dynamically allocated memory for the string.
- */
-void regComposeRegion( const regRegion* region, char* buf, const long maxlen )
+/* -------------------------------------------------------------------------- */
+/* regComposeRegion:                                                          */
+/*    The same as regToStringRegion, but takes a user-provided buffer         */
+/*    for the region expression rather than dynamically allocating memory.    */
+/* -------------------------------------------------------------------------- */
+void regComposeRegion( const regRegion* region, char* buffer, const long maxlen )
 {
-    if (!region) {
-	    snprintf(buf, maxlen, "Null region");
-        return;
-    }
+  long bufsize = maxlen;
+  
+  /* clear buffer */
+  memset(buffer, 0, bufsize);
 
-    regShape *shape;
-    char *ptr;
-    long cpt = 0;
-    strcpy(buf, "");
-    long size = maxlen;
-
-    ptr = buf;
-    
-    shape = region->shape;
-    if (!shape) {
-        snprintf(buf, maxlen, "Empty region");
-        return;
-    }
-    
-	// ptr will be set to NULL if we run out of space
-    while (shape != NULL && ptr) {
-	    reg_compose_alloc_shape(shape, cpt, &buf, &ptr, &size, 0);
-	    cpt = shape->component;
-	    shape = shape->next;
-    }
-} 
+  reg_compose_alloc_region( region, &buffer, bufsize );
+}
 
 
 /*
@@ -226,139 +207,162 @@ char* regAllocComposeRegion( const regRegion * region ) {
     return regstr;
 }
 
+/* -------------------------------------------------------------------------- */
+/* regToStringRegion:                                                         */
+/*    Generates a string representation of the provided region.               */
+/*    Allocates new memory for the resulting string.  The user is responsible */
+/*    for freeing this memory.                                                */
+/* -------------------------------------------------------------------------- */
+char* regToStringRegion( const regRegion* region )
+{
+  char* buffer = NULL;
+  long  bufsize = 0;
 
-char* regToStringRegion( const regRegion * region ) {
+  reg_compose_alloc_region( region, &buffer, bufsize );
 
-    long init_size = 512;
-    long size;
-    regShape *Shape;
-    char *ptr;
-    char *buf;
-    long cpt = 0;
-
-    size = init_size;
-    buf = calloc(size, sizeof(char));
-    ptr = buf;
-    
-    if (!region) {
-        sprintf( buf, "Null region" );
-        return buf;
-    }
-
-    Shape = region->shape;
-    if(!Shape) {
-        sprintf( buf, "Empty region" );
-        return buf;
-    }
-
-    while (Shape) {
-	    reg_compose_alloc_shape(Shape, cpt, &buf, &ptr, &size, 1);
-	    cpt = Shape->component;
-	    Shape = Shape->next;
-    }
-    return buf;
+  return buffer;
 }
 
-/*
- * Takes the shape, component of the previous shape (0 if there is no
- * previous shape), a pointer to the start the region string, a pointer
- * to the current head of the region string, the maximum size, and if
- * the function should allocate additional space (if needed).
- */
-void reg_compose_alloc_shape(regShape * shape, long cpt, char **pbuf,
-			  char **pptr, long *size, int alloc)
+/* -------------------------------------------------------------------------- */
+/* reg_compose_alloc_region() - local method                                  */
+/*   Work horse for the region string representation methods                  */
+/*                                                                            */
+/*   Parameters                                                               */
+/*      region               - pointer to regRegion instance; may be NULL     */
+/*      strbuf               - pointer to start of the region string buffer   */
+/*                              o if NULL, memory will be dynamically alloc'd */
+/*      bufsiz               - size of string buffer (if provided)            */
+/*                              o can use to set initial buffer size          */
+/* -------------------------------------------------------------------------- */
+void reg_compose_alloc_region( const regRegion* region, char** strbuf, long bufsiz )
 {
-    // There's quite a bit of pointer arithmetic in this method to keep
-    // pptr and pbuf pointed at the correct locations. Diagrams help.
-    if (!shape) {
-      // Do nothing
-      return;
-    }
-  
-    if (!*pptr || !*pbuf) {
-      fprintf(stderr, "ERROR: No allocated space in buf for reg_compose_alloc_shape\n");
-      return;
-    }
-    
-    long tsize = *pptr - *pbuf;  // Length so far
-    long maxlen = *size - tsize; // Length remaining
-    char *shapestring; // holds the current shape
+  int isDynamic = 0;     /* flag indicating dynamic mode   */
+  int first = 1;         /* flag indicating first shape    */
+  char* buffer;          /* start of buffer                */
+  char* ptr;             /* current position within buffer */
+  regShape* shape;       /* Shape in region expression     */
+  int prev_component = -999; 
 
-    // These are guesses as to the maximum length of an individual shape
-    // given what we are shooting for in terms of accuracy.
-    int safe = 80;
-    if (shape->nPoints > 2) {
-      safe = 40 + 20 * shape->nPoints;
+  /* check if we are dynamically allocating memory */
+  if ( *strbuf == NULL )
+  {
+    /* dynamic mode.. */
+    /*   - make sure we have a usable buffer size */
+    if ( bufsiz < 15 )
+      bufsiz = 512;
+    
+    *strbuf = (char*)calloc(bufsiz, sizeof(char));
+    isDynamic = 1;
+  }
+  buffer = *strbuf;
+
+  /* Handle null or empty region */
+  if ( !region ) {
+    snprintf( buffer, bufsiz, "Null region" );
+    return;
+  }
+  else if ( !region->shape ){
+    snprintf( buffer, bufsiz, "Empty region" );
+    return;
+  }
+
+  /* set pointer to head of buffer */
+  ptr = buffer;
+  
+  /* loop region shapes - add each to buffer */
+  shape = region->shape;
+  while ( shape )
+  {
+    int nchars;
+    int space_needed;
+    int space_used;
+    int space_available;
+    char* shapestring;
+
+    /* Estimate size needed for the shape */
+    /* These are guesses as to the maximum length of an individual shape */
+    /* given what we are shooting for in terms of accuracy.              */
+    space_needed = 80;
+    if ( shape->nPoints > 2 ) {
+      space_needed = 40 + 20 * shape->nPoints;
     }
-//    printf("MCD TEMP: reg_compose_alloc_shape()\n");
-//    printf("MCD TEMP: + size = %ld\n",*size);
-//    printf("MCD TEMP: + tsize = %ld\n",tsize);
-//    printf("MCD TEMP: + maxlen = %ld\n",maxlen);
-//    printf("MCD TEMP: + safe   = %d\n",safe);
+
+    /* Allocate space for shape and populate */
+    shapestring = calloc( space_needed, sizeof(char) );
+    shape->toString(shape, shapestring, space_needed);  
+
+    /* Recalculate space needed: actual string + logical connector + terminator */
+    space_needed = strlen(shapestring) + 1 + 1;
     
-    
-    // Handle cases if we have gone over the max length.
-    // (Length so far) + (estimated next size) > (REMAINING length) s/b (TOTAL length)
-    while (tsize > *size - safe) {
-      // If we can allocate resources
-      if (alloc) {
-	// Double array size
-	*size = *size * 2; 
-	*pbuf = realloc(*pbuf, *size * sizeof(char));
-	
-	maxlen = *size - tsize; // new max length
-	*pptr = *pbuf + tsize;
-	    }
-      // Otherwise we add REGION_TRUNCATED_STR and return what we have
-      else {
-	safe = strlen( REGION_TRUNCATED_STR ) + 1;
-	
-	// Move the head back enough to print the truncated string
-	while (*size - (*pptr - *pbuf) < safe) {
-	  *pptr--;
+    /* Determine space available in buffer */
+    space_used = ptr - buffer;
+    space_available = bufsiz - space_used;
+
+    if ( space_needed > space_available )
+    {
+      /* the new shape won't fit.. either expand or truncate */
+      if ( isDynamic ){
+
+	/* Dynamic mode - extend buffer */
+        bufsiz = bufsiz + space_needed + 1;
+        *strbuf = realloc( *strbuf, bufsiz * sizeof(char) );
+
+	/* reset local pointers */
+	buffer = *strbuf;
+	ptr = buffer + space_used;
+
+        /* recalculate space available in the buffer */
+        space_available = bufsiz - space_used;
+      }
+      else
+      {
+	/* Truncate the expression.. */
+	/* add truncation notice to buffer instead */
+	/*   - get space needed for that, including termintor */
+	space_needed = strlen( REGION_TRUNCATED_STR ) + 1;
+
+	/* Move back in buffer enough to hold the truncation notice */
+        while ( (ptr > buffer) && (space_available < space_needed) )
+	{
+	  ptr--;
+	  space_available = bufsiz - (ptr - buffer);
 	}
 	
-	//        printf("MCD TEMP: + before pbuf length = %ld\n", strlen(*pbuf) );
-	if (*pptr - *pbuf >= 0) {
-	  sprintf( *pptr, REGION_TRUNCATED_STR );
-	  //          printf("MCD TEMP: + after pbuf length = %ld\n", strlen(*pbuf) );
+	if ( space_needed <= space_available ) {
+	  sprintf( ptr, REGION_TRUNCATED_STR );
 	}
 	else {
-	  // Not enough space was allocated to even print ...truncated, this
-	  // is obnoxious because it will show up for every shape (if you don't 
-	  // stop when *pptr is null), but we believe it to be acceptable 
-	  // behavior for the time being.
+	  /* Not enough space was allocated to even print the truncation notice */
 	  fprintf(stderr, 
 		  "WARNING: Not enough space allocated to print region (%lu chars)",
-		  *size);
+		  bufsiz);
 	}
 	
-	// Set pptr to NULL to let caller know we're out of space
-	      *pptr = NULL;
-	      return;
+	/* nothing else to do.. at end of provided space */
+	return;
       }
     }
-    
-    if (cpt > 0) {
-      // Draw this out and I promise it makes sense
-      *(*pptr)++ = (cpt == shape->component ? '&' : '|');
-      tsize++;
-    }
-    
-    shapestring = malloc(maxlen * sizeof(char));
-    shape->toString(shape, shapestring, maxlen);  
-//    printf("MCD TEMP: + maxlen (allowed) = %ld\n", maxlen );
-//    printf("MCD TEMP: + new shape string = %s\n", shapestring );
-//    printf("MCD TEMP: + new shape length (actual) = %ld\n", strlen(shapestring) );
-    
-    // Reusing tsize here
-    tsize = snprintf(*pptr, maxlen, "%s", shapestring);
-    free(shapestring);
-    
-    // Move pointer to end of the string 
-    *pptr += maxlen < tsize ? maxlen : tsize;
+    /* we should have enough space for the shape */
 
-    //    printf("MCD TEMP: + end pbuf = %s\n", *pbuf );
+    /* add logical expression connector */
+    if (!first) {
+      *ptr = (prev_component == shape->component ? '&' : '|');
+      ptr++;
+    }
+    first = 0;
+    prev_component = shape->component;
+
+    /* add shape string to buffer */
+    nchars = snprintf( ptr, space_available, "%s", shapestring );
+    free(shapestring);
+
+    /* advance pointer to end of the shape string  */
+    ptr += nchars;
+
+    /* advance to next shape */
+    shape = shape->next;
+    
+  } /* end shape loop */   
 }
 
 
@@ -373,6 +377,7 @@ void regPrintRegion( regRegion* region )
     if (region->shape == NULL) {
         return;
     }
+
     Shape = region->shape;
 
     while (Shape != NULL) {
@@ -427,14 +432,12 @@ void reg_parse_line(char *buf, long *mode, char **stringptr, long *maxlen, long 
     int state = 1;
     int parse_more;
     char *tptr;
-    char *iptr;
 
 
     if (!*stringptr) {
 	    *stringptr = calloc(SZ_LARGE, sizeof(char));
     }
 
-    iptr = *stringptr;
     if (**stringptr) {
 	    state = 0;
     }
