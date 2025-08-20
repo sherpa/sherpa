@@ -991,7 +991,10 @@ def _install_test_deps() -> list[str]:
     # though the current list of required plugins is empty.
     #
     deps: list[dict[str, str]] = [{'name': 'pytest',
-                                   'constraint': 'pytest>=8.0'}]
+                                   'constraint': 'pytest>=8.0'},
+                                   {'name': 'pytest-doctestplus',
+                                    'constraint': 'pytest_doctestplus>=1.4'},
+                                    ]
     pytest_plugins: list[dict[str, str]] = []
 
     def get(dep: dict[str, str]) -> tuple[str, str, str]:
