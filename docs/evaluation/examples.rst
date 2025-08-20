@@ -512,15 +512,15 @@ consider)::
    Method                = levmar
    Statistic             = chi2gehrels
    Initial fit statistic = 3.34091e+11
-   Final fit statistic   = 100.348 at function evaluation 33
+   Final fit statistic   = 100.348 at function evaluation 37
    Data points           = 143
    Degrees of freedom    = 140
    Probability [Q-value] = 0.995322
    Reduced statistic     = 0.716768
    Change in statistic   = 3.34091e+11
-      phabs.nH       0.0129623    +/- 0.00727297
-      powlaw1d.gamma   1.78432      +/- 0.0459881
-      powlaw1d.ampl   7.17014e-05  +/- 2.48851e-06
+      phabs.nH       0.0129631    +/- 0.00727541
+      powlaw1d.gamma   1.78432      +/- 0.0459914
+      powlaw1d.ampl   7.17016e-05  +/- 2.48877e-06
 
 We can see the amplitude has changed from 1 to :math:`\sim 10^{-4}`,
 which should make the predicted counts a lot more believable!

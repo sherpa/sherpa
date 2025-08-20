@@ -259,7 +259,7 @@ Run the chain
     >>> pvals.shape
     (5, 1001)
     >>> print(accept.sum() * 1.0 / 1000)
-    0.485
+    0.486
 
 Trace plots
 -----------
