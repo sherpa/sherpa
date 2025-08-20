@@ -1,7 +1,6 @@
 /*                                                                
-**  Copyright (C) 2011,2015  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2011,2015-2016,2025  Smithsonian Astrophysical Observatory 
 */                                                                
-
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
@@ -39,7 +38,7 @@
 #define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
 #define MOD_DEF(ob, name, doc, methods) \
         static struct PyModuleDef moduledef = { \
-          PyModuleDef_HEAD_INIT, name, doc, -1, methods }; \
+          PyModuleDef_HEAD_INIT, name, doc, -1, methods, NULL, NULL, NULL, NULL }; \
         ob = PyModule_Create(&moduledef);
 #define MOD_NEWOBJ(newval, val) newval = PyCapsule_New((void *)val, NULL, NULL);
 #define PyString_FromString PyUnicode_FromString
@@ -103,6 +102,7 @@ static PyObject* _stk_build(PyObject *self, PyObject *args)
 {
   char *buff; 
   int  status = 0;
+  (void)self; /* avoid compiler warning */
 
   /* Parse arguments, allow str, unicode or bytes input string.  */
 #if PY_MAJOR_VERSION >= 3
