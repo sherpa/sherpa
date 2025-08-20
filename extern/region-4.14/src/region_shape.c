@@ -1,7 +1,6 @@
 /*                                                                
-**  Copyright (C) 2007,2013,2017  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2015, 2017, 2024  Smithsonian Astrophysical Observatory 
 */                                                                
-
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
@@ -71,7 +70,33 @@ void regAppendShape( regRegion* region,
 
 }
 
+void regInsertShape(regRegion* region, 
+                    char* shapeName, 
+                    int includeFlag, 
+                    double *xpos, 
+                    double *ypos, 
+                    long nmax, 
+                    double *radius, 
+                    double *angle, 
+                    int flag_coord, 
+                    int flag_size,
+                    long component)
+{
+  regGeometry  type;
+  regFlavor    include = includeFlag? regInclude : regExclude;
+  long npoints = 0;
+  
+  if ( !strcmp( shapeName, "npolygon" ) || !strcmp( shapeName, "NPOLYGON" )) {
+    type = regPOLYGON;
+    npoints = nmax;
+  } else {
+    type = reg_shape_name_to_geometry( shapeName ); 
+    npoints = reg_shape_find_npoints( type, xpos, ypos, nmax ); 
+  }
 
+  regShape *shape = regShapeCreate(type, include, xpos, ypos, npoints, radius, angle, flag_coord, flag_size);    
+  regAddShapeByCpt(region, shape, component);
+}
 
 /* --------------------------------------------------------------------------- */
 /* regCopyShape                                                                */
@@ -401,14 +426,42 @@ regShape *regCreateShape(
              int wsize
 			 )
 {
-  regShape *newShape = NULL;
+  regShape *newShape = regShapeCreate(type, include, xpos, ypos, npoints, radius, angle, wcoord, wsize);
   double fx[2] ={ -DBL_MAX, DBL_MAX };
   double fy[2] ={ -DBL_MAX, DBL_MAX };
+
+  /* This only happens for any unrecognizable shape type (eg. regMASK) */
+  if ( newShape == NULL ) return NULL; 
+
+  /* attributes get assigned/init when glued to a region */
+  if ( region != NULL ) {
+      regAddShape( region, glue, newShape );
+      regExtent(region, fx, fy, region->xregbounds, region->yregbounds);
+  }
+ 
+  return( newShape );
+}
+
+/* ----------------------------------------------------------------------- */
+/* regShapeCreate                                                          */
+/*   Create shape using the provided input.                                */
+/*   Not all parameters apply to all shapes.                               */
+/*                                                                         */
+/*   Parameters:                                                           */
+/*     - see regShape spec                                                 */
+/* ----------------------------------------------------------------------- */
+regShape *regShapeCreate( regGeometry type, regFlavor include,
+			  double *xpos, double *ypos, long npoints,
+			  double *radius, double *angle,
+			  int wcoord, int wsize )
+{
+  regShape *newShape = NULL;
 
   /* Region library can not create Pixel Mask shapes */
   if ( type == regMASK ) { return newShape; };
 
-
+  /* Create the requested shape */
+  /*   these can return NULL shape on bad input */
   switch ( type )
     {
     case regPOINT:
@@ -451,20 +504,16 @@ regShape *regCreateShape(
       newShape = regCreateField(include, wcoord, wsize);
       break;
 
-   default:
-      return(NULL);
+    default:
+      break;
     }
 
-  /* attributes get assigned/init when glued to a region */
+  /* Set the component to the default: 1 */
+  if ( newShape )
+    newShape->component = 1;
 
-  if ( newShape == NULL ) return NULL; 
-
-  if ( region != NULL ) {
-      regAddShape( region, glue, newShape );
-      regExtent(region, fx, fy, region->xregbounds, region->yregbounds);
-  }
- 
-  return( newShape );
+  /* Return the shape */
+  return newShape;
 }
 
 
@@ -511,6 +560,79 @@ long regAddShape( regRegion *region,
 
   return( shape->component );
 
+}
+
+/* -----------------------------------------------------------------------
+   Function: regAddShapeByCpt
+   
+   Description:
+     Adds the passed shape to the passed region according to the component
+     group it should belong to
+
+   Input parameters:
+     region      -  region to put the shape in
+     inShape     -  shape to insert into the region
+     component   -  the desired component group to put the shape in
+
+   Returns:
+     nothing
+   ----------------------------------------------------------------------- */
+void regAddShapeByCpt(regRegion *region, regShape *inShape, long component)
+{
+  /* If either region or shape don't exist, return */
+  if(!region || !inShape) {return;}
+
+  regShape *atShape;
+  /* for regExtent calculation at the end */
+  double fx[2] ={ -DBL_MAX, DBL_MAX };
+  double fy[2] ={ -DBL_MAX, DBL_MAX };
+
+  inShape->component = component;
+  inShape->region = region;
+
+  /* If the region doesn't have a shape in it, set it to the passed shape */
+  if(region->shape == NULL)
+  {
+    region->shape = inShape;
+  }
+  else
+  {
+    /* Set atShape to the region's first shape to start the searching algorithm */
+    atShape = region->shape;
+
+    /* Scan the region's shape list for shapes with a matching component number */
+    while( ( regShapeGetComponent(atShape) != component ) && (atShape->next) )
+    {
+      atShape = atShape->next;
+    }
+
+    /* Check if we've reached the end of the region or found a match. */
+    if( (regShapeGetComponent(atShape) != component) && (atShape->next == NULL) )
+    {
+      /* End of region reached, so add inShape to the end of the shape list */
+      atShape->next = inShape;
+    }
+    else
+    {
+      /* We've found the matching component group */
+      /* Check to make sure there's something after the component-matching shape. If not, add the created shape */
+      /* Now scan to the end of the list of shapes with a matching component number */
+      while( (atShape->next != NULL) && (regShapeGetComponent(atShape->next) == component) )
+      {
+        atShape = atShape->next;
+      }
+      /* atShape should now be at the end of the list of shapes with a matching component */
+      /* If there's a shape after atShape, then set inShape's next-> pointer to it*/
+      if(atShape->next)
+      {
+        inShape->next = atShape->next;
+      }
+      /* set atShape's next pointer to the created shape list */
+      atShape->next = inShape;
+    }
+  }
+  /* recalculate the region */
+  regExtent(region, fx, fy, region->xregbounds, region->yregbounds);
 }
 
 /* -----------------------------------------------------------------------

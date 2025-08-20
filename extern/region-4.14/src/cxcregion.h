@@ -1,7 +1,6 @@
 /*                                                                
-**  Copyright (C) 2007  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 1999-2001,2004,2006-2007,2015-2016  Smithsonian Astrophysical Observatory 
 */                                                                
-
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
@@ -49,10 +48,14 @@ long         regShapeGetComponent( const regShape* shape );
 void        regAppendShape( regRegion* region, char* shapeName, int includeFlag, int orFlag,
 			    double* xpos, double* ypos, long npoints, double* radius, 
 			    double* angle, int world_coord, int world_size );
+void		regInsertShape( regRegion* region, char* shapeName, int includeFlag, 
+				double* xpos, double* ypos, long nmax, double* radius, 
+				double* angle, int flag_coord, int flag_size, long component);
 int         regCompareShape( regShape* Shape1, regShape* Shape2, short raw );
 regShape*   regCopyShape( regShape *Shape);
 int         regInsideShape( regShape *shape, double x, double y);
 void        regPrintShape( regShape *shape );
+void		regAddShapeByCpt(regRegion *region, regShape *inShape, long component);
 
 
 /* Region Computation */
