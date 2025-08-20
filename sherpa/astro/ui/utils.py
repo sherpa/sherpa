@@ -14277,56 +14277,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot(pfplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def _bkg_jointplot2(self, plot1, plot2,
-                        overplot: bool = False,
-                        clearwindow: bool = True,
-                        **kwargs) -> None:
-        """Create a joint plot for bkg, vertically aligned, fit data on the top.
-
-        Parameters
-        ----------
-        plot1 : sherpa.plot.Plot instance
-           The plot to appear in the top panel.
-        plot2 : sherpa.plot.Plot instance
-           The plot to appear in the bottom panel.
-        overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
-           create a new plot. The default is ``False``.
-        clearwindow : bool, optional
-           Should the existing plot area be cleared before creating this
-           new plot (e.g. for multi-panel plots)?
-
-        """
-
-        # See sherpa.ui.utils.Session._jointplot2.
-        # TODO: is this not the same as _jointplot2.
-        #
-        # Split up the kwargs so that they are per-plot.
-        #
-        kwstore = get_per_plot_kwargs(2, kwargs)
-
-        self._jointplot.reset()
-        with sherpa.plot.backend:
-            self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow,
-                                    **kwstore[0])
-
-            # We know the plot types here but still use get_plot_prefs
-            # to keep the encapsulation.
-            #
-            p2prefs = get_plot_prefs(plot2)
-            oldval = p2prefs['xlog']
-            dprefs = get_plot_prefs(plot1.dataplot)
-            mprefs = get_plot_prefs(plot1.modelplot)
-
-            if dprefs['xlog'] or mprefs['xlog']:
-                p2prefs['xlog'] = True
-
-            self._jointplot.plotbot(plot2, overplot=overplot,
-                                    **kwstore[1])
-
-            p2prefs['xlog'] = oldval
-
     def plot_bkg_fit_ratio(self,
                            id: IdType | None = None,
                            bkg_id: IdType | None = None,
@@ -14403,8 +14353,8 @@ class Session(sherpa.ui.utils.Session):
         recalc = not replot
         plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
         plot2obj = self.get_bkg_ratio_plot(id, bkg_id, recalc=recalc)
-        self._bkg_jointplot2(plot1obj, plot2obj, overplot=overplot,
-                             clearwindow=clearwindow, **kwargs)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit_resid(self,
                            id: IdType | None = None,
@@ -14483,8 +14433,8 @@ class Session(sherpa.ui.utils.Session):
         recalc = not replot
         plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
         plot2obj = self.get_bkg_resid_plot(id, bkg_id, recalc=recalc)
-        self._bkg_jointplot2(plot1obj, plot2obj, overplot=overplot,
-                             clearwindow=clearwindow, **kwargs)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit_delchi(self,
                             id: IdType | None = None,
@@ -14564,8 +14514,8 @@ class Session(sherpa.ui.utils.Session):
         recalc = not replot
         plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
         plot2obj = self.get_bkg_delchi_plot(id, bkg_id, recalc=recalc)
-        self._bkg_jointplot2(plot1obj, plot2obj, overplot=overplot,
-                             clearwindow=clearwindow, **kwargs)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     ###########################################################################
     # Analysis Functions
