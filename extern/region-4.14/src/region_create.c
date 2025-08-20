@@ -1,7 +1,6 @@
 /*                                                                
-**  Copyright (C) 2007,2013  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 1999-2001,2003-2008,2010,2013-2015  Smithsonian Astrophysical Observatory 
 */                                                                
-
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
