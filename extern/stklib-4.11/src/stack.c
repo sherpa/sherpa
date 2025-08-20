@@ -1,7 +1,6 @@
 /*                                                                
-**  Copyright (C) 1996,1998,2000,2007,2016  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 1998-2007,2009,2016-2017,2024  Smithsonian Astrophysical Observatory 
 */                                                                
-
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
@@ -76,6 +75,10 @@ static char*   stk_copy_string( char* ptr );
 static logical stk_next_list_item( char** pptr, char* itembuf, long maxlen );
 static void    stk_trim( char* opt );
 
+/* Wrapper methods to support testing of static methods */
+Stack          mock_stk_alloc(long size);
+int            mock_stk_append_item(Stack stack, char* entry, int prepend);
+
 /*********************************************************************
  * Internal:
  * Allocates memory for a stack.
@@ -106,6 +109,11 @@ static Stack stk_alloc( long size )
     fprintf(stderr, "ERROR: not enough memory to allocate stack\n");
   }
   return( stack );
+}
+
+Stack mock_stk_alloc( long size )
+{
+  return stk_alloc(size);
 }
 
 /*********************************************************************
@@ -322,7 +330,42 @@ static int stk_append_entry( Stack stack, char* item )
 }
 
 /*********************************************************************
- *  
+ * Internal:
+ * Appends the provided 'entry' item to the given stack, optionally 
+ * prepending the <path to stack file> on the entry (??).
+ *
+ *    Stack stack     - U: Stack to be updated with new content
+ *    char* entry     - I: Item to process and add to stack
+ *    int   prepend   - I: flag control for prepending path on items being appended.
+ *
+ * entry - supported formats
+ *   Stack File:
+ *     @{1}\+{0:1}\-{0:1}\s*<path>{0:1}<file>{0:1}<filter>{0:1}
+ *         <path>   = absolute or relative path to <file>
+ *                      may include pattern matching syntax
+ *         <file>   = name of stack file
+ *                      may include pattern matching syntax
+ *         <filter> = DM filter syntax '[...]'
+ *                    ?? filter syntax '<...' ??
+ *         '+'      = queues recursive addtion of stack content
+ *         '-'      = disables prepend of path to stack records
+ *     NOTE: If a DM filter is provided on a '@stack' type entry, that filter
+ *           is propogated to the stack contents when appended to the stack.
+ *     NOTE: Blank records within the stack file are ignored
+ *     NOTE: Records starting with '#' are ignored as comment records.
+ *     NOTE: Records starting with '!' will override the prepend setting for
+ *            the stack and disable prepend of path for that record only
+ *            (or children of record with pattern matching syntax).
+ *
+ *   Data File or other text entry (eg: region):
+ *     <path>{0:1}<file>{0:1}<filter>{0:1}
+ *         <path>   = absolute or relative path to <file>
+ *                      may include pattern matching syntax
+ *         <file>   = name of stack file
+ *                      may include pattern matching syntax
+ *         <filter> = DM filter syntax '[...]'
+ * 
+ * A Null argument returns a FAILURE status.
  *********************************************************************/
 static int stk_append_item(Stack stack, char *entry, int prepend )
 {
@@ -337,7 +380,8 @@ static int stk_append_item(Stack stack, char *entry, int prepend )
   char* ptr;
   int status = EXIT_SUCCESS;
   
-  int recurse=0;
+  logical recurse = FALSE;
+  logical override_prepend = FALSE;
   
   size_t nGlobbed;
   glob_t* globbed;
@@ -351,7 +395,7 @@ static int stk_append_item(Stack stack, char *entry, int prepend )
   if (*entry == '@') 
   {
     entry++;
-    
+
     if ( *entry == '+' ) 
     {
       recurse=1;
@@ -364,9 +408,11 @@ static int stk_append_item(Stack stack, char *entry, int prepend )
       entry++;
     }
 
+    /* Skip whitespace between @ and filename */
     while( isspace( *entry ) )
-      entry++;  /* Skip whitespace between @ and filename */
+      entry++;
 
+    /* Check for and separate any filter expression */
     stackfile = stk_copy_string( entry );
     ptr = strchr( stackfile, '[' );
     
@@ -386,109 +432,166 @@ static int stk_append_item(Stack stack, char *entry, int prepend )
     if ((fileList = fopen((stackfile ), "r")) == NULL)
     {
       fprintf(stderr, "# stklib : ERROR: can not open stack '%s'\n", stackfile );
+
+      free(stackfile);
+      free(filter);
+      free(globbed);
       return EXIT_FAILURE;
     }
     else 
-    {/* for each line, add process line read */
+    { /* process stackfile content, add records to stack */
       
       /* setup prepath, removing last entry in / separated path */
-      char *lastline = NULL;
-      
       prepath = stk_copy_string( stackfile );
       i = strlen( prepath );
       while( i>= 0 && prepath[i]!='/' ) i--; 
       prepath[i+1] = '\0';
-      /* read in each line */
+
+      char* tline = NULL;      /* A new string builder variable to hold an incomplete string */
       
-      while (fgets(fileEntry, MAX_ITEM_SIZE-1, fileList) != NULL) 
+      /* read in each line from the file */
+      /*   - fgets reads at most 1 less than size characters. ('-1' is not necessary) */
+      while ( fgets(fileEntry, MAX_ITEM_SIZE-1, fileList) != NULL )
       {
-	/* skip over whitespace */
-	ptr = fileEntry;
-	while( *ptr == ' ' ) ptr++;
-	
-	stk_trim( ptr );
-	
-	if ( (*ptr == '@') && ( recurse ))
-	{
-	  char nextFile[MAX_ITEM_SIZE];
-	  strcpy( nextFile, "@" );
-	  if ( prepend )
-	    strcat( nextFile, prepath );
-	  strcat( nextFile,++ptr);
-	  strcat( nextFile, filter);
-	  
-	  stk_append_item(stack, nextFile, prepend );
-	  continue;
-	} /* end recursive expand */
-	
-	if ((*ptr == '#' ) || strlen(ptr) == 0 )   /* Ingore comments and blank line */
-	{
-	  continue;
-	}
-	
-	glob( ptr, GLOB_NOCHECK, NULL, globbed );
-	for ( nGlobbed=0; nGlobbed< globbed->gl_pathc; nGlobbed++)
-	{
-	  if ( lastline )   /* This allows for a continuation character */
+        /* build full record from fgets chunks */
+        if (!tline)
+        {
+          /* starting new record */
+          tline = (char*)malloc((strlen(fileEntry)+1) * sizeof(char));
+          strcpy(tline, fileEntry);
+        }
+        else
+        {
+          /* add chunk to tline */
+          tline = realloc(tline, (strlen(tline) + strlen(fileEntry) + 1) * sizeof(char));
+          tline = strcat(tline, fileEntry);
+        }
+
+        /* Check if we need to keep building the record */
+        if(tline[strlen(tline) - 1] == '\n')
+        {
+          /* Line in file ends with newline...*/
+          /* - Trim the newline character and any potential whitespace leading to it */
+          /* - check for a continuation character too */
+          stk_trim(tline);
+          if( (strlen(tline) > 0) && (tline[strlen(tline) - 1] == '\\') )
+          {
+            /* Trim the continuation character from the record. */
+            tline[strlen(tline) - 1] = '\0';
+            stk_trim(tline); /* Trim any potential whitespace leading up to where the continuation character was */
+            continue; /* Go back to the start of the loop to get the next chunk to keep building the record */
+          }
+        }
+        else
+        {
+          /* Check to make sure we didn't reach the end of the file reading this chunk */
+          if(!feof(fileList))
 	  {
-	    char *ts = stk_cat_string( lastline, globbed->gl_pathv[nGlobbed]);
-	    filteredEntry=stk_cat_string( ts, filter );
-	    if (ts){ free(ts); }
-	    free(lastline);
-	    lastline = NULL;
-	    prepend = 0; /* If continuing, don't prepend */
+            /* Go back and get the next chunk if there's still more to be read */
+            continue;
 	  }
-	  else
-	  {
-	    filteredEntry=stk_cat_string( globbed->gl_pathv[nGlobbed], filter );
-	  }
-	    
-	  if ( *ptr == '/' || !prepend )  /* don't append absolute paths */
-	  {
-	    pathedEntry = stk_cat_string( "", filteredEntry );
-	  }
-	  else if ( *filteredEntry == '!' )  /* special char to force no path pre-pend */
-	  { 
-	    pathedEntry = stk_cat_string( "", filteredEntry+1);
-	  }
-	  else
-	  {
-	    pathedEntry = stk_cat_string( prepath, filteredEntry );
-	  }
-	    
-	  if (( pathedEntry[strlen(pathedEntry)-1] == '\\' ) || 
-	      ( strlen(fileEntry)==(MAX_ITEM_SIZE-2)) )/* Allow for a 
-							  continuation character */
-	  {
-	    lastline = (char*)calloc(strlen(pathedEntry)+1, sizeof(char));
-	    strcpy( lastline, pathedEntry );
-	    if ( lastline[strlen(lastline)-1] == '\\' ) 
-	    {
-	      /* Remove trailing \ */
-	      lastline[strlen(lastline)-1] = '\0';
-	    }
-	  }
-	  else
-	  {
-	    if (lastline) free(lastline);
-	    lastline = NULL;
-	  }
-	    
-	  if ( !lastline )
-	    status = stk_append_entry( stack, pathedEntry );
-	  
-	  free(filteredEntry);
-	  if (pathedEntry){ free(pathedEntry); }
-	  pathedEntry=NULL;
-	}
-	
-	globfree( globbed );
-	if ( status != EXIT_SUCCESS )
-	  return EXIT_FAILURE;
-      }
+        }
+  
+        /* tline now holds a complete record from the stackfile.. ready to process */
+        ptr = tline;
+
+        /* skip over leading whitespace; trim trailing newline and whitespace */
+        while( *ptr == ' ' ) ptr++;
+        stk_trim( ptr );
+
+        /* Ignore comments and blank lines */
+        if ((*ptr == '#' ) || strlen(ptr) == 0 )   
+        {
+          free(tline);
+          tline = NULL;
+          continue;
+        }
+
+        /* if record is itself another stack, and recursive is enabled,  */
+        /* add its CONTENTS to the stack rather than the record.         */
+        if ((*ptr == '@') && ( recurse ))
+        {
+          char* nextFile = NULL;
+          filteredEntry = stk_cat_string( ++ptr, filter );
+          if ( *ptr == '/' || !prepend )
+            pathedEntry = stk_cat_string( "", filteredEntry );  /* don't append absolute paths */
+          else
+            pathedEntry = stk_cat_string( prepath, filteredEntry );
+
+          nextFile = stk_cat_string( "@", pathedEntry );
+          
+          /* free allocated memory here in case the recursive load fails */
+          free(filteredEntry);
+          free(pathedEntry);
+          free(tline);
+          tline = NULL;
+          
+          /* load the substack contents */
+          stk_append_item( stack, nextFile, prepend );
+
+          /* can release this now. */
+          free(nextFile);
+          
+          /* go back and build next record */
+          continue;
+          
+        } /* end recursive expand */
+
+        /* check special char to force no path prepend */
+        if ( *ptr == '!' )
+        {
+          override_prepend = TRUE;
+          ptr++;
+        }
+
+	/* prepend path to stack */
+	/*   - do not prepend to absolute paths or if directed not to */
+        if ( *ptr == '/' || !prepend || override_prepend )  
+        {
+          pathedEntry = stk_cat_string( "", ptr );
+        }
+        else
+        {
+          pathedEntry = stk_cat_string( prepath, ptr );
+        }
+
+        /* use glob to resolve pattern match records.. add each matched item to the stack */
+        /* note: if there is no match glob returns the input                              */
+        glob( pathedEntry, GLOB_NOCHECK, NULL, globbed );
+        for ( nGlobbed = 0; nGlobbed < globbed->gl_pathc; nGlobbed++ )
+        {
+          /* add any "filter" content pulled from stackfile onto each stack record */
+          filteredEntry = stk_cat_string( globbed->gl_pathv[nGlobbed], filter );
+
+          /* add to stack */
+          status = stk_append_entry( stack, filteredEntry );
+
+          /* cleanup allocated memory */
+          if (filteredEntry)
+            free(filteredEntry);
+  
+          filteredEntry = NULL;
+        }
+        if (pathedEntry)
+          free(pathedEntry);
+        pathedEntry = NULL;
+
+        /* restore prepend override flag to default */
+        override_prepend = FALSE;
+        
+        /* we are done with the record now.. clear it for the next iteration */
+        free(tline);
+        tline = NULL;
+        
+        globfree( globbed );
+        if ( status != EXIT_SUCCESS )
+          return EXIT_FAILURE;
+
+      } /* end while( fgets() ) */
+
       free(prepath);
       fclose(fileList);
-    } 
+    }
     status = EXIT_SUCCESS;
     free( stackfile );
     free( filter );
@@ -512,17 +615,17 @@ static int stk_append_item(Stack stack, char *entry, int prepend )
     for ( nGlobbed=0; nGlobbed< globbed->gl_pathc; nGlobbed++)
     {
       if ( ( stackfile[strlen(stackfile)-1] == '/'  ) &&
-	   ( strncmp( stackfile, globbed->gl_pathv[nGlobbed], strlen(stackfile)-1 ) == 0 ) )
+           ( strncmp( stackfile, globbed->gl_pathv[nGlobbed], strlen(stackfile)-1 ) == 0 ) )
       {
-	// #14088 (SL-4): 11/10/2016
-	//   if stackfile is a directory which does not exist, retain the "/".
-	//   glob() removes it in this case, but does not if directory exists.
-	//   So if the result == input except for ending '/'.. set using input
-	filteredEntry=stk_cat_string( stackfile, filter );
+        // #14088 (SL-4): 11/10/2016
+        //   if stackfile is a directory which does not exist, retain the "/".
+        //   glob() removes it in this case, but does not if directory exists.
+        //   So if the result == input except for ending '/'.. set using input
+        filteredEntry=stk_cat_string( stackfile, filter );
       }
       else
       {
-	filteredEntry=stk_cat_string( globbed->gl_pathv[nGlobbed], filter );
+        filteredEntry=stk_cat_string( globbed->gl_pathv[nGlobbed], filter );
       }
       status = stk_append_entry( stack, filteredEntry);
       free( filteredEntry );
@@ -535,6 +638,13 @@ static int stk_append_item(Stack stack, char *entry, int prepend )
   }
   
   free(globbed);
+  return status;
+}
+
+int mock_stk_append_item(Stack stack, char *entry, int prepend)
+{
+  int status;
+  status = stk_append_item( stack, entry, prepend );
   return status;
 }
 
