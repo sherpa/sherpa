@@ -1,7 +1,6 @@
 /*                                                                
-**  Copyright (C) 2007,2017  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 1999-2001,2003-2005,2007,2013,2015,2017  Smithsonian Astrophysical Observatory 
 */                                                                
-
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
@@ -70,14 +69,14 @@ typedef enum
 
 typedef struct regSHAPE
 {
-  regGeometry  type;
-  char        *name;
-  regFlavor    include;
-  double      *xpos;
-  double      *ypos;
-  long         nPoints;
-  double      *radius;
-  double      *angle;
+  regGeometry  type;          /* Shape type (eg: regCircle)                */
+  char        *name;          /* string representation of shape type       */
+  regFlavor    include;       /* flag indicating include/exclude status    */
+  double      *xpos;          /* array of (x,y) points used in defining    */
+  double      *ypos;          /*    the shape; meaning varies by shape     */
+  long         nPoints;       /* length of x and y arrays                  */
+  double      *radius;        /* radials                                   */
+  double      *angle;         /* rotation angles                           */
   double      *sin_theta;
   double      *cos_theta;
   long         component;
@@ -140,6 +139,15 @@ regShape* regCreateShape(regRegion *region,
 			 int wcoord,
 			 int wsize); 
 
+regShape* regShapeCreate(regGeometry type, 
+                         regFlavor include, 
+                         double *xpos, 
+                         double *ypos, 
+                         long npoints, 
+                         double *radius, 
+                         double *angle, 
+                         int wcoord,
+                         int wsize);
 
 regShape* regCreatePoint(regFlavor include, 
 			 double *xpos, 
@@ -280,4 +288,3 @@ void reg_print_pos_pair(double x, double y, int world, char *xbuf, char *ybuf);
 void reg_print_pos(double x, int world, char *buf);
 void reg_print_radius(double r, int world, char *buf);
 char *reg_print_val(double x, char *buf);
-
