@@ -1624,7 +1624,7 @@ def basic_linked_par_validation(mdl1: ArithmeticModel,
     """Simple checks that the fit results match for linked pars.
 
     This is just pulled out of the test to avoid complication, and is
-    just a test that the lniked-parameter fit is working as expected.
+    just a test that the linked-parameter fit is working as expected.
 
     swap indicates whether the thawed pars are in the same order
     in the two cases (False) or swapped (True).

@@ -2627,7 +2627,7 @@ def setup_2337_model(setup: str) -> Polynom1D:
 
 @pytest.mark.parametrize("setup", ["A", "B", "C"])
 def test_2337_linked_par_full(setup, clean_astro_ui):
-    """What happens when a linked-parameter is used for sampe_photon_flux?
+    """What happens when a linked-parameter is used for sample_photon_flux?
 
     This calls sherpa.astro.flux.sample_flux.
     """
@@ -2659,7 +2659,7 @@ def test_2337_linked_par_full(setup, clean_astro_ui):
 
 @pytest.mark.parametrize("setup", ["B", "C"])
 def test_2337_linked_par_subset(setup, clean_astro_ui):
-    """What happens when a linked-parameter is used for sampe_photon_flux?
+    """What happens when a linked-parameter is used for sample_photon_flux?
 
     Similar to test_2337_linked_par_full but we send in a "subset" of
     the full model expression. The subset is just the c1 term of the

@@ -565,7 +565,7 @@ thawed parameters. It can also be used to **change** just the thawed
 parameters, by setting it to a sequence of numbers (such as a NumPy
 array or list).
 
-    >>> list(map(float, mdl.thawedpars))  # avoid np.float(...) output with NumPy 2
+    >>> print(np.array(mdl.thawedpars))
     [0.5174989148761946, 0.00016844777803050193, 0.9359622280383879, 0.25236559147135007, 2.453500469829041]
     >>> mdl.thawedpars = [0.1, 0.001, 1.0, 0.25, 2.5]
     >>> print(mdl)

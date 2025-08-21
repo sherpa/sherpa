@@ -199,7 +199,7 @@ def test_sf_full_linked(setup, fluxes1, fluxes2, link, lo, hi):
     Three things that are checked
       - behaviour with an upper-limit
       - checks some, but not all, cases of lo/hi set or unset
-        (the behaviour wheh only one is given is "interesting" for
+        (the behaviour when only one is given is "interesting" for
          historical reasons and is not tested here)
       - using a linked parameter gives the same results
         (this requires the free par order to match for the linked and
