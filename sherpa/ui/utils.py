@@ -10082,9 +10082,9 @@ class Session(NoNewAttributesAfterInit):
         drawing values from a uni- or multi-variate normal (Gaussian)
         distribution, and calculate the fit statistic.
 
-        ..versionchanged:: 4.18.0
-          The random state returned by get_rng is now used for the
-          sampling.
+        .. versionchanged:: 4.18.0
+           The random state returned by get_rng is now used for the
+           sampling.
 
         Parameters
         ----------
@@ -10164,9 +10164,9 @@ class Session(NoNewAttributesAfterInit):
         drawing values from a uniform distribution, and calculate the
         fit statistic.
 
-        ..versionchanged:: 4.18.0
-          The random state returned by get_rng is now used for the
-          sampling.
+        .. versionchanged:: 4.18.0
+           The random state returned by get_rng is now used for the
+           sampling.
 
         Parameters
         ----------
@@ -10230,9 +10230,9 @@ class Session(NoNewAttributesAfterInit):
         by drawing values from a Student's t-distribution, and
         calculate the fit statistic.
 
-        ..versionchanged:: 4.18.0
-          The random state returned by get_rng is now used for the
-          sampling.
+        .. versionchanged:: 4.18.0
+           The random state returned by get_rng is now used for the
+           sampling.
 
         Parameters
         ----------
