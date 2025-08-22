@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2016, 2019, 2020, 2023
+//  Copyright (C) 2007, 2016, 2019, 2020, 2023, 2024
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -97,20 +97,6 @@ namespace sherpa { namespace models {
   
   }
 
-  static int py_integrated_1d(const double xlo, const double xhi, double &val,
-		       FunctionWithParams<DoubleArray> *funcAndPars,
-		       int errflag, double epsabs, double epsrel,
-		       unsigned int maxeval, std::ostringstream& err)
-  {
-    double abserr;
-    
-    return py_integrate_1d( (integrand_1d_vec)(integrand_1d_cb),
-			    (void*)funcAndPars, xlo, xhi,
-			    maxeval, epsabs, epsrel, val, abserr, errflag,
-			    err);
-    
-  }
-
   template <typename ArrayType>
   PyObject* py_modelfct1d_int( PyObject* self, PyObject* args, PyObject *kwds )
   {
@@ -166,12 +152,15 @@ namespace sherpa { namespace models {
     FunctionWithParams<ArrayType> *funcAndPars =		\
       new FunctionWithParams<ArrayType>(&pars, model_func);
     
+    double abserr;
     for ( npy_intp ii = 0; ii < nelem; ii++ )
-      if ( EXIT_SUCCESS != py_integrated_1d( xlo[ii], xhi[ii],
-					     result[ii], funcAndPars,
-					     errflag, epsabs, epsrel,
-					     (unsigned int)maxeval,
-					     err) ) {
+      if ( EXIT_SUCCESS != py_integrate_1d( (integrand_1d_vec)(integrand_1d_cb),
+					    (void*)funcAndPars,
+					    xlo[ii], xhi[ii],
+					    (unsigned int)maxeval,
+					    epsabs, epsrel,
+					    result[ii], abserr,
+					    errflag, err ) ) {
 	PyErr_SetString( PyExc_ValueError,
 			 (char*)"model evaluation failed" );
 	return NULL;
