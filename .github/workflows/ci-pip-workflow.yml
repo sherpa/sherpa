@@ -41,6 +41,7 @@ jobs:
             fits-pkg: 'astropy'
             matplotlib-pkg: 'matplotlib>=3,<4'
             bokeh-pkg: 'bokeh>=3,<4'
+            ncores: 1
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
@@ -103,20 +104,41 @@ jobs:
       run: |
         pip install -e . --verbose
 
-    - name: install pytest-xvfb
-      if: matrix.test-data == 'package'
+    # This isn't always going to be used, but it is easiest to
+    # always create it.
+    #
+    - name: setup sherpa rc file
+      env:
+        NCORES: ${{ matrix.ncores }}
       run: |
-        pip install pytest-xvfb
+        cd $HOME
+        orig=`python -c 'import sherpa; print(sherpa.get_config())'`
+        if [ "${NCORES}" == "1" ]; then
+          sed -e "s/numcores : None/numcores : 1/" $orig > sherpa.rc
+        else
+          cp $orig sherpa.rc
+        fi
+        echo "** check multiprocessing setting"
+        python -c 'from sherpa.utils import parallel; print(f"default={parallel.ncpus}");'
+        SHERPARC=sherpa.rc python -c 'from sherpa.utils import parallel; print(f"rcfile ={parallel.ncpus}");'
+        echo "** end check"
+
+    - name: setup
+      if: matrix.test-data == 'package' || matrix.test-data == 'none'
+      run: |
+        # These packages are not always needed, but the install should
+        # be relatively quick.
+        pip install pytest-xvfb pytest-cov
+        # Remove the submodule.
+        git submodule deinit -f .
 
     - name: sherpa_test with test-data=${{ matrix.test-data }}
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
       env:
         TEST: ${{ matrix.test-data }}
       run: |
-        git submodule deinit -f .
-        pip install pytest-cov
         cd $HOME
-        sherpa_test --cov=sherpa --cov-report=xml:${{ github.workspace }}/coverage.xml
+        SHERPARC=sherpa.rc sherpa_test --cov=sherpa --cov-report=xml:${{ github.workspace }}/coverage.xml
 
     - name: Submodule test with pytest
       if: matrix.test-data == 'submodule'
