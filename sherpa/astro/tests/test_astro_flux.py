@@ -48,7 +48,7 @@ def setup_data1d_linked_par(link: bool
     """Create simple setup for sample_flux testing
 
     Fit a straight line but using a "complex" expression so that
-    we can have multiple components with free paramaters. The
+    we can have multiple components with free parameters. The
     linked parameter, if selected, is the last free parameter, to
     make it possible to do direct comparisons between both versions.
 
