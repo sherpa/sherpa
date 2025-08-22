@@ -100,12 +100,12 @@ jobs:
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
       run: |
-        pip install .[test] --verbose
+        pip install . --verbose
 
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
       run: |
-        pip install -e .[test] --verbose
+        pip install -e . --verbose
 
     # This isn't always going to be used, but it is easiest to
     # always create it.
