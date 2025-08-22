@@ -288,10 +288,11 @@ combination of the ``lhs`` and ``rhs`` attributes)::
        sim2.pos     thawed          0.5 -3.40282e+38  3.40282e+38
        sim2.ampl    thawed          2.5 -3.40282e+38  3.40282e+38
 
-As the ``BinaryOpModel`` class is a subclass of the
-:py:class:`~sherpa.models.model.ArithmeticModel` class, the
-combined model can be treated as a single model instance; for instance
-it can be evaluated on a grid by passing in an array of values::
+As the :py:class:`~sherpa.models.model.BinaryOpModel` class is a
+subclass of the :py:class:`~sherpa.models.model.ArithmeticModel`
+class, the combined model can be treated as a single model instance;
+for instance it can be evaluated on a grid by passing in an array of
+values::
 
     >>> sim_model([-1.0, 0, 1])
     array([  1.52587891e-05,   1.00003815e+00,   5.34057617e-05])
@@ -523,23 +524,42 @@ necessary to restrict the optimisation to a subset of the parameters
 of the model. Sherpa marks each parameter as frozen or thawed, where
 frozen parameters are **not** changed during a fit.
 
+The :py:attr:`~sherpa.models.parameter.Parameter.frozen` attribute of
+a parameter can be read or written (or the
+:py:meth:`~sherpa.models.parameter.Parameter.freeze` and
+:py:meth:`~sherpa.models.parameter.Parameter.thaw` methods
+can be used to change the setting)::
+
+    >>> g1.fwhm.frozen
+    False
+    >>> g1.fwhm.frozen = True
+
 The string display of a model indicates whether each parameter is
-frozen or thawed - under the ``Type`` column - and the
-:py:attr:`~sherpa.models.parameter.Parameter.frozen` attribute
-of a parameter can be read or written::
+thawed, frozen, or linked under the ``Type`` column.
+
+::
 
     >>> print(mdl)
     g1 + g2
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       g1.fwhm      thawed     0.517499  1.17549e-38  3.40282e+38
+       g1.fwhm      frozen     0.517499  1.17549e-38  3.40282e+38
        g1.pos       thawed  0.000168448 -3.40282e+38  3.40282e+38
        g1.ampl      thawed     0.935962 -3.40282e+38  3.40282e+38
        g2.fwhm      thawed     0.252366  1.17549e-38  3.40282e+38
        g2.pos       linked     0.500168       expr: g1.pos + 0.5
        g2.ampl      thawed       2.4535 -3.40282e+38  3.40282e+38
+    >>> g1.fwhm.frozen
+    True
+    >>> g1.fwhm.thaw()
+
+Note that linked parameters are considered frozen even when the linked
+parameter is thawed::
+
     >>> g2.pos.frozen
     True
+    >>> print(g2.pos.link.fullname)
+    g1.pos + 0.5
     >>> g1.pos.frozen
     False
 
@@ -566,7 +586,8 @@ parameters, by setting it to a sequence of numbers (such as a NumPy
 array or list).
 
     >>> print(np.array(mdl.thawedpars))
-    [0.5174989148761946, 0.00016844777803050193, 0.9359622280383879, 0.25236559147135007, 2.453500469829041]
+    [5.17498915e-01 1.68447778e-04 9.35962228e-01 2.52365591e-01
+     2.45350047e+00]
     >>> mdl.thawedpars = [0.1, 0.001, 1.0, 0.25, 2.5]
     >>> print(mdl)
     g1 + g2
