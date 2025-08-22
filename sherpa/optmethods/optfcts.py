@@ -414,84 +414,6 @@ def difevo_nm(fcn: StatFunc,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
-def make_range_sequence(npar: int,
-                        xmin: np.ndarray,
-                        xmax: np.ndarray,
-                        N: int
-                        ) -> list[list[float]]:
-    """Create the grid ranges.
-
-    Parameters
-    ----------
-    npar
-       The number of parameters.
-    xmin, xmax
-       The minimum and maximum of each parameter.
-    N
-       The number of bins to create for each parameter.
-
-    Returns
-    -------
-    grid
-       Each element is a list of the parameter values at the
-       grid point. There will be pow(N, npar) elements.
-
-    Notes
-    -----
-
-    The ordering of the results (does the first parameter loop fastest
-    or slowest) is not guaranteed.
-
-    Examples
-    --------
-
-    Create the grid for 1 parameter, between 1 and 10,
-    with 4 elements:
-
-    >>> x1 = make_range_sequence(1, [1], [10], 4)
-    >>> len(x1)
-    4
-    >>> x1[0]
-    [np.float64(1.0)]
-    >>> x1[1]
-    [np.float64(4.0)]
-    >>> x1[3]
-    [np.float64(10.0)]
-
-    With two parameters, ranging 1 to 10 and 100 to 115,
-    N=4 created 16 pairs:
-
-    >>> x2 = make_range_sequence(2, [1, 100], [10, 115], 4)
-    >>> x2[0]
-    [np.float64(1.0), np.float64(100.0)]
-    >>> x2[1]
-    [np.float64(1.0), np.float64(105.0)]
-    >>> x2[2]
-    [np.float64(1.0), np.float64(110.0)]
-    >>> x2[3]
-    [np.float64(1.0), np.float64(115.0)]
-    >>> x2[4]
-    [np.float64(4.0), np.float64(100.0)]
-
-    """
-
-    step = complex(N)
-    slices = [slice(x1, x2, step)
-              for x1, x2 in zip(xmin, xmax)]
-
-    mgrid = np.mgrid[slices]
-    mynfev = pow(N, npar)
-    grid = list(map(np.ravel, mgrid))
-    sequence = []
-    for index in range(mynfev):
-        tmp = []
-        for xx in range(npar):
-            tmp.append(grid[xx][index])
-        sequence.append(tmp)
-
-    return sequence
-
-
 class AddParameters:
     """Append the current parameters to the statistic."""
 
@@ -583,7 +505,8 @@ def grid_search(fcn: StatFunc,
     eval_stat_func = AddParameters(fcn, bool(verbose))
 
     if sequence is None:
-        sequence = make_range_sequence(npar, xmin, xmax, num)
+        ranges = np.linspace(xmin, xmax, num)
+        sequence = np.array(np.meshgrid(*ranges.T)).T.reshape(-1, npar)
 
     elif np.iterable(sequence):
         for seq in sequence:

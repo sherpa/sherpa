@@ -1129,9 +1129,7 @@ class FreezePar:
         self.parent.current_frozen = idx
 
         # Identify those parameters that are not frozen.
-        keep_pars = np.ones_like(pars)
-        keep_pars[idx] = 0
-        keep_idx = np.where(keep_pars)
+        keep_idx = np.isin(np.arange(len(pars)), idx, invert=True)
 
         current_pars = pars[keep_idx]
         current_parmins = parmins[keep_idx]
