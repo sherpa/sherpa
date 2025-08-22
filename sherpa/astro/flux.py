@@ -555,10 +555,8 @@ def sample_flux(fit: Fit,
     # but is not sufficient to guarantee the match.
     #
     if npar < mpar:
-        # TODO: will this fail with linked parameters.
-        full_pars = dict(map(reversed,
-                             enumerate(fit.model.get_thawed_pars())
-                             ))
+        full_pars = {p: i for
+                     i, p in enumerate(fit.model.get_thawed_pars())}
         cols = []
         for src_par in src.get_thawed_pars():
             try:
