@@ -258,7 +258,7 @@ class Covariance(EstMethod):
 # It is used by both Confidence and Projection.
 #
 @dataclass
-class EstFit:
+class _EstFit:
     """Fit the data and return the best-fit statistic for a fixed parameter.
 
     .. versionadded:: 4.18.0
@@ -353,8 +353,8 @@ class Confidence(EstMethod):
             warning("statargs/kwargs set but values unused")
 
         stat_cb = StatCallback(statfunc)
-        fit_cb = EstFit(fitfunc=fitfunc, statfunc=statfunc,
-                        freeze_par=freeze_par, thaw_par=thaw_par)
+        fit_cb = _EstFit(fitfunc=fitfunc, statfunc=statfunc,
+                         freeze_par=freeze_par, thaw_par=thaw_par)
 
         # convert stat call back to have the same signature as fit call back
         #
@@ -445,8 +445,8 @@ class Projection(EstMethod):
             raise TypeError("fitfunc should not be none")
 
         stat_cb = StatCallback(statfunc)
-        fit_cb = EstFit(fitfunc=fitfunc, statfunc=statfunc,
-                        freeze_par=freeze_par, thaw_par=thaw_par)
+        fit_cb = _EstFit(fitfunc=fitfunc, statfunc=statfunc,
+                         freeze_par=freeze_par, thaw_par=thaw_par)
 
         return projection(pars,
                           parmins=parmins,

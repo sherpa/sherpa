@@ -1091,7 +1091,10 @@ def _check_length(dep) -> int:
 #
 # FreezePar needs to know about all the thawed parameters so it can
 # return the values of all-but-the-selected parameter, but ThawPar and
-# ParName could be sent the parameter object.
+# ParName only need one single parameter.  We could design ThawPar and
+# ParName to accept the parameter object directly, but the current
+# interface uses indices consistently for all three classes so that
+# they have a similar API.
 #
 class FreezePar:
     """Allow a parameter to be frozen.
