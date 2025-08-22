@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020 - 2025
+#  Copyright (C) 2017, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -3428,3 +3428,68 @@ def test_pha_group_filter_ignore_bad_group(caplog, clean_astro_ui):
     assert r.name == "sherpa.ui.utils"
     assert r.levelname == "INFO"
     assert r.getMessage() == "dataset 1: 1:4 -> 1:5 Channel"
+
+
+@requires_data
+@requires_fits
+def test_multi_id_guess_pha(clean_astro_ui, make_data_path):
+    """What happens with multiple datasets?
+
+    Currently there is no way to combine datasets with guess, so this
+    just checks that the correct dataset is being picked up.
+
+    """
+
+    # This could be written to not require files, but it is
+    # based on a test case developed when writing the multi-id
+    # guess code, and it was not worth the time to simplify the
+    # code.
+    #
+    # Three files are loaded in, although only two are used below, as
+    # a check that the wrong dataset isn't being used.
+    #
+    all_ids = [1, 2, 3]
+    with SherpaVerbosity("ERROR"):
+        for idval in all_ids:
+            name = f"obs-{idval}"
+            ui.load_pha(name, make_data_path(f"obs{idval}.pi"))
+
+        ui.notice(0.5, 7)
+
+        for idval in all_ids:
+            name = f"obs-{idval}"
+            ui.group_counts(name, 5)
+
+        mdl = ui.create_model_component("powlaw1d", "mdl")
+        for idval in all_ids:
+            name = f"obs-{idval}"
+            ui.set_source(name, mdl)
+
+    assert mdl.gamma.val == pytest.approx(1.0)
+    assert mdl.ampl.val == pytest.approx(1.0)
+
+    ui.guess("obs-1")
+
+    # These may need to be changed if the guess routine changes.
+    expected1 = 9.18092e-7
+    expected2 = 1.725894e-5
+
+    # gamma is not expected to change, but the amplitude should
+    assert mdl.gamma.val == pytest.approx(1.0)
+    assert mdl.ampl.val == pytest.approx(expected1)
+
+    # The guess has set the amplitude max so that it is ~ 1e-3, hence
+    # the need to change it here.
+    #
+    mdl.ampl.set(1.0, max=10)
+    ui.guess("obs-2")
+
+    assert mdl.ampl.val == pytest.approx(expected2)
+
+    # There is no dataset 1, so this should fail
+    with pytest.raises(IdentifierErr,
+                       match="^data set 1 has not been set$"):
+        ui.guess()
+
+    # This should not change
+    assert mdl.ampl.val == pytest.approx(expected2)
