@@ -1087,23 +1087,25 @@ def _check_length(dep) -> int:
     raise FitErr('nobins')
 
 
-# Local classes used by the error-estimation code.
+# Local classes used by the error-estimation code. There is a reason
+# to allow these to be used in sherpa.estmethods but leave that for
+# future work.
 #
-# FreezePar needs to know about all the thawed parameters so it can
-# return the values of all-but-the-selected parameter, but ThawPar and
-# ParName only need one single parameter.  We could design ThawPar and
-# ParName to accept the parameter object directly, but the current
-# interface uses indices consistently for all three classes so that
-# they have a similar API.
+# _FreezePar needs to know about all the thawed parameters so it can
+# return the values of all-but-the-selected parameter, but _ThawPar
+# and _ParName only need one single parameter.  We could design
+# _ThawPar and _ParName to accept the parameter object directly, but
+# the current interface uses indices consistently for all three
+# classes so that they have a similar API.
 #
-class FreezePar:
+class _FreezePar:
     """Allow a parameter to be frozen.
 
     .. versionadded:: 4.18.0
 
     See Also
     --------
-    ThawPar, ParName, ReportProgress
+    _ThawPar, _ParName, _ReportProgress
 
     """
 
@@ -1140,14 +1142,14 @@ class FreezePar:
         return (current_pars, current_parmins, current_parmaxes)
 
 
-class ThawPar:
+class _ThawPar:
     """Allow a parameter to be thawed.
 
     .. versionadded:: 4.18.0
 
     See Also
     --------
-    FreezePar, ParName, ReportProgress
+    _FreezePar, _ParName, _ReportProgress
 
     """
 
@@ -1168,14 +1170,14 @@ class ThawPar:
         self.parent.current_frozen = -1
 
 
-class ParName:
+class _ParName:
     """Return the name of the given parmeter.
 
     .. versionadded:: 4.18.0
 
     See Also
     --------
-    FreezePar, ReportProgress, ThawPar
+    _FreezePar, _ReportProgress, _ThawPar
 
     """
 
@@ -1188,14 +1190,14 @@ class ParName:
         return self.thawedpars[idx].fullname
 
 
-class ReportProgress:
+class _ReportProgress:
     """Log the current parameter limits.
 
     .. versionadded:: 4.18.0
 
     See Also
     --------
-    FreezePar, ParName, ThawPar
+    _FreezePar, _ParName, _ThawPar
 
     """
 
@@ -1723,10 +1725,10 @@ class Fit(NoNewAttributesAfterInit):
         #
         thawedpars = self.model.get_thawed_pars()
 
-        freeze_par = FreezePar(thawedpars, self)
-        thaw_par = ThawPar(thawedpars, self)
-        get_par_name = ParName(thawedpars)
-        report_progress = ReportProgress(thawedpars)
+        freeze_par = _FreezePar(thawedpars, self)
+        thaw_par = _ThawPar(thawedpars, self)
+        get_par_name = _ParName(thawedpars)
+        report_progress = _ReportProgress(thawedpars)
 
         # If starting fit statistic is chi-squared or C-stat,
         # can calculate reduced fit statistic -- if it is
