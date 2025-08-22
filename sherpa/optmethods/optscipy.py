@@ -246,14 +246,7 @@ try:
         parnames       = ('const.c0', 'gauss.fwhm', 'gauss.pos', 'gauss.ampl')
         parvals        = (26.06715425374017, 3.285588554348949, 5.0425169187544565, 42.00624527682233)
         statval        = 6.879954385987281
-        istatval       = 700.2311623262916
-        dstatval       = 693.3512079403043
-        numpoints      = 10
-        dof            = 6
-        qval           = 0.33209185997701957
-        rstat          = 1.1466590643312136
-        message        = CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH
-        nfev           = 195
+        ...
 
         We can change the method used in the optimization and set some of the
         options for the optimizer, such as the goal for the precision and the

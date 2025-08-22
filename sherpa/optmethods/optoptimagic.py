@@ -304,11 +304,15 @@ try:
         from optimagic in an `optimagic.optimization.optimize_result.OptimizeResult` object,
         which can provide further information about the optimization process:
 
-        >>> result.extra_output['optimagic result'].convergence_report['five_steps']
-        {'relative_criterion_change': 0.00044802722082809587,
-        'relative_params_change': 0.0025520339599334517,
-        'absolute_criterion_change': 0.003082406836099949,
-        'absolute_params_change': 0.041909631395145426}
+        >>> out = result.extra_output['optimagic result'].convergence_report['five_steps']
+        >>> print(out['relative_criterion_change'])
+        0.005612990396312942
+        >>> print(out['relative_params_change'])
+        0.02107477731074966
+        >>> print(out['absolute_criterion_change'])
+        0.03861711780950028
+        >>> print(out['absolute_params_change'])
+        0.7639186767308352
         """
         def _get_default_config(self) -> dict[str, Any]:
             sig = inspect.signature(om.minimize)
