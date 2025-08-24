@@ -330,9 +330,9 @@ def test_get_arf_plot_no_arf(idval, clean_astro_ui):
     with pytest.raises(DataErr) as exc:
         if idval is None:
             idval = 1
-            ap = ui.get_arf_plot()
+            _ = ui.get_arf_plot()
         else:
-            ap = ui.get_arf_plot(idval)
+            _ = ui.get_arf_plot(idval)
 
     emsg = "data set '{}' does not have an associated ARF".format(idval)
     assert str(exc.value) == emsg
@@ -454,9 +454,9 @@ def test_get_rmf_plot_no_rmf(idval, clean_astro_ui):
     with pytest.raises(DataErr) as exc:
         if idval is None:
             idval = 1
-            ap = ui.get_rmf_plot()
+            _ = ui.get_rmf_plot()
         else:
-            ap = ui.get_rmf_plot(idval)
+            _ = ui.get_rmf_plot(idval)
 
     emsg = f"No instrument response found for dataset {idval}"
     assert str(exc.value) == emsg
@@ -1799,7 +1799,6 @@ def test_pha1_plot_data_options(caplog, clean_astro_ui, requires_pylab,
     """Test that the options have changed things, where easy to do so"""
 
     from matplotlib import pyplot as plt
-    import matplotlib
 
     prefs = ui.get_data_plot_prefs('tst')
 
@@ -2004,7 +2003,6 @@ def test_pha1_plot_fit_options(clean_astro_ui, requires_pylab, basic_pha1):
     """Test that the options have changed things, where easy to do so"""
 
     from matplotlib import pyplot as plt
-    import matplotlib
 
     dprefs = ui.get_data_plot_prefs()
     dprefs['xerrorbars'] = True
@@ -2178,7 +2176,6 @@ DATA_PREFS = {'alpha': None,
               'yerrorbars': True,
               'ylog': False,
               'label': None,
-              'linewidth': None,
               }
 
 MODEL_PREFS = {'alpha': None,
@@ -2195,7 +2192,7 @@ MODEL_PREFS = {'alpha': None,
                'yerrorbars': False,
                'ylog': False,
                'label': None,
-               'linewidth': None,}
+               }
 
 
 CONTOUR_PREFS = {'alpha': None,
@@ -2664,8 +2661,8 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
     # Ensure near the minimum
     ui.fit()
     ui.covar()
-    covmat = ui.get_covar_results().extra_output
-    errs = np.sqrt(covmat.diagonal())
+    # covmat = ui.get_covar_results().extra_output
+    # errs = np.sqrt(covmat.diagonal())
 
     # Due to the way the get* routines work in the sherpa.astro.ui module,
     # the following will return the same object, so x1 and x2 will be
@@ -2970,8 +2967,8 @@ def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
     # Ensure near the minimum
     ui.fit()
     ui.covar()
-    covmat = ui.get_covar_results().extra_output
-    errs = np.sqrt(covmat.diagonal())
+    # covmat = ui.get_covar_results().extra_output
+    # errs = np.sqrt(covmat.diagonal())
 
     # See commentary in test_pha1_plot_foo_flux_model about the
     # potentially-surprising behavior of the return value of the
@@ -4740,6 +4737,24 @@ def test_plot_data_multiple_invalid_id(clean_astro_ui):
         ui.plot_data([1, 2, "b"])
 
 
+def test_plot_multiple_data_multiple_nodata(clean_astro_ui):
+    """Does this error out?"""
+
+    setup_multiple_data()
+    with pytest.raises(ArgumentErr,
+                       match="^id list is empty$"):
+        ui.plot("data", [])
+
+
+def test_plot_multiple_data_invalid_id(clean_astro_ui):
+    """Does this error out?"""
+
+    setup_multiple_data()
+    with pytest.raises(IdentifierErr,
+                       match="^data set b has not been set$"):
+        ui.plot("data", [1, 2, "b"])
+
+
 def test_plot_data_multiple_invalid_number_arguments(clean_astro_ui):
     """Does this error out?"""
 
@@ -4823,6 +4838,16 @@ def test_plot_data_multiple(clean_astro_ui, requires_pylab):
     validate_data_multiple()
 
 
+def test_plot_multiple_with_data(clean_astro_ui, requires_pylab):
+    """Can we plot("data") with multiple ids?"""
+
+    setup_multiple_data()
+    ui.plot("data", [1, "a", 2], color=[["g", "r", "k"]], alpha=0.5,
+            label=[["lbl x", "ll z", "zl y"]], xlog=True)
+
+    validate_data_multiple()
+
+
 def validate_fit_multiple() -> None:
     """Check the multiple-fit plot is as expected."""
 
@@ -4883,6 +4908,18 @@ def test_plot_fit_multiple(clean_astro_ui, requires_pylab):
     validate_fit_multiple()
 
 
+def test_plot_multiple_with_fit(clean_astro_ui, requires_pylab):
+    """Can we plot("fit") with multiple ids?"""
+
+    setup_multiple_data()
+    setup_multiple_models()
+
+    ui.plot("fit", [1, "a", 2], color=[["g", "r", "y"]], alpha=0.5,
+            label=[["lbl x", "ll z", "zl y"]], xlog=True)
+
+    validate_fit_multiple()
+
+
 def test_plot_fit_resid_multiple_check_error(clean_astro_ui, requires_pylab):
     """How many arguments do the keywords take?"""
 
@@ -4898,7 +4935,7 @@ def test_plot_fit_resid_multiple_check_error(clean_astro_ui, requires_pylab):
                           label=["lbl x", "ll z", "zl y"], xlog=True)
 
 
-def validate_fit_resid_multiple() -> None:
+def validate_fit_resid_multiple(xlabel: str) -> None:
     """Check the multiple-fit-resid plot is as expected."""
 
     from matplotlib import pyplot as plt
@@ -4917,7 +4954,7 @@ def validate_fit_resid_multiple() -> None:
     assert xaxis1.get_scale() == 'log'
     assert yaxis1.get_scale() == 'linear'
 
-    assert xaxis1.get_label_text() == ''
+    assert xaxis1.get_label_text() == xlabel
     assert yaxis1.get_label_text() == 'Counts'
 
     assert xaxis2.get_scale() == 'log'
@@ -4969,4 +5006,17 @@ def test_plot_fit_resid_multiple(clean_astro_ui, requires_pylab):
     ui.plot_fit_resid([1, "a", 2], color=["g", "r"], alpha=0.5,
                       xlog=True)
 
-    validate_fit_resid_multiple()
+    validate_fit_resid_multiple("")
+
+
+def test_plot_multiple_with_fit_resid(clean_astro_ui, requires_pylab):
+    """Can we plot("fit", "resid") with multiple ids?"""
+
+    setup_multiple_data()
+    setup_multiple_models()
+
+    ids = [1, "a", 2]
+    ui.plot("fit", ids, "resid", ids, color=["g", "r"], alpha=0.5,
+            xlog=True)
+
+    validate_fit_resid_multiple("Energy (keV)")

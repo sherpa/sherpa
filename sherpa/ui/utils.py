@@ -26,6 +26,7 @@ import copy
 import copyreg as copy_reg
 from dataclasses import dataclass
 import importlib
+import inspect
 import logging
 import os
 import pickle
@@ -14021,25 +14022,66 @@ class Session(NoNewAttributesAfterInit):
             _check_str_type(plottype, "plottype")
             plottype = get(plottype.lower())
 
+            # Identify the routine to get the plot/contour object, and
+            # what the arguments are, to identify whether the routine
+            # supports multiple ids and whether the first argument is
+            # always the identifier. The sherpa.utils.get_keyword_xxx
+            # routines are not sufficient here, hence signature is
+            # called directly.
+            #
+            funcname = f"get_{plottype}_{plotmeth}"
+            getfunc = getattr(self, funcname)
+            sig = inspect.signature(getfunc)
+            pars = sig.parameters
+
+            # The important check here really is that the annotation
+            # is set, but it makes sense to check it is the expected
+            # value, in case something changes with the code paths.
+            #
+            if list(pars.keys())[0] == "id" and \
+               pars["id"].annotation == "IdType | None":
+                allow_multiple_ids = True
+            else:
+                allow_multiple_ids = False
+
             # Collect the arguments for the get_<>_plot/contour
             # call. Loop through until we hit a supported
             # plot/contour type.
             #
             getargs = []
             while largs:
-                if check(largs[0]):
+                if isinstance(largs[0], str) and check(largs[0]):
                     break
 
                 getargs.append(largs.pop(0))
 
-            funcname = f"get_{plottype}_{plotmeth}"
-            getfunc = getattr(self, funcname)
-
-            # Need to make sure we have a copy of each plot
-            # object to support plots like
+            # Need to make sure we have a copy of each plot object to
+            # support plots like
+            #
             #    plot("data", 1, "data", 2)
             #
-            plots.append(copy.deepcopy(getfunc(*getargs)))
+            # However, it is complicated when supporting multiple
+            # identifiers such as
+            #
+            #    plot("data", [1, 2], "model", [1, 2])
+            #
+            # since the "get_xxx_plot" calls do not support multiple
+            # identifiers. This logic is dependent on the code - so
+            # both how arguments are typed and what particular
+            # routines do not support multiple identifiers - so these
+            # heuristics may need updating in the future.
+            #
+            if getargs and allow_multiple_ids and \
+               is_iterable_not_str(getargs[0]):
+                def getid(id, recalc=True):
+                    return getfunc(id, *getargs[1:], recalc=True)
+
+                plotobj = self._get_plot_objects(getargs[0], getid,
+                                                 recalc=True)
+                plots.append(copy.deepcopy(plotobj))
+
+            else:
+                plots.append(copy.deepcopy(getfunc(*getargs)))
 
         nplots = len(plots)
 
@@ -14316,8 +14358,6 @@ class Session(NoNewAttributesAfterInit):
     # some of this is not relevant for the sherpa.ui code, but leave
     # like this.
     #
-    # For now do not try to support multiple identifiers.
-    #
     def plot(self,
              *args,
              # At present export_method does not support this
@@ -14331,6 +14371,10 @@ class Session(NoNewAttributesAfterInit):
         identifiers, and this can be repeated. If no data set
         identifier is given for a plot type, the default identifier -
         as returned by `get_default_id` - is used.
+
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers for supported plots.
 
         .. versionchanged:: 4.17.0
            The keyword arguments can now be set per plot by using a
@@ -14553,6 +14597,11 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("data", "resid", cols=1, color="black")
         >>> plot("data", 2, "resid", 2, overplot=True, color="black", alpha=0.5)
+
+        Draw the data and residuals for the default dataset and then
+        overplot those from dataset 2:
+
+        >>> plot("data", [1, 2], "resid", [1, 2], cols=1, color="black")
 
         """
 
