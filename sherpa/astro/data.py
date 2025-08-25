@@ -132,13 +132,14 @@ from __future__ import annotations
 from collections.abc import Sequence
 import logging
 import os
-from typing import Any, Callable, Literal, Mapping, cast, overload
+from typing import Any, Callable, Literal, Mapping, Self, cast, overload, TYPE_CHECKING
 import warnings
 
 import numpy as np
+import numpy.typing as npt
 
 from sherpa.astro import hc
-from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
+from sherpa.data import Data1DInt, Data2D, Data2DInt, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
@@ -159,6 +160,9 @@ from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
 __doctest_requires__ = {
     '.': ['sherpatest'],  # requirements for module-level doctest
     }
+
+if TYPE_CHECKING:
+    from sherpa.astro.io.wcs import WCS
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -5390,6 +5394,108 @@ class DataIMG(Data2D):
         self._x0label = None
         self._x1label = None
 
+    @classmethod
+    def from_2d_array(cls,
+                     name: str,
+                     *,
+                     y: npt.NDArray[np.floating],
+                     x0: npt.NDArray[np.floating] | None = None,
+                     x1: npt.NDArray[np.floating] | None = None,
+                     staterror: npt.NDArray[np.floating] | None = None,
+                     syserror: npt.NDArray[np.floating] | None = None,
+                     header: dict | None = None) -> Self:
+        '''Create a `Data2IMG` instance from a 2-dimensional array.
+
+        Parameters
+        ----------
+        name : str
+            The name of the dataset.
+        y : ndarray with 2 dimensions
+            The dependent variable array.
+        x0, x1: ndarray, optional
+            The independent variable arrays; the length of x0 must match
+            y's first dimension, and the length of x1 must match y's second dimension.
+            If not provided, they will be generated, starting at 1.
+
+            .. note::
+
+                This does **not** follow the usual Python conventions to start
+                enumerations at 0, instead, it follows the fits conventions where the first
+                pixel has the coordinate (1, 1).
+
+        staterror : ndarray with 2 dimensions, optional
+            The statistical error array.
+        syserror : ndarray with 2 dimensions, optional
+            The systematic error array.
+        header : dict, optional
+            The header information for the data.
+
+        Returns
+        -------
+        dataimg : DataIMG
+            A DataIMG instance.
+
+        Examples
+        --------
+        Create a DataIMG instance from 2D data. Here, we first create
+        a 2-D array of values y, but in practice this might be read in
+        from a file, from the output of a simulation, or as a result of
+        some other computation.
+
+            >>> import numpy as np
+            >>> from sherpa.astro.data import DataIMG
+            >>> x1 = np.arange(20, 30, 2)
+            >>> x0 = np.arange(5, 20, 2)
+            >>> y = np.sqrt((x0[:, np.newaxis] - 10)**2 + (x1[np.newaxis, :] - 31)**2)
+            >>> reg2d = DataIMG.from_2d_array("regular2d", x0=x0, x1=x1, y=y)
+
+        '''
+        if y.ndim != 2:
+            raise ValueError(f"Expected 2D array for y, got {y.ndim}D array instead.")
+        if staterror is not None and staterror.shape != y.shape:
+            raise ValueError(f"staterror shape {staterror.shape} does not match y's shape {y.shape}")
+        if syserror is not None and syserror.shape != y.shape:
+            raise ValueError(f"syserror shape {syserror.shape} does not match y's shape {y.shape}")
+
+        if x0 is None:
+            x0 = np.arange(y.shape[0], dtype=SherpaFloat) + 1.
+        if x1 is None:
+            x1 = np.arange(y.shape[1], dtype=SherpaFloat) + 1.
+
+        if len(x0) != y.shape[0]:
+            raise ValueError(f"Length of x0 ({len(x0)}) must match y's first dimension ({y.shape[0]})")
+        if len(x1) != y.shape[1]:
+            raise ValueError(f"Length of x1 ({len(x1)}) must match y's second dimension ({y.shape[1]})")
+
+        x0, x1 = np.meshgrid(x0, x1)
+        return cls(name, x0=x0.ravel(), x1=x1.ravel(),
+                   y=y.ravel(), shape=y.shape,
+                   staterror=staterror.ravel() if staterror is not None else None,
+                   syserror=syserror.ravel() if syserror is not None else None,
+                   header=header)
+
+    @classmethod
+    def from_2d_array_with_wcs(cls,
+                     name: str,
+                     *,
+                     y: npt.NDArray[np.floating],
+                     staterror: npt.NDArray[np.floating] | None = None,
+                     syserror: npt.NDArray[np.floating] | None = None,
+                     sky: WCS,
+                     eqpos: WCS,
+                     coord: Literal["logical", "image", "physical", "world", "wcs"] = 'logical',
+                     header: dict | None = None):
+        '''Create a DataIMG instance from 2D data and WCS information.
+
+        '''
+        img = cls.from_2d_array(name, y=y,
+                               staterror=staterror, syserror=syserror,
+                               header=header)
+        img.sky = sky
+        img.eqpos = eqpos
+        img._set_coord(coord)
+        return img
+
     def _clear_filter(self):
         if self._region is None:
             return
@@ -5940,6 +6046,119 @@ class DataIMGInt(DataIMG):
         self._ylabel = 'y'
 
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
+
+    @classmethod
+    def from_2d_array(cls,  # type: ignore[override]
+                     name: str,
+                     *,
+                     y: npt.NDArray[np.floating],
+                     # The superclass has x0, x1, but here we want
+                     # to be explicit that we are using the bounds
+                     x0_bounds: npt.NDArray[np.floating] | None = None,
+                     x1_bounds: npt.NDArray[np.floating] | None = None,
+                     staterror: npt.NDArray[np.floating] | None = None,
+                     syserror: npt.NDArray[np.floating] | None = None,
+                     header: dict | None = None,
+                     ) -> Self:
+        '''Create a `DataIMGInt` instance from a 2-dimensional array.
+
+        Parameters
+        ----------
+        name : str
+            The name of the dataset.
+        y : ndarray with 2 dimensions
+            The dependent variable array.
+        x0_bounds, x1_bounds: ndarray, optional
+            The boundaries of the pixel grid. The length of the arrays must
+            be one greater than the corresponding dimension of y. If not provided,
+            the boundaries will be generated from 0.5 to n + 0.5 if ``y`` has
+            n pixels in that dimension.
+
+            .. note::
+
+                This does **not** follow the usual Python conventions to start
+                enumerations at 0, instead, it follows the fits conventions where the first
+                pixel has the coordinate (1, 1), so the lower edges of that pixel
+                are at (0.5, 0.5).
+
+        staterror : ndarray with 2 dimensions, optional
+            The statistical error array.
+        syserror : ndarray with 2 dimensions, optional
+            The systematic error array.
+        header : dict, optional
+            The header information for the data.
+        Returns
+        -------
+        data : DataIMGInt
+            A DataIMGInt instance.
+
+        Examples
+        --------
+        Create a DataIMGInt instance from 2D data. Here, we first create
+        the bin boundaries and a 2-D array of values y, but in practice this might be read in
+        from a file, from the output of a simulation, or as a result of
+        some other computation.
+
+            >>> import numpy as np
+            >>> from sherpa.astro.data import DataIMGInt
+            >>> x0_boundaries = np.arange(20, 30, 2)
+            >>> x1_boundaries = np.arange(5, 20, 2)
+            >>> x0_mid = (x0_boundaries[:-1] + x0_boundaries[1:]) / 2
+            >>> x1_mid = (x1_boundaries[:-1] + x1_boundaries[1:]) / 2
+            >>> y = np.sqrt((x0_mid[:, np.newaxis] - 10)**2 + (x1_mid[np.newaxis, :] - 31)**2)
+            >>> reg2d = DataIMGInt.from_2d_array("bounded_2d",
+            ...     x0_bounds=x0_boundaries, x1_bounds=x1_boundaries, y=y)
+
+
+        '''
+        if y.ndim != 2:
+            raise ValueError(f"Expected 2D array for y, got {y.ndim}D array instead.")
+        if staterror is not None and staterror.shape != y.shape:
+            raise ValueError(f"staterror shape {staterror.shape} does not match y's shape {y.shape}")
+        if syserror is not None and syserror.shape != y.shape:
+            raise ValueError(f"syserror shape {syserror.shape} does not match y's shape {y.shape}")
+
+        if x0_bounds is None:
+            x0_bounds = np.arange(0.5, y.shape[0] + 1, dtype=SherpaFloat)
+        if x1_bounds is None:
+            x1_bounds = np.arange(0.5, y.shape[1] + 1, dtype=SherpaFloat)
+
+        if len(x0_bounds) != y.shape[0] + 1:
+            raise ValueError(f"Length of x0_bounds ({len(x0_bounds)}) must be one greater than y's first dimension ({y.shape[0]})")
+        if len(x1_bounds) != y.shape[1] + 1:
+            raise ValueError(f"Length of x1_bounds ({len(x1_bounds)}) must be one greater than y's second dimension ({y.shape[1]})")
+
+        x0, x1 = np.meshgrid(x0_bounds, x1_bounds)
+        return cls(name,
+                   x0lo=x0[:-1, :-1].ravel(), x1lo=x1[:-1, :-1].ravel(),
+                   x0hi=x0[1:, 1:].ravel(), x1hi=x1[1:, 1:].ravel(),
+                   y=y.ravel(), shape=y.shape,
+                   staterror=staterror.ravel() if staterror is not None else None,
+                   syserror=syserror.ravel() if syserror is not None else None,
+                   header=header)
+
+
+    @classmethod
+    def from_2d_array_with_wcs(cls,
+                     name: str,
+                     *,
+                     y: npt.NDArray[np.floating],
+                     staterror: npt.NDArray[np.floating] | None = None,
+                     syserror: npt.NDArray[np.floating] | None = None,
+                     sky: WCS,
+                     eqpos: WCS,
+                     coord: Literal["logical", "image", "physical", "world", "wcs"] = 'logical',
+                     header: dict | None = None):
+        '''Create a DataIMGInt instance from 2D data and WCS information.
+
+        '''
+        img = cls.from_2d_array(name, y=y,
+                               staterror=staterror, syserror=syserror,
+                               header=header)
+        img.sky = sky
+        img.eqpos = eqpos
+        img._set_coord(coord)
+        return img
 
     def _init_data_space(self, filter, *data):
         ndata = len(data)
