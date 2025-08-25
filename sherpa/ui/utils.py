@@ -54,6 +54,7 @@ import sherpa.models
 from sherpa.models.basic import TableModel
 import sherpa.models.model
 from sherpa.models.model import Model, SimulFitModel
+from sherpa.models.parameter import Parameter
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
 import sherpa.optmethods
@@ -71,7 +72,7 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.random import RandomType
-from sherpa.utils.types import IdType, IdTypes, PrefsType
+from sherpa.utils.types import ArrayType, IdType, IdTypes, PrefsType
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -8509,16 +8510,17 @@ class Session(NoNewAttributesAfterInit):
     # Parameters
     #
 
-    def _check_par(self, par, argname='par'):
+    def _check_par(self,
+                   par: str | Parameter,
+                   argname: str = 'par'
+                   ) -> Parameter:
         if _is_str(par):
             par = self._eval_model_expression(par, 'parameter')
-        _check_type(par, sherpa.models.Parameter, argname,
+        _check_type(par, Parameter, argname,
                     'a parameter object or parameter expression string')
         return par
 
-    # DOC-NOTE: I have not documented that par can be an actual parameter
-    # since in that case get_par(x) === x, so seems somewhat pointless!
-    def get_par(self, par):
+    def get_par(self, par: str | Parameter) -> Parameter:
         """Return a parameter of a model component.
 
         Parameters
@@ -8557,10 +8559,13 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._check_par(par)
 
-    # DOC-NOTE: I have not documented that par can be an actual parameter
-    # since you can just change the values directly then (although
-    # may have to car about order of operations)
-    def set_par(self, par, val=None, min=None, max=None, frozen=None):
+    def set_par(self,
+                par: str | Parameter,
+                val: float | None = None,
+                min: float | None = None,
+                max: float | None = None,
+                frozen: bool | None = None
+                ) -> None:
         """Set the value, limits, or behavior of a model parameter.
 
         Parameters
@@ -8620,7 +8625,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._check_par(par).set(val, min, max, frozen)
 
-    def freeze(self, *args):
+    def freeze(self, *args) -> None:
         """Fix model parameters so they are not changed by a fit.
 
         The arguments can be parameters or models, in which case all
@@ -8678,7 +8683,7 @@ class Session(NoNewAttributesAfterInit):
                 raise ArgumentTypeErr('badarg', 'par',
                                       'a parameter or model object or expression string') from exc
 
-    def thaw(self, *args):
+    def thaw(self, *args) -> None:
         """Allow model parameters to be varied during a fit.
 
         The arguments can be parameters or models, in which case all
@@ -8741,7 +8746,7 @@ class Session(NoNewAttributesAfterInit):
                 raise ArgumentTypeErr('badarg', 'par',
                                       'a parameter or model object or expression string') from exc
 
-    def link(self, par, val):
+    def link(self, par: str | Parameter, val) -> None:
         """Link a parameter to a value.
 
         A parameter can be linked to another parameter value, or
@@ -8814,7 +8819,7 @@ class Session(NoNewAttributesAfterInit):
             val = self._eval_model_expression(val, 'parameter link')
         par.link = val
 
-    def unlink(self, par):
+    def unlink(self, par: str | Parameter) -> None:
         """Unlink a parameter value.
 
         Remove any parameter link - created by `link` - for the
@@ -9851,9 +9856,13 @@ class Session(NoNewAttributesAfterInit):
     def plot_pvalue(self, null_model, alt_model, conv_model=None,
                     id: IdType = 1,
                     otherids: IdTypes = (),
-                    num=500, bins=25, numcores=None,
-                    replot=False, overplot=False, clearwindow=True,
-                    **kwargs):
+                    num: int = 500,
+                    bins: int = 25,
+                    numcores: int | None = None,
+                    replot: bool = False,
+                    overplot: bool = False,
+                    clearwindow: bool = True,
+                    **kwargs) -> None:
         """Compute and plot a histogram of likelihood ratios by simulating data.
 
         Compare the likelihood of the null model to an alternative model
@@ -9961,8 +9970,10 @@ class Session(NoNewAttributesAfterInit):
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id: IdType = 1,
                         otherids: IdTypes = (),
-                        num=500, bins=25, numcores=None,
-                        recalc=False):
+                        num: int = 500,
+                        bins: int = 25,
+                        numcores: int | None = None,
+                        recalc: bool = False):
         """Return the data used by plot_pvalue.
 
         Access the data arrays and preferences defining the histogram plot
@@ -12127,7 +12138,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_data_plot(self,
                       id: IdType | None = None,
-                      recalc=True):
+                      recalc: bool = True):
         """Return the data used by plot_data.
 
         Parameters
@@ -12361,7 +12372,7 @@ class Session(NoNewAttributesAfterInit):
     # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self,
                        id: IdType | None = None,
-                       recalc=True):
+                       recalc: bool = True):
         """Return the data used to create the model plot.
 
         Parameters
@@ -12409,7 +12420,7 @@ class Session(NoNewAttributesAfterInit):
     # also in sherpa.astro.utils (does not copy this docstring)
     def get_source_plot(self,
                         id: IdType | None = None,
-                        recalc=True):
+                        recalc: bool = True):
         """Return the data used to create the source plot.
 
         Parameters
@@ -12479,7 +12490,7 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    def get_model_component_plot(self, id, model=None, recalc=True):
+    def get_model_component_plot(self, id, model=None, recalc: bool = True):
         """Return the data used to create the model-component plot.
 
         Parameters
@@ -12599,7 +12610,7 @@ class Session(NoNewAttributesAfterInit):
                                      model=model, idval=idval)
 
     # sherpa.astro.utils version copies this docstring
-    def get_source_component_plot(self, id, model=None, recalc=True):
+    def get_source_component_plot(self, id, model=None, recalc: bool = True):
         """Return the data used by plot_source_component.
 
         Parameters
@@ -12777,7 +12788,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_fit_plot(self,
                      id: IdType | None = None,
-                     recalc=True):
+                     recalc: bool = True):
         """Return the data used to create the fit plot.
 
         Parameters
@@ -12846,7 +12857,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_resid_plot(self,
                        id: IdType | None = None,
-                       recalc=True):
+                       recalc: bool = True):
         """Return the data used by plot_resid.
 
         Parameters
@@ -12922,7 +12933,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_delchi_plot(self,
                         id: IdType | None = None,
-                        recalc=True):
+                        recalc: bool = True):
         """Return the data used by plot_delchi.
 
         Parameters
@@ -12999,7 +13010,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_chisqr_plot(self,
                         id: IdType | None = None,
-                        recalc=True):
+                        recalc: bool = True):
         """Return the data used by plot_chisqr.
 
         Parameters
@@ -13076,7 +13087,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_ratio_plot(self,
                        id: IdType | None = None,
-                       recalc=True):
+                       recalc: bool = True):
         """Return the data used by plot_ratio.
 
         Parameters
@@ -13153,7 +13164,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_data_contour(self,
                          id: IdType | None = None,
-                         recalc=True):
+                         recalc: bool = True):
         """Return the data used by contour_data.
 
         Parameters
@@ -13316,7 +13327,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_model_contour(self,
                           id: IdType | None = None,
-                          recalc=True):
+                          recalc: bool = True):
         """Return the data used by contour_model.
 
         Parameters
@@ -13367,7 +13378,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_source_contour(self,
                            id: IdType | None = None,
-                           recalc=True):
+                           recalc: bool = True):
         """Return the data used by contour_source.
 
         Parameters
@@ -13468,7 +13479,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_fit_contour(self,
                         id: IdType | None = None,
-                        recalc=True):
+                        recalc: bool = True):
         """Return the data used by contour_fit.
 
         Parameters
@@ -13525,7 +13536,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_resid_contour(self,
                           id: IdType | None = None,
-                          recalc=True):
+                          recalc: bool = True):
         """Return the data used by contour_resid.
 
         Parameters
@@ -13577,7 +13588,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_ratio_contour(self,
                           id: IdType | None = None,
-                          recalc=True):
+                          recalc: bool = True):
         """Return the data used by contour_ratio.
 
         Parameters
@@ -13629,7 +13640,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_psf_contour(self,
                         id: IdType | None = None,
-                        recalc=True):
+                        recalc: bool = True):
         """Return the data used by contour_psf.
 
         Parameters
@@ -13676,7 +13687,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_kernel_contour(self,
                            id: IdType | None = None,
-                           recalc=True):
+                           recalc: bool = True):
         """Return the data used by contour_kernel.
 
         Parameters
@@ -13724,7 +13735,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_psf_plot(self,
                      id: IdType | None = None,
-                     recalc=True):
+                     recalc: bool = True):
         """Return the data used by plot_psf.
 
         Parameters
@@ -13770,7 +13781,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_kernel_plot(self,
                         id: IdType | None = None,
-                        recalc=True):
+                        recalc: bool = True):
         """Return the data used by plot_kernel.
 
         Parameters
@@ -14454,8 +14465,10 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_data(self,
                   id: IdType | None = None,
-                  replot=False, overplot=False,
-                  clearwindow=True, **kwargs) -> None:
+                  replot: bool = False,
+                  overplot: bool = False,
+                  clearwindow: bool = True,
+                  **kwargs) -> None:
         r"""Plot the data values.
 
         Parameters
@@ -14570,8 +14583,10 @@ class Session(NoNewAttributesAfterInit):
     #
     def plot_model(self,
                    id: IdType | None = None,
-                   replot=False, overplot=False,
-                   clearwindow=True, **kwargs) -> None:
+                   replot: bool = False,
+                   overplot: bool = False,
+                   clearwindow: bool = True,
+                   **kwargs) -> None:
         """Plot the model for a data set.
 
         This function plots the model for a data set, which includes
@@ -14652,8 +14667,12 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
-    def plot_source_component(self, id, model=None, replot=False,
-                              overplot=False, clearwindow=True,
+    def plot_source_component(self,
+                              id,
+                              model=None,
+                              replot: bool = False,
+                              overplot: bool = False,
+                              clearwindow: bool = True,
                               **kwargs) -> None:
         """Plot a component of the source expression for a data set.
 
@@ -14727,8 +14746,8 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_source_components(self,
                                id: IdType | None = None,
-                               overplot=False,
-                               clearwindow=True,
+                               overplot: bool = False,
+                               clearwindow: bool = True,
                                **kwargs) -> None:
         """Plot all the components of a source.
 
@@ -14788,8 +14807,12 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plots, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-    def plot_model_component(self, id, model=None, replot=False,
-                             overplot=False, clearwindow=True,
+    def plot_model_component(self,
+                             id,
+                             model=None,
+                             replot: bool = False,
+                             overplot: bool = False,
+                             clearwindow: bool = True,
                              **kwargs) -> None:
         """Plot a component of the model for a data set.
 
@@ -14881,8 +14904,8 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_model_components(self,
                               id: IdType | None = None,
-                              overplot=False,
-                              clearwindow=True,
+                              overplot: bool = False,
+                              clearwindow: bool = True,
                               **kwargs) -> None:
         """Plot all the components of a model.
 
@@ -14945,8 +14968,9 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
     def plot_source(self,
                     id: IdType | None = None,
-                    replot=False,
-                    overplot=False, clearwindow=True,
+                    replot: bool = False,
+                    overplot: bool = False,
+                    clearwindow: bool = True,
                     **kwargs) -> None:
         """Plot the source expression for a data set.
 
@@ -15027,8 +15051,9 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_fit(self,
                  id: IdType | None = None,
-                 replot=False, overplot=False,
-                 clearwindow=True,
+                 replot: bool = False,
+                 overplot: bool = False,
+                 clearwindow: bool = True,
                  **kwargs) -> None:
         """Plot the fit results (data, model) for a data set.
 
@@ -15117,8 +15142,9 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_resid(self,
                    id: IdType | None = None,
-                   replot=False, overplot=False,
-                   clearwindow=True,
+                   replot: bool = False,
+                   overplot: bool = False,
+                   clearwindow: bool = True,
                    **kwargs) -> None:
         """Plot the residuals (data - model) for a data set.
 
@@ -15202,8 +15228,9 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_chisqr(self,
                     id: IdType | None = None,
-                    replot=False, overplot=False,
-                    clearwindow=True,
+                    replot: bool = False,
+                    overplot:bool = False,
+                    clearwindow: bool = True,
                     **kwargs) -> None:
         """Plot the chi-squared value for each point in a data set.
 
@@ -15266,8 +15293,9 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_delchi(self,
                     id: IdType | None = None,
-                    replot=False, overplot=False,
-                    clearwindow=True,
+                    replot: bool = False,
+                    overplot: bool = False,
+                    clearwindow: bool = True,
                     **kwargs) -> None:
         """Plot the ratio of residuals to error for a data set.
 
@@ -15347,8 +15375,9 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_ratio(self,
                    id: IdType | None = None,
-                   replot=False, overplot=False,
-                   clearwindow=True,
+                   replot: bool = False,
+                   overplot: bool = False,
+                   clearwindow: bool = True,
                    **kwargs) -> None:
         """Plot the ratio of data to model for a data set.
 
@@ -15426,8 +15455,9 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_psf(self,
                  id: IdType | None = None,
-                 replot=False, overplot=False,
-                 clearwindow=True,
+                 replot: bool = False,
+                 overplot: bool = False,
+                 clearwindow: bool = True,
                  **kwargs) -> None:
         """Plot the 1D PSF model applied to a data set.
 
@@ -15488,8 +15518,9 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_kernel(self,
                     id: IdType | None = None,
-                    replot=False, overplot=False,
-                    clearwindow=True,
+                    replot: bool = False,
+                    overplot: bool = False,
+                    clearwindow: bool = True,
                     **kwargs) -> None:
         """Plot the 1D kernel applied to a data set.
 
@@ -15609,8 +15640,9 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_fit_resid(self,
                        id: IdType | None = None,
-                       replot=False, overplot=False,
-                       clearwindow=True,
+                       replot: bool = False,
+                       overplot: bool = False,
+                       clearwindow: bool = True,
                        **kwargs) -> None:
         """Plot the fit results, and the residuals, for a data set.
 
@@ -15711,8 +15743,9 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_fit_ratio(self,
                        id: IdType | None = None,
-                       replot=False, overplot=False,
-                       clearwindow=True,
+                       replot: bool = False,
+                       overplot: bool = False,
+                       clearwindow: bool = True,
                        **kwargs) -> None:
         """Plot the fit results, and the ratio of data to model, for a data set.
 
@@ -15811,8 +15844,9 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_fit_delchi(self,
                         id: IdType | None = None,
-                        replot=False, overplot=False,
-                        clearwindow=True,
+                        replot: bool = False,
+                        overplot: bool = False,
+                        clearwindow: bool = True,
                         **kwargs) -> None:
         """Plot the fit results, and the residuals, for a data set.
 
@@ -15914,8 +15948,15 @@ class Session(NoNewAttributesAfterInit):
     # Statistical plotting routines
     #
 
-    def plot_pdf(self, points, name="x", xlabel="x", bins=12, normed=True,
-                 replot=False, overplot=False, clearwindow=True,
+    def plot_pdf(self,
+                 points: ArrayType,
+                 name: str = "x",
+                 xlabel: str = "x",
+                 bins: int = 12,
+                 normed: bool = True,
+                 replot: bool = False,
+                 overplot: bool = False,
+                 clearwindow: bool = True,
                  **kwargs) -> None:
         """Plot the probability density function of an array of values.
 
@@ -15986,8 +16027,13 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pdfplot
 
-    def plot_cdf(self, points, name="x", xlabel="x",
-                 replot=False, overplot=False, clearwindow=True,
+    def plot_cdf(self,
+                 points: ArrayType,
+                 name: str = "x",
+                 xlabel: str = "x",
+                 replot: bool = False,
+                 overplot: bool = False,
+                 clearwindow: bool = True,
                  **kwargs) -> None:
         """Plot the cumulative density function of an array of values.
 
@@ -16056,8 +16102,13 @@ class Session(NoNewAttributesAfterInit):
         return self._cdfplot
 
     # DOC-TODO: what does xlabel do?
-    def plot_trace(self, points, name="x", xlabel="x",
-                   replot=False, overplot=False, clearwindow=True,
+    def plot_trace(self,
+                   points: ArrayType,
+                   name: str = "x",
+                   xlabel: str = "x",
+                   replot: bool = False,
+                   overplot: bool = False,
+                   clearwindow: bool = True,
                    **kwargs) -> None:
         """Create a trace plot of row number versus value.
 
@@ -16131,8 +16182,15 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._traceplot
 
-    def plot_scatter(self, x, y, name="(x,y)", xlabel="x", ylabel="y",
-                     replot=False, overplot=False, clearwindow=True,
+    def plot_scatter(self,
+                     x: ArrayType,
+                     y: ArrayType,
+                     name: str = "(x,y)",
+                     xlabel: str = "x",
+                     ylabel: str = "y",
+                     replot: bool = False,
+                     overplot: bool = False,
+                     clearwindow: bool = True,
                      **kwargs) -> None:
         """Create a scatter plot.
 
@@ -16341,7 +16399,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_data(self,
                      id: IdType | None = None,
-                     replot=False, overcontour=False,
+                     replot: bool = False,
+                     overcontour: bool = False,
                      **kwargs) -> None:
         """Contour the values of an image data set.
 
@@ -16385,7 +16444,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_model(self,
                       id: IdType | None = None,
-                      replot=False, overcontour=False,
+                      replot: bool = False,
+                      overcontour: bool = False,
                       **kwargs) -> None:
         """Create a contour plot of the model.
 
@@ -16435,7 +16495,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_source(self,
                        id: IdType | None = None,
-                       replot=False, overcontour=False,
+                       replot: bool = False,
+                       overcontour: bool = False,
                        **kwargs) -> None:
         """Create a contour plot of the unconvolved spatial model.
 
@@ -16484,7 +16545,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_fit(self,
                     id: IdType | None = None,
-                    replot=False, overcontour=False,
+                    replot: bool = False,
+                    overcontour: bool = False,
                     **kwargs) -> None:
         """Contour the fit to a data set.
 
@@ -16532,7 +16594,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_resid(self,
                       id: IdType | None = None,
-                      replot=False, overcontour=False,
+                      replot: bool = False,
+                      overcontour: bool = False,
                       **kwargs) -> None:
         """Contour the residuals of the fit.
 
@@ -16579,7 +16642,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_ratio(self,
                       id: IdType | None = None,
-                      replot=False, overcontour=False,
+                      replot: bool = False,
+                      overcontour: bool = False,
                       **kwargs) -> None:
         """Contour the ratio of data to model.
 
@@ -16626,7 +16690,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_psf(self,
                     id: IdType | None = None,
-                    replot=False, overcontour=False,
+                    replot: bool = False,
+                    overcontour: bool = False,
                     **kwargs) -> None:
         """Contour the PSF applied to the model of an image data set.
 
@@ -16661,7 +16726,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_kernel(self,
                        id: IdType | None = None,
-                       replot=False, overcontour=False,
+                       replot: bool = False,
+                       overcontour: bool = False,
                        **kwargs) -> None:
         """Contour the kernel applied to the model of an image data set.
 
@@ -16696,7 +16762,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_fit_resid(self,
                           id: IdType | None = None,
-                          replot=False, overcontour=False,
+                          replot: bool = False,
+                          overcontour: bool = False,
                           **kwargs) -> None:
         """Contour the fit and the residuals to a data set.
 
@@ -16760,12 +16827,19 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: I am not convinced that this code is working when recalc=True
     # DOC-NOTE: needs to support the fast option of int_proj
-    def get_int_proj(self, par=None,
+    def get_int_proj(self,
+                     par: str | Parameter | None = None,
                      id: IdType | None = None,
                      otherids: IdTypes | None = None,
-                     recalc=False,
-                     fast=True, min=None, max=None, nloop=20, delv=None, fac=1,
-                     log=False, numcores=None):
+                     recalc: bool = False,
+                     fast: bool = True,
+                     min: float | None = None,
+                     max: float | None = None,
+                     nloop: int = 20,
+                     delv: float | None = None,
+                     fac: float = 1,
+                     log: bool = False,
+                     numcores: int | None = None):
         """Return the interval-projection object.
 
         This returns (and optionally calculates) the data used to
@@ -16878,12 +16952,18 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: Check that this works (since get_int_proj may not) when
     # recalc=True
-    def get_int_unc(self, par=None,
+    def get_int_unc(self,
+                    par: str | Parameter | None = None,
                     id: IdType | None = None,
                     otherids: IdTypes | None = None,
-                    recalc=False,
-                    min=None, max=None, nloop=20, delv=None, fac=1, log=False,
-                    numcores=None):
+                    recalc: bool = False,
+                    min: float | None = None,
+                    max: float | None = None,
+                    nloop: int = 20,
+                    delv: float | None = None,
+                    fac: float = 1,
+                    log: bool = False,
+                    numcores: int | None = None):
         """Return the interval-uncertainty object.
 
         This returns (and optionally calculates) the data used to
@@ -16991,12 +17071,22 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    def get_reg_proj(self, par0=None, par1=None,
+    def get_reg_proj(self,
+                     par0: str | Parameter | None = None,
+                     par1: str | Parameter | None = None,
                      id: IdType | None = None,
                      otherids: IdTypes | None = None,
-                     recalc=False, fast=True, min=None, max=None,
-                     nloop=(10, 10), delv=None, fac=4, log=(False, False),
-                     sigma=(1, 2, 3), levels=None, numcores=None):
+                     recalc: bool = False,
+                     fast: bool = True,
+                     min=None,
+                     max=None,
+                     nloop=(10, 10),
+                     delv=None,
+                     fac: float = 4,
+                     log=(False, False),
+                     sigma=(1, 2, 3),
+                     levels=None,
+                     numcores: int | None = None):
         """Return the region-projection object.
 
         This returns (and optionally calculates) the data used to
@@ -17123,12 +17213,21 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    def get_reg_unc(self, par0=None, par1=None,
+    def get_reg_unc(self,
+                    par0: str | Parameter | None = None,
+                    par1: str | Parameter | None = None,
                     id: IdType | None = None,
                     otherids: IdTypes | None = None,
-                    recalc=False, min=None, max=None, nloop=(10, 10),
-                    delv=None, fac=4, log=(False, False), sigma=(1, 2, 3),
-                    levels=None, numcores=None):
+                    recalc: bool = False,
+                    min=None,
+                    max=None,
+                    nloop=(10, 10),
+                    delv=None,
+                    fac: float = 4,
+                    log=(False, False),
+                    sigma=(1, 2, 3),
+                    levels=None,
+                    numcores: int | None = None):
         """Return the region-uncertainty object.
 
         This returns (and optionally calculates) the data used to
@@ -17258,13 +17357,21 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: I am not convinced I have fac described correctly
     # DOC-NOTE: same synopsis as int_unc
-    def int_proj(self, par,
+    def int_proj(self,
+                 par: str | Parameter,
                  id: IdType | None = None,
                  otherids: IdTypes | None = None,
-                 replot=False, fast=True,
-                 min=None, max=None, nloop=20, delv=None, fac=1, log=False,
-                 numcores=None,
-                 overplot=False) -> None:
+                 replot: bool = False,
+                 fast: bool = True,
+                 min: float | None = None,
+                 max: float | None = None,
+                 nloop: int = 20,
+                 delv: float | None = None,
+                 fac: float = 1,
+                 log: bool = False,
+                 numcores: int | None = None,
+                 overplot: bool = False
+                 ) -> None:
         """Calculate and plot the fit statistic versus fit parameter value.
 
         Create a confidence plot of the fit statistic as a function of
@@ -17385,13 +17492,20 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: I am not convinced I have fac described correctly
     # DOC-NOTE: same synopsis as int_proj
-    def int_unc(self, par,
+    def int_unc(self,
+                par: str | Parameter,
                 id: IdType | None = None,
                 otherids: IdTypes | None = None,
-                replot=False, min=None,
-                max=None, nloop=20, delv=None, fac=1, log=False,
-                numcores=None,
-                overplot=False) -> None:
+                replot: bool = False,
+                min: float | None = None,
+                max: float | None = None,
+                nloop: int = 20,
+                delv: float | None = None,
+                fac: float = 1,
+                log: bool = False,
+                numcores: int | None = None,
+                overplot: bool = False
+                ) -> None:
         """Calculate and plot the fit statistic versus fit parameter value.
 
         Create a confidence plot of the fit statistic as a function of
@@ -17509,14 +17623,24 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot)
 
     # DOC-TODO: how is sigma converted into delta_stat
-    def reg_proj(self, par0, par1,
+    def reg_proj(self,
+                 par0: str | Parameter,
+                 par1: str | Patameter,
                  id: IdType | None = None,
                  otherids: IdTypes | None = None,
-                 replot=False,
-                 fast=True, min=None, max=None, nloop=(10, 10), delv=None,
-                 fac=4, log=(False, False), sigma=(1, 2, 3), levels=None,
-                 numcores=None,
-                 overplot=False) -> None:
+                 replot: bool = False,
+                 fast: bool = True,
+                 min=None,
+                 max=None,
+                 nloop=(10, 10),
+                 delv=None,
+                 fac: float = 4,
+                 log=(False, False),
+                 sigma=(1, 2, 3),
+                 levels=None,
+                 numcores: int | None = None,
+                 overplot: bool = False
+                 ) -> None:
         """Plot the statistic value as two parameters are varied.
 
         Create a confidence plot of the fit statistic as a function of
@@ -17646,14 +17770,23 @@ class Session(NoNewAttributesAfterInit):
         self._contour(plotobj, overcontour=overplot)
 
     # DOC-TODO: how is sigma converted into delta_stat
-    def reg_unc(self, par0, par1,
+    def reg_unc(self,
+                par0: str | Parameter,
+                par1: str | Parameter,
                 id: IdType | None = None,
                 otherids: IdTypes | None = None,
-                replot=False,
-                min=None, max=None, nloop=(10, 10), delv=None, fac=4,
-                log=(False, False), sigma=(1, 2, 3), levels=None,
-                numcores=None,
-                overplot=False) -> None:
+                replot: bool = False,
+                min=None,
+                max=None,
+                nloop=(10, 10),
+                delv=None,
+                fac: float = 4,
+                log=(False, False),
+                sigma=(1, 2, 3),
+                levels=None,
+                numcores: int | None = None,
+                overplot: bool = False
+                ) -> None:
         """Plot the statistic value as two parameters are varied.
 
         Create a confidence plot of the fit statistic as a function of
@@ -18238,8 +18371,8 @@ class Session(NoNewAttributesAfterInit):
 
     def image_data(self,
                    id: IdType | None = None,
-                   newframe=False,
-                   tile=False) -> None:
+                   newframe: bool = False,
+                   tile: bool = False) -> None:
         """Display a data set in the image viewer.
 
         The image viewer is automatically started if it is not
@@ -18299,8 +18432,8 @@ class Session(NoNewAttributesAfterInit):
 
     def image_model(self,
                     id: IdType | None = None,
-                    newframe=False,
-                    tile=False) -> None:
+                    newframe: bool = False,
+                    tile: bool = False) -> None:
         """Display the model for a data set in the image viewer.
 
         This function evaluates and displays the model expression for
@@ -18367,8 +18500,9 @@ class Session(NoNewAttributesAfterInit):
         imageobj = self.get_model_image(id)
         imageobj.image(newframe=newframe, tile=tile)
 
-    def image_source_component(self, id, model=None, newframe=False,
-                               tile=False) -> None:
+    def image_source_component(self, id, model=None,
+                               newframe: bool = False,
+                               tile: bool = False) -> None:
         """Display a component of the source expression in the image viewer.
 
         This function evaluates and displays a component of the model
@@ -18440,8 +18574,9 @@ class Session(NoNewAttributesAfterInit):
         imageobj = self.get_source_component_image(id, model)
         imageobj.image(newframe=newframe, tile=tile)
 
-    def image_model_component(self, id, model=None, newframe=False,
-                              tile=False) -> None:
+    def image_model_component(self, id, model=None,
+                              newframe: bool = False,
+                              tile: bool = False) -> None:
         """Display a component of the model in the image viewer.
 
         This function evaluates and displays a component of the model
@@ -18516,8 +18651,8 @@ class Session(NoNewAttributesAfterInit):
 
     def image_source(self,
                      id: IdType | None = None,
-                     newframe=False,
-                     tile=False) -> None:
+                     newframe: bool = False,
+                     tile: bool = False) -> None:
         """Display the source expression for a data set in the image viewer.
 
         This function evaluates and displays the model expression for
@@ -18586,8 +18721,9 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: does newframe make sense here?
     def image_fit(self,
                   id: IdType | None = None,
-                  newframe=True, tile=True,
-                  deleteframes=True) -> None:
+                  newframe: bool = True,
+                  tile: bool = True,
+                  deleteframes: bool = True) -> None:
         """Display the data, model, and residuals for a data set in the image viewer.
 
         This function displays the data, model (including any
@@ -18659,8 +18795,8 @@ class Session(NoNewAttributesAfterInit):
 
     def image_resid(self,
                     id: IdType | None = None,
-                    newframe=False,
-                    tile=False) -> None:
+                    newframe: bool = False,
+                    tile: bool = False) -> None:
         """Display the residuals (data - model) for a data set in the image viewer.
 
         This function displays the residuals (data - model) for a data
@@ -18729,8 +18865,8 @@ class Session(NoNewAttributesAfterInit):
 
     def image_ratio(self,
                     id: IdType | None = None,
-                    newframe=False,
-                    tile=False) -> None:
+                    newframe: bool = False,
+                    tile: bool = False) -> None:
         """Display the ratio (data/model) for a data set in the image viewer.
 
         This function displays the ratio data/model for a data
@@ -18787,8 +18923,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: what gets displayed when there is no PSF?
     def image_psf(self,
                   id: IdType | None = None,
-                  newframe=False,
-                  tile=False) -> None:
+                  newframe: bool = False,
+                  tile: bool = False) -> None:
         """Display the 2D PSF model for a data set in the image viewer.
 
         The image viewer is automatically started if it is not
@@ -18843,8 +18979,8 @@ class Session(NoNewAttributesAfterInit):
     # (as it appears in a number of places)?
     def image_kernel(self,
                      id: IdType | None = None,
-                     newframe=False,
-                     tile=False) -> None:
+                     newframe: bool = False,
+                     tile: bool = False) -> None:
         """Display the 2D kernel for a data set in the image viewer.
 
         The image viewer is automatically started if it is not
@@ -18977,7 +19113,7 @@ class Session(NoNewAttributesAfterInit):
         sherpa.image.Image.close()
 
     # DOC-TODO: what is the "default" coordinate system
-    def image_getregion(self, coord=''):
+    def image_getregion(self, coord: str = '') -> str:
         """Return the region defined in the image viewer.
 
         The regions defined in the current frame are returned.
@@ -19016,7 +19152,7 @@ class Session(NoNewAttributesAfterInit):
         return sherpa.image.Image.get_region(coord)
 
     # DOC-TODO: what is the "default" coordinate system
-    def image_setregion(self, reg, coord=''):
+    def image_setregion(self, reg: str, coord: str = '') -> None:
         """Set the region to display in the image viewer.
 
         Parameters
@@ -19059,7 +19195,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: check the ds9 link when it is working
     # DOC-TODO: is there a link of ds9 commands we can link to?
-    def image_xpaget(self, arg):
+    def image_xpaget(self, arg: str) -> str:
         """Return the result of an XPA call to the image viewer.
 
         Send a query to the image viewer.
@@ -19106,7 +19242,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: check the ds9 link when it is working
     # DOC-TODO: is there a link of ds9 commands we can link to?
-    def image_xpaset(self, arg, data=None):
+    def image_xpaset(self, arg: str, data=None) -> None:
         """Return the result of an XPA call to the image viewer.
 
         Send a command to the image viewer.

@@ -4632,3 +4632,58 @@ def test_send_fit_record_steps(session):
     stats = np.asarray([61, 61, 60.99102342, 4.66666667, 4.66667684,
                         4.66666667])
     assert steps['statistic'] == pytest.approx(stats)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_plot_fit_resid_get_labels(session):
+    """Regression test for plot object handling with plot_fit_xxx
+
+    This should check all the residual-style plots, but assume if it
+    holds for plot_fit_resid then it will for the others too.
+
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.load_arrays(1, [1, 2, 3], [4, 5, 7])
+    mdl = s.create_model_component("scale1d", "mdl")
+    mdl.c0 = 6
+    s.set_source(mdl)
+
+    s.plot_fit_resid()
+
+    fplot = s.get_fit_plot(recalc=False)
+    dplot = s.get_data_plot(recalc=False)
+    mplot = s.get_model_plot(recalc=False)
+    rplot = s.get_resid_plot(recalc=False)
+
+    # Do these objects respect the changes that the plot_fit_resid
+    # call to handle labels?
+    #
+    assert fplot.dataplot.xlabel == ''
+    assert fplot.modelplot.xlabel == ''
+    assert dplot.xlabel == ''
+    assert mplot.xlabel == ''
+    assert rplot.title == ''
+
+    # Check whether they have changed.
+    #
+    fplot2 = s.get_fit_plot(recalc=False)
+    dplot2 = s.get_data_plot(recalc=True)
+    mplot2 = s.get_model_plot(recalc=True)
+    rplot2 = s.get_resid_plot(recalc=True)
+    assert fplot2.dataplot.xlabel == 'x'
+    assert fplot2.modelplot.xlabel == 'x'
+    assert dplot2.xlabel == 'x'
+    assert mplot2.xlabel == 'x'
+    assert rplot2.title == 'Residuals'
+
+    # Thanks to the way we create these objects, note that the
+    # original objects have also been updated.
+    #
+    assert fplot.dataplot.xlabel == 'x'
+    assert fplot.modelplot.xlabel == 'x'
+    assert dplot.xlabel == 'x'
+    assert mplot.xlabel == 'x'
+    assert rplot.title == 'Residuals'

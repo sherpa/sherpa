@@ -11678,7 +11678,7 @@ class Session(sherpa.ui.utils.Session):
 
     def get_data_plot(self,
                       id: IdType | None = None,
-                      recalc=True):
+                      recalc: bool = True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11698,7 +11698,7 @@ class Session(sherpa.ui.utils.Session):
 
     def get_model_plot(self,
                        id: IdType | None = None,
-                       recalc=True):
+                       recalc: bool = True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11719,7 +11719,9 @@ class Session(sherpa.ui.utils.Session):
     # also in sherpa.utils, but without the lo/hi arguments
     def get_source_plot(self,
                         id: IdType | None = None,
-                        lo=None, hi=None, recalc=True):
+                        lo: float | None = None,
+                        hi: float | None = None,
+                        recalc: bool = True):
         """Return the data used by plot_source.
 
         Parameters
@@ -11810,7 +11812,7 @@ class Session(sherpa.ui.utils.Session):
 
     def get_fit_plot(self,
                      id: IdType | None = None,
-                     recalc=True):
+                     recalc: bool = True):
 
         plotobj = self._plot_types["fit"][0]
         if not recalc:
@@ -11841,7 +11843,7 @@ class Session(sherpa.ui.utils.Session):
     get_fit_plot.__doc__ = sherpa.ui.utils.Session.get_fit_plot.__doc__
     get_fit_plot.__annotations__ = sherpa.ui.utils.Session.get_fit_plot.__annotations__
 
-    def get_model_component_plot(self, id, model=None, recalc=True):
+    def get_model_component_plot(self, id, model=None, recalc: bool = True):
         """Return the data used to create the model-component plot.
 
         For PHA data, the response model is automatically added by the
@@ -11936,7 +11938,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_model_component_plot(id, model=model, recalc=recalc)
 
     # copy doc string from sherpa.utils
-    def get_source_component_plot(self, id, model=None, recalc=True):
+    def get_source_component_plot(self, id, model=None, recalc: bool = True):
         if model is None:
             id, model = model, id
         model = self._check_model(model)
@@ -11960,7 +11962,7 @@ class Session(sherpa.ui.utils.Session):
 
     def get_ratio_plot(self,
                        id: IdType | None = None,
-                       recalc=True):
+                       recalc: bool = True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11980,7 +11982,7 @@ class Session(sherpa.ui.utils.Session):
 
     def get_resid_plot(self,
                        id: IdType | None = None,
-                       recalc=True):
+                       recalc: bool = True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -12000,7 +12002,7 @@ class Session(sherpa.ui.utils.Session):
 
     def get_delchi_plot(self,
                         id: IdType | None = None,
-                        recalc=True):
+                        recalc: bool = True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -12020,7 +12022,7 @@ class Session(sherpa.ui.utils.Session):
 
     def get_chisqr_plot(self,
                         id: IdType | None = None,
-                        recalc=True):
+                        recalc: bool = True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -12041,8 +12043,10 @@ class Session(sherpa.ui.utils.Session):
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id: IdType = 1,
                         otherids: IdTypes = (),
-                        num=500, bins=25, numcores=None,
-                        recalc=False):
+                        num: int = 500,
+                        bins: int = 25,
+                        numcores: int | None = None,
+                        recalc: bool = False):
 
         if recalc and conv_model is None and \
            isinstance(self.get_data(id), DataPHA):
@@ -12058,7 +12062,8 @@ class Session(sherpa.ui.utils.Session):
 
     def get_order_plot(self,
                        id: IdType | None = None,
-                       orders=None, recalc=True):
+                       orders=None,
+                       recalc: bool = True):
         """Return the data used by plot_order.
 
         Parameters
@@ -12114,7 +12119,7 @@ class Session(sherpa.ui.utils.Session):
     def get_arf_plot(self,
                      id: IdType | None = None,
                      resp_id: IdType | None = None,
-                     recalc=True):
+                     recalc: bool = True):
         """Return the data used by plot_arf.
 
         Parameters
@@ -12178,7 +12183,7 @@ class Session(sherpa.ui.utils.Session):
     def get_rmf_plot(self,
                      id: IdType | None = None,
                      resp_id: IdType | None = None,
-                     recalc=True):
+                     recalc: bool = True):
         """Return the data used by plot_rmf.
 
         .. versionadded:: 4.16.0
@@ -12242,7 +12247,7 @@ class Session(sherpa.ui.utils.Session):
     def get_bkg_fit_plot(self,
                          id: IdType | None = None,
                          bkg_id: IdType | None = None,
-                         recalc=True):
+                         recalc: bool = True):
         """Return the data used by plot_bkg_fit.
 
         Parameters
@@ -12335,7 +12340,7 @@ class Session(sherpa.ui.utils.Session):
     def get_bkg_model_plot(self,
                            id: IdType | None = None,
                            bkg_id: IdType | None = None,
-                           recalc=True):
+                           recalc: bool = True):
         """Return the data used by plot_bkg_model.
 
         Parameters
@@ -12395,7 +12400,7 @@ class Session(sherpa.ui.utils.Session):
     def get_bkg_plot(self,
                      id: IdType | None = None,
                      bkg_id: IdType | None = None,
-                     recalc=True):
+                     recalc: bool = True):
         """Return the data used by plot_bkg.
 
         Parameters
@@ -12460,9 +12465,12 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
-    def get_bkg_source_plot(self, id=None, lo=None, hi=None,
+    def get_bkg_source_plot(self,
+                            id: IdType | None = None,
+                            lo: float | None = None,
+                            hi: float | None = None,
                             bkg_id: IdType | None = None,
-                            recalc=True):
+                            recalc: bool = True):
         """Return the data used by plot_bkg_source.
 
         Parameters
@@ -12557,7 +12565,7 @@ class Session(sherpa.ui.utils.Session):
     def get_bkg_resid_plot(self,
                            id: IdType | None = None,
                            bkg_id: IdType | None = None,
-                           recalc=True):
+                           recalc: bool = True):
         """Return the data used by plot_bkg_resid.
 
         Parameters
@@ -12618,7 +12626,7 @@ class Session(sherpa.ui.utils.Session):
     def get_bkg_ratio_plot(self,
                            id: IdType | None = None,
                            bkg_id: IdType | None = None,
-                           recalc=True):
+                           recalc: bool = True):
         """Return the data used by plot_bkg_ratio.
 
         Parameters
@@ -12679,7 +12687,7 @@ class Session(sherpa.ui.utils.Session):
     def get_bkg_delchi_plot(self,
                             id: IdType | None = None,
                             bkg_id: IdType | None = None,
-                            recalc=True):
+                            recalc: bool = True):
         """Return the data used by plot_bkg_delchi.
 
         Parameters
@@ -12741,7 +12749,7 @@ class Session(sherpa.ui.utils.Session):
     def get_bkg_chisqr_plot(self,
                             id: IdType | None = None,
                             bkg_id: IdType | None = None,
-                            recalc=True):
+                            recalc: bool = True):
         """Return the data used by plot_bkg_chisqr.
 
         Parameters
@@ -13126,8 +13134,9 @@ class Session(sherpa.ui.utils.Session):
     def plot_arf(self,
                  id: IdType | None = None,
                  resp_id: IdType | None = None,
-                 replot=False, overplot=False,
-                 clearwindow=True,
+                 replot: bool = False,
+                 overplot: bool = False,
+                 clearwindow: bool = True,
                  **kwargs) -> None:
         """Plot the ARF associated with a data set.
 
@@ -13201,8 +13210,9 @@ class Session(sherpa.ui.utils.Session):
     def plot_rmf(self,
                  id: IdType | None = None,
                  resp_id: IdType | None = None,
-                 replot=False, overplot=False,
-                 clearwindow=True,
+                 replot: bool = False,
+                 overplot: bool = False,
+                 clearwindow: bool = True,
                  **kwargs) -> None:
         """Plot the RMF associated with a data set.
 
@@ -13279,8 +13289,11 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self,
                     id: IdType | None = None,
-                    lo=None, hi=None,
-                    replot=False, overplot=False, clearwindow=True,
+                    lo: float | None = None,
+                    hi: float | None = None,
+                    replot: bool = False,
+                    overplot: bool = False,
+                    clearwindow: bool = True,
                     **kwargs) -> None:
         """Plot the source expression for a data set.
 
@@ -13364,8 +13377,9 @@ class Session(sherpa.ui.utils.Session):
     def plot_order(self,
                    id: IdType | None = None,
                    orders=None,
-                   replot=False, overplot=False,
-                   clearwindow=True,
+                   replot: bool = False,
+                   overplot: bool = False,
+                   clearwindow: bool = True,
                    **kwargs) -> None:
         """Plot the model for a data set convolved by the given response.
 
@@ -13428,7 +13442,9 @@ class Session(sherpa.ui.utils.Session):
     def plot_bkg(self,
                  id: IdType | None = None,
                  bkg_id: IdType | None = None,
-                 replot=False, overplot=False, clearwindow=True,
+                 replot: bool = False,
+                 overplot: bool = False,
+                 clearwindow: bool = True,
                  **kwargs) -> None:
         """Plot the background values for a PHA data set.
 
@@ -13496,7 +13512,9 @@ class Session(sherpa.ui.utils.Session):
     def plot_bkg_model(self,
                        id: IdType | None = None,
                        bkg_id: IdType | None = None,
-                       replot=False, overplot=False, clearwindow=True,
+                       replot: bool = False,
+                       overplot: bool = False,
+                       clearwindow: bool = True,
                        **kwargs) -> None:
         """Plot the model for the background of a PHA data set.
 
@@ -13557,7 +13575,9 @@ class Session(sherpa.ui.utils.Session):
     def plot_bkg_resid(self,
                        id: IdType | None = None,
                        bkg_id: IdType | None = None,
-                       replot=False, overplot=False, clearwindow=True,
+                       replot: bool = False,
+                       overplot: bool = False,
+                       clearwindow: bool = True,
                        **kwargs) -> None:
         """Plot the residual (data-model) values for the background of a PHA data set.
 
@@ -13627,7 +13647,9 @@ class Session(sherpa.ui.utils.Session):
     def plot_bkg_ratio(self,
                        id: IdType | None = None,
                        bkg_id: IdType | None = None,
-                       replot=False, overplot=False, clearwindow=True,
+                       replot: bool = False,
+                       overplot: bool = False,
+                       clearwindow: bool = True,
                        **kwargs) -> None:
         """Plot the ratio of data to model values for the background of a PHA data set.
 
@@ -13697,7 +13719,9 @@ class Session(sherpa.ui.utils.Session):
     def plot_bkg_delchi(self,
                         id: IdType | None = None,
                         bkg_id: IdType | None = None,
-                        replot=False, overplot=False, clearwindow=True,
+                        replot: bool = False,
+                        overplot: bool = False,
+                        clearwindow: bool = True,
                         **kwargs) -> None:
         """Plot the ratio of residuals to error for the background of a PHA data set.
 
@@ -13767,7 +13791,9 @@ class Session(sherpa.ui.utils.Session):
     def plot_bkg_chisqr(self,
                         id: IdType | None = None,
                         bkg_id: IdType | None = None,
-                        replot=False, overplot=False, clearwindow=True,
+                        replot: bool = False,
+                        overplot: bool = False,
+                        clearwindow: bool = True,
                         **kwargs) -> None:
         """Plot the chi-squared value for each point of the background of a PHA data set.
 
@@ -13829,7 +13855,9 @@ class Session(sherpa.ui.utils.Session):
     def plot_bkg_fit(self,
                      id: IdType | None = None,
                      bkg_id: IdType | None = None,
-                     replot=False, overplot=False, clearwindow=True,
+                     replot: bool = False,
+                     overplot: bool = False,
+                     clearwindow: bool = True,
                      **kwargs) -> None:
         """Plot the fit results (data, model) for the background of a PHA data set.
 
@@ -13888,9 +13916,12 @@ class Session(sherpa.ui.utils.Session):
 
     def plot_bkg_source(self,
                         id: IdType | None = None,
-                        lo=None, hi=None,
+                        lo: float | None = None,
+                        hi: float | None = None,
                         bkg_id: IdType | None = None,
-                        replot=False, overplot=False, clearwindow=True,
+                        replot: bool = False,
+                        overplot: bool = False,
+                        clearwindow: bool = True,
                         **kwargs) -> None:
         """Plot the model expression for the background of a PHA data set.
 
@@ -13951,15 +13982,22 @@ class Session(sherpa.ui.utils.Session):
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-    def plot_energy_flux(self, lo=None, hi=None,
+    def plot_energy_flux(self,
+                         lo: float | None = None,
+                         hi: float | None = None,
                          id: IdType | None = None,
-                         num=7500, bins=75,
-                         correlated=False, numcores=None,
+                         num: int = 7500,
+                         bins: int = 75,
+                         correlated: bool = False,
+                         numcores: int | None = None,
                          bkg_id: IdType | None = None,
-                         scales=None, model=None,
+                         scales=None,
+                         model=None,
                          otherids: IdTypes = (),
-                         recalc=True, clip='hard',
-                         overplot=False, clearwindow=True,
+                         recalc: bool = True,
+                         clip='hard',
+                         overplot: bool = False,
+                         clearwindow: bool = True,
                          **kwargs) -> None:
         """Display the energy flux distribution.
 
@@ -14114,15 +14152,22 @@ class Session(sherpa.ui.utils.Session):
         self._plot(efplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_photon_flux(self, lo=None, hi=None,
+    def plot_photon_flux(self,
+                         lo: float | None = None,
+                         hi: float | None = None,
                          id: IdType | None = None,
-                         num=7500, bins=75,
-                         correlated=False, numcores=None,
+                         num: int = 7500,
+                         bins: int = 75,
+                         correlated: bool = False,
+                         numcores: int | None = None,
                          bkg_id: IdType | None = None,
-                         scales=None, model=None,
+                         scales=None,
+                         model=None,
                          otherids: IdTypes = (),
-                         recalc=True, clip='hard',
-                         overplot=False, clearwindow=True,
+                         recalc: bool = True,
+                         clip='hard',
+                         overplot: bool = False,
+                         clearwindow: bool = True,
                          **kwargs) -> None:
         """Display the photon flux distribution.
 
@@ -14277,60 +14322,12 @@ class Session(sherpa.ui.utils.Session):
         self._plot(pfplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def _bkg_jointplot2(self, plot1, plot2,
-                        overplot: bool = False,
-                        clearwindow: bool = True,
-                        **kwargs) -> None:
-        """Create a joint plot for bkg, vertically aligned, fit data on the top.
-
-        Parameters
-        ----------
-        plot1 : sherpa.plot.Plot instance
-           The plot to appear in the top panel.
-        plot2 : sherpa.plot.Plot instance
-           The plot to appear in the bottom panel.
-        overplot : bool, optional
-           If ``True`` then add the data to an existing plot, otherwise
-           create a new plot. The default is ``False``.
-        clearwindow : bool, optional
-           Should the existing plot area be cleared before creating this
-           new plot (e.g. for multi-panel plots)?
-
-        """
-
-        # See sherpa.ui.utils.Session._jointplot2.
-        # TODO: is this not the same as _jointplot2.
-        #
-        # Split up the kwargs so that they are per-plot.
-        #
-        kwstore = get_per_plot_kwargs(2, kwargs)
-
-        self._jointplot.reset()
-        with sherpa.plot.backend:
-            self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow,
-                                    **kwstore[0])
-
-            # We know the plot types here but still use get_plot_prefs
-            # to keep the encapsulation.
-            #
-            p2prefs = get_plot_prefs(plot2)
-            oldval = p2prefs['xlog']
-            dprefs = get_plot_prefs(plot1.dataplot)
-            mprefs = get_plot_prefs(plot1.modelplot)
-
-            if dprefs['xlog'] or mprefs['xlog']:
-                p2prefs['xlog'] = True
-
-            self._jointplot.plotbot(plot2, overplot=overplot,
-                                    **kwstore[1])
-
-            p2prefs['xlog'] = oldval
-
     def plot_bkg_fit_ratio(self,
                            id: IdType | None = None,
                            bkg_id: IdType | None = None,
-                           replot=False, overplot=False, clearwindow=True,
+                           replot: bool = False,
+                           overplot: bool = False,
+                           clearwindow: bool = True,
                            **kwargs) -> None:
         """Plot the fit results, and the data/model ratio, for the background of
         a PHA data set.
@@ -14403,13 +14400,15 @@ class Session(sherpa.ui.utils.Session):
         recalc = not replot
         plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
         plot2obj = self.get_bkg_ratio_plot(id, bkg_id, recalc=recalc)
-        self._bkg_jointplot2(plot1obj, plot2obj, overplot=overplot,
-                             clearwindow=clearwindow, **kwargs)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit_resid(self,
                            id: IdType | None = None,
                            bkg_id: IdType | None = None,
-                           replot=False, overplot=False, clearwindow=True,
+                           replot: bool = False,
+                           overplot: bool = False,
+                           clearwindow: bool = True,
                            **kwargs) -> None:
         """Plot the fit results, and the residuals, for the background of
         a PHA data set.
@@ -14483,13 +14482,15 @@ class Session(sherpa.ui.utils.Session):
         recalc = not replot
         plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
         plot2obj = self.get_bkg_resid_plot(id, bkg_id, recalc=recalc)
-        self._bkg_jointplot2(plot1obj, plot2obj, overplot=overplot,
-                             clearwindow=clearwindow, **kwargs)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit_delchi(self,
                             id: IdType | None = None,
                             bkg_id: IdType | None = None,
-                            replot=False, overplot=False, clearwindow=True,
+                            replot: bool = False,
+                            overplot: bool = False,
+                            clearwindow: bool = True,
                             **kwargs) -> None:
         """Plot the fit results, and the residuals, for the background of
         a PHA data set.
@@ -14564,8 +14565,8 @@ class Session(sherpa.ui.utils.Session):
         recalc = not replot
         plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
         plot2obj = self.get_bkg_delchi_plot(id, bkg_id, recalc=recalc)
-        self._bkg_jointplot2(plot1obj, plot2obj, overplot=overplot,
-                             clearwindow=clearwindow, **kwargs)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     ###########################################################################
     # Analysis Functions
