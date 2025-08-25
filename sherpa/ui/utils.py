@@ -2181,7 +2181,7 @@ class Session(NoNewAttributesAfterInit):
                 "'%s' should be used instead", plottype, answer)
         return answer
 
-    def _check_plottype(self, plottype: IdType) -> bool:
+    def _check_plottype(self, plottype: str) -> bool:
         """Is this a valid plot type (including aliases)?"""
 
         return plottype in self._plot_types or \
@@ -2196,7 +2196,7 @@ class Session(NoNewAttributesAfterInit):
         allowed = list(self._contour_types)
         raise PlotErr("wrongtype", plottype, str(allowed))
 
-    def _check_contourtype(self, plottype: IdType) -> bool:
+    def _check_contourtype(self, plottype: str) -> bool:
         """Is this a valid contour type?"""
 
         return plottype in self._contour_types
@@ -13829,7 +13829,7 @@ class Session(NoNewAttributesAfterInit):
     # Line plots
     #
     def _multi_plot(self,
-                    args: IdTypes,
+                    args: Any,
                     plotmeth: Literal["plot", "contour"] = "plot",
                     rows: int | None = None,
                     cols: int | None = None,
