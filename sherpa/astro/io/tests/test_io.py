@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 - 2018, 2020 - 2021, 2023 - 2025
+#  Copyright (C) 2016-2018, 2020-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -29,36 +29,26 @@ from sherpa.astro import io
 from sherpa.astro import ui
 from sherpa.data import Data1D, Data2DInt
 from sherpa.models.basic import Box1D, Const1D
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import IOErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_xspec
 
 
 @requires_data
 @requires_fits
-@requires_xspec
 def test_mod_fits(make_data_path, clean_astro_ui, caplog):
     """Can we read in an XSPEC table model with load_table_model.
 
-    This approach is deprecated. Use load_xstable_model instead.
+    This is no-longer supported.
     """
 
+    # It is not really important to know how this fails, but test the
+    # error just to make sure it is failing in the expected location.
+    #
     tablemodelfile = make_data_path("xspec-tablemodel-RCS.mod")
-    with warnings.catch_warnings(record=True) as warn:
+    with pytest.raises(ModelErr,
+                       match="^Unable to treat array as numeric:"):
         ui.load_table_model("tmod", tablemodelfile)
-
-    msg = "Use load_xstable_model to load XSPEC table models"
-    assert len(warn) == 1
-    assert warn[0].category is DeprecationWarning
-    assert str(warn[0].message) == msg
-
-    tmod = ui.get_model_component("tmod")
-    assert tmod.name == "xstablemodel.tmod"
-
-    assert len(caplog.records) == 1
-    assert caplog.records[0].name == "sherpa.astro.ui.utils"
-    assert caplog.records[0].levelname == "WARNING"
-    assert caplog.records[0].getMessage() == msg
 
 
 @requires_data
