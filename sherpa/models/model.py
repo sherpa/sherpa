@@ -1114,7 +1114,13 @@ thawedparhardmins, thawedparmaxes
 
     # TODO: should this freeze linked parameters?
     def freeze(self) -> None:
-        """Freeze any thawed parameters of the model."""
+        """Freeze any thawed parameters of the model.
+
+        See Also
+        --------
+        thaw
+
+        """
 
         for p in self.pars:
             p.freeze()
@@ -1125,6 +1131,10 @@ thawedparhardmins, thawedparmaxes
 
         Those parameters that are marked as "always frozen" are
         skipped.
+
+        See Also
+        --------
+        freeze
 
         """
 

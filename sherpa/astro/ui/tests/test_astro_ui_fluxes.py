@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -28,14 +28,15 @@ import numpy as np
 
 import pytest
 
+from sherpa.astro import hc, charge_e
 from sherpa.astro import ui
+import sherpa.astro.utils
+from sherpa.models.basic import Polynom1D
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_xspec
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, FitErr, \
     IdentifierErr, IOErr, ModelErr
-import sherpa.astro.utils
-from sherpa.astro import hc, charge_e
 
 
 def fail(*arg):
@@ -2580,3 +2581,115 @@ def test_sample_flux_pha_bkg_full_model(idval, make_data_path, clean_astro_ui,
                        correlated=False, scales=scal)
 
     assert str(ie.value) == 'Please use calc_energy_flux as set_bkg_full_model was used'
+
+
+def setup_2337_model(setup: str) -> Polynom1D:
+    """How is the model set up?
+
+    Fit the same data with three equivalent models
+
+    "A" - polynom1d, c0 and c1
+    "B" - scale1d + polynom1d (freeze polynom1d.c0 to 0)
+    "C" - scale1d + polynom1d  (freeze polynom1d.c0 to 0) with
+          polynom1d.c1 linked to a separate scale1d model
+
+    The ordering of the free parameters is the same, so
+    we can rely on the parameter sampling to use the same
+    scales/covariance matrix.
+
+    """
+
+    match setup:
+        case "A":
+            ui.set_source(1, ui.polynom1d.cpt2)
+            cpt2.c1.thaw()
+
+        case "B":
+            ui.set_source(1, ui.scale1d.cpt1 + ui.polynom1d.cpt2)
+            cpt2.c0 = 0
+            cpt2.c0.freeze()
+            cpt2.c1.thaw()
+
+        case "C":
+            ui.set_source(1, ui.scale1d.cpt1 + ui.polynom1d.cpt2)
+            cpt2.c0 = 0
+            cpt2.c0.freeze()
+            ui.create_model_component("scale1d", "lpar")
+            cpt2.c1 = lpar.c0
+            lpar.c0 = 0
+
+        case _:
+            assert False
+
+    assert ui.get_source(1).thawedpars == pytest.approx([1.0, 0.0])
+    return cpt2
+
+
+@pytest.mark.parametrize("setup", ["A", "B", "C"])
+def test_2337_linked_par_full(setup, clean_astro_ui):
+    """What happens when a linked-parameter is used for sample_photon_flux?
+
+    This calls sherpa.astro.flux.sample_flux.
+    """
+
+    x = [0.3, 0.5, 0.7, 0.9, 1.1, 1.3]
+    y = [20, 20, 25, 24, 24, 27]
+    errs = [2] * 6
+    ui.load_arrays(1, x, y, errs)
+
+    _ = setup_2337_model(setup)
+
+    ui.fit(1)
+
+    expected = [18.076190476182614, 6.571428571477132]
+    assert ui.get_source(1).thawedpars == pytest.approx(expected)
+
+    # Check the sample_flux result. We need to give lo/hi arguments
+    # otherwise the code fails (with 4.17.1).
+    #
+    ui.set_rng(np.random.RandomState(724462834))
+    res = ui.sample_photon_flux(id=1, lo=0.1, hi=2, num=5)
+
+    assert res.shape == (5, 4)
+    assert res[:, 0] == pytest.approx([118.67499316, 146.11307685, 116.10343197, 125.36669748, 125.86704318])
+    assert res[:, 1] == pytest.approx([14.98264164, 18.13393656, 15.79721333, 15.80157972, 15.8858083 ])
+    assert res[:, 2] == pytest.approx([5.99565486, 7.77280365, 4.44169833, 6.36608732, 6.36504029])
+    assert res[:, 3] == pytest.approx([0] * 5)
+
+
+@pytest.mark.parametrize("setup", ["B", "C"])
+def test_2337_linked_par_subset(setup, clean_astro_ui):
+    """What happens when a linked-parameter is used for sample_photon_flux?
+
+    Similar to test_2337_linked_par_full but we send in a "subset" of
+    the full model expression. The subset is just the c1 term of the
+    polynomial.
+
+    """
+
+    x = [0.3, 0.5, 0.7, 0.9, 1.1, 1.3]
+    y = [20, 20, 25, 24, 24, 27]
+    errs = [2] * 6
+    ui.load_arrays(1, x, y, errs)
+
+    mdl = setup_2337_model(setup)
+
+    ui.fit(1)
+
+    expected = [18.076190476182614, 6.571428571477132]
+    assert ui.get_source(1).thawedpars == pytest.approx(expected)
+
+    # Check the sample_flux result. We need to give lo/hi arguments
+    # otherwise the code fails (with 4.17.1).
+    #
+    ui.set_rng(np.random.RandomState(724462834))
+    res = ui.sample_photon_flux(id=1, lo=0.1, hi=2, model=mdl, num=5)
+
+    # The samples are the same as the "full" version but the flux
+    # is different (smaller).
+    #
+    assert res.shape == (5, 4)
+    assert res[:, 0] == pytest.approx([28.7791433, 37.3094575, 21.320152, 30.55721915, 30.5521934])
+    assert res[:, 1] == pytest.approx([14.98264164, 18.13393656, 15.79721333, 15.80157972, 15.8858083 ])
+    assert res[:, 2] == pytest.approx([5.99565486, 7.77280365, 4.44169833, 6.36608732, 6.36504029])
+    assert res[:, 3] == pytest.approx([0] * 5)

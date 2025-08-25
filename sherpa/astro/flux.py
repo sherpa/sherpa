@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2009, 2015-2016, 2019-2020, 2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -26,30 +26,40 @@ be used with other data classes.
 
 """
 
+from collections.abc import Callable
 import logging
 
-import numpy
+import numpy as np
 
 from sherpa.astro.utils import calc_energy_flux
-from sherpa.utils import parallel_map
-from sherpa.utils.err import ArgumentErr, FitErr, ModelErr
+from sherpa.fit import Fit
+from sherpa.models.model import ArithmeticModel, SimulFitModel
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     NormalParameterSampleFromScaleVector
-from sherpa.models.model import SimulFitModel
+from sherpa.sim.sample import ClipValue
+from sherpa.utils import parallel_map, random
+from sherpa.utils.err import ArgumentErr, FitErr, ModelErr
 
 info = logging.getLogger(__name__).info
 
 __all__ = ['calc_flux', 'sample_flux', 'calc_sample_flux']
 
 
-class CalcFluxWorker():
+class CalcFluxWorker:
     """Internal class for use by calc_flux.
 
     We always return the full sample, even when only
     a subset of them are needed to calculate the flux.
     """
 
-    def __init__(self, method, data, src, lo, hi, subset=None):
+    def __init__(self,
+                 method: Callable,
+                 data,
+                 src,
+                 lo: float | None,
+                 hi: float | None,
+                 subset=None
+                 ) -> None:
         self.method = method
         self.data = data
         self.src = src
@@ -57,18 +67,25 @@ class CalcFluxWorker():
         self.hi = hi
         self.subset = subset
 
-    def __call__(self, sample):
+    def __call__(self, sample: np.ndarray) -> np.ndarray:
         if self.subset is None:
             self.src.thawedpars = sample
         else:
             self.src.thawedpars = sample[self.subset]
 
         flux = self.method(self.data, self.src, self.lo, self.hi)
-        return numpy.asarray([flux] + list(sample))
+        return np.asarray([flux] + list(sample))
 
 
-def calc_flux(data, src, samples, method=calc_energy_flux,
-              lo=None, hi=None, numcores=None, subset=None):
+def calc_flux(data,
+              src,
+              samples,
+              method: Callable = calc_energy_flux,
+              lo: float | None = None,
+              hi: float | None = None,
+              numcores: int | None = None,
+              subset = None
+              ) -> np.ndarray:
     """Calculate model fluxes from a sample of parameter values.
 
     Given a set of parameter values, calculate the model flux for
@@ -133,11 +150,17 @@ def calc_flux(data, src, samples, method=calc_energy_flux,
     finally:
         src.thawedpars = old_vals
 
-    return numpy.asarray(fluxes)
+    return np.asarray(fluxes)
 
 
-def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
-                                         num, clip='hard', rng=None):
+def _sample_flux_get_samples_with_scales(fit: Fit,
+                                         src: ArithmeticModel,
+                                         correlated: bool,
+                                         scales: np.ndarray,
+                                         num: int,
+                                         clip: ClipValue = 'hard',
+                                         rng: random.RandomType | None = None
+                                         ) -> tuple[np.ndarray, np.ndarray]:
     """Return the parameter samples given the parameter scales.
 
     Parameters
@@ -205,7 +228,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
     mpar = len(fit.model.thawedpars)
     assert mpar >= npar
 
-    scales = numpy.asarray(scales)
+    scales = np.asarray(scales)
 
     # A None value will cause scales to have a dtype of object,
     # which is not supported by isfinite, so check for this
@@ -216,7 +239,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
     # we want). To avoid this warning I use the suggestion from
     # https://github.com/numpy/numpy/issues/1608#issuecomment-9618150
     #
-    if numpy.equal(None, scales).any():
+    if np.equal(None, scales).any():
         raise ArgumentErr('bad', 'scales',
                           'must not contain None values')
 
@@ -225,7 +248,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
     # constraints, or deal with negative values (for the 1D case
     # uncorrelated case the absolute value is used).
     #
-    if not numpy.isfinite(scales).all():
+    if not np.isfinite(scales).all():
         raise ArgumentErr('bad', 'scales',
                           'must only contain finite values')
 
@@ -245,7 +268,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
                               'when correlated=True, scales must be 2D')
     elif scales.ndim == 2:
         # convert from covariance matrix
-        scales = numpy.sqrt(scales.diagonal())
+        scales = np.sqrt(scales.diagonal())
     elif scales.ndim != 1:
         raise ArgumentErr('bad', 'scales',
                           'when correlated=False, scales must be 1D or 2D')
@@ -267,7 +290,13 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
     return samples, clipped
 
 
-def _sample_flux_get_samples(fit, src, correlated, num, clip='hard', rng=None):
+def _sample_flux_get_samples(fit: Fit,
+                             src: ArithmeticModel,
+                             correlated: bool,
+                             num: int,
+                             clip: ClipValue = 'hard',
+                             rng: random.RandomType | None = None
+                             ) -> tuple[np.ndarray, np.ndarray]:
     """Return the parameter samples, using fit to define the scales.
 
     The covariance method is used to estimate the errors for the
@@ -374,10 +403,19 @@ def decompose(mdl):
     return out
 
 
-def sample_flux(fit, data, src,
-                method=calc_energy_flux, correlated=False,
-                num=1, lo=None, hi=None, numcores=None, samples=None,
-                clip='hard', rng=None):
+def sample_flux(fit: Fit,
+                data,
+                src,
+                method: Callable = calc_energy_flux,
+                correlated: bool = False,
+                num: int = 1,
+                lo: float | None = None,
+                hi: float | None = None,
+                numcores: int | None = None,
+                samples: np.ndarray | None = None,
+                clip: ClipValue = 'hard',
+                rng: random.RandomType | None = None
+                ) -> np.ndarray:
     """Calculate model fluxes from a sample of parameter values.
 
     Draw parameter values from a normal distribution and then calculate
@@ -464,7 +502,7 @@ def sample_flux(fit, data, src,
     The ordering of the samples array, and the columns in the output,
     matches that of the free parameters in the fit.model expression. That is::
 
-        [p.fullname for p in fit.model.pars if not p.frozen]
+        [p.fullname for p in fit.model.get_thawed_pars()]
 
     If src is a subset of the full source expression then samples,
     when not None, must still match the number of free parameters in
@@ -517,11 +555,10 @@ def sample_flux(fit, data, src,
     # but is not sufficient to guarantee the match.
     #
     if npar < mpar:
-        full_pars = dict(map(reversed,
-                             enumerate([p for p in fit.model.pars
-                                        if not p.frozen])))
+        full_pars = {p: i for
+                     i, p in enumerate(fit.model.get_thawed_pars())}
         cols = []
-        for src_par in [p for p in src.pars if not p.frozen]:
+        for src_par in src.get_thawed_pars():
             try:
                 cols.append(full_pars[src_par])
             except KeyError as exc:
@@ -530,7 +567,7 @@ def sample_flux(fit, data, src,
                 raise ArgumentErr('bad', 'src',
                                   f'unknown parameter "{src_par.fullname}"') from exc
 
-        cols = numpy.asarray(cols)
+        cols = np.asarray(cols)
         assert cols.size == npar, 'We have lost a parameter somewhere'
     else:
         cols = None
@@ -538,13 +575,19 @@ def sample_flux(fit, data, src,
     # Need to append the clipped array (it would be nice to retain
     # the boolean nature of this).
     #
-    vals = calc_flux(data, src, samples, method, lo, hi, numcores,
-                     subset=cols)
-    return numpy.concatenate((vals, numpy.expand_dims(clipped, 1)), axis=1)
+    vals = calc_flux(data, src, samples, method=method, lo=lo, hi=hi,
+                     numcores=numcores, subset=cols)
+    return np.concatenate((vals, np.expand_dims(clipped, 1)), axis=1)
 
 
-def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
-                     confidence):
+def calc_sample_flux(lo: float | None,
+                     hi: float | None,
+                     fit: Fit,
+                     data,
+                     samples,
+                     modelcomponent,
+                     confidence: float | None
+                     ):
     """Given a set of parameter samples, estimate the flux distribution.
 
     This is similar to sample_flux but returns values for both the full
@@ -648,9 +691,9 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     if modelcomponent is None:
         iflx = oflx
     else:
-        iflx = numpy.zeros(nrows)  # intrinsic/unabsorbed flux
+        iflx = np.zeros(nrows)  # intrinsic/unabsorbed flux
 
-    mystat = numpy.zeros((nrows, 1), dtype=samples.dtype)
+    mystat = np.zeros((nrows, 1), dtype=samples.dtype)
     try:
         for nn in range(nrows):
             # Need to extract the subset that contains the parameters
@@ -672,14 +715,14 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     hwidth = confidence / 2
     result = []
     for flx in [oflx, iflx]:
-        result.append(numpy.percentile(flx[valid],
+        result.append(np.percentile(flx[valid],
                                        [50, 50 + hwidth, 50 - hwidth]))
 
     for lbl, arg in zip(['original model', 'model component'], result):
         med, usig, lsig = arg
         info('%s flux = %g, + %g, - %g', lbl, med, usig - med, med - lsig)
 
-    samples = numpy.concatenate((samples, mystat), axis=1)
+    samples = np.concatenate((samples, mystat), axis=1)
     result.append(samples)
 
     return result

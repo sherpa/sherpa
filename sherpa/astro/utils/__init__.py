@@ -387,7 +387,7 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
     #
     if dim == 1:
         mask = filter_bins((lo,), (hi,), (axislist[0],))
-        assert mask is not None
+        assert mask is not None, f"No mask has been found with limits {lo} {hi}"
 
         # no bin found
         if np.all(~mask):

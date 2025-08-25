@@ -788,7 +788,8 @@ Examples
 
         See Also
         --------
-        thaw
+        frozen, thaw
+
         """
         self.frozen = True
 
@@ -802,7 +803,8 @@ Examples
 
         See Also
         --------
-        frozen
+        freeze, frozen
+
         """
         self.frozen = False
 
