@@ -301,7 +301,7 @@ handles the units for you. Switching the analysis setting
 to wavelength will create a plot in Angstroms::
 
    >>> pha.set_analysis('wave')
-   >>> pha.get_x().max()
+   >>> print(pha.get_x().max())
    1544.0122577477066
    >>> from sherpa.plot import DataPlot
    >>> wplot = DataPlot()
