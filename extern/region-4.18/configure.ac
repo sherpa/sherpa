@@ -1,9 +1,9 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.63])
+AC_PREREQ([2.69])
 
-AC_INIT([region], [4.14], [cxchelp@head.cfa.harvard.edu])
+AC_INIT([region], [4.18], [cxchelp@cfa.harvard.edu])
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/region_create.c])
