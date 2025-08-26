@@ -42,6 +42,7 @@ import sherpa.plot
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     IdentifierErr, PlotErr
+from sherpa.utils.testing import requires_psf
 
 
 _data_x = [10, 20, 40, 90]
@@ -882,6 +883,7 @@ def test_plot_xdf(plotfunc):
     plotfunc(pvals)
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_plot_psf(session):
     """Very basic check we can call plot_psf/get_psf_plot
@@ -917,6 +919,7 @@ def test_plot_psf(session):
     assert plotobj.y == pytest.approx(yexp)
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_psf_plot_recalc(session):
     """get_psf_plot with recalc=False
@@ -958,6 +961,7 @@ def test_get_psf_plot_recalc(session):
     assert plotobj.y == pytest.approx(yexp2)
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_plot_kernel(session, caplog, plot_backends):
     """Very basic check we can call plot_kernel/get_kernel_plot
@@ -1002,6 +1006,7 @@ def test_plot_kernel(session, caplog, plot_backends):
     assert plotobj.y == pytest.approx(yexp)
 
 
+@requires_psf
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_kernel_plot_recalc(session):
     """get_kernel_plot with recalc=False
