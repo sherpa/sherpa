@@ -13929,6 +13929,7 @@ class Session(NoNewAttributesAfterInit):
                     plotmeth: Literal["plot", "contour"] = "plot",
                     rows: int | None = None,
                     cols: int | None = None,
+                    ids: IdType | IdTypes | None = None,
                     **kwargs) -> None:
         """Handle the plot() or contour() call.
 
@@ -13944,6 +13945,8 @@ class Session(NoNewAttributesAfterInit):
             The call.
         rows, cols
             The number of rows or columns (to override split plot).
+        ids
+            If set, use these identifiers for all the plots.
         kwargs
             The keyword arguments to apply to each plot or contour.
 
@@ -14057,6 +14060,17 @@ class Session(NoNewAttributesAfterInit):
             # plot/contour type.
             #
             getargs = []
+
+            # If the ids argument is set, add it to the call.
+            # There is no check
+            # - whether it matches the data (e.g. ids=[1,2] when
+            #   the plot type does not support multiple ids
+            # - whether an identifier is already included
+            # as these are considered user errors.
+            #
+            if ids is not None:
+                getargs.append(ids)
+
             while largs:
                 if isinstance(largs[0], str) and check(largs[0]):
                     break
@@ -14396,12 +14410,14 @@ class Session(NoNewAttributesAfterInit):
         arguments it is sent: a plot type, followed by optional
         identifiers, and this can be repeated. If no data set
         identifier is given for a plot type, the default identifier -
-        as returned by `get_default_id` - is used.
+        as returned by `get_default_id` - is used. Multiple
+        identifiers can be set with the ids argument and they will be
+        applied to all the plots.
 
         .. versionchanged:: 4.18.0
            Multiple data sets can be displayed by using a list of
-           identifiers for supported plots and per-plot options can
-           now be set with a dictionary.
+           identifiers for supported plots, or via the ids parameter,
+           and per-plot options can now be set with a dictionary.
 
         .. versionchanged:: 4.17.0
            The keyword arguments can now be set per plot by using a
@@ -14425,6 +14441,10 @@ class Session(NoNewAttributesAfterInit):
            The plot names and identifiers.
         rows, cols
            The number of rows and columns (if set).
+        ids
+           The identifier, or identifiers, to apply to each plot. If
+           left as None then the value should be given after each plot
+           type.
         kwargs
            The plot arguments applied to each plot.
 
@@ -14576,6 +14596,11 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("fit", "nucleus", "fit", "jet")
 
+        A single plot is diplayed with the fit plot for dataset "jet"
+        overlain on that for dataset "nucleus":
+
+        >>> plot("fit", ids=["nucleus", "jet"])
+
         Draw the data and model plots both with a log-scale for the
         y axis:
 
@@ -14604,9 +14629,9 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("data", 2, "model", 2, ylog=[False, True])
 
-        Change the layout to a single column of plots:
+        Change the layout to a single row of plots:
 
-        >>> plot("data", "data", 2, cols=1)
+        >>> plot("data", "data", 2, rows=1)
 
         Use a two-column by three-row display (although in this case
         only one of the rows or cols arguments needed to be given):
@@ -14622,26 +14647,33 @@ class Session(NoNewAttributesAfterInit):
         Draw the data and residuals for the default dataset and then
         overplot those from dataset 2:
 
-        >>> plot("data", "resid", cols=1, color="black")
+        >>> plot("data", "resid", color="black")
         >>> plot("data", 2, "resid", 2, overplot=True, color="black", alpha=0.5)
 
         Draw the data and residuals for the default dataset and then
         overplot those from dataset 2:
 
-        >>> plot("data", [1, 2], "resid", [1, 2], cols=1, color="black")
+        >>> plot("data", "resid", ids=[1, 2], color="black", alpha=[1, 0.5])
 
         Draw the data and residual plots for datasets 1 and 2 with
         per-plot options:
 
         >>> opts1 = {"linestyle": ["--", "-."], "alpha": 0.5}
         >>> opts2 = {"color": "orange"}
+        >>> plot("data", opts1, "resid", opts2, ids=[1, 2], cols=1)
+
+        Repeat the plot by specifying the identifiers for each plot,
+        rather than with the ids argument:
+
         >>> plot("data", [1, 2], opts1, "resid", [1, 2], opts2, cols=1)
 
         """
 
         rows = kwargs.pop("rows", None)
         cols = kwargs.pop("cols", None)
-        self._multi_plot(args, rows=rows, cols=cols, **kwargs)
+        ids = kwargs.pop("ids", None)
+        self._multi_plot(args, rows=rows, cols=cols, ids=ids,
+                         **kwargs)
 
     def plot_data(self,
                   id: IdType | IdTypes | None = None,

@@ -1661,6 +1661,17 @@ def test_pha1_plot_with_model_component_add_response(clean_astro_ui,
 
 @requires_fits
 @requires_data
+def test_pha1_plot_with_model_component_add_response_ids(clean_astro_ui,
+                                                         requires_pylab,
+                                                         basic_pha1):
+    """Check id handling for a simple plot call.
+    """
+    ui.plot('model_component', 'pl', ylog=True, ids='tst')
+    check_pha1_plot_model_component_plot()
+
+
+@requires_fits
+@requires_data
 def test_pha1_plot_model_component_with_response(clean_astro_ui,
                                                  requires_pylab,
                                                  basic_pha1):
@@ -4755,6 +4766,23 @@ def test_plot_multiple_data_invalid_id(clean_astro_ui):
         ui.plot("data", [1, 2, "b"])
 
 
+def test_plot_invalid_id_ids(clean_astro_ui):
+    """Does this error out?"""
+
+    with pytest.raises(IdentifierErr,
+                       match="^data set 1 has not been set$"):
+        ui.plot("data", ids=1)
+
+
+def test_plot_multiple_data_invalid_id_ids(clean_astro_ui):
+    """Does this error out?"""
+
+    setup_multiple_data()
+    with pytest.raises(IdentifierErr,
+                       match="^data set b has not been set$"):
+        ui.plot("data", ids=[1, 2, "b"])
+
+
 def test_plot_data_multiple_invalid_number_arguments(clean_astro_ui):
     """Does this error out?"""
 
@@ -4844,6 +4872,16 @@ def test_plot_multiple_with_data(clean_astro_ui, requires_pylab):
     setup_multiple_data()
     ui.plot("data", [1, "a", 2], color=[["g", "r", "k"]], alpha=0.5,
             label=[["lbl x", "ll z", "zl y"]], xlog=True)
+
+    validate_data_multiple()
+
+
+def test_plot_multiple_with_data_ids(clean_astro_ui, requires_pylab):
+    """test_plot_multiple_with_data + ids"""
+
+    setup_multiple_data()
+    ui.plot("data", color=[["g", "r", "k"]], ids=[1, "a", 2],
+            alpha=0.5, label=[["lbl x", "ll z", "zl y"]], xlog=True)
 
     validate_data_multiple()
 
@@ -5058,5 +5096,19 @@ def test_plot_multiple_with_fit_resid_kwargs(clean_astro_ui, requires_pylab):
     ui.plot("fit", ids, {"color": "g"},
             "resid", ids, {"color": "r"},
             alpha=0.5, xlog=True)
+
+    validate_fit_resid_multiple("Energy (keV)")
+
+
+def test_plot_multiple_with_fit_resid_kwargs_ids(clean_astro_ui, requires_pylab):
+    """test_plot_multiple_with_fit_resid_kwargs + ids argument"""
+
+    setup_multiple_data()
+    setup_multiple_models()
+
+    ids = [1, "a", 2]
+    ui.plot("fit", {"color": "g"},
+            "resid", {"color": "r"},
+            ids=ids, alpha=0.5, xlog=True)
 
     validate_fit_resid_multiple("Energy (keV)")
