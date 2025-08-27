@@ -10979,7 +10979,7 @@ class Session(sherpa.ui.utils.Session):
         interpolated onto the independent axis of the data set. The
         model has a single parameter, ``ampl``, which is used to scale
         the data, and it can be fixed or allowed to vary during a fit.
-        The ``load_xstable_model`` must be used with XSPEC table
+        The ``load_xstable_model`` routine must be used with XSPEC table
         models.
 
         Parameters

@@ -39,7 +39,7 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 def test_mod_fits(make_data_path, clean_astro_ui, caplog):
     """Can we read in an XSPEC table model with load_table_model.
 
-    This is no-longer supported.
+    This is no longer supported.
     """
 
     # It is not really important to know how this fails, but test the
