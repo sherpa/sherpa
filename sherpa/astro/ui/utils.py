@@ -10975,16 +10975,12 @@ class Session(sherpa.ui.utils.Session):
         # pylint: disable=W1113
         """Load tabular or image data and use it as a model component.
 
-        .. note:: Deprecated in Sherpa 4.9
-                  The new `load_xstable_model` routine should be used for
-                  loading XSPEC table model files. Support for these files
-                  will be removed from `load_table_model` in the 4.17
-                  release.
-
         A table model is defined on a grid of points which is
         interpolated onto the independent axis of the data set. The
         model has a single parameter, ``ampl``, which is used to scale
         the data, and it can be fixed or allowed to vary during a fit.
+        The ``load_xstable_model`` routine must be used with XSPEC table
+        models.
 
         Parameters
         ----------
@@ -11038,20 +11034,6 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source('img', emap * gauss2d)
 
         """
-
-        try:
-            self.load_xstable_model(modelname, filename)
-
-            # Since users don't see DeprecationWarnings in ipython
-            # let's be explicit now, as most people are not aware of
-            # this change.
-            #
-            msg = 'Use load_xstable_model to load XSPEC table models'
-            warnings.warn(msg, DeprecationWarning)
-            warning(msg)
-            return
-        except Exception:
-            pass
 
         x = None
         y = None

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015 - 2025
+#  Copyright (C) 2007, 2015-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -390,11 +390,10 @@ def test_checks_input_length():
 @requires_xspec
 @requires_data
 @requires_fits
-@pytest.mark.parametrize('loadname', ["xstable", "table"])
-def test_xstablemodel_checks_input_length(loadname, clean_astro_ui, make_data_path):
+def test_xstablemodel_checks_input_length(clean_astro_ui, make_data_path):
 
-    loadfunc = getattr(ui, f"load_{loadname}_model")
-    loadfunc('mdl', make_data_path('xspec-tablemodel-RCS.mod'))
+    ui.load_xstable_model('mdl',
+                          make_data_path('xspec-tablemodel-RCS.mod'))
     mdl = ui.get_model_component('mdl')
 
     # Check when input array is too small (< 2 elements)
@@ -422,10 +421,7 @@ def test_xstablemodel_checks_input_length(loadname, clean_astro_ui, make_data_pa
 @requires_xspec
 @requires_data
 @requires_fits
-@pytest.mark.parametrize('loadname', ["xstable", "table"])
-def test_xspec_xstablemodel(loadname, clean_astro_ui, make_data_path):
-
-    loadfunc = getattr(ui, f"load_{loadname}_model")
+def test_xspec_xstablemodel(clean_astro_ui, make_data_path):
 
     # Just test one table model; use the same scheme as
     # test_xspec_models_noncontiguous().
@@ -434,7 +430,8 @@ def test_xspec_xstablemodel(loadname, clean_astro_ui, make_data_path):
     # https://heasarc.gsfc.nasa.gov/xanadu/xspec/models/rcs.html
     # retrieved July 9 2015. The exact model is irrelevant for this
     # test, so this was chosen as it's relatively small.
-    loadfunc('tmod', make_data_path('xspec-tablemodel-RCS.mod'))
+    ui.load_xstable_model('tmod',
+                          make_data_path('xspec-tablemodel-RCS.mod'))
 
     # when used in the test suite it appears that the tmod
     # global symbol is not created, so need to access the component
@@ -454,11 +451,10 @@ def test_xspec_xstablemodel(loadname, clean_astro_ui, make_data_path):
 @requires_xspec
 @requires_data
 @requires_fits
-@pytest.mark.parametrize('loadname', ["xstable", "table"])
-def test_xspec_xstablemodel_noncontiguous2(loadname, clean_astro_ui, make_data_path):
+def test_xspec_xstablemodel_noncontiguous2(clean_astro_ui, make_data_path):
 
-    loadfunc = getattr(ui, f"load_{loadname}_model")
-    loadfunc('tmod', make_data_path('xspec-tablemodel-RCS.mod'))
+    ui.load_xstable_model('tmod',
+                          make_data_path('xspec-tablemodel-RCS.mod'))
     tmod = ui.get_model_component('tmod')
 
     elo, ehi, wlo, whi = make_grid_noncontig2()
