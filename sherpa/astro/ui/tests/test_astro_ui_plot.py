@@ -4848,6 +4848,18 @@ def test_plot_multiple_with_data(clean_astro_ui, requires_pylab):
     validate_data_multiple()
 
 
+def test_plot_multiple_with_data_kwargs(clean_astro_ui, requires_pylab):
+    """Replicate test_plot_multiple_with_data with per-plot kwargs"""
+
+    setup_multiple_data()
+    ui.plot("data", [1, "a", 2], {"color": ["g", "r", "k"],
+                                  "alpha": 0.5,
+                                  "label": ["lbl x", "ll z", "zl y"]},
+            xlog=True)
+
+    validate_data_multiple()
+
+
 def validate_fit_multiple() -> None:
     """Check the multiple-fit plot is as expected."""
 
@@ -4916,6 +4928,20 @@ def test_plot_multiple_with_fit(clean_astro_ui, requires_pylab):
 
     ui.plot("fit", [1, "a", 2], color=[["g", "r", "y"]], alpha=0.5,
             label=[["lbl x", "ll z", "zl y"]], xlog=True)
+
+    validate_fit_multiple()
+
+
+def test_plot_multiple_with_fit_kwargs(clean_astro_ui, requires_pylab):
+    """Replicate test_plot_multiple_with_fit with per-plot kwargs"""
+
+    setup_multiple_data()
+    setup_multiple_models()
+
+    ui.plot("fit", [1, "a", 2], {"color": ["g", "r", "y"],
+                                 "alpha": 0.5,
+                                 "label": ["lbl x", "ll z", "zl y"]},
+            xlog=True)
 
     validate_fit_multiple()
 
@@ -5018,5 +5044,19 @@ def test_plot_multiple_with_fit_resid(clean_astro_ui, requires_pylab):
     ids = [1, "a", 2]
     ui.plot("fit", ids, "resid", ids, color=["g", "r"], alpha=0.5,
             xlog=True)
+
+    validate_fit_resid_multiple("Energy (keV)")
+
+
+def test_plot_multiple_with_fit_resid_kwargs(clean_astro_ui, requires_pylab):
+    """Replicate test_plot_multiple_with_fit_resid with per-plot kwargs"""
+
+    setup_multiple_data()
+    setup_multiple_models()
+
+    ids = [1, "a", 2]
+    ui.plot("fit", ids, {"color": "g"},
+            "resid", ids, {"color": "r"},
+            alpha=0.5, xlog=True)
 
     validate_fit_resid_multiple("Energy (keV)")

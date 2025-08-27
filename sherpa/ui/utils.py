@@ -13952,7 +13952,7 @@ class Session(NoNewAttributesAfterInit):
         Each group consists of the name of the plot/contour, followed
         by optional arguments. So
 
-            self._multi_plot(["data", "data", "org"], plotmeth="plot")
+          self._multi_plot(["data", "data", "org"], plotmeth="plot")
 
         has two "data" style plots, the first with the default
         identifier and the second with the identifier "org". It is the
@@ -13964,11 +13964,15 @@ class Session(NoNewAttributesAfterInit):
         get the underlying "plot object" via get_<value>_plot or
         get_<value>_contour.
 
-        Multiple arguments can be sent, but they rely on positional
-        ordering only, so
+        The arguments are sent to the plot/contour command as
+        positional arguments except for an optional last argument
+        of a dictionary, which is used to pass keyword arguments,
+        which over-ride any **kwargs settings.
 
-            args = ["model_component", mdl, "model_component", 2, mdl]
-            plotmeth = "plot"
+        The arguments
+
+          args = ["model_component", mdl, "model_component", 2, mdl]
+          plotmeth = "plot"
 
         only works if
 
@@ -14015,7 +14019,11 @@ class Session(NoNewAttributesAfterInit):
         get = getattr(self, f"_get_{plotmeth}type")
         check = getattr(self, f"_check_{plotmeth}type")
 
+        # Store the per plot-area positinal arguments in plots and
+        # the keyword arguments in stores.
+        #
         plots = []
+        stores = []
         largs = list(args)
         while largs:
             plottype = largs.pop(0)
@@ -14055,6 +14063,17 @@ class Session(NoNewAttributesAfterInit):
 
                 getargs.append(largs.pop(0))
 
+            # If the last element of getargs is a dict then remove it
+            # and add it to stores, otherwse add an empty dict. It
+            # would be nice to have some way other than the isinstance
+            # check, but it is hard, since model components (which can
+            # be included) have dict-like features.
+            #
+            if getargs and isinstance(getargs[-1], dict):
+                stores.append(getargs.pop(-1))
+            else:
+                stores.append({})
+
             # Need to make sure we have a copy of each plot object to
             # support plots like
             #
@@ -14093,7 +14112,7 @@ class Session(NoNewAttributesAfterInit):
         over = kwargs.get(f"over{plotmeth}", False)
         # clearwindow = kwargs.get("clearwindow", True)
 
-        # Deconstruct the keyword arguments.
+        # Deconstruct the global keyword arguments.
         #
         kwstore = get_per_plot_kwargs(nplots, kwargs)
 
@@ -14144,7 +14163,14 @@ class Session(NoNewAttributesAfterInit):
             sp._cleared_window = True
 
         with sherpa.plot.backend:
-            for plot, store in zip(plots, kwstore):
+            for plot, local_store, general_store in zip(plots,
+                                                        stores,
+                                                        kwstore):
+                # Take the general options (general_store) and then
+                # apply the per-plot (local_store) arguments.
+                #
+                store = copy.deepcopy(general_store)
+                store.update(local_store)
                 plotfunc(plot, **store)
 
         # Restore the settings. Is this needed?
@@ -14374,7 +14400,8 @@ class Session(NoNewAttributesAfterInit):
 
         .. versionchanged:: 4.18.0
            Multiple data sets can be displayed by using a list of
-           identifiers for supported plots.
+           identifiers for supported plots and per-plot options can
+           now be set with a dictionary.
 
         .. versionchanged:: 4.17.0
            The keyword arguments can now be set per plot by using a
@@ -14602,6 +14629,13 @@ class Session(NoNewAttributesAfterInit):
         overplot those from dataset 2:
 
         >>> plot("data", [1, 2], "resid", [1, 2], cols=1, color="black")
+
+        Draw the data and residual plots for datasets 1 and 2 with
+        per-plot options:
+
+        >>> opts1 = {"linestyle": ["--", "-."], "alpha": 0.5}
+        >>> opts2 = {"color": "orange"}
+        >>> plot("data", [1, 2], opts1, "resid", [1, 2], opts2, cols=1)
 
         """
 
