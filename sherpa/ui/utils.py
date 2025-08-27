@@ -17625,7 +17625,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self,
                  par0: str | Parameter,
-                 par1: str | Patameter,
+                 par1: str | Parameter,
                  id: IdType | None = None,
                  otherids: IdTypes | None = None,
                  replot: bool = False,
