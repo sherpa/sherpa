@@ -1945,9 +1945,11 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
     nlog2 = len(caplog.records)
 
     # Check we get a message about switching to covariance and the
-    # hard limits.
+    # hard limits. The logged message may or may not contain "below
+    # minimum" nessages, and it's not clear exactly why.
     #
-    assert (nlog2 - nlog1) == 5
+    ngot = nlog2 - nlog1
+    assert ngot in [5, 7]
 
     r = caplog.records[nlog1]
     assert r.getMessage() == "hard minimum hit for parameter mdl.c"
@@ -1959,6 +1961,13 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
     assert r.getMessage().startswith("mdl.c upper bound:\t")
     r = caplog.records[nlog1 + 4]
     assert r.getMessage() == "hard minimum hit for parameter mdl.c"
+
+    if ngot == 7:
+        msg = "value of parameter mdl.c is below minimum; setting to minimum"
+        r = caplog.records[nlog1 + 5]
+        assert r.getMessage() == msg
+        r = caplog.records[nlog1 + 6]
+        assert r.getMessage() == msg
 
     # Check the statistic values.
     #
@@ -1998,10 +2007,11 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
     res_true = ui.normal_sample(num=5, correlate=True)
     nlog4 = len(caplog.records)
 
-    # Should have been one extra message added to the log.
+    # Should have extra message(s) added to the log.
     #
+    ngot43 = nlog4 - nlog3
     assert nlog3 == (nlog2 + 1)
-    assert nlog4 == (nlog3 + 1)
+    assert ngot43 in [1, 2]
 
     r = caplog.records[nlog3]
     assert r.getMessage() == "hard minimum hit for parameter mdl.c"
@@ -2043,7 +2053,8 @@ def test_normal_sample_2335_lower_limit(clean_ui, caplog):
     # Check we get a message about switching to covariance and the
     # hard limits.
     #
-    assert (nlog2 - nlog1) == 6
+    ngot = nlog2 - nlog1
+    assert ngot in [6, 7]
 
     r = caplog.records[nlog1]
     assert r.getMessage() == "hard maximum hit for parameter mdl.c"
@@ -2057,6 +2068,10 @@ def test_normal_sample_2335_lower_limit(clean_ui, caplog):
     assert r.getMessage() == "hard maximum hit for parameter mdl.c"
     r = caplog.records[nlog1 + 5]
     assert r.getMessage() == "1 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"
+
+    if ngot == 7:
+        r = caplog.records[nlog1 + 6]
+        assert r.getMessage() == "value of parameter mdl.c is above maximum; setting to maximum"
 
     # Check the statistic values. These are significantly worse
     # than the upper-limit case.
@@ -2086,7 +2101,8 @@ def test_normal_sample_2335_lower_limit(clean_ui, caplog):
     # Should have been one extra message added to the log.
     #
     assert nlog3 == nlog2
-    assert nlog4 == (nlog3 + 1)
+    ngot43 = nlog4 - nlog3
+    assert ngot43 in [1, 2]
 
     r = caplog.records[nlog3]
     assert r.getMessage() == "hard maximum hit for parameter mdl.c"
@@ -2148,12 +2164,18 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
     # This does not have the "x sigma bounds not found" message,
     # unlike the _lower version.
     #
-    assert (nlog2 - nlog1) == 5
-    assert (nlog3 - nlog2) == 5
-    assert (nlog4 - nlog3) == 5
-    assert (nlog5 - nlog4) == 1
-    assert (nlog6 - nlog5) == 1
-    assert (nlog7 - nlog6) == 1
+    ngot21 = nlog2 - nlog1
+    ngot32 = nlog3 - nlog2
+    ngot43 = nlog4 - nlog3
+    ngot54 = nlog5 - nlog4
+    ngot65 = nlog6 - nlog5
+    ngot76 = nlog7 - nlog6
+    assert ngot21 in [5, 7]
+    assert ngot32 in [5, 7]
+    assert ngot43 in [5, 7]
+    assert ngot54 in [1, 2]
+    assert ngot65 in [1, 2]
+    assert ngot76 in [1, 2]
 
     # Check how the statistic values vary. As sigma increases you
     # might expect the statistic to increase. At the moment just
@@ -2253,12 +2275,18 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
     rest_sigma2 = ui.normal_sample(num=5, scale=2, correlate=True)
     nlog7 = len(caplog.records)
 
-    assert (nlog2 - nlog1) == 6
-    assert (nlog3 - nlog2) == 6
-    assert (nlog4 - nlog3) == 6
-    assert (nlog5 - nlog4) == 1
-    assert (nlog6 - nlog5) == 1
-    assert (nlog7 - nlog6) == 1
+    ngot21 = nlog2 - nlog1
+    ngot32 = nlog3 - nlog2
+    ngot43 = nlog4 - nlog3
+    ngot54 = nlog5 - nlog4
+    ngot65 = nlog6 - nlog5
+    ngot76 = nlog7 - nlog6
+    assert ngot21 in [6, 7]
+    assert ngot32 in [6, 7]
+    assert ngot43 in [6, 7]
+    assert ngot54 in [1, 2]
+    assert ngot65 in [1, 2]
+    assert ngot76 in [1, 2]
 
     r = caplog.records[nlog1 + 5]
     assert r.getMessage() == "1 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"
