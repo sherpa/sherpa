@@ -26,6 +26,7 @@ import copy
 import copyreg as copy_reg
 from dataclasses import dataclass
 import importlib
+import inspect
 import logging
 import os
 import pickle
@@ -66,7 +67,7 @@ import sherpa.stats
 from sherpa.stats import Stat, UserStat
 import sherpa.utils
 from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
-    export_method, send_to_pager
+    is_iterable_not_str, export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
@@ -91,6 +92,7 @@ _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 
 
 ModelType = Model | str
+
 T = TypeVar("T")
 
 
@@ -825,8 +827,10 @@ def get_components_helper(getfunc: Callable[..., Plot],
     out = MultiPlot()
     cpts = sherpa.models.model.model_deconstruct(model)
     for cpt in cpts:
+        # Copy over the plot as otherwise they will all be set
+        # to the last cpt.
         plotobj = getfunc(id=idval, model=cpt, recalc=True)
-        out.add(plotobj)
+        out.add(copy.deepcopy(plotobj))
 
     out.title = "Component plot"
     return out
@@ -2139,6 +2143,31 @@ class Session(NoNewAttributesAfterInit):
 
         return id
 
+    def _get_idlist(self,
+                    idvals: IdType | IdTypes | None
+                    ) -> list[IdType]:
+        """Return a list of identifiers.
+
+        The return list must contain at least one element, but there
+        is no check that the element is valid (i.e. has
+        data/model/....), or not repeated.
+
+        """
+
+        # What is the best way to ensure that we convert
+        # - "foo" to ["foo"]
+        # - 1 to [1]
+        # - ["foo", 2] is not changed.
+        #
+        if is_iterable_not_str(idvals):
+            out = [self._fix_id(idval) for idval in idvals]
+            if len(out) == 0:
+                raise ArgumentErr("id list is empty")
+
+            return out
+
+        return [self._fix_id(idvals)]
+
     def _get_plottype(self, plottype: str) -> str:
         """Return the name to refer to a given plot type.
 
@@ -2181,7 +2210,7 @@ class Session(NoNewAttributesAfterInit):
                 "'%s' should be used instead", plottype, answer)
         return answer
 
-    def _check_plottype(self, plottype: IdType) -> bool:
+    def _check_plottype(self, plottype: str) -> bool:
         """Is this a valid plot type (including aliases)?"""
 
         return plottype in self._plot_types or \
@@ -2196,7 +2225,7 @@ class Session(NoNewAttributesAfterInit):
         allowed = list(self._contour_types)
         raise PlotErr("wrongtype", plottype, str(allowed))
 
-    def _check_contourtype(self, plottype: IdType) -> bool:
+    def _check_contourtype(self, plottype: str) -> bool:
         """Is this a valid contour type?"""
 
         return plottype in self._contour_types
@@ -9853,6 +9882,9 @@ class Session(NoNewAttributesAfterInit):
         return self._pvalue_results
 
     # DOC-TODO: improve discussion of how the simulations are done.
+    #
+    # For now do not try to support multiple identifiers.
+    #
     def plot_pvalue(self, null_model, alt_model, conv_model=None,
                     id: IdType = 1,
                     otherids: IdTypes = (),
@@ -12112,6 +12144,70 @@ class Session(NoNewAttributesAfterInit):
     # Plot object access
     #
 
+    def _get_plot_objects(self,
+                          ids: IdType | IdTypes,
+                          getfunc: Callable[..., Plot | HistogramPlot],
+                          *,
+                          recalc: bool = True,
+                          **kwargs
+                          ) -> MultiPlot:
+        """Access the plot objects.
+
+        Parameters
+        ----------
+        ids : int or str or sequence of int or str or None
+            The dataset identifier or identifiers.
+        getfunc : callable
+            Given the id and recalc parameters, and the contents of
+            kwargs, return a plot object.
+        recalc : bool, optional
+            Should the plot object be recalculated or do we use the
+            previous object?
+        **kwargs
+            Extra arguments to be sent to getfunc
+
+        Returns
+        -------
+        plots : MultiPlot
+           The plot data.
+
+        Notes
+        -----
+        Should recalc be True when ids is a sequence not a scalar?
+
+        """
+
+        plotobj = MultiPlot()
+
+        # Each getfunc call returns the plot object for the given plot
+        # type. Repeated calls will return the same object, so a copy
+        # is needed. However, we want the first identifier to be
+        # "remembered" by the system, to retain the behaviour prior to
+        # 4.18.0 (and to support the common case of only being sent a
+        # single identifier).
+        #
+        # So, reverse the identifier list to process them in reverse
+        # order (so that the first identifier is evaluated last),
+        # copying all but the last one. Then reverse this list when
+        # adding the plots to the MultiPlot.
+        #
+        idvals = self._get_idlist(ids)
+        nids = len(idvals)
+        plots = []
+        for idx, idval in enumerate(reversed(idvals), 1):
+            plot = getfunc(id=idval, recalc=recalc, **kwargs)
+            if idx == nids:
+                plots.append(plot)
+            else:
+                plots.append(copy.deepcopy(plot))
+
+        # Add the plots to the MultiPlot but fix the order.
+        #
+        for plot in reversed(plots):
+            plotobj.add(plot)
+
+        return plotobj
+
     def get_split_plot(self):
         """Return the plot attributes for displays with multiple plots.
 
@@ -13829,10 +13925,11 @@ class Session(NoNewAttributesAfterInit):
     # Line plots
     #
     def _multi_plot(self,
-                    args: IdTypes,
+                    args: Any,
                     plotmeth: Literal["plot", "contour"] = "plot",
                     rows: int | None = None,
                     cols: int | None = None,
+                    ids: IdType | IdTypes | None = None,
                     **kwargs) -> None:
         """Handle the plot() or contour() call.
 
@@ -13848,6 +13945,8 @@ class Session(NoNewAttributesAfterInit):
             The call.
         rows, cols
             The number of rows or columns (to override split plot).
+        ids
+            If set, use these identifiers for all the plots.
         kwargs
             The keyword arguments to apply to each plot or contour.
 
@@ -13856,7 +13955,7 @@ class Session(NoNewAttributesAfterInit):
         Each group consists of the name of the plot/contour, followed
         by optional arguments. So
 
-            self._multi_plot(["data", "data", "org"], plotmeth="plot")
+          self._multi_plot(["data", "data", "org"], plotmeth="plot")
 
         has two "data" style plots, the first with the default
         identifier and the second with the identifier "org". It is the
@@ -13868,11 +13967,15 @@ class Session(NoNewAttributesAfterInit):
         get the underlying "plot object" via get_<value>_plot or
         get_<value>_contour.
 
-        Multiple arguments can be sent, but they rely on positional
-        ordering only, so
+        The arguments are sent to the plot/contour command as
+        positional arguments except for an optional last argument
+        of a dictionary, which is used to pass keyword arguments,
+        which over-ride any **kwargs settings.
 
-            args = ["model_component", mdl, "model_component", 2, mdl]
-            plotmeth = "plot"
+        The arguments
+
+          args = ["model_component", mdl, "model_component", 2, mdl]
+          plotmeth = "plot"
 
         only works if
 
@@ -13919,32 +14022,99 @@ class Session(NoNewAttributesAfterInit):
         get = getattr(self, f"_get_{plotmeth}type")
         check = getattr(self, f"_check_{plotmeth}type")
 
+        # Store the per plot-area positinal arguments in plots and
+        # the keyword arguments in stores.
+        #
         plots = []
+        stores = []
         largs = list(args)
         while largs:
             plottype = largs.pop(0)
             _check_str_type(plottype, "plottype")
             plottype = get(plottype.lower())
 
+            # Identify the routine to get the plot/contour object, and
+            # what the arguments are, to identify whether the routine
+            # supports multiple ids and whether the first argument is
+            # always the identifier. The sherpa.utils.get_keyword_xxx
+            # routines are not sufficient here, hence signature is
+            # called directly.
+            #
+            funcname = f"get_{plottype}_{plotmeth}"
+            getfunc = getattr(self, funcname)
+            sig = inspect.signature(getfunc)
+            pars = sig.parameters
+
+            # The important check here really is that the annotation
+            # is set, but it makes sense to check it is the expected
+            # value, in case something changes with the code paths.
+            #
+            if list(pars.keys())[0] == "id" and \
+               pars["id"].annotation == "IdType | None":
+                allow_multiple_ids = True
+            else:
+                allow_multiple_ids = False
+
             # Collect the arguments for the get_<>_plot/contour
             # call. Loop through until we hit a supported
             # plot/contour type.
             #
             getargs = []
+
+            # If the ids argument is set, add it to the call.
+            # There is no check
+            # - whether it matches the data (e.g. ids=[1,2] when
+            #   the plot type does not support multiple ids
+            # - whether an identifier is already included
+            # as these are considered user errors.
+            #
+            if ids is not None:
+                getargs.append(ids)
+
             while largs:
-                if check(largs[0]):
+                if isinstance(largs[0], str) and check(largs[0]):
                     break
 
                 getargs.append(largs.pop(0))
 
-            funcname = f"get_{plottype}_{plotmeth}"
-            getfunc = getattr(self, funcname)
+            # If the last element of getargs is a dict then remove it
+            # and add it to stores, otherwse add an empty dict. It
+            # would be nice to have some way other than the isinstance
+            # check, but it is hard, since model components (which can
+            # be included) have dict-like features.
+            #
+            if getargs and isinstance(getargs[-1], dict):
+                stores.append(getargs.pop(-1))
+            else:
+                stores.append({})
 
-            # Need to make sure we have a copy of each plot
-            # object to support plots like
+            # Need to make sure we have a copy of each plot object to
+            # support plots like
+            #
             #    plot("data", 1, "data", 2)
             #
-            plots.append(copy.deepcopy(getfunc(*getargs)))
+            # However, it is complicated when supporting multiple
+            # identifiers such as
+            #
+            #    plot("data", [1, 2], "model", [1, 2])
+            #
+            # since the "get_xxx_plot" calls do not support multiple
+            # identifiers. This logic is dependent on the code - so
+            # both how arguments are typed and what particular
+            # routines do not support multiple identifiers - so these
+            # heuristics may need updating in the future.
+            #
+            if getargs and allow_multiple_ids and \
+               is_iterable_not_str(getargs[0]):
+                def getid(id, recalc=True):
+                    return getfunc(id, *getargs[1:], recalc=True)
+
+                plotobj = self._get_plot_objects(getargs[0], getid,
+                                                 recalc=True)
+                plots.append(copy.deepcopy(plotobj))
+
+            else:
+                plots.append(copy.deepcopy(getfunc(*getargs)))
 
         nplots = len(plots)
 
@@ -13956,7 +14126,7 @@ class Session(NoNewAttributesAfterInit):
         over = kwargs.get(f"over{plotmeth}", False)
         # clearwindow = kwargs.get("clearwindow", True)
 
-        # Deconstruct the keyword arguments.
+        # Deconstruct the global keyword arguments.
         #
         kwstore = get_per_plot_kwargs(nplots, kwargs)
 
@@ -14007,7 +14177,14 @@ class Session(NoNewAttributesAfterInit):
             sp._cleared_window = True
 
         with sherpa.plot.backend:
-            for plot, store in zip(plots, kwstore):
+            for plot, local_store, general_store in zip(plots,
+                                                        stores,
+                                                        kwstore):
+                # Take the general options (general_store) and then
+                # apply the per-plot (local_store) arguments.
+                #
+                store = copy.deepcopy(general_store)
+                store.update(local_store)
                 plotfunc(plot, **store)
 
         # Restore the settings. Is this needed?
@@ -14233,7 +14410,14 @@ class Session(NoNewAttributesAfterInit):
         arguments it is sent: a plot type, followed by optional
         identifiers, and this can be repeated. If no data set
         identifier is given for a plot type, the default identifier -
-        as returned by `get_default_id` - is used.
+        as returned by `get_default_id` - is used. Multiple
+        identifiers can be set with the ids argument and they will be
+        applied to all the plots.
+
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers for supported plots, or via the ids parameter,
+           and per-plot options can now be set with a dictionary.
 
         .. versionchanged:: 4.17.0
            The keyword arguments can now be set per plot by using a
@@ -14257,6 +14441,10 @@ class Session(NoNewAttributesAfterInit):
            The plot names and identifiers.
         rows, cols
            The number of rows and columns (if set).
+        ids
+           The identifier, or identifiers, to apply to each plot. If
+           left as None then the value should be given after each plot
+           type.
         kwargs
            The plot arguments applied to each plot.
 
@@ -14408,6 +14596,11 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("fit", "nucleus", "fit", "jet")
 
+        A single plot is diplayed with the fit plot for dataset "jet"
+        overlain on that for dataset "nucleus":
+
+        >>> plot("fit", ids=["nucleus", "jet"])
+
         Draw the data and model plots both with a log-scale for the
         y axis:
 
@@ -14436,9 +14629,9 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("data", 2, "model", 2, ylog=[False, True])
 
-        Change the layout to a single column of plots:
+        Change the layout to a single row of plots:
 
-        >>> plot("data", "data", 2, cols=1)
+        >>> plot("data", "data", 2, rows=1)
 
         Use a two-column by three-row display (although in this case
         only one of the rows or cols arguments needed to be given):
@@ -14454,26 +14647,50 @@ class Session(NoNewAttributesAfterInit):
         Draw the data and residuals for the default dataset and then
         overplot those from dataset 2:
 
-        >>> plot("data", "resid", cols=1, color="black")
+        >>> plot("data", "resid", color="black")
         >>> plot("data", 2, "resid", 2, overplot=True, color="black", alpha=0.5)
+
+        Draw the data and residuals for the default dataset and then
+        overplot those from dataset 2:
+
+        >>> plot("data", "resid", ids=[1, 2], color="black", alpha=[1, 0.5])
+
+        Draw the data and residual plots for datasets 1 and 2 with
+        per-plot options:
+
+        >>> opts1 = {"linestyle": ["--", "-."], "alpha": 0.5}
+        >>> opts2 = {"color": "orange"}
+        >>> plot("data", opts1, "resid", opts2, ids=[1, 2], cols=1)
+
+        Repeat the plot by specifying the identifiers for each plot,
+        rather than with the ids argument:
+
+        >>> plot("data", [1, 2], opts1, "resid", [1, 2], opts2, cols=1)
 
         """
 
         rows = kwargs.pop("rows", None)
         cols = kwargs.pop("cols", None)
-        self._multi_plot(args, rows=rows, cols=cols, **kwargs)
+        ids = kwargs.pop("ids", None)
+        self._multi_plot(args, rows=rows, cols=cols, ids=ids,
+                         **kwargs)
 
     def plot_data(self,
-                  id: IdType | None = None,
+                  id: IdType | IdTypes | None = None,
                   replot: bool = False,
                   overplot: bool = False,
                   clearwindow: bool = True,
                   **kwargs) -> None:
         r"""Plot the data values.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
@@ -14521,6 +14738,17 @@ class Session(NoNewAttributesAfterInit):
         >>> set_xlog("data")
         >>> plot_data("jet")
         >>> plot_data("core", overplot=True)
+
+        Draw both datasets on the same plot, with a linear X axis,
+        both drawn in green but with the opacity of the "core" dataset
+        set to 0.5:
+
+        >>> plot_data(["jet", "core"], xlog=False, color="green", alpha=[1, 0.5])
+
+        Label each data set (the behaviour depends on the selected
+        back end):
+
+        >>> plot_data(["jet", "core"], label=["Data: jet", "Data: core"])
 
         The following example requires that the Matplotlib backend
         is selected, and uses a Matplotlib function to create a
@@ -14573,7 +14801,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_data_plot(id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_data_plot,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
@@ -14582,7 +14811,7 @@ class Session(NoNewAttributesAfterInit):
     #    even though its only relevant to sherpa.astro.ui
     #
     def plot_model(self,
-                   id: IdType | None = None,
+                   id: IdType | IdTypes | None = None,
                    replot: bool = False,
                    overplot: bool = False,
                    clearwindow: bool = True,
@@ -14593,9 +14822,14 @@ class Session(NoNewAttributesAfterInit):
         any instrument response (e.g. a convolution created by
         `set_psf`).
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
@@ -14644,6 +14878,11 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_model(1)
         >>> plot_model(2, overplot=True)
 
+        Overlay the two datasets on the same plot, both in black with
+        with data set 2 usniog a dashed line style:
+
+        >>> plot_model([1, 2], color="black", linestyle=["solid", "dashed"])
+
         Create the equivalent of ``plot_fit('jet')``:
 
         >>> plot_data('jet')
@@ -14661,12 +14900,17 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_model_plot(id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_model_plot,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
+    #
+    # There is currently no support for multiple identifiers as it is
+    # unclear how best to handle the coupling of id and model.
+    #
     def plot_source_component(self,
                               id,
                               model=None,
@@ -14744,6 +14988,10 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
+    # TODO: need to work out how to handle recalc for the get call to
+    # allow multiple ids, as well as how to send in multiple arguments
+    # across multiple datasets.
+    #
     def plot_source_components(self,
                                id: IdType | None = None,
                                overplot: bool = False,
@@ -14807,6 +15055,9 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plots, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
+    # There is currently no support for multiple identifiers as it is
+    # unclear how best to handle the coupling of id and model.
+    #
     def plot_model_component(self,
                              id,
                              model=None,
@@ -14902,6 +15153,10 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
+    # TODO: need to work out how to handle recalc for the get call to
+    # allow multiple ids, as well as how to send in multiple arguments
+    # across multiple datasets.
+    #
     def plot_model_components(self,
                               id: IdType | None = None,
                               overplot: bool = False,
@@ -14967,7 +15222,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
     def plot_source(self,
-                    id: IdType | None = None,
+                    id: IdType | IdTypes | None = None,
                     replot: bool = False,
                     overplot: bool = False,
                     clearwindow: bool = True,
@@ -14978,9 +15233,14 @@ class Session(NoNewAttributesAfterInit):
         not include any instrument response (e.g. a convolution
         created by `set_psf`).
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15022,6 +15282,11 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_source(1)
         >>> plot_source(2, overplot=True)
 
+        Overplot the source model for data set 2 in blue on data set 1
+        in green:
+
+        >>> plot_source([1, 2], color=["green", "blue"])
+
         Additional arguments can be given that are passed to the
         plot backend: the supported arguments match the keywords
         of the dictionary returned by `get_model_plot_prefs`. The
@@ -15034,23 +15299,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        # Add a warning here for plot_source, otherwise the error is
-        # about get_source_plot. Perhaps we should just use a single
-        # error message?
-        #
-        idval = self._fix_id(id)
-        mdl = self._models.get(idval, None)
-        if mdl is not None:
-            raise IdentifierErr(f"Convolved model\n'{mdl.name}'\n"
-                                f" is set for dataset {idval}. "
-                                "You should use plot_model instead.")
+        def get(id, recalc=False):
+            # Check there is a model for this dataset.
+            mdl = self._models.get(id, None)
+            if mdl is not None:
+                raise IdentifierErr(f"Convolved model\n'{mdl.name}'\n"
+                                    f" is set for dataset {id}. "
+                                    "You should use plot_model instead.")
 
-        plotobj = self.get_source_plot(idval, recalc=not replot)
+            return self.get_source_plot(id, recalc=recalc)
+
+        plotobj = self._get_plot_objects(id, get, recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_fit(self,
-                 id: IdType | None = None,
+                 id: IdType | IdTypes | None = None,
                  replot: bool = False,
                  overplot: bool = False,
                  clearwindow: bool = True,
@@ -15060,9 +15324,14 @@ class Session(NoNewAttributesAfterInit):
         This function creates a plot containing the data and the model
         (including any instrument response) for a data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15115,6 +15384,11 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit('jet')
         >>> plot_fit('core', overplot=True)
 
+        Overlap the two plots, using the same color but changing the
+        opacity of the "core" data set to 0.5:
+
+        >>> plot_fit(['jet', 'core'], color="black", alpha=[1, 0.5])
+
         Keyword arguments can be given to override the plot preferences;
         for example the following sets the y axis to a log scale, but
         only for this plot:
@@ -15136,12 +15410,15 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_fit_plot(id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_fit_plot,
+                                         recalc=not replot)
+        # We know plotobj.plots[0] exists
+        plotobj.title = plotobj.plots[0].dataplot.title
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_resid(self,
-                   id: IdType | None = None,
+                   id: IdType | IdTypes | None = None,
                    replot: bool = False,
                    overplot: bool = False,
                    clearwindow: bool = True,
@@ -15151,12 +15428,17 @@ class Session(NoNewAttributesAfterInit):
         This function displays the residuals (data - model) for a data
         set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15222,12 +15504,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_resid_plot(id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_resid_plot,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_chisqr(self,
-                    id: IdType | None = None,
+                    id: IdType | IdTypes | None = None,
                     replot: bool = False,
                     overplot:bool = False,
                     clearwindow: bool = True,
@@ -15237,9 +15520,14 @@ class Session(NoNewAttributesAfterInit):
         This function displays the square of the residuals (data -
         model) divided by the error, for a data set.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15287,12 +15575,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_chisqr_plot(id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_chisqr_plot,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_delchi(self,
-                    id: IdType | None = None,
+                    id: IdType | IdTypes | None = None,
                     replot: bool = False,
                     overplot: bool = False,
                     clearwindow: bool = True,
@@ -15302,12 +15591,17 @@ class Session(NoNewAttributesAfterInit):
         This function displays the residuals (data - model) divided by
         the error, for a data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int , str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15369,12 +15663,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_delchi_plot(id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_delchi_plot,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_ratio(self,
-                   id: IdType | None = None,
+                   id: IdType | IdTypes | None = None,
                    replot: bool = False,
                    overplot: bool = False,
                    clearwindow: bool = True,
@@ -15383,12 +15678,17 @@ class Session(NoNewAttributesAfterInit):
 
         This function displays the ratio data / model for a data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15449,12 +15749,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_ratio_plot(id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_ratio_plot,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_psf(self,
-                 id: IdType | None = None,
+                 id: IdType | IdTypes | None = None,
                  replot: bool = False,
                  overplot: bool = False,
                  clearwindow: bool = True,
@@ -15464,9 +15765,14 @@ class Session(NoNewAttributesAfterInit):
         The `plot_kernel` function shows the data used to convolve
         the model.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15512,12 +15818,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_psf_plot(id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_psf_plot,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_kernel(self,
-                    id: IdType | None = None,
+                    id: IdType | IdTypes | None = None,
                     replot: bool = False,
                     overplot: bool = False,
                     clearwindow: bool = True,
@@ -15527,9 +15834,14 @@ class Session(NoNewAttributesAfterInit):
         The `plot_psf` function shows the full PSF, from which the
         kernel is derived.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15577,7 +15889,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_kernel_plot(id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_kernel_plot,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
@@ -15589,9 +15902,9 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        plot1 : sherpa.plot.Plot instance
+        plot1 : a MultiPlot instance
            The plot to appear in the top panel.
-        plot2 : sherpa.plot.Plot instance
+        plot2 : a MultiPlot instance
            The plot to appear in the bottom panel.
         overplot : bool, optional
            If ``True`` then add the data to an existing plot, otherwise
@@ -15627,8 +15940,9 @@ class Session(NoNewAttributesAfterInit):
             #
             p2prefs = get_plot_prefs(plot2)
             oldval = p2prefs['xlog']
-            dprefs = get_plot_prefs(plot1.dataplot)
-            mprefs = get_plot_prefs(plot1.modelplot)
+
+            dprefs = get_plot_prefs(plot1.plots[0].dataplot)
+            mprefs = get_plot_prefs(plot1.plots[0].modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
                 p2prefs['xlog'] = True
@@ -15639,7 +15953,7 @@ class Session(NoNewAttributesAfterInit):
             p2prefs['xlog'] = oldval
 
     def plot_fit_resid(self,
-                       id: IdType | None = None,
+                       id: IdType | IdTypes | None = None,
                        replot: bool = False,
                        overplot: bool = False,
                        clearwindow: bool = True,
@@ -15650,8 +15964,9 @@ class Session(NoNewAttributesAfterInit):
         second from `plot_resid` - for a data set.
 
         .. versionchanged:: 4.18.0
-           Per-plot options can now be given by using a pair of
-           values.
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15662,7 +15977,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15720,6 +16035,10 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit_resid('jet')
         >>> plot_fit_resid('core', overplot=True)
 
+        Draw the fit and residuals for two datasets:
+
+        >>> plot_fit_resid(['jet', 'core'], color='black')
+
         Additional arguments can be given that are passed to the
         plot backend: the supported arguments match the keywords
         of the dictionary returned by `get_data_plot_prefs`. The
@@ -15736,13 +16055,15 @@ class Session(NoNewAttributesAfterInit):
         """
 
         recalc = not replot
-        plot1obj = self.get_fit_plot(id, recalc=recalc)
-        plot2obj = self.get_resid_plot(id, recalc=recalc)
+        plot1obj = self._get_plot_objects(id, self.get_fit_plot,
+                                          recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_resid_plot,
+                                          recalc=recalc)
         self._jointplot2(plot1obj, plot2obj, overplot=overplot,
                          clearwindow=clearwindow, **kwargs)
 
     def plot_fit_ratio(self,
-                       id: IdType | None = None,
+                       id: IdType | IdTypes | None = None,
                        replot: bool = False,
                        overplot: bool = False,
                        clearwindow: bool = True,
@@ -15753,8 +16074,9 @@ class Session(NoNewAttributesAfterInit):
         second from `plot_ratio` - for a data set.
 
         .. versionchanged:: 4.18.0
-           Per-plot options can now be given by using a pair of
-           values.
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15763,7 +16085,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15837,13 +16159,15 @@ class Session(NoNewAttributesAfterInit):
         """
 
         recalc = not replot
-        plot1obj = self.get_fit_plot(id, recalc=recalc)
-        plot2obj = self.get_ratio_plot(id, recalc=recalc)
+        plot1obj = self._get_plot_objects(id, self.get_fit_plot,
+                                          recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_ratio_plot,
+                                          recalc=recalc)
         self._jointplot2(plot1obj, plot2obj, overplot=overplot,
                          clearwindow=clearwindow, **kwargs)
 
     def plot_fit_delchi(self,
-                        id: IdType | None = None,
+                        id: IdType | IdTypes | None = None,
                         replot: bool = False,
                         overplot: bool = False,
                         clearwindow: bool = True,
@@ -15854,8 +16178,9 @@ class Session(NoNewAttributesAfterInit):
         second from `plot_delchi` - for a data set.
 
         .. versionchanged:: 4.18.0
-           Per-plot options can now be given by using a pair of
-           values.
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15866,7 +16191,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15939,8 +16264,10 @@ class Session(NoNewAttributesAfterInit):
         """
 
         recalc = not replot
-        plot1obj = self.get_fit_plot(id, recalc=recalc)
-        plot2obj = self.get_delchi_plot(id, recalc=recalc)
+        plot1obj = self._get_plot_objects(id, self.get_fit_plot,
+                                          recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_delchi_plot,
+                                          recalc=recalc)
         self._jointplot2(plot1obj, plot2obj, overplot=overplot,
                          clearwindow=clearwindow, **kwargs)
 
