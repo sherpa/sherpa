@@ -406,14 +406,7 @@ def test_lrt(setup, numcores):
     assert results.samples.shape == (25, 2)
     assert results.stats.shape == (25, 2)
 
-    # The result used to depend on whether multi-processing is enabled
-    # and if there's more than one core available, which we can check
-    # with the ncpus setting (although it appears that we still need
-    # to check whether multi-processing is enabled or not). It
-    # no-longer appears to be the case, but the test is left in (but
-    # commented-out) for review.
-    #
-    if numcores == 2:  #  and multi and ncpus > 1:
+    if numcores == 2:
         expected = RATIOS_TWO
     else:
         expected = RATIOS_ONE
