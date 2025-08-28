@@ -132,7 +132,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 import logging
 import os
-from typing import Any, Callable, Literal, Mapping, Self, cast, overload, TYPE_CHECKING
+from typing import Any, Callable, Literal, Mapping, cast, overload, TYPE_CHECKING
 import warnings
 
 import numpy as np
@@ -5284,7 +5284,7 @@ class DataIMG(Data2D):
        should be ordered as in the FITS image conventions, i.e. [column, row];
        in other words `x0` is the x-axis of the image and `x1` is the y-axis in
        an x-y-plot.
-       (Sherpa uses `y` for the dependent variable and calles the axes `x0` and `x1`.)
+       (Sherpa uses `y` for the dependent variable and calls the axes `x0` and `x1`.)
 
        Only with this convention will the routines that return a 2D
        array (e.g. for plotting) work correctly. Fitting is done on the flattened
@@ -5327,22 +5327,42 @@ class DataIMG(Data2D):
     coordinate system. This means that the coordinates are expressed in
     the logical coordinates of the image, i.e. in pixels::
 
-    >>> from sherpa.astro.data import DataIMG
-    >>> import numpy as np
-    >>> x1, x0 = np.mgrid[20:30, 5:20]
-    >>> datashape = x0.shape
-    >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
-    >>> x0 = x0.flatten()
-    >>> x1 = x1.flatten()
-    >>> y = y.flatten()
-    >>> image = DataIMG("bimage", x0=x0, x1=x1, y=y, shape=datashape)
+        >>> from sherpa.astro.data import DataIMG
+        >>> import numpy as np
+        >>> # Note ordering of x1, x0 here
+        >>> x1, x0 = np.mgrid[20:30, 5:20]
+        >>> datashape = x0.shape
+        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+        >>> x0flat = x0.flatten()
+        >>> x1flat = x1.flatten()
+        >>> yflat = y.flatten()
+        >>> image = DataIMG("bimage", x0=x0flat, x1=x1flat, y=yflat, shape=datashape)
 
-    Note that in this example, we end up with a "logical" coordinate system
+    In this example, we end up with a "logical" coordinate system
     in ``image`` and no WCS system to convert it to anything else. On the other hand,
     in FITS standard terminology, the "logical" coordinate system is the
     "image", counting pixels starting at 1, while here the ``x0lo``` and ``x1lo``
     actually start at 20 and 5, respectively.
     This behavior works for now, but might be revisited.
+
+    For the common case of creating an image data set from a 2D array,
+    the `from_2d_array` class method can be used. In this case,
+    the length of ``x0`` and ``x1`` must match the shape of the 2D numpy array and
+    Sherpa will take care of transforming it from numpy [row, column] ordering
+    to the [column, row] ordering::
+
+        >>> x0 = np.arange(20, 30)
+        >>> x1 = np.arange(5, 20)
+        >>> print(y.shape, x0.shape, x1.shape)
+        (10, 15) (10,) (15,)
+        >>> image = DataIMG.from_2d_array("bimage", y=y, x0=x0, x1=x1)
+
+    It's even easier if no particular coordinate system is needed for ``x0``
+    and ``x1`` and the coordinates are simply pixel indices, which can be generated
+    automatically (starting at 1)::
+
+        >>> image = DataIMG.from_2d_array("bimage", y=y)
+
     '''
 
     _extra_fields = ("sky", "eqpos", "coord")
@@ -5421,7 +5441,7 @@ class DataIMG(Data2D):
                      x1: npt.NDArray[np.floating] | None = None,
                      staterror: npt.NDArray[np.floating] | None = None,
                      syserror: npt.NDArray[np.floating] | None = None,
-                     header: dict | None = None) -> Self:
+                     header: dict | None = None):   # -> Self  -- but can't so that al long as we are still 3.10 compatible
         '''Create a `Data2IMG` instance from a 2-dimensional array.
 
         Parameters
@@ -6040,11 +6060,18 @@ class DataIMGInt(DataIMG):
       ...                    x0hi=x0hi.flatten(), x1hi=x1hi.flatten(),
       ...                    y=hist.flatten(), shape=hist.shape)
 
-    Note that in this example, we end up with a "logical" coordinate system
+    In this example, we end up with a "logical" coordinate system
     in ``image`` and no WCS system to convert it to anything else. On the other hand,
     in FITS standard terminology, the "logical" coordinate system is the
     "image", counting pixels starting at 1, while here the ``x0lo``` and ``x1lo``
     actually start at -2. This behavior works for now, but might be revisited.
+
+    The `from_2d_array` method offers a simpler way to create a `DataIMGInt`, where
+    Sherpa will order and flatten the input arrays into 1D arrays automatically::
+
+        >>> image = DataIMGInt.from_2d_array("binned_image", y=hist,
+        ...                    x0_bounds=x0edges, x1_bounds=x1edges)
+
     '''
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
@@ -6080,7 +6107,7 @@ class DataIMGInt(DataIMG):
                      staterror: npt.NDArray[np.floating] | None = None,
                      syserror: npt.NDArray[np.floating] | None = None,
                      header: dict | None = None,
-                     ) -> Self:
+                     ):    # -> Self:  -- but can't so that al long as we are still 3.10 compatible
         '''Create a `DataIMGInt` instance from a 2-dimensional array.
 
         Parameters
