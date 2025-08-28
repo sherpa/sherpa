@@ -5275,8 +5275,22 @@ class DataIMG(Data2D):
     systems, such as the "logical" coordinates (pixels of the image),
     the "physical" coordinates (e.g. detector coordinates), and the "world"
     coordinates (e.g. Ra/Dec on the sky).
-    While this class can also be used for sparse data, much of the functionality
-    added over its parent class will not be useful in that case.
+
+    .. note::
+
+       In principle, this class can deal with any shape of data, even with
+       sparse data. However, the added functionality over the base class
+       is most useful for regularly gridded images. In that case, that data
+       should be ordered as in the FITS image conventions, i.e. [column, row];
+       in other words `x0` is the x-axis of the image and `x1` is the y-axis in
+       an x-y-plot.
+       (Sherpa uses `y` for the dependent variable and calles the axes `x0` and `x1`.)
+
+       Only with this convention will the routines that return a 2D
+       array (e.g. for plotting) work correctly. Fitting is done on the flattened
+       1D arrays and will work for any ordering.
+
+
 
     Parameters
     ----------
@@ -5394,6 +5408,10 @@ class DataIMG(Data2D):
         self._x0label = None
         self._x1label = None
 
+
+    # This could be moved up Data2D, but the inheritance pathway of the
+    # DataIMG classes makes that a bit awkward, since DataIMG and DataIMGInt
+    # both inherit from Data2D, but DataIMGInt does not inherit from Data2dInt.
     @classmethod
     def from_2d_array(cls,
                      name: str,
@@ -5469,9 +5487,9 @@ class DataIMG(Data2D):
 
         x0, x1 = np.meshgrid(x0, x1)
         return cls(name, x0=x0.ravel(), x1=x1.ravel(),
-                   y=y.ravel(), shape=y.shape,
-                   staterror=staterror.ravel() if staterror is not None else None,
-                   syserror=syserror.ravel() if syserror is not None else None,
+                   y=y.T.ravel(), shape=y.T.shape,
+                   staterror=staterror.T.ravel() if staterror is not None else None,
+                   syserror=syserror.T.ravel() if syserror is not None else None,
                    header=header)
 
     @classmethod
@@ -6047,6 +6065,9 @@ class DataIMGInt(DataIMG):
 
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 
+    # This could be moved up Data2D, but the inheritance pathway of the
+    # DataIMG classes makes that a bit awkward, since DataIMG and DataIMGInt
+    # both inherit from Data2D, but DataIMGInt does not inherit from Data2DInt.
     @classmethod
     def from_2d_array(cls,  # type: ignore[override]
                      name: str,
@@ -6132,9 +6153,9 @@ class DataIMGInt(DataIMG):
         return cls(name,
                    x0lo=x0[:-1, :-1].ravel(), x1lo=x1[:-1, :-1].ravel(),
                    x0hi=x0[1:, 1:].ravel(), x1hi=x1[1:, 1:].ravel(),
-                   y=y.ravel(), shape=y.shape,
-                   staterror=staterror.ravel() if staterror is not None else None,
-                   syserror=syserror.ravel() if syserror is not None else None,
+                   y=y.T.ravel(), shape=y.T.shape,
+                   staterror=staterror.T.ravel() if staterror is not None else None,
+                   syserror=syserror.T.ravel() if syserror is not None else None,
                    header=header)
 
 

@@ -17,10 +17,15 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+import logging
 import numpy as np
 import pytest
+from tempfile import NamedTemporaryFile
 
 from sherpa.astro.data import DataIMG, DataIMGInt
+from sherpa.models import Gauss2D
+from sherpa.astro.io.wcs import WCS
+from sherpa.astro import ui
 
 
 @pytest.mark.parametrize("cls", [DataIMG, DataIMGInt])
@@ -68,3 +73,150 @@ def test_create_dataIMG_direct(cls):
         assert indep[2][:15] == pytest.approx(np.arange(5, 20) + 0.5)
         assert indep[3][:15] == pytest.approx(20 + 0.5)
 
+
+@pytest.mark.parametrize("cls", [DataIMG, DataIMGInt])
+@pytest.mark.parametrize("use_2d_array", [True, False])
+def test_create_dataIMG_from_2darray(cls, use_2d_array):
+    """Similar to test_create_dataIMG_direct but using a 2D array.
+
+    In this case, we all define a model using the 2D array, so that we
+    can check the evaluated values as well.
+    """
+    rng = np.random.default_rng(12345)
+
+    x0 = rng.normal(size=1000, loc=21.6, scale=0.03)
+    x1 = rng.normal(size=1000, loc=0.2, scale=0.03)
+    x0range = np.arange(21.4, 21.7, 0.01)
+    x1range = np.arange(-.25, .250001, 0.01)
+    hist, x0edges, x1edges = np.histogram2d(x0, x1, bins=(x0range, x1range))
+    x0lo, x1lo = np.meshgrid(x0edges[:-1], x1edges[:-1])
+    x0hi, x1hi = np.meshgrid(x0edges[1:], x1edges[1:])
+
+    # Make a model
+    gline = Gauss2D("gline")
+    gline.fwhm = 0.05
+    gline.fwhm.freeze()
+    gline.ampl = 115
+    gline.xpos = 21.6
+    gline.ypos.frozen = False
+    gline.ypos = 0.2
+    gline.xpos.frozen = False
+
+    if cls == DataIMG:
+        x01 = {'x0': x0lo, 'x1': x1lo}
+    elif cls == DataIMGInt:
+        x01 = {'x0lo': x0lo, 'x1lo': x1lo,
+                'x0hi': x0hi, 'x1hi': x1hi}
+    else:
+        raise ValueError("Unexpected class")
+
+    if use_2d_array:
+        if cls == DataIMG:
+            x01 = {'x0': x0edges[:-1], 'x1': x1edges[:-1]}
+        elif cls == DataIMGInt:
+            x01 = {'x0_bounds': x0edges, 'x1_bounds': x1edges}
+        else:
+            raise ValueError("Unexpected class")
+
+        image = cls.from_2d_array("image", y=hist, **x01)
+    else:
+        if cls == DataIMG:
+            x01 = {'x0': x0lo, 'x1': x1lo}
+        elif cls == DataIMGInt:
+            x01 = {'x0lo': x0lo, 'x1lo': x1lo,
+                    'x0hi': x0hi, 'x1hi': x1hi}
+        else:
+            raise ValueError("Unexpected class")
+
+        image = cls("image",
+                    **{k: v.flatten() for k, v in x01.items()},
+                    y=hist.T.flatten(), shape=hist.T.shape,
+                    staterror=np.sqrt(hist).T.flatten())
+    out = image.get_img(gline)
+    assert out[0].shape == (50, 30)
+    assert out[1].shape == (50, 30)
+    indep = image.get_indep()
+    # Check the first 30 elements.
+    # That's enough to see a row-first vs. column-first ordering.
+    assert indep[0][:30] == pytest.approx(x0range[:-1])
+    assert indep[1][:30] == pytest.approx(-0.25)
+    if cls == DataIMGInt:
+        assert indep[2][:30] == pytest.approx(x0range[1:])
+        assert indep[3][:30] == pytest.approx(-0.24)
+
+
+@pytest.mark.parametrize("cls", [DataIMG, DataIMGInt])
+def test_from2D_wrong_dimension(cls):
+    """Check that we catch wrong dimension in from_2d_array"""
+    y = np.zeros((10, 20, 30))
+    x0 = np.arange(11)
+    x1 = np.arange(21)
+    with pytest.raises(ValueError) as exc:
+        if cls == DataIMG:
+            cls.from_2d_array("image", y=y, x0=x0[:-1], x1=x1[:-1])
+        elif cls == DataIMGInt:
+            cls.from_2d_array("image", y=y, x0_bounds=x0, x1_bounds=x1)
+        else:
+            raise ValueError("Unexpected class")
+    assert "Expected 2D array for y, got 3D array instead." in str(exc.value)
+
+@pytest.mark.parametrize("cls", [DataIMG, DataIMGInt])
+def test_wrong_order_x0x1(cls):
+    """Check that we catch wrong dimension in from_2d_array"""
+    y = np.zeros((10, 20))
+    x0 = np.arange(21)
+    x1 = np.arange(11)
+    with pytest.raises(ValueError,
+                       match=r"Length of x0[\s\S]+ \(10\)"):
+        if cls == DataIMG:
+            cls.from_2d_array("image", y=y, x0=x0[:-1], x1=x1[:-1])
+        elif cls == DataIMGInt:
+            cls.from_2d_array("image", y=y, x0_bounds=x0, x1_bounds=x1)
+        else:
+            raise ValueError("Unexpected class")
+
+
+def test_DataIMG_filter(caplog, clean_astro_ui):
+    """Test filtering of DataIMG
+
+    This is a slightly modified version of https://github.com/sherpa/sherpa/issues/1880
+    """
+    y = np.arange(6).reshape(2, 3) * 10 + 10
+
+    sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
+    eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.1, 0.1])
+    data = ui.DataIMG.from_2d_array_with_wcs("faked", y=y,
+                    sky=sky, eqpos=eqpos)
+
+    ui.set_data(data)
+    ui.set_coord("physical")
+
+    # this should, based on DS9, remove the 50 bin
+    ui.ignore2d("circle(110, 210, 6)")
+
+    assert ui.get_dep(filter=True) == pytest.approx([10, 40, 20, 30, 60])
+
+    # switch back to logical for the independent axis
+    ui.set_coord("logical")
+
+    g0, g1 = ui.get_indep()
+    assert g0 == pytest.approx([1 ,2, 1, 2, 1, 2])
+    assert g1 == pytest.approx([1, 1, 2, 2, 3, 3])
+
+    with NamedTemporaryFile(suffix=".fits") as tmpf:
+        with caplog.at_level(logging.WARNING):
+            ui.save_image(tmpf.name, ascii=False, clobber=True)
+        assert "Region filter has been removed from 'faked'" in caplog.text
+        ui.load_image("copy", tmpf.name)
+
+    # Filter is not saved
+    assert ui.get_dep("copy", filter=False) == pytest.approx([10, 40, 20, 50, 30, 60])
+    assert ui.get_dep("copy", filter=True) == pytest.approx([10, 40, 20, 50, 30, 60])
+
+    h0, h1 = ui.get_indep("copy")
+    assert h0 == pytest.approx([1, 2, 1, 2, 1, 2])
+    assert h1 == pytest.approx([1, 1, 2, 2, 3, 3])
+
+    ui.set_coord("copy", "physical")
+    ui.ignore2d_id("copy", "circle(110, 210, 6)")
+    assert ui.get_dep("copy", filter=True) == pytest.approx([10, 40, 20, 30, 60])
