@@ -325,7 +325,7 @@ class ParameterScaleMatrix(ParameterScale):
             # sigma value (which is expected to be 1, although it
             # can be changed).
             #
-            cov = self.sigma * self.sigma * cov
+            cov = self.sigma**2 * cov
 
         else:
             # NOTE: the self.sigma value is not used when the scales
