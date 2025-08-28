@@ -1196,13 +1196,18 @@ def test_xspec_model_requires_bins_low_level(clsname, xsmodel):
 
 
 @requires_xspec
-@pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_xspec_model_requires_bins_very_low_level(clsname, xsmodel):
+@pytest.mark.parametrize("clsname,hasnorm",
+                         [("powerlaw", True),
+                          ("wabs", False)]
+                         )
+def test_xspec_model_requires_bins_very_low_level(clsname, hasnorm, xsmodel):
     """Check we can use a single grid for direct access (_calc).
 
     This is the flip side to test-xspec_model_requires_bins_low_level
     """
 
+    # hasnorm could be identified from mdl, but by making it an input to
+    # the test we can check things are behaving as expected
     mdl = xsmodel(clsname)
 
     # pick a range which does not evaluate to 0 for wabs
@@ -1213,7 +1218,11 @@ def test_xspec_model_requires_bins_very_low_level(clsname, xsmodel):
     y1 = mdl(elo, ehi)
     assert y1.size == elo.size
 
-    y2 = mdl._calc([p.val for p in mdl.pars], egrid)
+    if hasnorm:
+        y2 = mdl.pars[-1].val * mdl._calc([p.val for p in mdl.pars[:-1]], egrid)
+    else:
+        y2 = mdl._calc([p.val for p in mdl.pars], egrid)
+
     assert y2.size == elo.size + 1
 
     # Scale by the median value so we have values ~ 1 for comparison
@@ -1940,7 +1949,8 @@ def test_model_can_send_spectrumnumber_combine():
     args = []
     def test(cls, pars, lo, hi, spectrumNumber=5):
         args.append((spectrumNumber, pars[0]))
-        return pars[1] * np.ones_like(lo)
+        # The 'norm' parameter is not sent to this routine.
+        return np.ones_like(lo)
 
     def testcon(cls, pars, fluxes, lo, hi, spectrumNumber=9):
         args.append((spectrumNumber, "con"))
@@ -2046,7 +2056,8 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
     args = []
     def test(cls, pars, lo, hi, spectrumNumber=5):
         args.append((spectrumNumber, pars[0]))
-        return pars[1] * np.ones_like(lo)
+        # The 'norm' parameter is not sent to this routine.
+        return np.ones_like(lo)
 
     class TestSpectrumNumber2(xspec.XSAdditiveModel):
         _calc = test
