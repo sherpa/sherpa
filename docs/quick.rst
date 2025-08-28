@@ -521,7 +521,6 @@ The results can be displayed::
   
     >>> print(errors.format())
     Confidence Method     = confidence
-    Iterative Fit Method  = None
     Fitting Method        = levmar
     Statistic             = chi2
     confidence 1-sigma (68.2689%) bounds:
@@ -1016,7 +1015,7 @@ change it. The error is 5, per bin, which has to be set up::
 
 How much did the fit change?::
   
-    >>> check.dstatval
+    >>> print(check.dstatval)
     0.0
    
 Note that since the error on each bin is the same value, the best-fit
@@ -1041,11 +1040,11 @@ should be 0)::
     fitname     = neldermead
     statname    = chi2
     sigma       = 1
-    percent     = 68.2689492137
+    percent     = 68.26894921370858
     parnames    = ('polynom1d.c0', 'polynom1d.c1', 'lorentz1d.fwhm', 'lorentz1d.pos', 'lorentz1d.ampl')
-    parvals     = (36.829217311393585, 0.012540257025027028, 249.55651534213359, 4402.7031194359088, 12793.559398547319)
-    parmins     = (-4.9568824809960628, -0.0011007470586726147, -6.6079122387075824, -2.0094070026087474, -337.50275154547768)
-    parmaxes    = (4.9568824809960628, 0.0011007470586726147, 6.6079122387075824, 2.0094070026087474, 337.50275154547768)
+    parvals     = (36.829217328023105, 0.012540257020964188, 249.55651542853505, 4402.703119439406, 12793.559402840488)
+    parmins     = (-24.784358764271474, -0.005503725307305294, -33.038994537229975, -10.047009177587375, -1687.5121148153985)
+    parmaxes    = (24.784358764271474, 0.005503725307305294, 33.038994537229975, 10.047009177587375, 1687.5121148153985)
     nfits       = 0
 
 Error estimates on a single parameter are

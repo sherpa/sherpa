@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023, 2024
+#  Copyright (C) 2021, 2023-2025
 #  MIT
 #
 #
@@ -161,7 +161,7 @@ def fake_pha(data, model,
     >>> rng = numpy.random.default_rng()
     >>> fake_pha(pha, full_model, rng=rng)
 
-    The following overlplots the model - used to simulate the data -
+    The following overplots the model - used to simulate the data -
     on the simulated data:
 
     The new data can be displayed, comparing it to the model:

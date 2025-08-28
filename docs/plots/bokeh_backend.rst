@@ -137,3 +137,7 @@ Class Inheritance Diagram
 
 .. inheritance-diagram:: BokehBackend
    :parts: 1
+
+
+.. testcleanup::
+    >>> plot.set_backend('pylab')

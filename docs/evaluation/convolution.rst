@@ -384,9 +384,9 @@ wrap-around behavior of the fourier transform. This can be seen by
 comparing the signal in the unconvolved and convolved images, which
 are (to numerical precision) the same:
 
-    >>> m1.sum()
+    >>> print(m1.sum())
     58.0
-    >>> m2.sum()
+    >>> print(m2.sum())
     58.0
 
 The use of a fourier transform means that low-level signal will be
