@@ -46,6 +46,31 @@ typedef int (*converter)( PyObject*, void* );
 // The SHERPAMOD and SHERPAMODDOC defines are expected to be used
 // rather than this one.
 //
+// fctlist should be an array of PyMethodDef elements, which can
+// be constructed with FCTSPEC, FCTSPECDOC, and KWSPEC, or
+// created directly.
+//
+#ifdef Py_GIL_DISABLED
+
+#define _SHERPAMOD(name, fctlist, doc)	   \
+static struct PyModuleDef module##name = { \
+PyModuleDef_HEAD_INIT, \
+#name, \
+doc, \
+-1, \
+fctlist \
+}; \
+\
+PyMODINIT_FUNC PyInit_##name(void) { \
+  import_array(); \
+  PyObject *m = PyModule_Create(&module##name); \
+  if (m == NULL) return NULL; \
+  PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED); \
+  return m; \
+}
+
+#else
+
 #define _SHERPAMOD(name, fctlist, doc)	   \
 static struct PyModuleDef module##name = { \
 PyModuleDef_HEAD_INIT, \
@@ -60,13 +85,8 @@ PyMODINIT_FUNC PyInit_##name(void) { \
   return PyModule_Create(&module##name); \
 }
 
-// Create the initialization for the module called name, with the
-// list of functions in fctlist, and no module documentation.
-//
-// fctlist should be an array of PyMethodDef elements, which can
-// be constructed with FCTSPEC, FCTSPECDOC, and KWSPEC, or
-// created directly.
-//
+#endif
+
 #define SHERPAMOD(name, fctlist) _SHERPAMOD(name, fctlist, NULL)
 
 // Similar to SHERMAMOD, but adds the ability to set the module

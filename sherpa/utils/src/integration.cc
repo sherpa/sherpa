@@ -191,5 +191,9 @@ PyMODINIT_FUNC PyInit_integration(void) {
   // steal the reference
   PyModule_AddObject( m, (char*)"_C_API", api_cobject );
 
+#ifdef Py_GIL_DISABLED
+  PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED);
+#endif
+
   return m;
 }
