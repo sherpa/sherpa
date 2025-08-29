@@ -178,15 +178,20 @@ class ParameterScaleVector(ParameterScale):
             generate the samples, along with any possible error
             analysis.
         myscales : numpy array or None, optional
-            The scales to use. If None then they are
-            calculated from the fit.
+            The scales to use: a one-dimensional array of the standard
+            deviation for each parameter (so there is no correlation
+            between the parameters). If None then they are calculated
+            from the fit, using the object's sigma attribute to scale
+            the results.
 
         Returns
         -------
         scales : numpy array
-            One-dimensional scales array (npar elements, matching the
-            free parameters in fit). The values are the sigma errors
-            for the parameters (or the input values if given).
+            One-dimensional array with npar elements, where npar is
+            the number of free parameters in the fit. The values are
+            the standard deviations for the free parameters, scaled by
+            the sigma value (or the input values if myscales is not
+            None).
 
         """
 
@@ -200,7 +205,7 @@ class ParameterScaleVector(ParameterScale):
 
             covar = Covariance()
             covar.config['sigma'] = self.sigma
-            fit.estmethod = Covariance()
+            fit.estmethod = covar
 
             try:
                 r = fit.est_errors()
@@ -240,9 +245,10 @@ class ParameterScaleVector(ParameterScale):
                                 scale = abs(t.parmaxes[0])
 
                         else:
-                            warning('1 sigma bounds for parameter %s'
-                                    ' could not be found, using soft limit minimum',
-                                    par.fullname)
+                            warning('%g sigma bounds for parameter '
+                                    '%s could not be found, using '
+                                    'soft limit minimum',
+                                    self.sigma, par.fullname)
                             if 0.0 == abs(par.min):
                                 scale = 1.0e-16
                             else:
@@ -263,7 +269,7 @@ class ParameterScaleVector(ParameterScale):
             raise TypeError("scales option must be iterable of "
                             f"length {npar}")
 
-        return np.asarray(scales).transpose()
+        return np.asarray(scales)
 
 
 class ParameterScaleMatrix(ParameterScale):
@@ -284,22 +290,27 @@ class ParameterScaleMatrix(ParameterScale):
             generate the samples, along with any possible error
             analysis.
         myscales : numpy array or None, optional
-            The scales to use. If None then they are
-            calculated from the fit.
+            The scales to use: the two-dimensional covariance matrix
+            for the parameters.  If None then they are calculated from
+            the fit, using the object's sigma attribute to scale the
+            results.
 
         Returns
         -------
         scales : numpy array
-            Two-dimensional scales array (npar by npar elements,
-            matching the free parameters in fit). The values are the
-            covariance matrix for the parameters (or the input values if
-            given).
+            Two-dimensional square array of side npar, where npar is
+            the number of free parameters in the fit. The values are
+            the covariance matrix for the free parameters, scaled by
+            the sigma value (or the input values if myscales is not
+            None).
 
         """
 
         if myscales is None:
             oldestmethod = fit.estmethod
-            fit.estmethod = Covariance()
+            covar = Covariance()
+            covar.config['sigma'] = self.sigma
+            fit.estmethod = covar
 
             try:
                 r = fit.est_errors()
@@ -307,9 +318,20 @@ class ParameterScaleMatrix(ParameterScale):
                 fit.estmethod = oldestmethod
 
             cov = r.extra_output
+            if cov is None:
+                raise EstErr('nocov')
+
+            # Scale the covariance matrix by the square of the
+            # sigma value (which is expected to be 1, although it
+            # can be changed).
+            #
+            cov = self.sigma**2 * cov
 
         else:
-
+            # NOTE: the self.sigma value is not used when the scales
+            # are manually sent in (it is up to the user to send in
+            # the expected scaled covariance matrix).
+            #
             npar = len(fit.model.thawedpars)
             msg = f'scales must be a numpy array of size ({npar},{npar})'
 
@@ -319,12 +341,7 @@ class ParameterScaleMatrix(ParameterScale):
             if (npar, npar) != myscales.shape:
                 raise EstErr(msg)
 
-            cov = myscales
-
-        if cov is None:
-            raise EstErr('nocov')
-
-        cov = np.asarray(cov)
+            cov = np.asarray(myscales)
 
         # Investigate spectral decomposition to avoid requirement that
         # the cov be semi-positive definite.  Nevermind, NumPy already
@@ -402,8 +419,9 @@ class ParameterSample(NoNewAttributesAfterInit):
         Returns
         -------
         clipped : 1D numpy array
-            The clipped samples (may be unchanged) and a 1D boolean
-            array indicating whether any sample in a row was clipped.
+            A 1D boolean array indicating whether any sample in a row
+            was clipped. Note that the input samples array will have
+            been updated if any element in clipped is True.
 
         """
 
@@ -538,8 +556,9 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
            This defines the thawed parameters that are used to generate
            the samples, along with any possible error analysis.
         myscales : 1D numpy array or None, optional
-           The error values (one sigma values) to use. If None then
-           it is calculated from the fit object.
+           The standard deviation values for the free parameters in
+           the fit. If None then the values are calculated from the
+           fit and scaled by the sigma value of the scale object.
         num : int, optional
            The number of samples to return.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
@@ -555,10 +574,10 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
         """
         vals = np.array(fit.model.thawedpars)
-        scales = self.scale.get_scales(fit, myscales)
+        scales = self.scale.get_scales(fit, myscales=myscales)
         size = int(num)
 
-        samples = [random.normal(rng, val, scale, size=size)
+        samples = [random.normal(rng, loc=val, scale=scale, size=size)
                    for val, scale in zip(vals, scales)]
         return np.asarray(samples).T
 
@@ -592,8 +611,9 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
            This defines the thawed parameters that are used to generate
            the samples, along with any possible error analysis.
         mycov : 2D numpy array or None, optional
-           The covariance matrix to use. If None then it is
-           calculated from the fit object.
+           The covariance matrix for the free parameters in the
+           fit. If None then the values are calculated from the fit
+           and scaled by the sigma value of the scale object.
         num : int, optional
            The number of samples to return.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
@@ -609,8 +629,9 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
         """
         vals = np.array(fit.model.thawedpars)
-        cov = self.scale.get_scales(fit, mycov)
-        return random.multivariate_normal(rng, vals, cov, size=int(num))
+        cov = self.scale.get_scales(fit, myscales=mycov)
+        return random.multivariate_normal(rng, mean=vals, cov=cov,
+                                          size=int(num))
 
 
 class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
@@ -659,7 +680,8 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
         """
         vals = np.array(fit.model.thawedpars)
         cov = self.scale.get_scales(fit)
-        return multivariate_t(vals, cov, dof, int(num), rng=rng)
+        return multivariate_t(vals, cov=cov, df=dof, size=int(num),
+                              rng=rng)
 
 
 class Evaluate:
@@ -682,6 +704,8 @@ class Evaluate:
 
 def _sample_stat(fit: Fit,
                  samples: np.ndarray,
+                 clipped: np.ndarray,
+                 *,
                  numcores: int | None = None,
                  cache: bool = True
                  ) -> np.ndarray:
@@ -694,6 +718,9 @@ def _sample_stat(fit: Fit,
         the samples, along with any possible error analysis.
     samples : 2D numpy array
         The samples array, stored as a npar by niter matrix.
+    clipped : numpy array
+        Whether the parameter row included clipped parameters (1) or
+        not (0).
     numcores : int or None, optional
         Should the calculation be done on multiple CPUs?  The default
         (None) is to rely on the parallel.numcores setting of the
@@ -705,12 +732,14 @@ def _sample_stat(fit: Fit,
     -------
     vals : 2D numpy array
         A copy of the samples input with an extra row added to its
-        start, giving the statistic value for that row.
+        start, giving the statistic value for that row, and at the
+        end, containing the clipped array.
 
     """
 
     oldvals = fit.model.thawedpars
 
+    # QUS: does the cache really help when run in parallel?
     try:
         fit.model.startup(cache=cache)
         stats = np.asarray(parallel_map(Evaluate(fit), samples, numcores))
@@ -718,9 +747,21 @@ def _sample_stat(fit: Fit,
         fit.model.teardown()
         fit.model.thawedpars = oldvals
 
-    return np.concatenate([stats[:, np.newaxis], samples], axis=1)
+    return np.concatenate([stats[:, np.newaxis],
+                           samples,
+                           clipped[:, np.newaxis]
+                           ], axis=1)
 
 
+# Note:
+#
+# NormalParameterSampleFromScaleXXX does not take a clip argument,
+# since this is handled explicitly by the called (e.g. in #866 where
+# explicit calls to .clip are made for the flux code in sherpa.astro.flux).
+# However, since the clipping needs to be done *before* calculating the
+# sample values (or, it makes sense to do so), clip has been added to
+# the get_sample call here. This is less-than ideal.
+#
 class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
     """Use a normal distribution to sample statistic and parameters (correlated),
 
@@ -736,9 +777,16 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
                    *,
                    num: int = 1,
                    numcores: int | None = None,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   clip: ClipValue = "hard"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.18.0
+           The clip argument has been added, and the return value now
+           has an extra column, indicating if the row was clipped. To
+           match earlier versions results set clip to "none", although
+           the clipped column will still be returned.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -759,20 +807,27 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('hard') is to fix values at their
+           hard limits if they exceed them. A value of 'soft' uses the
+           soft limits instead, and 'none' applies no clipping.
 
         Returns
         -------
         samples : 2D numpy array
-            The array is num by (npar + 1) size, where npar is the
-            number of free parameters in the fit argument. The first
-            element in each row is the statistic value, and the
-            remaining are the parameter values.
+           The array is num by (npar + 2) size, where npar is the
+           number of free parameters in the fit argument. The first
+           element in each row is the statistic value, the remaining
+           are the parameter values, and then the last column
+           indicates whether any parameters were clipped.
 
         """
 
-        samples = NormalParameterSampleFromScaleMatrix.get_sample(
-            self, fit, num=num, rng=rng)
-        return _sample_stat(fit, samples, numcores)
+        # Knowledge of whether a row has been clipped is dropped
+        samples = super().get_sample(fit, num=num, rng=rng)
+        clipped = self.clip(fit, samples, clip=clip)
+        return _sample_stat(fit, samples, clipped, numcores=numcores)
 
 
 class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
@@ -790,9 +845,16 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
                    *,
                    num: int = 1,
                    numcores: int | None = None,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   clip: ClipValue = "hard"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.18.0
+           The clip argument has been added, and the return value now
+           has an extra column, indicating if the row was clipped. To
+           match earlier versions results set clip to "none", although
+           the clipped column will still be returned.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -813,19 +875,27 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('hard') is to fix values at their
+           hard limits if they exceed them. A value of 'soft' uses the
+           soft limits instead, and 'none' applies no clipping.
 
         Returns
         -------
         samples : 2D numpy array
-            The array is num by (npar + 1) size, where npar is the
-            number of free parameters in the fit argument. The first
-            element in each row is the statistic value, and the
-            remaining are the parameter values.
+           The array is num by (npar + 2) size, where npar is the
+           number of free parameters in the fit argument. The first
+           element in each row is the statistic value, the remaining
+           are the parameter values, and then the last column
+           indicates whether any parameters were clipped.
 
         """
-        samples = NormalParameterSampleFromScaleVector.get_sample(
-            self, fit, num=num, rng=rng)
-        return _sample_stat(fit, samples, numcores)
+
+        # Knowledge of whether a row has been clipped is dropped
+        samples = super().get_sample(fit, num=num, rng=rng)
+        clipped = self.clip(fit, samples, clip=clip)
+        return _sample_stat(fit, samples, clipped, numcores=numcores)
 
 
 class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
@@ -842,9 +912,16 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
                    num: int = 1,
                    factor: float = 4,
                    numcores: int | None = None,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   clip: ClipValue = "hard"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.18.0
+           The clip argument has been added, and the return value now
+           has an extra column, indicating if the row was clipped. To
+           match earlier versions results set clip to "none", although
+           the clipped column will still be returned.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -872,16 +949,17 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
         Returns
         -------
         samples : 2D numpy array
-           The array is num by (npar + 1) size, where npar is the
+           The array is num by (npar + 2) size, where npar is the
            number of free parameters in the fit argument. The first
-           element in each row is the statistic value, and the
-           remaining are the parameter values.
+           element in each row is the statistic value, the remaining
+           are the parameter values, and then the last column
+           indicates whether any parameters were clipped.
 
         """
-        samples = UniformParameterSampleFromScaleVector.get_sample(self, fit,
-                                                                   factor=factor, num=num,
-                                                                   rng=rng)
-        return _sample_stat(fit, samples, numcores)
+        samples = super().get_sample(fit, factor=factor, num=num,
+                                     rng=rng)
+        clipped = self.clip(fit, samples, clip=clip)
+        return _sample_stat(fit, samples, clipped, numcores=numcores)
 
 
 class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
@@ -900,9 +978,16 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
                    num: int = 1,
                    dof: int = 2,
                    numcores: int | None = None,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   clip: ClipValue = "hard"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.18.0
+           The clip argument has been added, and the return value now
+           has an extra column, indicating if the row was clipped. To
+           match earlier versions results set clip to "none", although
+           the clipped column will still be returned.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -925,27 +1010,35 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('hard') is to fix values at their
+           hard limits if they exceed them. A value of 'soft' uses the
+           soft limits instead, and 'none' applies no clipping.
 
         Returns
         -------
         samples : 2D numpy array
-            The array is num by (npar + 1) size, where npar is the
-            number of free parameters in the fit argument. The first
-            element in each row is the statistic value, and the
-            remaining are the parameter values.
+           The array is num by (npar + 2) size, where npar is the
+           number of free parameters in the fit argument. The first
+           element in each row is the statistic value, the remaining
+           are the parameter values, and then the last column
+           indicates whether any parameters were clipped.
 
         """
-        samples = StudentTParameterSampleFromScaleMatrix.get_sample(
-            self, fit, dof=dof, num=num, rng=rng)
-        return _sample_stat(fit, samples, numcores)
+        samples = super().get_sample(fit, dof=dof, num=num, rng=rng)
+        clipped = self.clip(fit, samples, clip=clip)
+        return _sample_stat(fit, samples, clipped, numcores=numcores)
+
 
 
 def normal_sample(fit: Fit,
                   num: int = 1,
-                  sigma: float = 1,
+                  scale: float = 1,
                   correlate: bool = True,
                   numcores: int | None = None,
-                  rng: random.RandomType | None = None
+                  rng: random.RandomType | None = None,
+                  clip: ClipValue = "hard"
                   ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values
     from a normal distribution.
@@ -953,6 +1046,14 @@ def normal_sample(fit: Fit,
     For each iteration (sample), change the thawed parameters by
     drawing values from a uni- or multi-variate normal (Gaussian)
     distribution, and calculate the fit statistic.
+
+    .. versionchanged:: 4.18.0
+       The sigma parameter has been renamed to scale, and the code
+       has been updated so that changing it will change the sampled
+       values. The clip parameter has been added (to match
+       earlier versions change clip to "none"), and the return value
+       contains an extra column indicating whether a parameter in the
+       row was clipped.
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -963,9 +1064,9 @@ def normal_sample(fit: Fit,
        The fit results.
     num : int, optional
        The number of samples to use (default is `1`).
-    sigma : number, optional
-       The width of the normal distribution (the default
-       is `1`).
+    scale : number, optional
+       Scale factor applied to the sigma values from the fit before
+       sampling the normal distribution.
     correlate : bool, optional
        Should a multi-variate normal be used, with parameters
        set by the covariance matrix (`True`) or should a
@@ -977,12 +1078,18 @@ def normal_sample(fit: Fit,
        Determines how random numbers are created. If set to None then
        the routines from `numpy.random` are used, and so can be
        controlled by calling `numpy.random.seed`.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses the
+        soft limits instead, and 'none' applies no clipping.
 
     Returns
     -------
-    samples :
+    samples
        A NumPy array table with the first column representing the
-       statistic and later columns the parameters used.
+       statistic, the later columns the parameters used, and the last
+       column indicating whether any parameter in the row was clipped.
 
     See Also
     --------
@@ -991,27 +1098,34 @@ def normal_sample(fit: Fit,
 
     Notes
     -----
+
+    It is expected that the model has already been fit to the data.
+
     All thawed model parameters are sampled from the Gaussian
-    distribution, where the mean is set as the best-fit parameter
-    value and the variance is determined by the diagonal elements
-    of the covariance matrix. The multi-variate Gaussian is
-    assumed by default for correlated parameters, using the
-    off-diagonal elements of the covariance matrix.
+    distribution. The mean is set as the current parameter values. The
+    variance is calculated from the covariance matrix of the fit
+    multiplied by scale * scale. When correlate is False the diagonal
+    of the matrix is used, so the parameters are uncorrelated. When
+    correlate is True the full matrix is used, allowing for
+    correlations between the parameters.
 
     """
-    sampler = NormalSampleFromScaleVector()
-    sampler.scale.sigma = sigma
     if correlate:
         sampler = NormalSampleFromScaleMatrix()
+    else:
+        sampler = NormalSampleFromScaleVector()
 
-    return sampler.get_sample(fit, num=num, numcores=numcores, rng=rng)
+    sampler.scale.sigma = scale
+    return sampler.get_sample(fit, num=num, numcores=numcores,
+                              rng=rng, clip=clip)
 
 
 def uniform_sample(fit: Fit,
                    num: int = 1,
                    factor: float = 4,
                    numcores: int | None = None,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   clip: ClipValue = "hard"
                    ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values
     from an uniform distribution.
@@ -1019,6 +1133,14 @@ def uniform_sample(fit: Fit,
     For each iteration (sample), change the thawed parameters by
     drawing values from a uniform distribution, and calculate the
     fit statistic.
+
+    .. versionchanged:: 4.18.0
+       The sigma parameter has been renamed to scale, and the code
+       has been updated so that changing it will change the sampled
+       values. The clip parameter has been added (to match
+       earlier versions change clip to "none"), and the return value
+       contains an extra column indicating whether a parameter in the
+       row was clipped.
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -1038,12 +1160,18 @@ def uniform_sample(fit: Fit,
        Determines how random numbers are created. If set to None then
        the routines from `numpy.random` are used, and so can be
        controlled by calling `numpy.random.seed`.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses the
+        soft limits instead, and 'none' applies no clipping.
 
     Returns
     -------
     samples :
        A NumPy array table with the first column representing the
-       statistic and later columns the parameters used.
+       statistic, the later columns the parameters used, and the last
+       column indicating whether any parameter in the row was clipped.
 
     See Also
     --------
@@ -1052,16 +1180,20 @@ def uniform_sample(fit: Fit,
 
     """
     sampler = UniformSampleFromScaleVector()
+    # The factor and sigma arguments have the same effect, so fix
+    # sigma at 1.
     sampler.scale.sigma = 1
     return sampler.get_sample(fit, num=num, factor=factor,
-                              numcores=numcores, rng=rng)
+                              numcores=numcores, rng=rng,
+                              clip=clip)
 
 
 def t_sample(fit: Fit,
              num: int = 1,
              dof: int = 2,
              numcores: int | None = None,
-             rng: random.RandomType | None = None
+             rng: random.RandomType | None = None,
+             clip: ClipValue = "hard"
              ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values from
     a Student's t-distribution.
@@ -1069,6 +1201,14 @@ def t_sample(fit: Fit,
     For each iteration (sample), change the thawed parameters
     by drawing values from a Student's t-distribution, and
     calculate the fit statistic.
+
+    .. versionchanged:: 4.18.0
+       The sigma parameter has been renamed to scale, and the code
+       has been updated so that changing it will change the sampled
+       values. The clip parameter has been added (to match
+       earlier versions change clip to "none"), and the return value
+       contains an extra column indicating whether a parameter in the
+       row was clipped.
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -1089,12 +1229,18 @@ def t_sample(fit: Fit,
        Determines how random numbers are created. If set to None then
        the routines from `numpy.random` are used, and so can be
        controlled by calling `numpy.random.seed`.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses the
+        soft limits instead, and 'none' applies no clipping.
 
     Returns
     -------
     samples :
        A NumPy array table with the first column representing the
-       statistic and later columns the parameters used.
+       statistic, the later columns the parameters used, and the last
+       column indicating whether any parameter in the row was clipped.
 
     See Also
     --------
@@ -1104,4 +1250,4 @@ def t_sample(fit: Fit,
     """
     sampler = StudentTSampleFromScaleMatrix()
     return sampler.get_sample(fit, num=num, dof=dof,
-                              numcores=numcores, rng=rng)
+                              numcores=numcores, rng=rng, clip=clip)
