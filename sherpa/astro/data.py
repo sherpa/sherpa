@@ -1477,6 +1477,10 @@ class DataPHA(Data1D):
     The PHA format is described in an OGIP document [OGIP_92_007]_ and
     [OGIP_92_007a]_.
 
+    .. versionchanged:: 4.18.0
+       Validation now happens when setting the units field as well as
+       in the set_analysis routine.
+
     Parameters
     ----------
     name : str
@@ -1704,11 +1708,41 @@ class DataPHA(Data1D):
         else:
             raise DataErr('bad', 'quantity', val)
 
+        # Check that the units setting is valid.
+        # TODO: can we remove the bin_lo/hi check?
+        #
+        if units != "channel":
+            arf, rmf = self.get_response()
+
+            # Does it make sense to check the ARF and RMF are compatible
+            # here? Shouldn't it be done when setting the response.
+            #
+            if rmf is not None:
+                if rmf.detchans != len(self.channel):
+                    raise DataErr("incompatibleresp", rmf.name, self.name)
+
+            elif arf is not None:
+                if len(arf.energ_lo) != len(self.channel):
+                    raise DataErr("incompleteresp", self.name)
+
+            elif self.bin_lo is None and self.bin_hi is None:
+                # No ARF or RMF
+                raise DataErr("norsp", self.name)
+
+        # Set the units for any associated background if we can.
+        # Since the setting only really matters if fitting the
+        # background then hide any errors (e.g. if there is no
+        # background response and units is not 'channel').
+        #
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if bkg.get_response() != (None, None) or \
-               (bkg.bin_lo is not None and bkg.bin_hi is not None):
+            # The background dataset is guaranteed to exist but the
+            # type of bkg can technically be None so add an assert.
+            assert bkg is not None
+            try:
                 bkg.units = units
+            except DataErr:
+                pass
 
         self._units = units
 
@@ -1716,7 +1750,19 @@ class DataPHA(Data1D):
         return cast(AnalysisType, self._units)
 
     units = property(_get_units, _set_units,
-                     doc="Units of the independent axis: one of 'channel', 'energy', 'wavelength'.")
+                     doc="""Units of the independent axis.
+
+    Values are one of: 'channel', 'energy', or 'wavelength'.
+
+    .. versionchanged:: 4.18.0
+       The units can only be set to 'energy' or 'wavelength' after
+       a response has been added.
+
+    See Also
+    --------
+    set_analysis
+
+""")
 
     def _get_rate(self) -> bool:
         return self._rate
@@ -2109,12 +2155,15 @@ will be removed. The identifiers can be integers or strings.
         return html_pha(self)
 
     def __getstate__(self):
-        state = self.__dict__.copy()
-        return state
+        return self.__dict__.copy()
 
     def __setstate__(self, state):
+        # Why do this?
         self._background_ids = state['_background_ids']
         self._backgrounds = state['_backgrounds']
+        self._responses = state['_responses']
+        self._data_space = state['_data_space']
+
         self._set_units(state['_units'])
 
         if 'header' not in state:
@@ -2148,7 +2197,7 @@ will be removed. The identifiers can be integers or strings.
 
         See Also
         --------
-        get_analysis
+        get_analysis, units
 
         Examples
         --------
@@ -2173,19 +2222,6 @@ will be removed. The identifiers can be integers or strings.
 
         self.rate = type == "rate"
 
-        arf, rmf = self.get_response()
-        if rmf is not None and rmf.detchans != len(self.channel):
-            raise DataErr("incompatibleresp", rmf.name, self.name)
-
-        if (rmf is None and arf is None) and \
-           (self.bin_lo is None and self.bin_hi is None) and \
-           quantity != "channel":
-            raise DataErr("norsp", self.name)
-
-        if rmf is None and arf is not None and quantity != "channel" and \
-           len(arf.energ_lo) != len(self.channel):
-            raise DataErr("incompleteresp", self.name)
-
         self.units = quantity
 
     def get_analysis(self) -> AnalysisType:
@@ -2205,7 +2241,7 @@ will be removed. The identifiers can be integers or strings.
 
         See Also
         --------
-        set_analysis
+        set_analysis, units
 
         Examples
         --------
@@ -5103,6 +5139,11 @@ It is an integer or string.
                 # do nothing (other than display an INFO message).
                 #
                 bkg.notice(lo, hi, ignore)
+            except DataErr:
+                # If there is no response then ignore this filter.
+                # TODO: what is the best thing to do here?
+                #
+                pass
             finally:
                 bkg.units = old_bkg_units
 
