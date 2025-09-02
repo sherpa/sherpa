@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2022, 2024
+#  Copyright (C) 2019-2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -331,15 +331,15 @@ def test_data_len(Dataclass):
 @pytest.mark.parametrize("data", (Data, ), indirect=True)
 def test_data_str_repr(data):
     assert repr(data) == "<Data data set instance 'data_test'>"
-    assert str(data) == 'name      = data_test\nindep     = (array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),)\ndep       ' \
-                        '= Int64[10]\nstaterror = Float64[10]\nsyserror  = Float64[10]'
+    assert str(data) == 'name       = data_test\nindep      = (array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),)\ndep        ' \
+                        '= Int64[10]\nstaterror  = Float64[10]\nsyserror   = Float64[10]\nintegrated = False'
 
 
 @pytest.mark.parametrize("data", (Data1D, ), indirect=True)
 def test_data1d_str_repr(data):
     assert repr(data) == "<Data1D data set instance 'data_test'>"
-    assert str(data) == 'name      = data_test\nx         = Int64[10]\ny         = Int64[10]\nstaterror = ' \
-                        'Float64[10]\nsyserror  = Float64[10]'
+    assert str(data) == 'name       = data_test\nx          = Int64[10]\ny          = Int64[10]\nstaterror  = ' \
+                        'Float64[10]\nsyserror   = Float64[10]\nintegrated = False'
 
 
 @pytest.mark.parametrize("data", (Data, Data1D), indirect=True)
