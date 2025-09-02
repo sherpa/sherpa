@@ -257,29 +257,6 @@ class DataSpace1D(EvaluationSpace1D):
         data = self.filter.apply(data)
         return DataSpace1D(self.filter, data)
 
-    def for_model(self, model):
-        """
-        Models can be defined over arbitrary evaluation spaces. However,
-        at evaluation time during a fit, the model's evaluation space shall
-        be done at the user's request space only and set to 0 every where else.
-
-        Parameters
-        ----------
-        model : The model whose evaluation space needs to be joined with the dataset's data space.
-
-        Returns
-        -------
-        DataSpace1D
-            A data space that joins this data space with the model's evaluation space. if the model does not have an
-            evaluation space assigned to itself then `self` is returned.
-        """
-        evaluation_space = None
-
-        if model is not None and hasattr(model, "evaluation_space") \
-           and self not in model.evaluation_space:
-            evaluation_space = self
-
-        return self if evaluation_space is None else evaluation_space
 
 
 class IntegratedDataSpace1D(EvaluationSpace1D):
@@ -332,30 +309,6 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         data = tuple(self.filter.apply(axis) for axis in data)
         return IntegratedDataSpace1D(self.filter, *data)
 
-    def for_model(self, model):
-        """
-        Models can be defined over arbitrary evaluation spaces. However, at evaluation time during a fit, the model's
-        evaluation space and the data space will be joined together and the model will be evaluated over the joined
-        domain. This makes sure that when the models are rebinned back to the data space the evaluation does not have
-        to be extrapolated from the model's evaluation space alone.
-
-        Parameters
-        ----------
-        model : The model whose evaluation space needs to be joined with the dataset's data space.
-
-        Returns
-        -------
-        IntegratedDataSpace1D
-            A data space that joins this data space with the model's evaluation space. if the model does not have an
-            evaluation space assigned to itself then `self` is returned.
-        """
-        evaluation_space = None
-
-        if model is not None and hasattr(model, "evaluation_space") \
-           and self not in model.evaluation_space:
-            evaluation_space = self
-
-        return self if evaluation_space is None else evaluation_space
 
 
 # We do not inherit from EvaluationSpace2D because that would require
@@ -2016,8 +1969,6 @@ class Data1D(Data):
                              use_evaluation_space: bool = False
                              ) -> np.ndarray | None:
         data_space = self._data_space.get(filter)
-        if use_evaluation_space:
-            return data_space.for_model(model).grid
 
         return data_space.grid
 
