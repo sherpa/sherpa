@@ -1288,7 +1288,7 @@ def test_show_data_explicit_id():
     s.show_data("bob", outfile=out)
 
     # not a full check of the output
-    assert out.getvalue().startswith("Data Set: bob\nname      = \n")
+    assert out.getvalue().startswith("Data Set: bob\nname       = \n")
 
 
 def test_show_kernel_explicit_id(tmp_path):
@@ -1365,16 +1365,17 @@ def test_show_psf_explicit_id(tmp_path):
     #
     toks = out.getvalue().split("\n")
     assert toks[0] == "PSF Model: bob"
-    assert toks[1].startswith("name      = ")
-    assert toks[2] == "x         = Float64[4]"
-    assert toks[3] == "y         = Float64[4]"
-    assert toks[4] == "staterror = None"
-    assert toks[5] == "syserror  = None"
+    assert toks[1].startswith("name       = ")
+    assert toks[2] == "x          = Float64[4]"
+    assert toks[3] == "y          = Float64[4]"
+    assert toks[4] == "staterror  = None"
+    assert toks[5] == "syserror   = None"
+    assert toks[6] == "integrated = False"
 
-    assert toks[6] == ""
     assert toks[7] == ""
     assert toks[8] == ""
-    assert len(toks) == 9
+    assert toks[9] == ""
+    assert len(toks) == 10
 
 
 def test_show_kernel_multiple(tmp_path):

@@ -5378,7 +5378,8 @@ class DataIMG(Data2D):
         #
         self._orig_indep_axis = (self.coord, x0, x1)
 
-        super().__init__(name, x0, x1, y, shape, staterror, syserror)
+        super().__init__(name, x0, x1, y,
+                         shape=shape, staterror=staterror, syserror=syserror)
 
         # special case the x-axis labels
         self._x0label = None
@@ -5921,19 +5922,19 @@ class DataIMGInt(DataIMG):
                  staterror=None, syserror=None, sky=None, eqpos=None,
                  coord='logical', header=None):
 
-        # Note: we do not call the superclass here.
         self._region = None
         self.sky = sky
         self.eqpos = eqpos
         self._set_coord(coord)
         self.header = {} if header is None else header
-        self.shape = shape
 
         self._x0label = 'x0'
         self._x1label = 'x1'
         self._ylabel = 'y'
 
-        Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
+        # Note that we are not calling the direct superclass here
+        Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror,
+                      integrated=True, shape=shape)
 
     def _init_data_space(self, filter, *data):
         ndata = len(data)
