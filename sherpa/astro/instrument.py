@@ -35,7 +35,7 @@ Michael F. Corcoran
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 import os
 
 import numpy as np
@@ -54,7 +54,7 @@ from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
 from sherpa.models.regrid import EvaluationSpace1D
 
-WCS: Optional[type["sherpa.astro.io.wcs.WCS"]] = None
+WCS: type["sherpa.astro.io.wcs.WCS"] | None = None
 try:
     from sherpa.astro.io.wcs import WCS
 except ImportError:
@@ -1523,7 +1523,7 @@ class RMFMatrix:
             raise ValueError("channels and matrix mismatch")
 
 
-def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
+def rmf_to_matrix(rmf: DataRMF | RMF1D) -> RMFMatrix:
     """Convert a RMF to a matrix (2D image).
 
     .. versionadded:: 4.16.0
@@ -1584,7 +1584,7 @@ def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
     return RMFMatrix(matrix, cgrid, egrid)
 
 
-def rmf_to_image(rmf: Union[DataRMF, RMF1D]) -> DataIMG:
+def rmf_to_image(rmf: DataRMF | RMF1D) -> DataIMG:
     """Convert a RMF to DataIMG.
 
     .. versionadded:: 4.16.0
