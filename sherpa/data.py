@@ -1208,27 +1208,24 @@ class Data(NoNewAttributesAfterInit, BaseData):
     @overload
     def get_y(self,
               filter: bool,
-              yfunc: None,
-              use_evaluation_space: bool = False
+              yfunc: None
               ) -> np.ndarray:
         ...
 
     @overload
     def get_y(self,
               filter: bool,
-              yfunc: ModelFunc,
-              use_evaluation_space: bool = False
+              yfunc: ModelFunc
               ) -> tuple[np.ndarray, ArrayType]:
         ...
 
-    def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
+    def get_y(self, filter=False, yfunc=None):
         """Return dependent axis in N-D view of dependent variable
 
         Parameters
         ----------
         filter
         yfunc
-        use_evaluation_space
 
         Returns
         -------
@@ -1696,8 +1693,7 @@ class Data1D(Data):
 
     def get_x(self,
               filter: bool = False,
-              model: ModelFunc | None = None,
-              use_evaluation_space: bool = False
+              model: ModelFunc | None = None
               ) -> np.ndarray | None:
 
         if model is not None:
@@ -1705,7 +1701,7 @@ class Data1D(Data):
             if mdim is not None and mdim != 1:
                 raise DataErr(f"Data and model dimensionality do not match: 1D and {mdim}D")
 
-        return self.get_evaluation_indep(filter, model, use_evaluation_space)[0]
+        return self.get_indep(filter)[0]
 
     def get_xerr(self,
                  filter: bool = False,
@@ -1768,28 +1764,24 @@ class Data1D(Data):
     @overload
     def get_y(self,
               filter: bool,
-              yfunc: None = None,
-              use_evaluation_space: bool = False
+              yfunc: None = None
               ) -> np.ndarray:
         ...
 
     @overload
     def get_y(self,
               filter: bool,
-              yfunc: ModelFunc,
-              use_evaluation_space: bool = False
+              yfunc: ModelFunc
               ) -> tuple[np.ndarray, ArrayType]:
         ...
 
-    def get_y(self, filter=False, yfunc=None,
-              use_evaluation_space=False):
+    def get_y(self, filter=False, yfunc=None):
         """Return the dependent axis.
 
         Parameters
         ----------
         filter
         yfunc
-        use_evaluation_space
 
         Returns
         -------
@@ -1807,7 +1799,7 @@ class Data1D(Data):
         if mdim is not None and mdim != 1:
             raise DataErr(f"Data and model dimensionality do not match: 1D and {mdim}D")
 
-        model_evaluation = yfunc(*self.get_evaluation_indep(filter, yfunc, use_evaluation_space))
+        model_evaluation = yfunc(*self.get_indep(filter))
         return (y, model_evaluation)
 
     @overload
@@ -1956,21 +1948,12 @@ class Data1D(Data):
                           staterrfunc: StatErrFunc | None = None):
         # As we introduced models defined on arbitrary grids, the x array can also depend on the
         # model function, at least in principle.
-        return (self.get_x(True, yfunc, use_evaluation_space=True),
-                self.get_y(True, yfunc, use_evaluation_space=True),
+        return (self.get_x(True, yfunc),
+                self.get_y(True, yfunc),
                 self.get_yerr(True, staterrfunc),
                 self.get_xerr(True, yfunc),
                 self.get_xlabel(),
                 self.get_ylabel())
-
-    def get_evaluation_indep(self,
-                             filter: bool = False,
-                             model: ModelFunc | None = None,
-                             use_evaluation_space: bool = False
-                             ) -> np.ndarray | None:
-        data_space = self._data_space.get(filter)
-
-        return data_space.grid
 
     def notice(self,
                xlo: float | None = None,
@@ -2137,10 +2120,9 @@ class Data1DInt(Data1D):
 
     def get_x(self,
               filter: bool = False,
-              model: ModelFunc | None = None,
-              use_evaluation_space: bool = False
+              model: ModelFunc | None = None
               ) -> np.ndarray:
-        indep = self.get_evaluation_indep(filter, model, use_evaluation_space)
+        indep = self.get_indep(filter)
         if len(indep) == 1:
             # assume all data has been filtered out
             return np.asarray([])
@@ -2173,7 +2155,7 @@ class Data1DInt(Data1D):
            can be None, it will always be an array, even if empty.
 
         """
-        indep = self.get_evaluation_indep(filter, model)
+        indep = self.get_indep(filter)
         if len(indep) == 1:
             # assume all data has been filtered out
             return np.asarray([])
@@ -2233,7 +2215,7 @@ class Data1DInt(Data1D):
         # would happen if we didn't over-ride Data1D.filter) but let's
         # use the start and end values for each selected bin.
         #
-        indep = self.get_evaluation_indep(filter=True)
+        indep = self.get_indep(filter=True)
         if len(indep) == 1:
             # assume all data has been filtered out
             return ''

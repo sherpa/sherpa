@@ -4486,8 +4486,7 @@ It is an integer or string.
     def get_y(self,
               filter: bool,
               yfunc: None,
-              response_id: IdType | None = None,
-              use_evaluation_space: bool = False
+              response_id: IdType | None = None
               ) -> np.ndarray:
         ...
 
@@ -4495,15 +4494,11 @@ It is an integer or string.
     def get_y(self,
               filter: bool,
               yfunc: ModelFunc,
-              response_id: IdType | None = None,
-              use_evaluation_space: bool = False
+              response_id: IdType | None = None
               ) -> tuple[np.ndarray, np.ndarray]:
         ...
 
-    # Note that use_evaluation_space is unused.
-    #
-    def get_y(self, filter=False, yfunc=None, response_id=None,
-              use_evaluation_space=False):
+    def get_y(self, filter=False, yfunc=None, response_id=None):
 
         vals = Data.get_y(self, yfunc=yfunc)
         vallist = (vals,) if yfunc is None else vals
