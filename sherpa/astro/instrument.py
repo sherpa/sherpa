@@ -38,7 +38,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Union
 import os
 
-import numpy
+import numpy as np
 
 import sherpa
 from sherpa.utils.err import InstrumentErr, DataErr, PSFErr
@@ -60,7 +60,7 @@ try:
 except ImportError:
     WCS = None
 
-_tol = numpy.finfo(numpy.float32).eps
+_tol = np.finfo(np.float32).eps
 
 string_types = (str, )
 
@@ -104,7 +104,7 @@ def apply_areascal(mdl, pha, instlabel):
     if ascal is None:
         return mdl
 
-    if numpy.iterable(ascal) and len(ascal) != len(mdl):
+    if np.iterable(ascal) and len(ascal) != len(mdl):
         raise DataErr('mismatch', instlabel,
                       f'AREASCAL: {pha.name}')
 
@@ -382,7 +382,7 @@ class ARFModelPHA(ARFModel):
                            exposure=arf.exposure, header=arf.header)
 
         # Filter the view for current fitting session
-        if numpy.iterable(pha.mask):
+        if np.iterable(pha.mask):
             mask = pha.get_mask()
             if len(mask) == len(self.arf.specresp):
                 self.arf.notice(mask)
@@ -795,7 +795,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
 
     def __init__(self, source, pha):
         self.channel = pha.channel
-        self.mask = numpy.ones(len(pha.channel), dtype=bool)
+        self.mask = np.ones(len(pha.channel), dtype=bool)
         self.pha = pha
         self.source = source
         self.elo = None
@@ -849,7 +849,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
 
     def startup(self, cache=False):
         pha = self.pha
-        if numpy.iterable(pha.mask):
+        if np.iterable(pha.mask):
             pha.notice_response(True)
         self.channel = pha.get_noticed_channels()
         self.mask = pha.get_mask()
@@ -858,10 +858,10 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
 
     def teardown(self):
         pha = self.pha
-        if numpy.iterable(pha.mask):
+        if np.iterable(pha.mask):
             pha.notice_response(False)
         self.channel = pha.channel
-        self.mask = numpy.ones(len(pha.channel), dtype=bool)
+        self.mask = np.ones(len(pha.channel), dtype=bool)
         self.elo = None
         self.ehi = None
         self.table = None
@@ -876,15 +876,15 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
     def _startup_user_grid(self, x, xhi=None):
         # fit() never comes in here b/c it calls startup()
         pha = self.pha
-        self.mask = numpy.zeros(len(pha.channel), dtype=bool)
-        self.mask[numpy.searchsorted(pha.channel, x)] = True
+        self.mask = np.zeros(len(pha.channel), dtype=bool)
+        self.mask[np.searchsorted(pha.channel, x)] = True
         pha.notice_response(True, x)
         self._get_noticed_energy_list()
 
     def _teardown_user_grid(self):
         # fit() never comes in here b/c it calls startup()
         pha = self.pha
-        self.mask = numpy.ones(len(pha.channel), dtype=bool)
+        self.mask = np.ones(len(pha.channel), dtype=bool)
         pha.notice_response(False)
         self.elo = None
         self.ehi = None
@@ -988,7 +988,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
     def __init__(self, rmf, model, pha=None):
         self.pha = pha
         self.channel = sao_arange(1, rmf.detchans)  # sao_arange is inclusive
-        self.mask = numpy.ones(rmf.detchans, dtype=bool)
+        self.mask = np.ones(rmf.detchans, dtype=bool)
         self.rmf = rmf
 
         self.elo, self.ehi = rmf.get_indep()
@@ -1022,7 +1022,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
 
         rmf = self.rmf
         self.channel = sao_arange(1, rmf.detchans)
-        self.mask = numpy.ones(rmf.detchans, dtype=bool)
+        self.mask = np.ones(rmf.detchans, dtype=bool)
         self.model.teardown()
         CompositeModel.teardown(self)
 
@@ -1032,8 +1032,8 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
 
     def _startup_user_grid(self, x):
         # fit() never comes in here b/c it calls startup()
-        self.mask = numpy.zeros(self.rmf.detchans, dtype=bool)
-        self.mask[numpy.searchsorted(self.pha.channel, x)] = True
+        self.mask = np.zeros(self.rmf.detchans, dtype=bool)
+        self.mask[np.searchsorted(self.pha.channel, x)] = True
 
     def _calc(self, p, xlo, xhi):
         # Evaluate source model on RMF energy/wave grid OR
@@ -1063,7 +1063,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
 
         finally:
             if user_grid:
-                self.mask = numpy.ones(self.rmf.detchans, dtype=bool)
+                self.mask = np.ones(self.rmf.detchans, dtype=bool)
 
         return vals
 
@@ -1219,7 +1219,7 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
     """
 
     if specresp is None:
-        specresp = numpy.ones(elo.size, dtype=numpy.float32)
+        specresp = np.ones(elo.size, dtype=np.float32)
 
     return DataARF(name, energ_lo=elo, energ_hi=ehi, specresp=specresp,
                    exposure=exposure, ethresh=ethresh, header=header)
@@ -1284,9 +1284,9 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     # Set up the delta-function response.
     #
     nchans = rmflo.size
-    matrix = numpy.ones(nchans, dtype=numpy.float32)
-    dummy = numpy.ones(nchans, dtype=numpy.int16)
-    f_chan = numpy.arange(offset, nchans + offset, dtype=numpy.int16)
+    matrix = np.ones(nchans, dtype=np.float32)
+    dummy = np.ones(nchans, dtype=np.int16)
+    f_chan = np.arange(offset, nchans + offset, dtype=np.int16)
 
     if e_min is None:
         e_min = rmflo
@@ -1389,7 +1389,7 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
 #
 def calc_grp_chan_matrix(fname: str,
                          startchan: int = 1
-                         ) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+                         ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Read in an image and convert it to RMF components.
 
     For an image containing a RMF, such as created by the `CIAO tool
@@ -1433,9 +1433,9 @@ def calc_grp_chan_matrix(fname: str,
     return matrix_to_rmf(iblock.image, startchan=startchan)
 
 
-def matrix_to_rmf(matrix: numpy.ndarray,
+def matrix_to_rmf(matrix: np.ndarray,
                   startchan: int = 1,
-                  ) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+                  ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Convert a matrix (2D image) to RMF components.
 
     .. versionchanged:: 4.17.0
@@ -1478,17 +1478,17 @@ def matrix_to_rmf(matrix: numpy.ndarray,
     n_chan1: list[int] = []
     f_chan1: list[int] = []
     for row in matrix > 0:
-        flag = numpy.hstack([[0], row, [0]])
-        diffs = numpy.diff(flag, n=1)
-        starts, = numpy.where(diffs > 0)
-        ends, = numpy.where(diffs < 0)
+        flag = np.hstack([[0], row, [0]])
+        diffs = np.diff(flag, n=1)
+        starts, = np.where(diffs > 0)
+        ends, = np.where(diffs < 0)
         n_chan1.extend(ends - starts)
         f_chan1.extend(starts + startchan)
         n_grp1.append(len(starts))
 
-    n_grp = numpy.asarray(n_grp1, dtype=numpy.int16)
-    f_chan = numpy.asarray(f_chan1, dtype=numpy.int16)
-    n_chan = numpy.asarray(n_chan1, dtype=numpy.int16)
+    n_grp = np.asarray(n_grp1, dtype=np.int16)
+    f_chan = np.asarray(f_chan1, dtype=np.int16)
+    n_chan = np.asarray(n_chan1, dtype=np.int16)
     matrix = matrix.flatten()
     matrix = matrix[matrix > 0]
     return n_grp, f_chan, n_chan, matrix
@@ -1498,7 +1498,7 @@ def matrix_to_rmf(matrix: numpy.ndarray,
 class RMFMatrix:
     """Raw RMF data"""
 
-    matrix: numpy.ndarray
+    matrix: np.ndarray
     """The matrix as a 2D array (X axis is channels, Y axis is energy)"""
     channels: EvaluationSpace1D
     """The channel values. This must be a non-integrated axis."""
@@ -1550,7 +1550,7 @@ def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
     #
     nchans = rmf.detchans
     nenergy = rmf.energ_lo.size
-    matrix = numpy.zeros((nenergy, nchans), dtype=rmf.matrix.dtype)
+    matrix = np.zeros((nenergy, nchans), dtype=rmf.matrix.dtype)
 
     # Loop through each energy bin and add in the data, which is split
     # into n_grp chunks, each starting at f_chan (with 1 being the
@@ -1577,8 +1577,8 @@ def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
             matrix_start = matrix_end
             chan_idx += 1
 
-    channels = numpy.arange(rmf.offset, rmf.offset + nchans,
-                            dtype=numpy.int16)
+    channels = np.arange(rmf.offset, rmf.offset + nchans,
+                         dtype=np.int16)
     cgrid = EvaluationSpace1D(channels)
     egrid = EvaluationSpace1D(rmf.energ_lo, rmf.energ_hi)
     return RMFMatrix(matrix, cgrid, egrid)
@@ -1607,7 +1607,7 @@ def rmf_to_image(rmf: Union[DataRMF, RMF1D]) -> DataIMG:
 
     nx = mat.channels.x_axis.size
     ny = mat.energies.x_axis.size
-    x1, x0 = numpy.mgrid[1:ny + 1, 1:nx + 1]
+    x1, x0 = np.mgrid[1:ny + 1, 1:nx + 1]
     x0 = x0.flatten()
     x1 = x1.flatten()
     y = mat.matrix.flatten()
