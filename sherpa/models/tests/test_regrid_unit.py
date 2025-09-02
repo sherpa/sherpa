@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 - 2024
+#  Copyright (C) 2017-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1563,7 +1563,7 @@ def test_evaluationspace_empty_range(cls, meth):
 
 @pytest.mark.parametrize("cls,expected",
                          [(EvaluationSpace1D, (None, )),
-                          (EvaluationSpace2D, ([None], [None]))
+                          (EvaluationSpace2D, (None, None))
                           ])
 def test_evaluationspace_empty_grid(cls, expected):
     """Simple check.
