@@ -553,7 +553,7 @@ class ARF1D(NoNewAttributesAfterInit):
         arf = None
         try:
             arf = ARF1D.__getattribute__(self, '_arf')
-        except:
+        except AttributeError:
             pass
 
         if name in ('_arf', '_pha'):
@@ -568,7 +568,7 @@ class ARF1D(NoNewAttributesAfterInit):
         arf = None
         try:
             arf = ARF1D.__getattribute__(self, '_arf')
-        except:
+        except AttributeError:
             pass
 
         if arf is not None and hasattr(arf, name):
@@ -620,7 +620,7 @@ class RMF1D(NoNewAttributesAfterInit):
         rmf = None
         try:
             rmf = RMF1D.__getattribute__(self, '_rmf')
-        except:
+        except AttributeError:
             pass
 
         if name in ('_rmf', '_pha'):
@@ -635,7 +635,7 @@ class RMF1D(NoNewAttributesAfterInit):
         rmf = None
         try:
             rmf = RMF1D.__getattribute__(self, '_rmf')
-        except:
+        except AttributeError:
             pass
 
         if rmf is not None and hasattr(rmf, name):
