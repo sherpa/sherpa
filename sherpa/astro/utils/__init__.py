@@ -1029,6 +1029,7 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
 
     if hasattr(data, 'get_response'):
         arf, rmf = data.get_response()
+        # Pick the energy grid from the RMF is set, otherwise the ARF.
         if rmf is not None:
             elo = rmf.energ_lo
             ehi = rmf.energ_hi

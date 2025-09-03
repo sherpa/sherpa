@@ -1928,7 +1928,7 @@ will be removed. The identifiers can be integers or strings.
         if val is None:
             return
 
-        warnings.warn("The bin_lo/hi fields are no-longer used: a diagonal RMF can badded to represent the mapping.", FutureWarning)
+        warnings.warn("The bin_lo/hi fields are no-longer used: a diagonal RMF can be added to represent the mapping.", FutureWarning)
 
     @property
     def bin_hi(self) -> np.ndarray | None:
