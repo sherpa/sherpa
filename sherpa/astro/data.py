@@ -1708,8 +1708,10 @@ class DataPHA(Data1D):
 
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if bkg.get_response() != (None, None) or \
-               (bkg.bin_lo is not None and bkg.bin_hi is not None):
+            # bkg is guaranteed to not be None
+            assert bkg is not None
+            barf, brmf = bkg.get_response()
+            if brmf is not None or barf is not None:
                 bkg.units = units
 
         self._units = units

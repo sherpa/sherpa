@@ -238,10 +238,7 @@ def test_write_arf_ascii(make_data_path, tmp_path):
 @requires_data
 @requires_fits
 def test_write_arf_fits_chandra_acis_hetg(make_data_path, tmp_path):
-    """Check we can write out a Chandra ACIS grating ARF as a FITS file.
-
-    This used to write out BIN_LO/HI values too, until #1564 was fixed.
-    """
+    """Check we can write out a Chandra ACIS grating ARF as a FITS file."""
 
     infile = make_data_path("3c120_meg_-1.arf.gz")
     orig = io.read_arf(infile)
@@ -280,10 +277,7 @@ def test_write_arf_fits_chandra_acis_hetg(make_data_path, tmp_path):
 @requires_data
 @requires_fits
 def test_write_arf_ascii_chandra_acis_hetg(make_data_path, tmp_path):
-    """Check we can write out a Chandra ACIS grating ARF as an ASCII file.
-
-    This used to write out BIN_LO/HI values too, until #1564 was fixed.
-    """
+    """Check we can write out a Chandra ACIS grating ARF as an ASCII file."""
 
     infile = make_data_path("3c120_meg_-1.arf.gz")
     orig = io.read_arf(infile)
