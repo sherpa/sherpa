@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023
+#  Copyright (C) 2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,7 +25,8 @@ import numpy as np
 import pytest
 
 from sherpa.models.basic import Gauss1D, StepLo1D
-from sherpa.utils import _psf
+
+_psf = pytest.importorskip("sherpa.utils._psf")
 
 
 def test_exports():

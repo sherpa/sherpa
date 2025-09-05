@@ -42,6 +42,17 @@ from sherpa.models.model import ArithmeticConstantModel, \
 from sherpa.utils.err import ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
+from sherpa.utils import _psf
+HAS_PSF = _psf is not None
+if HAS_PSF:
+    def psf_skipper(a, b):
+        return a, b
+
+else:
+    def psf_skipper(a, b):
+        return pytest.param(a, b,
+                            marks=pytest.mark.skip("FFT/PSF not enabled"))
+
 
 def test_basic_unop_neg_raw():
 
@@ -596,7 +607,11 @@ class TestBrackets:
     tm = basic.TableModel('tm')
 
     # Convolution-style model (PSF)
-    cm = PSFModel('cm', basic.Const1D('cmflat'))
+    if HAS_PSF:
+        cm = PSFModel('cm', basic.Const1D('cmflat'))
+    else:
+        # just to make sure the evaluation below does not error out
+        cm = lambda x: x
 
     # Convolution-style model (PHA)
     #
@@ -686,10 +701,10 @@ class TestBrackets:
                                'tm * (a + b) + tm * a * b'),
                               (tm * (a + b) + tm * (a * (b + 3)),
                                'tm * (a + b) + tm * a * (b + 3.0)'),
-                              (cm(a) + b, 'cm(a) + b'),
-                              (a * cm(b + c), 'a * cm(b + c)'),
-                              (a + cm(b + 2 * d + c),
-                               'a + cm(b + 2.0 * d + c)'),
+                              psf_skipper(cm(a) + b, 'cm(a) + b'),
+                              psf_skipper(a * cm(b + c), 'a * cm(b + c)'),
+                              psf_skipper(a + cm(b + 2 * d + c),
+                                          'a + cm(b + 2.0 * d + c)'),
                               (arf(b * (c * d)) + d,
                                "apply_arf(100.0 * b * c * d) + d"),
                               (a + 2 * arf(b * (c + d)),
@@ -737,13 +752,15 @@ class TestBrackets:
         if expected.find("apply") != -1:
             return
 
-        got = eval(expected, None,
-                   {"a": self.a,
-                    "b": self.b,
-                    "c": self.c,
-                    "d": self.d,
-                    "tm": self.tm,
-                    "cm": self.cm})
+        environment = {"a": self.a,
+                       "b": self.b,
+                       "c": self.c,
+                       "d": self.d,
+                       "tm": self.tm}
+        if HAS_PSF:
+            environment["cm"] = self.cm
+
+        got = eval(expected, None, environment)
         assert isinstance(got, Model)
 
         # Just because we can
