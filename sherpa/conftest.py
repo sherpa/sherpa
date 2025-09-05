@@ -727,9 +727,9 @@ def add_sherpa_test_data_dir(doctest_namespace):
 #
 eterm = r"(?:e[+-]?\d+)"
 term = "|".join([fr"[+-]?\d+\.\d*{eterm}?",
-                 fr"[+-]?\.\d+{eterm}?"
+                 fr"[+-]?\.\d+{eterm}?",
                  fr"[+-]?\d+{eterm}"])
-PATTERN = re.compile(fr"(.*)(?<![\d+-])({term})")
+PATTERN = re.compile(fr"(.*)(?<![\d+-\.])({term})")
 
 
 class NumberChecker:
@@ -760,16 +760,16 @@ class NumberChecker:
             The string containing a single number.
         """
 
-        match = PATTERN.match(text)
-        if match is None:
+        matches = PATTERN.match(text)
+        if matches is None:
             # Make sure that we note a case where the regexp has
             # failed to find a number.
             #
             raise ValueError(f"Error in test - no number found in '{text}'")
 
-        lhs = match[1]
-        number = float(match[2])
-        rhs = text[match.end():]
+        lhs = matches[1]
+        number = float(matches[2])
+        rhs = text[matches.end():]
 
         return lhs, number, rhs
 
