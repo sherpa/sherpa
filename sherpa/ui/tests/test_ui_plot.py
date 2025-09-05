@@ -1779,7 +1779,7 @@ def test_show_cdf_plot_empty(session):
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 @pytest.mark.parametrize("use_numpy", [False, True])
-def test_show_cdf_plot(session, use_numpy, old_numpy_printing):
+def test_show_cdf_plot(session, use_numpy):
     """This was to show issue #912 that has now been fixed.
 
     The display of the numeric values can depend on the
@@ -1802,7 +1802,7 @@ def test_show_cdf_plot(session, use_numpy, old_numpy_printing):
 
     assert toks[0] == 'points = [20,15,25,10]'
     assert toks[1] == 'x      = [10,15,20,25]'
-    assert toks[2] == 'y      = [ 0.25, 0.5 , 0.75, 1.  ]'
+    assert toks[2] == 'y      = [0.25,0.5 ,0.75,1.  ]'
     assert toks[3] == 'median = 17.5'
     assert toks[4].startswith('lower  = 12.37')
     assert toks[5].startswith('upper  = 22.62')
@@ -1974,12 +1974,8 @@ def test_show_pdf_plot_empty(session):
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_show_pdf_plot(session, old_numpy_printing):
-    """This is important as it also checks normed=False
-
-    The display of the numeric values can depend on the
-    NumPy version, so force the legacy output.
-    """
+def test_show_pdf_plot(session):
+    """This is important as it also checks normed=False."""
 
     s = session()
 
@@ -1993,8 +1989,8 @@ def test_show_pdf_plot(session, old_numpy_printing):
     assert len(toks) == 8
 
     assert toks[0] == 'points = [20,15,25,10]'
-    assert toks[1] == 'xlo    = [ 10., 15., 20.]'
-    assert toks[2] == 'xhi    = [ 15., 20., 25.]'
+    assert toks[1] == 'xlo    = [10.,15.,20.]'
+    assert toks[2] == 'xhi    = [15.,20.,25.]'
     assert toks[3] == 'y      = [1,1,2]'
     assert toks[4] == 'xlabel = x'
     assert toks[5] == 'ylabel = probability density'

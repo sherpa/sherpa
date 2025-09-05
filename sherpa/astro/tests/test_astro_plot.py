@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018 - 2025
+#  Copyright (C) 2007, 2015, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -776,7 +776,7 @@ def test_str_flux_histogram_empty(energy, cls):
 @pytest.mark.parametrize("energy,cls",
                          [(True, aplot.EnergyFluxHistogram),
                           (False, aplot.PhotonFluxHistogram)])
-def test_str_flux_histogram_full(energy, cls, old_numpy_printing):
+def test_str_flux_histogram_full(energy, cls):
     """Check str of a flux histogram"""
 
     # First column is flux, next two are pars, and the
@@ -795,12 +795,12 @@ def test_str_flux_histogram_full(energy, cls, old_numpy_printing):
 
     # lines 1-4 are the modelvals array;assume they are
     # displayed correctly
-    assert out[0] == 'modelvals = [[ 0.1, 1.1],'
-    assert out[4] == 'clipped   = [ 1., 1., 0., 1.]'
-    assert out[5] == 'flux      = [ 1. , 1.5, 2. , 0.5]'
-    assert out[6] == 'xlo       = [ 0.5  , 0.875, 1.25 , 1.625]'
-    assert out[7] == 'xhi       = [ 0.875, 1.25 , 1.625, 2.   ]'
-    assert out[8] == 'y         = [ 1., 1., 1., 1.]'
+    assert out[0] == 'modelvals = [[0.1,1.1],'
+    assert out[4] == 'clipped   = [1.,1.,0.,1.]'
+    assert out[5] == 'flux      = [1. ,1.5,2. ,0.5]'
+    assert out[6] == 'xlo       = [0.5  ,0.875,1.25 ,1.625]'
+    assert out[7] == 'xhi       = [0.875,1.25 ,1.625,2.   ]'
+    assert out[8] == 'y         = [1.,1.,1.,1.]'
 
     # the exact text depends on the plot backend
     if energy:
