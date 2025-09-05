@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2015, 2017, 2020 - 2024
+//  Copyright (C) 2009, 2015, 2017, 2020 - 2025
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -36,20 +36,6 @@
 
 #include <XSFunctions/Utilities/funcType.h>
 #include <XSFunctions/Utilities/xsFortran.h>
-
-// The table interface is defined in XSPEC 12.12.1 in xsFortran.h
-// (and uses const parameters) but it is not defined in 12.12.0.
-//
-#ifndef XSPEC_12_12_1
-extern "C" {
-
-  void tabint(float* ear, int ne, float* param,
-	      int npar, const char* filenm, int ifl,
-	      const char* tabtyp, float* photar, float* photer);
-
-}
-#endif
-
 
 namespace sherpa { namespace astro { namespace xspec {
 
