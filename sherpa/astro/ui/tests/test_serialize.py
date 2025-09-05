@@ -2357,7 +2357,7 @@ set_xsxset("NEIVERS", "3.0.4")
 
 
 @pytest.fixture(autouse=True)
-def setup(hide_logging, old_numpy_printing, clean_astro_ui):
+def setup(hide_logging, clean_astro_ui):
     """Setup for all the tests"""
 
     if has_xspec:
