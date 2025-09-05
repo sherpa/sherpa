@@ -1372,9 +1372,9 @@ def test_badstat_data1ding(pcls, scls):
 @pytest.mark.parametrize("contents,expected",
                          [([], ""),
                           ([sherpaplot.DataPlot(), sherpaplot.ModelPlot()],
-                           ""),
+                           None),
                           ([sherpaplot.ModelPlot(), sherpaplot.DataPlot()],
-                           ""),
+                           "Model"),
                           ])
 def test_multiplot_title(contents, expected):
     """Do we get the multiplot title?
@@ -1409,8 +1409,8 @@ def test_multiplot_xxx_prefs_empty(ptype):
 
     p = sherpaplot.MultiPlot()
 
-    # AttributeError: 'MultiPlot' object has no attribute 'xxx_prefs'
-    with pytest.raises(AttributeError):
+    with pytest.raises(AttributeError,
+                       match=f"^Need a plot to define the '{ptype}_prefs' attribute$"):
         _ = getattr(p, f"{ptype}_prefs")
 
 
@@ -1431,6 +1431,6 @@ def test_multiplot_xxx_prefs(ptype, cls):
     prefs["xlog"] = False
     p.add(d)
 
-    # AttributeError: 'MultiPlot' object has no attribute 'xxx_prefs'
-    with pytest.raises(AttributeError):
-        _ = getattr(p, f"{ptype}_prefs")
+    # Is the preference "copied" to MultiPlot?
+    prefs = getattr(p, f"{ptype}_prefs")
+    assert not prefs["xlog"]
