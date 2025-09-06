@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2023  MIT
+#  Copyright (C) 2023,2025  MIT
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 '''Make sure we tests the test fixtures.'''
+
 import pytest
+
 
 def test_check_str_fails(check_str):
     '''The tests that use check_str make sure that it passes,
@@ -38,3 +40,39 @@ def test_check_str_fails_with_float_cmp_number_only(check_str):
     # assertion error.
     with pytest.raises(AssertionError, match="^assert 1.23456 "):
         check_str('1.23456', ['1.230000   # doctest: +FLOAT_CMP  '])
+
+
+@pytest.mark.parametrize("got,expected",
+                         [(" a str with 3 numbers ",
+                           [" a str with 3 numbers "]),
+                          ("some text 1 = 1.23",
+                           ["some text 1 = 1.23  # doctest: +FLOAT_CMP"]),
+                          ("sometext2(1.23)",
+                           ["sometext2(1.23)  # doctest: +FLOAT_CMP"]),
+                          ("some text 3 = 1.23e-4",
+                           ["some text 3 = 1.23e-4  # doctest: +FLOAT_CMP"]),
+                          ("sometext4(1.23e-4)",
+                           ["sometext4(1.23e-4)  # doctest: +FLOAT_CMP"]),
+                          pytest.param("vals1 = 23e4",
+                                       ["vals1 = 23e4  # doctest: +FLOAT_CMP"], marks=pytest.mark.xfail),
+                          pytest.param("func(23e4)",
+                                       ["func(23e4)  # doctest: +FLOAT_CMP"], marks=pytest.mark.xfail),
+                          ("vals1 = .23e4",
+                           ["vals1 = .23e4  # doctest: +FLOAT_CMP"]),
+                          ("func(.23e4)",
+                           ["func(.23e4)  # doctest: +FLOAT_CMP"]),
+                          # add a few tests with approximate equality
+                          ("foo = 1.23e4",
+                           ["foo = 1.22999999e4  # doctest: +FLOAT_CMP"]),
+                          ("foo = 2.3e3",
+                           ["foo = .22999999e4  # doctest: +FLOAT_CMP"]),
+                          # multi-line string
+                          ("foo x\nbar = 0.023\n x ",
+                           ["foo x",
+                            "bar = 2.3e-2  # doctest: +FLOAT_CMP",
+                            " x "])
+                         ])
+def test_check_str_passes(got, expected, check_str):
+    """Valdate that check_str passes where expected"""
+
+    check_str(got, expected)
