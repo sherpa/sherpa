@@ -531,7 +531,7 @@ the same as
 :ref:`the previous attempt <fit_c0_c1_c2>`? The final statistic
 values are the same up to numerical precision:
 
-   >>> res3.statval == res2.statval
+   >>> np.isclose(res3.statval, res2.statval)
    True
    >>> res3.statval - res2.statval
    1.7763568394002505e-15

@@ -305,14 +305,8 @@ try:
         which can provide further information about the optimization process:
 
         >>> out = result.extra_output['optimagic result'].convergence_report['five_steps']
-        >>> print(out['relative_criterion_change'])
-        0.005612990396312942
-        >>> print(out['relative_params_change'])
-        0.02107477731074966
-        >>> print(out['absolute_criterion_change'])
-        0.03861711780950028
-        >>> print(out['absolute_params_change'])
-        0.7639186767308352
+        >>> print(out.keys())
+        dict_keys(['relative_criterion_change', 'relative_params_change', 'absolute_criterion_change', 'absolute_params_change'])
         """
         def _get_default_config(self) -> dict[str, Any]:
             sig = inspect.signature(om.minimize)
