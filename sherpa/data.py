@@ -702,7 +702,7 @@ class Filter:
         independent axis of a `Data` object - so ``(x, )`` for
         one-dimensional data, ``(xlo, xhi)`` for integrated
         one-dimensional data, ``(x0, x1)`` for two-dimensional data,
-        and ``(x0lo, x1lo, x0hi, x1hi)`` for integrated two-dimensinal
+        and ``(x0lo, x1lo, x0hi, x1hi)`` for integrated two-dimensional
         data. The ``mins`` and ``maxes`` must then be set to match
         this ordering.
 
@@ -861,7 +861,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
     field. Other fields are listed in _extra_fields.
     """
 
-    _extra_fields: FieldsType = ()
+    _extra_fields: FieldsType = ('integrated',)
     """Any extra fields that should be displayed by str(object)."""
 
     _related_fields: FieldsType = ("y", "staterror", "syserror")
@@ -875,25 +875,46 @@ class Data(NoNewAttributesAfterInit, BaseData):
     _size: int | None = None
     _staterror: np.ndarray | None = None
     _syserror: np.ndarray | None = None
+    _integrated: bool = False
 
     ndim: int | None = None
     "The dimensionality of the dataset, if defined, or None."
+
+    shape: tuple | None = None
 
     def __init__(self,
                  name: str,
                  indep: Sequence[ArrayType] | Sequence[None],
                  y: ArrayType | None,
                  staterror: ArrayType | None = None,
-                 syserror: ArrayType | None = None
+                 syserror: ArrayType | None = None,
+                 shape: tuple[int, int] | None = None,
+                 integrated: bool = False,
                  ) -> None:
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
         self.y, self.mask = _check_dep(y)
         self.staterror = staterror
         self.syserror = syserror
+        self._integrated = integrated
 
         self._ylabel = 'y'
+        if integrated and len(indep) % 2 != 0:
+            raise ValueError("In integrated mode, independent variables must be pairs of x0lo, x1lo, ... x0hi, x1hi... .")
+        self.ndim = len(indep) // {False: 1, True: 2}[integrated]
+        if shape is not None and len(shape) != self.ndim:
+            raise ValueError(f"Shape {shape} does not match data dimensionality {self.ndim}.")
+        else:
+            self.shape = shape
         NoNewAttributesAfterInit.__init__(self)
+
+    @property
+    def integrated(self) -> bool:
+        """Return whether the data is integrated.
+
+        This property cannot be changed after the class is created.
+        """
+        return self._integrated
 
     def _check_data_space(self, dataspace):
         """Check that the data space has the correct size.
@@ -1692,7 +1713,6 @@ class Data1D(Data):
         the systematic error associated with the data
     '''
     _fields: FieldsType = ("name", "x", "y", "staterror", "syserror")
-    ndim = 1
 
     def __init__(self,
                  name: str,
@@ -2144,7 +2164,8 @@ class Data1DInt(Data1D):
 
         # Note: we do not call the superclass here.
         self._xlabel = 'x'
-        Data.__init__(self, name, (xlo, xhi), y, staterror, syserror)
+        Data.__init__(self, name, (xlo, xhi), y, staterror, syserror,
+                      integrated=True)
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the data
@@ -2343,124 +2364,56 @@ class Data1DInt(Data1D):
         """
         Property kept for compatibility
         """
-        return self._data_space.x_axis.lo
+        return self._data_space.axes[0].lo
 
     @property
     def xhi(self) -> np.ndarray | None:
         """
         Property kept for compatibility
         """
-        return self._data_space.x_axis.hi
+        return self._data_space.axes[0].hi
 
+class BaseData2D(Data):
+    """Base class for all data classes."""
+    def notice(self,
+               x0lo: float | None = None,
+               x0hi: float | None = None,
+               x1lo: float | None = None,
+               x1hi: float | None = None,
+               ignore: bool = False
+               ) -> None:
+        xlo = (x0lo, x1lo)
+        xhi = (x0hi, x1hi)
+        if self.integrated:
+            xlo = (None, None) + xlo
+            xhi = xhi + (None, None)
+        super().notice(xlo, xhi,
+                       ignore=ignore, integrated=self.integrated)
 
-class Data2D(Data):
-    '''2D data set
+    # Why have the "self.integrated" check in here instead of just defining
+    # in two separate classes?
+    # I want to be able to inherit in a common tree, e.g. DataIMG and DataIMGInt
+    # without having to worry if they inherit from an integrated or a
+    # non-integrated set.
 
-    This class represents a 2D data set. It is desigend to work with flattened
-    arrays for coordinates and independent variables, which makes it easy to
-    deal with filters and sparse or irregularly-placed grids.
-
-    Of course, the same structure can also be used for regularly-gridded data,
-    it just has to be passed in as a flattened array. However, in this case
-    the more specialized `~sherpa.astro.data.DataIMG` class might be more appropriate.
-
-    Parameters
-    ----------
-    name : string
-        name of this dataset
-    x0 : array-like
-        Independent coordinate values for the first dimension
-    x1 : array-like
-        Independent coordinate values for the second dimension
-    y : array-like
-        The values of the dependent observable. If this is a numpy masked
-        array, the mask will be used to initialize a mask.
-    shape : tuple
-        Shape of the data grid for regularly gridded data (optional). This is
-        used to return the data as an image e.g. for display,
-        but it not needed for fitting and modelling.
-        For irregularly gridded data, shape must be `None`.
-    staterror : array-like
-        the statistical error associated with the data
-    syserror : array-like
-        the systematic error associated with the data
-
-    Examples
-    --------
-    An irregularly-gridded 2D dataset, with points at (-200, -200),
-    (-200, 0), (0, 0), (200, -100), and (200, 150) can be created
-    with:
-
-        >>> irreg2d = Data2D("irregular2d",
-        ...                  [-200, -200, 0, 200, 200],
-        ...                  [-200, 0, 0, -100, 150],
-        ...                  [12, 15, 23, 45, -2])
-
-    A regularly-gridded 2D dataset can be created, but the
-    arguments must be flattened::
-
-        >>> import numpy as np
-        >>> x1, x0 = np.mgrid[20:30:2, 5:20:2]
-        >>> datashape = x0.shape
-        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
-        >>> x0 = x0.flatten()
-        >>> x1 = x1.flatten()
-        >>> y = y.flatten()
-        >>> reg2d = Data2D("regular2d", x0, x1, y, shape=datashape)
-
-    .. note::
-        Sherpa provides the `~sherpa.astro.data.DataIMG` class to handle
-        regularly-gridded data more easily.
-    '''
-    _fields: FieldsType = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
-    ndim = 2
-
-    # Why should we add shape to extra-fields instead? See #1359 to
-    # fix #47.
-    #
-    # It would change the notebook output slightly so we don't change
-    # for now.
-    #
-    # _extra_fields = ("shape", )
-
-    def __init__(self,
-                 name: str,
-                 x0: ArrayType | None,
-                 x1: ArrayType | None,
-                 y: ArrayType | None,
-                 shape: tuple[int, int] | None = None,
-                 staterror: ArrayType | None = None,
-                 syserror: ArrayType | None = None
-                 ) -> None:
-        self.shape = shape
-
-        self._x0label = 'x0'
-        self._x1label = 'x1'
-
-        super().__init__(name, (x0, x1), y, staterror, syserror)
-
-    def _repr_html_(self) -> str:
-        """Return a HTML (string) representation of the data
-        """
-        return html_data2d(self)
-
-    def _init_data_space(self,
-                         filter: Filter,
-                         *data: ArrayType
-                         ) -> DataSpace2D:
-        ndata = len(data)
-        if ndata != 2:
-            raise DataErr("wrongaxiscount", self.name, 2, ndata)
-
-        ds = DataSpace2D(filter, *data)
-        self._check_data_space(ds)
-        return ds
-
+    # This somewhat duplicates midpoint_grid in the dataspace
+    # When the dataspace is set correctly, can call that instead.
+    # instad of implementing here again.
     def get_x0(self, filter: bool = False) -> np.ndarray | None:
-        return self._data_space.get(filter).x0
+        if self.size is None:
+            return None
+        indep = self._data_space.get(filter)
+        if self.integrated:
+            return (indep.x0lo + indep.x0hi) / 2.0
+        return indep.x0
 
-    def get_x1(self, filter: bool = False) -> np.ndarray | None:
-        return self._data_space.get(filter).x1
+    def get_x1(self, filter=False) -> np.ndarray | None:
+        if self.size is None:
+            return None
+        indep = self._data_space.get(filter)
+        if self.integrated:
+            return (indep.x1lo + indep.x1hi) / 2.0
+        return indep.x1
 
     def get_x0label(self) -> str:
         """Return label for first dimension in 2-D view of independent axis/axes.
@@ -2630,6 +2583,109 @@ class Data2D(Data):
         if self.shape is None:
             raise DataErr('shape', self.name)
 
+
+class Data2D(BaseData2D):
+    '''2D data set
+
+    This class represents a 2D data set. It is desigend to work with flattened
+    arrays for coordinates and independent variables, which makes it easy to
+    deal with filters and sparse or irregularly-placed grids.
+
+    Of course, the same structure can also be used for regularly-gridded data,
+    it just has to be passed in as a flattened array. However, in this case
+    the more specialized `~sherpa.astro.data.DataIMG` class might be more appropriate.
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    x0 : array-like
+        Independent coordinate values for the first dimension
+    x1 : array-like
+        Independent coordinate values for the second dimension
+    y : array-like
+        The values of the dependent observable. If this is a numpy masked
+        array, the mask will be used to initialize a mask.
+    shape : tuple
+        Shape of the data grid for regularly gridded data (optional). This is
+        used to return the data as an image e.g. for display,
+        but it not needed for fitting and modelling.
+        For irregularly gridded data, shape must be `None`.
+    staterror : array-like
+        the statistical error associated with the data
+    syserror : array-like
+        the systematic error associated with the data
+
+    Examples
+    --------
+    An irregularly-gridded 2D dataset, with points at (-200, -200),
+    (-200, 0), (0, 0), (200, -100), and (200, 150) can be created
+    with:
+
+        >>> irreg2d = Data2D("irregular2d",
+        ...                  [-200, -200, 0, 200, 200],
+        ...                  [-200, 0, 0, -100, 150],
+        ...                  [12, 15, 23, 45, -2])
+
+    A regularly-gridded 2D dataset can be created, but the
+    arguments must be flattened::
+
+        >>> import numpy as np
+        >>> x1, x0 = np.mgrid[20:30:2, 5:20:2]
+        >>> datashape = x0.shape
+        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+        >>> x0 = x0.flatten()
+        >>> x1 = x1.flatten()
+        >>> y = y.flatten()
+        >>> reg2d = Data2D("regular2d", x0, x1, y, shape=datashape)
+
+    .. note::
+        Sherpa provides the `~sherpa.astro.data.DataIMG` class to handle
+        regularly-gridded data more easily.
+    '''
+    _fields: FieldsType = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
+
+    # Why should we add shape to extra-fields instead? See #1359 to
+    # fix #47.
+    #
+    # It would change the notebook output slightly so we don't change
+    # for now.
+    #
+    # _extra_fields = ("shape", )
+
+    def __init__(self,
+                 name: str,
+                 x0: ArrayType | None,
+                 x1: ArrayType | None,
+                 y: ArrayType | None,
+                 shape: Sequence[int] | None = None,
+                 staterror: ArrayType | None = None,
+                 syserror: ArrayType | None = None
+                 ) -> None:
+
+        self._x0label = 'x0'
+        self._x1label = 'x1'
+
+        super().__init__(name, (x0, x1), y, staterror, syserror,
+                         integrated=False, shape=shape)
+
+    def _repr_html_(self) -> str:
+        """Return a HTML (string) representation of the data
+        """
+        return html_data2d(self)
+
+    def _init_data_space(self,
+                         filter: Filter,
+                         *data: ArrayType
+                         ) -> DataSpace2D:
+        ndata = len(data)
+        if ndata != 2:
+            raise DataErr("wrongaxiscount", self.name, 2, ndata)
+
+        ds = DataSpace2D(filter, *data)
+        self._check_data_space(ds)
+        return ds
+
     @property
     def x0(self) -> np.ndarray | None:
         """
@@ -2644,18 +2700,8 @@ class Data2D(Data):
         """
         return self.get_x1()
 
-    def notice(self,
-               x0lo: float | None = None,
-               x0hi: float | None = None,
-               x1lo: float | None = None,
-               x1hi: float | None = None,
-               ignore: bool = False
-               ) -> None:
-        Data.notice(self, (x0lo, x1lo), (x0hi, x1hi),
-                    ignore=ignore)
 
-
-class Data2DInt(Data2D):
+class Data2DInt(BaseData2D):
     '''2-D integrated data set
 
     This class represents a 2D data set. It is desigend to work with flattened
@@ -2744,7 +2790,8 @@ class Data2DInt(Data2D):
         self._x0label = 'x0'
         self._x1label = 'x1'
         self._ylabel = 'y'
-        Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
+        super().__init__(name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror,
+                         integrated=True, shape=shape)
 
     def _init_data_space(self,
                          filter: Filter,
@@ -2758,27 +2805,7 @@ class Data2DInt(Data2D):
         self._check_data_space(ds)
         return ds
 
-    def get_x0(self, filter: bool = False) -> np.ndarray | None:
-        if self.size is None:
-            return None
-        indep = self._data_space.get(filter)
-        return (indep.x0lo + indep.x0hi) / 2.0
 
-    def get_x1(self, filter=False) -> np.ndarray | None:
-        if self.size is None:
-            return None
-        indep = self._data_space.get(filter)
-        return (indep.x1lo + indep.x1hi) / 2.0
-
-    def notice(self,
-               x0lo: float | None = None,
-               x0hi: float | None = None,
-               x1lo: float | None = None,
-               x1hi: float | None = None,
-               ignore: bool = False
-               ) -> None:
-        Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None),
-                    ignore=ignore, integrated=True)
 
     @property
     def x0lo(self) -> np.ndarray | None:
@@ -2807,6 +2834,26 @@ class Data2DInt(Data2D):
         Property kept for compatibility
         """
         return self._data_space.x1hi
+
+    @property
+    def x0(self) -> np.ndarray | None:
+        """
+        kept for compatibility:
+        Is this really needed?
+        Only used in a single test that says
+        "Result is presumably autogenerated"
+        """
+        return self.get_x0()
+
+    @property
+    def x1(self) -> np.ndarray | None:
+        """
+        kept for compatibility
+        Is this really needed?
+        Only used in a single test that says
+        "Result is presumably autogenerated"
+        """
+        return self.get_x1()
 
 
 # Notebook representations
