@@ -22,6 +22,7 @@ from importlib.resources import files
 import os
 import re
 import logging
+from pathlib import Path
 import time
 
 import numpy as np
@@ -342,7 +343,7 @@ def pytest_configure(config):
     try:
         path = config.getoption(TEST_DATA_OPTION)
         if path:
-            set_datadir(path)
+            set_datadir(str(Path(path).resolve()))
     except ValueError:  # option not defined from command line, no-op
         pass
 
