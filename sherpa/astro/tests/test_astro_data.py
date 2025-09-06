@@ -3166,7 +3166,7 @@ def test_data_is_empty(data_class, args):
     """There is no size attribute"""
 
     data = data_class("empty", *args)
-    assert data.size is None
+    assert data.size is 0
 
 
 def test_datapha_size():
@@ -3186,15 +3186,14 @@ def test_data2d_size(data_args):
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
 def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
-    """Check out how we error out.
+    """Setting with a scalar sets all (in this case: 0) y values to that scalar.
 
     This is a regression test.
     """
 
     data = data_class("empty", *args)
-    with pytest.raises(DataErr,
-                       match="The size of 'empty' has not been set"):
-        data.set_dep(2)
+    data.set_dep(2)
+    assert data.get_dep() == pytest.approx(np.array([]))
 
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
@@ -3819,15 +3818,10 @@ def test_pha_group_xxx_with_background(caplog):
 def test_eval_model_when_empty_datapha():
     """This is a regression test."""
 
-    def mdl(*args):
-        assert len(args) == 1
-        assert args[0] is None
-        return [-9]  # easy to check for
-
-    mdl.ndim = 1
     data = DataPHA("empty", None, None)
-    resp = data.eval_model(mdl)
-    assert resp == pytest.approx([-9])
+    with pytest.raises(DataErr,
+                       match="The size of 'empty' has not been set"):
+        _ = data.eval_model(Gauss1D())
 
 
 def test_eval_model_to_fit_when_empty_datapha():
@@ -3910,7 +3904,7 @@ def test_to_guess_when_empty_datapha():
 
     data = DataPHA("empty", None, None)
     with pytest.raises(DataErr,
-                       match="The size of 'empty' has not been set"):
+                       match="data set 'empty' has no channel information"):
         _ = data.to_guess()
 
 
