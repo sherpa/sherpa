@@ -35,10 +35,10 @@ Michael F. Corcoran
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 import os
 
-import numpy
+import numpy as np
 
 import sherpa
 from sherpa.utils.err import InstrumentErr, DataErr, PSFErr
@@ -54,13 +54,13 @@ from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
 from sherpa.models.regrid import EvaluationSpace1D
 
-WCS: Optional[type["sherpa.astro.io.wcs.WCS"]] = None
+WCS: type["sherpa.astro.io.wcs.WCS"] | None = None
 try:
     from sherpa.astro.io.wcs import WCS
 except ImportError:
     WCS = None
 
-_tol = numpy.finfo(numpy.float32).eps
+_tol = np.finfo(np.float32).eps
 
 string_types = (str, )
 
@@ -104,7 +104,7 @@ def apply_areascal(mdl, pha, instlabel):
     if ascal is None:
         return mdl
 
-    if numpy.iterable(ascal) and len(ascal) != len(mdl):
+    if np.iterable(ascal) and len(ascal) != len(mdl):
         raise DataErr('mismatch', instlabel,
                       f'AREASCAL: {pha.name}')
 
@@ -266,6 +266,9 @@ class RSPModel(CompositeModel, ArithmeticModel):
 class RMFModelPHA(RMFModel):
     """RMF convolution model with associated PHA data set.
 
+    .. versionchanged:: 4.18.0
+       The bin_lo and bin_hi columns are now ignored.
+
     Notes
     -----
     Scaling by the AREASCAL setting (scalar or array) is included in
@@ -281,31 +284,6 @@ class RMFModelPHA(RMFModel):
 
         RMFModel.filter(self)
 
-        pha = self.pha
-        # If PHA is a finer grid than RMF, evaluate model on PHA and
-        # rebin down to the granularity that the RMF expects.
-        if pha.bin_lo is not None and pha.bin_hi is not None:
-            bin_lo, bin_hi = pha.bin_lo, pha.bin_hi
-
-            # If PHA grid is in angstroms then convert to keV for
-            # consistency
-            if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = hc / pha.bin_hi
-                bin_hi = hc / pha.bin_lo
-
-            # FIXME: What about filtered option?? bin_lo, bin_hi are
-            # unfiltered??
-
-            # Compare disparate grids in energy space
-            self.rmfargs = ((self.elo, self.ehi), (bin_lo, bin_hi))
-
-            # FIXME: Compute on finer energy grid?  Assumes that PHA has
-            # finer grid than RMF
-            self.elo, self.ehi = bin_lo, bin_hi
-
-            # Wavelength grid (angstroms)
-            self.lo, self.hi = hc / self.ehi, hc / self.elo
-
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
         if self.pha.units == 'wavelength':
@@ -315,9 +293,11 @@ class RMFModelPHA(RMFModel):
         rmf = self._rmf  # original
 
         # Create a view of original RMF
-        self.rmf = DataRMF(rmf.name, rmf.detchans, rmf.energ_lo, rmf.energ_hi,
-                           rmf.n_grp, rmf.f_chan, rmf.n_chan, rmf.matrix,
-                           rmf.offset, rmf.e_min, rmf.e_max, rmf.header)
+        self.rmf = DataRMF(rmf.name, rmf.detchans, rmf.energ_lo,
+                           rmf.energ_hi, rmf.n_grp, rmf.f_chan,
+                           rmf.n_chan, rmf.matrix, offset=rmf.offset,
+                           e_min=rmf.e_min, e_max=rmf.e_max,
+                           header=rmf.header)
 
         # Filter the view for current fitting session
         _notice_resp(self.pha.get_noticed_channels(), None, self.rmf)
@@ -370,6 +350,9 @@ class RMFModelNoPHA(RMFModel):
 class ARFModelPHA(ARFModel):
     """ARF convolution model with associated PHA data set.
 
+    .. versionchanged:: 4.18.0
+       The bin_lo and bin_hi columns are now ignored.
+
     Notes
     -----
     Scaling by the AREASCAL setting (scalar or array) is included in
@@ -385,26 +368,6 @@ class ARFModelPHA(ARFModel):
 
         ARFModel.filter(self)
 
-        pha = self.pha
-        # If PHA is a finer grid than ARF, evaluate model on PHA and
-        # rebin down to the granularity that the ARF expects.
-        if pha.bin_lo is not None and pha.bin_hi is not None:
-            bin_lo, bin_hi = pha.bin_lo, pha.bin_hi
-
-            # If PHA grid is in angstroms then convert to keV for
-            # consistency
-            if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = hc / pha.bin_hi
-                bin_hi = hc / pha.bin_lo
-
-            # FIXME: What about filtered option?? bin_lo, bin_hi are
-            # unfiltered??
-
-            # Compare disparate grids in energy space
-            self.arfargs = ((self.elo, self.ehi), (bin_lo, bin_hi))
-
-            # FIXME: Assumes ARF grid is finest
-
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
         if self.pha.units == 'wavelength':
@@ -416,10 +379,10 @@ class ARFModelPHA(ARFModel):
 
         # Create a view of original ARF
         self.arf = DataARF(arf.name, arf.energ_lo, arf.energ_hi, arf.specresp,
-                           arf.bin_lo, arf.bin_hi, arf.exposure, arf.header)
+                           exposure=arf.exposure, header=arf.header)
 
         # Filter the view for current fitting session
-        if numpy.iterable(pha.mask):
+        if np.iterable(pha.mask):
             mask = pha.get_mask()
             if len(mask) == len(self.arf.specresp):
                 self.arf.notice(mask)
@@ -477,6 +440,9 @@ class ARFModelNoPHA(ARFModel):
 class RSPModelPHA(RSPModel):
     """RMF + ARF convolution model with associated PHA.
 
+    .. versionchanged:: 4.18.0
+       The bin_lo and bin_hi columns are now ignored.
+
     Notes
     -----
     Scaling by the AREASCAL setting (scalar or array) is included in
@@ -493,30 +459,14 @@ class RSPModelPHA(RSPModel):
 
         RSPModel.filter(self)
 
-        pha = self.pha
-        # If PHA is a finer grid than RMF, evaluate model on PHA and
-        # rebin down to the granularity that the RMF expects.
-        if pha.bin_lo is not None and pha.bin_hi is not None:
-            bin_lo, bin_hi = pha.bin_lo, pha.bin_hi
-
-            # If PHA grid is in angstroms then convert to keV for
-            # consistency
-            if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = hc / pha.bin_hi
-                bin_hi = hc / pha.bin_lo
-
-            # FIXME: What about filtered option?? bin_lo, bin_hi are
-            # unfiltered??
-
-            # Compare disparate grids in energy space
-            self.arfargs = ((self.elo, self.ehi), (bin_lo, bin_hi))
-
-            # FIXME: Assumes ARF grid is finest
-
+        # Can this really happen? There is a test of it but it is an
+        # engineered test case rather than "actual" data.
+        #
+        # Should this check be a "or" and not "and", and really it
+        # should check the grid values.
+        #
         elo, ehi = self.rmf.get_indep()
-        # self.elo, self.ehi are from ARF
         if len(elo) != len(self.elo) and len(ehi) != len(self.ehi):
-
             self.rmfargs = ((elo, ehi), (self.elo, self.ehi))
 
         # Assume energy as default spectral coordinates
@@ -529,13 +479,15 @@ class RSPModelPHA(RSPModel):
         rmf = self._rmf
 
         # Create a view of original RMF
-        self.rmf = DataRMF(rmf.name, rmf.detchans, rmf.energ_lo, rmf.energ_hi,
-                           rmf.n_grp, rmf.f_chan, rmf.n_chan, rmf.matrix,
-                           rmf.offset, rmf.e_min, rmf.e_max, rmf.header)
+        self.rmf = DataRMF(rmf.name, rmf.detchans, rmf.energ_lo,
+                           rmf.energ_hi, rmf.n_grp, rmf.f_chan,
+                           rmf.n_chan, rmf.matrix, offset=rmf.offset,
+                           e_min=rmf.e_min, e_max=rmf.e_max,
+                           header=rmf.header)
 
         # Create a view of original ARF
         self.arf = DataARF(arf.name, arf.energ_lo, arf.energ_hi, arf.specresp,
-                           arf.bin_lo, arf.bin_hi, arf.exposure, arf.header)
+                           exposure=arf.exposure, header=arf.header)
 
         # Filter the view for current fitting session
         _notice_resp(self.pha.get_noticed_channels(), self.arf, self.rmf)
@@ -601,7 +553,7 @@ class ARF1D(NoNewAttributesAfterInit):
         arf = None
         try:
             arf = ARF1D.__getattribute__(self, '_arf')
-        except:
+        except AttributeError:
             pass
 
         if name in ('_arf', '_pha'):
@@ -616,7 +568,7 @@ class ARF1D(NoNewAttributesAfterInit):
         arf = None
         try:
             arf = ARF1D.__getattribute__(self, '_arf')
-        except:
+        except AttributeError:
             pass
 
         if arf is not None and hasattr(arf, name):
@@ -668,7 +620,7 @@ class RMF1D(NoNewAttributesAfterInit):
         rmf = None
         try:
             rmf = RMF1D.__getattribute__(self, '_rmf')
-        except:
+        except AttributeError:
             pass
 
         if name in ('_rmf', '_pha'):
@@ -683,7 +635,7 @@ class RMF1D(NoNewAttributesAfterInit):
         rmf = None
         try:
             rmf = RMF1D.__getattribute__(self, '_rmf')
-        except:
+        except AttributeError:
             pass
 
         if rmf is not None and hasattr(rmf, name):
@@ -843,7 +795,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
 
     def __init__(self, source, pha):
         self.channel = pha.channel
-        self.mask = numpy.ones(len(pha.channel), dtype=bool)
+        self.mask = np.ones(len(pha.channel), dtype=bool)
         self.pha = pha
         self.source = source
         self.elo = None
@@ -897,7 +849,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
 
     def startup(self, cache=False):
         pha = self.pha
-        if numpy.iterable(pha.mask):
+        if np.iterable(pha.mask):
             pha.notice_response(True)
         self.channel = pha.get_noticed_channels()
         self.mask = pha.get_mask()
@@ -906,10 +858,10 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
 
     def teardown(self):
         pha = self.pha
-        if numpy.iterable(pha.mask):
+        if np.iterable(pha.mask):
             pha.notice_response(False)
         self.channel = pha.channel
-        self.mask = numpy.ones(len(pha.channel), dtype=bool)
+        self.mask = np.ones(len(pha.channel), dtype=bool)
         self.elo = None
         self.ehi = None
         self.table = None
@@ -924,15 +876,15 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
     def _startup_user_grid(self, x, xhi=None):
         # fit() never comes in here b/c it calls startup()
         pha = self.pha
-        self.mask = numpy.zeros(len(pha.channel), dtype=bool)
-        self.mask[numpy.searchsorted(pha.channel, x)] = True
+        self.mask = np.zeros(len(pha.channel), dtype=bool)
+        self.mask[np.searchsorted(pha.channel, x)] = True
         pha.notice_response(True, x)
         self._get_noticed_energy_list()
 
     def _teardown_user_grid(self):
         # fit() never comes in here b/c it calls startup()
         pha = self.pha
-        self.mask = numpy.ones(len(pha.channel), dtype=bool)
+        self.mask = np.ones(len(pha.channel), dtype=bool)
         pha.notice_response(False)
         self.elo = None
         self.ehi = None
@@ -1036,7 +988,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
     def __init__(self, rmf, model, pha=None):
         self.pha = pha
         self.channel = sao_arange(1, rmf.detchans)  # sao_arange is inclusive
-        self.mask = numpy.ones(rmf.detchans, dtype=bool)
+        self.mask = np.ones(rmf.detchans, dtype=bool)
         self.rmf = rmf
 
         self.elo, self.ehi = rmf.get_indep()
@@ -1070,7 +1022,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
 
         rmf = self.rmf
         self.channel = sao_arange(1, rmf.detchans)
-        self.mask = numpy.ones(rmf.detchans, dtype=bool)
+        self.mask = np.ones(rmf.detchans, dtype=bool)
         self.model.teardown()
         CompositeModel.teardown(self)
 
@@ -1080,8 +1032,8 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
 
     def _startup_user_grid(self, x):
         # fit() never comes in here b/c it calls startup()
-        self.mask = numpy.zeros(self.rmf.detchans, dtype=bool)
-        self.mask[numpy.searchsorted(self.pha.channel, x)] = True
+        self.mask = np.zeros(self.rmf.detchans, dtype=bool)
+        self.mask[np.searchsorted(self.pha.channel, x)] = True
 
     def _calc(self, p, xlo, xhi):
         # Evaluate source model on RMF energy/wave grid OR
@@ -1111,7 +1063,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
 
         finally:
             if user_grid:
-                self.mask = numpy.ones(self.rmf.detchans, dtype=bool)
+                self.mask = np.ones(self.rmf.detchans, dtype=bool)
 
         return vals
 
@@ -1267,7 +1219,7 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
     """
 
     if specresp is None:
-        specresp = numpy.ones(elo.size, dtype=numpy.float32)
+        specresp = np.ones(elo.size, dtype=np.float32)
 
     return DataARF(name, energ_lo=elo, energ_hi=ehi, specresp=specresp,
                    exposure=exposure, ethresh=ethresh, header=header)
@@ -1332,9 +1284,9 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     # Set up the delta-function response.
     #
     nchans = rmflo.size
-    matrix = numpy.ones(nchans, dtype=numpy.float32)
-    dummy = numpy.ones(nchans, dtype=numpy.int16)
-    f_chan = numpy.arange(offset, nchans + offset, dtype=numpy.int16)
+    matrix = np.ones(nchans, dtype=np.float32)
+    dummy = np.ones(nchans, dtype=np.int16)
+    f_chan = np.arange(offset, nchans + offset, dtype=np.int16)
 
     if e_min is None:
         e_min = rmflo
@@ -1437,7 +1389,7 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
 #
 def calc_grp_chan_matrix(fname: str,
                          startchan: int = 1
-                         ) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+                         ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Read in an image and convert it to RMF components.
 
     For an image containing a RMF, such as created by the `CIAO tool
@@ -1481,9 +1433,9 @@ def calc_grp_chan_matrix(fname: str,
     return matrix_to_rmf(iblock.image, startchan=startchan)
 
 
-def matrix_to_rmf(matrix: numpy.ndarray,
+def matrix_to_rmf(matrix: np.ndarray,
                   startchan: int = 1,
-                  ) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+                  ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Convert a matrix (2D image) to RMF components.
 
     .. versionchanged:: 4.17.0
@@ -1526,17 +1478,17 @@ def matrix_to_rmf(matrix: numpy.ndarray,
     n_chan1: list[int] = []
     f_chan1: list[int] = []
     for row in matrix > 0:
-        flag = numpy.hstack([[0], row, [0]])
-        diffs = numpy.diff(flag, n=1)
-        starts, = numpy.where(diffs > 0)
-        ends, = numpy.where(diffs < 0)
+        flag = np.hstack([[0], row, [0]])
+        diffs = np.diff(flag, n=1)
+        starts, = np.where(diffs > 0)
+        ends, = np.where(diffs < 0)
         n_chan1.extend(ends - starts)
         f_chan1.extend(starts + startchan)
         n_grp1.append(len(starts))
 
-    n_grp = numpy.asarray(n_grp1, dtype=numpy.int16)
-    f_chan = numpy.asarray(f_chan1, dtype=numpy.int16)
-    n_chan = numpy.asarray(n_chan1, dtype=numpy.int16)
+    n_grp = np.asarray(n_grp1, dtype=np.int16)
+    f_chan = np.asarray(f_chan1, dtype=np.int16)
+    n_chan = np.asarray(n_chan1, dtype=np.int16)
     matrix = matrix.flatten()
     matrix = matrix[matrix > 0]
     return n_grp, f_chan, n_chan, matrix
@@ -1546,7 +1498,7 @@ def matrix_to_rmf(matrix: numpy.ndarray,
 class RMFMatrix:
     """Raw RMF data"""
 
-    matrix: numpy.ndarray
+    matrix: np.ndarray
     """The matrix as a 2D array (X axis is channels, Y axis is energy)"""
     channels: EvaluationSpace1D
     """The channel values. This must be a non-integrated axis."""
@@ -1571,7 +1523,7 @@ class RMFMatrix:
             raise ValueError("channels and matrix mismatch")
 
 
-def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
+def rmf_to_matrix(rmf: DataRMF | RMF1D) -> RMFMatrix:
     """Convert a RMF to a matrix (2D image).
 
     .. versionadded:: 4.16.0
@@ -1598,7 +1550,7 @@ def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
     #
     nchans = rmf.detchans
     nenergy = rmf.energ_lo.size
-    matrix = numpy.zeros((nenergy, nchans), dtype=rmf.matrix.dtype)
+    matrix = np.zeros((nenergy, nchans), dtype=rmf.matrix.dtype)
 
     # Loop through each energy bin and add in the data, which is split
     # into n_grp chunks, each starting at f_chan (with 1 being the
@@ -1625,14 +1577,14 @@ def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
             matrix_start = matrix_end
             chan_idx += 1
 
-    channels = numpy.arange(rmf.offset, rmf.offset + nchans,
-                            dtype=numpy.int16)
+    channels = np.arange(rmf.offset, rmf.offset + nchans,
+                         dtype=np.int16)
     cgrid = EvaluationSpace1D(channels)
     egrid = EvaluationSpace1D(rmf.energ_lo, rmf.energ_hi)
     return RMFMatrix(matrix, cgrid, egrid)
 
 
-def rmf_to_image(rmf: Union[DataRMF, RMF1D]) -> DataIMG:
+def rmf_to_image(rmf: DataRMF | RMF1D) -> DataIMG:
     """Convert a RMF to DataIMG.
 
     .. versionadded:: 4.16.0
@@ -1655,7 +1607,7 @@ def rmf_to_image(rmf: Union[DataRMF, RMF1D]) -> DataIMG:
 
     nx = mat.channels.x_axis.size
     ny = mat.energies.x_axis.size
-    x1, x0 = numpy.mgrid[1:ny + 1, 1:nx + 1]
+    x1, x0 = np.mgrid[1:ny + 1, 1:nx + 1]
     x0 = x0.flatten()
     x1 = x1.flatten()
     y = mat.matrix.flatten()

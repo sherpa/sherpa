@@ -575,13 +575,6 @@ def get_arf_data(arg: str | TABLECrate,
     cols = [copycol(arf, filename, name, dtype=SherpaFloat)
             for name in ["ENERG_LO", "ENERG_HI", "SPECRESP"]]
 
-    # Optional columns: either both given or none
-    #
-    with suppress(IOErr):
-        bin_lo = copycol(arf, filename, "BIN_LO", dtype=SherpaFloat)
-        bin_hi = copycol(arf, filename, "BIN_HI", dtype=SherpaFloat)
-        cols.extend([bin_lo, bin_hi])
-
     return SpecrespBlock(arf.name, header=headers, columns=cols), filename
 
 
@@ -853,8 +846,6 @@ def _read_pha(pha: TABLECrate,
                         ("RATE", SherpaFloat),
                         ("STAT_ERR", SherpaFloat),
                         ("SYS_ERR", SherpaFloat),
-                        ("BIN_LO", SherpaFloat),
-                        ("BIN_HI", SherpaFloat),
                         ("BACKGROUND_UP", SherpaFloat),
                         ("BACKGROUND_DOWN", SherpaFloat),
                         # Possible scalar values

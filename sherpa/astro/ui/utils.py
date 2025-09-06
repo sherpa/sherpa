@@ -1349,7 +1349,6 @@ class Session(sherpa.ui.utils.Session):
         +------------+-----------------+--------------------+
         | DataPHA    | channel, counts | statistical error, |
         |            |                 | systematic error,  |
-        |            |                 | bin_lo, bin_hi,    |
         |            |                 | grouping, quality  |
         +------------+-----------------+--------------------+
         | DataIMG    | x0, x1, y       | shape,             |

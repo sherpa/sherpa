@@ -69,8 +69,7 @@ def check_pha(pha, responses=True):
     assert pha.counts.sum() == pytest.approx(77)
     assert np.argmax(pha.counts) == 10
 
-    for field in ['staterror', 'syserror', 'quality', 'grouping',
-                  'bin_lo', 'bin_hi']:
+    for field in ['staterror', 'syserror', 'quality', 'grouping']:
         assert getattr(pha, field) is None
 
     assert pha.grouped is False
@@ -147,9 +146,6 @@ def check_arf(arf):
     assert arf.energ_hi[0] == pytest.approx(0.23)
     assert arf.energ_lo[-1] == pytest.approx(10.99)
     assert arf.energ_hi[-1] == pytest.approx(11.0)
-
-    assert arf.bin_lo is None
-    assert arf.bin_hi is None
 
     # Rather than check each element, use some simple summary
     # statistics.
@@ -242,14 +238,6 @@ def check_pha_grating(pha, errors=False, responses=True):
     assert pha.counts.max() == pytest.approx(15.0)
     assert pha.counts.sum() == pytest.approx(16298.0)
     assert np.argmax(pha.counts) == 5871
-
-    assert len(pha.bin_lo) == nchan
-    assert len(pha.bin_hi) == nchan
-    assert pha.bin_hi[1:] == pytest.approx(pha.bin_lo[:-1])
-    assert pha.bin_lo[0] == pytest.approx(21.4775)
-    assert pha.bin_hi[0] == pytest.approx(21.48)
-    assert pha.bin_lo[-1] == pytest.approx(1.0)
-    assert pha.bin_hi[-1] == pytest.approx(1.0025)
 
     for field in ['syserror', 'quality', 'grouping']:
         assert getattr(pha, field) is None
@@ -349,14 +337,6 @@ def check_arf_grating(arf):
     assert arf.energ_hi[0] == pytest.approx(0.57727474)
     assert arf.energ_lo[-1] == pytest.approx(12.36749935)
     assert arf.energ_hi[-1] == pytest.approx(12.39841843)
-
-    assert len(arf.bin_lo) == nbins
-    assert len(arf.bin_hi) == nbins
-    assert arf.bin_hi[1:] == pytest.approx(arf.bin_lo[:-1])
-    assert arf.bin_lo[0] == pytest.approx(21.4775)
-    assert arf.bin_hi[0] == pytest.approx(21.48)
-    assert arf.bin_lo[-1] == pytest.approx(1.0)
-    assert arf.bin_hi[-1] == pytest.approx(1.0025)
 
     # Rather than check each element, use some simple summary
     # statistics.

@@ -64,12 +64,8 @@ def check(r, summary, name, label, nmeta):
 def test_arf(header, all_plot_backends):
     ebins = np.arange(0.1, 1, 0.1)
 
-    # fake wavelength conversion
-    wbins = 10 / ebins
-
     y = np.linspace(10, 80, ebins.size - 1)
     d = data.DataARF('arf 1', ebins[:-1], ebins[1:], y,
-                     bin_lo=wbins[1:], bin_hi=wbins[:-1],
                      exposure=100.1, header=header)
     r = d._repr_html_()
 
@@ -77,9 +73,7 @@ def test_arf(header, all_plot_backends):
     check(r, 'ARF', 'arf 1', 'SPECRESP', nmeta=nmeta)
 
     assert '<div class="dataname">Energy range</div>' in r
-    assert '<div class="dataname">Wavelength range</div>' in r
     assert '<div class="dataval">0.1 - 0.9 keV, bin size 0.1 keV</div>' in r
-    assert '<div class="dataval">12.5 - 50 &#8491;, bin size 1.38889 - 50 &#8491;</div>' in r
 
 
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
