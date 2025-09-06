@@ -259,7 +259,7 @@ def test_pha_filter_when_empty(caplog):
 
     assert len(caplog.records) == 1
 
-    emsg = "Skipping dataset empty: The size of 'empty' has not been set"
+    emsg = "Skipping dataset empty: data set 'empty' has no channel information"
     r = caplog.record_tuples[0]
     assert r[0] == "sherpa.astro.data"
     assert r[1] == logging.INFO
@@ -3510,14 +3510,14 @@ def test_grouped_pha_set_related_invalid_size(related, make_grouped_pha):
                                     "backscal", "areascal",
                                     "grouping", "quality"])
 def test_pha_check_related_fields_correct_size(column, make_grouped_pha):
-    """Can we set the value to a 2-element array?"""
+    """Can we set the value if indep has not been set yet?"""
 
     d = DataPHA('example', None, None)
-    setattr(d, column, np.asarray([2, 10, 3]))
 
+    columnname = "y" if column == "counts" else column
     with pytest.raises(DataErr,
-                       match="independent axis can not change size: 3 to 4"):
-        d.indep = (np.asarray([2, 3, 4, 5]), )
+                       match=f"size mismatch between independent axis and {columnname}: 0 vs 3"):
+        setattr(d, column, np.asarray([2, 10, 3]))
 
 
 @pytest.mark.parametrize("label", ["filter", "grouping"])
@@ -4871,16 +4871,18 @@ def test_dataimgint_show(make_dataimgint):
     # output? For the moment just test what we do return.
     #
     assert out[0] == "name      = ival"
-    assert out[1] == "x0        = Float64[2]"
-    assert out[2] == "x1        = Float64[2]"
-    assert out[3] == "y         = Int64[2]"
-    assert out[4] == "shape     = (2, 1)"
-    assert out[5] == "staterror = None"
-    assert out[6] == "syserror  = None"
-    assert out[7] == "sky       = None"
-    assert out[8] == "eqpos     = None"
-    assert out[9] == "coord     = logical"
-    assert len(out) == 10
+    assert out[1] == "x0lo      = Int64[2]"
+    assert out[2] == "x1lo      = Int64[2]"
+    assert out[3] == "x0hi      = Int64[2]"
+    assert out[4] == "x1hi      = Int64[2]"
+    assert out[5] == "y         = Int64[2]"
+    assert out[6] == "shape     = (2, 1)"
+    assert out[7] == "staterror = None"
+    assert out[8] == "syserror  = None"
+    assert out[9] == "sky       = None"
+    assert out[10] == "eqpos     = None"
+    assert out[11] == "coord     = logical"
+    assert len(out) == 12
 
 
 def test_dataimgint_x0lo(make_dataimgint):

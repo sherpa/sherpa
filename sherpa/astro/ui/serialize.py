@@ -37,7 +37,7 @@ from typing import TYPE_CHECKING, Any, Mapping, TextIO, TypedDict
 
 import numpy
 
-from sherpa.astro.data import DataIMG, DataPHA, DataARF, DataRMF
+from sherpa.astro.data import DataIMG, DataPHA, DataARF, DataRMF, IMGMixIn
 from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
 
@@ -1541,7 +1541,7 @@ def _save_dataset(out: OutType,
     if isinstance(data, DataIMG):
         # This assumes that orig[0] == "logical"
         orig = data._orig_indep_axis
-        xs = (orig[1], orig[2])
+        xs = (orig[1][0][0], orig[1][0][1])
     else:
         xs = data.get_indep()
 
