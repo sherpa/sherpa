@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2023, 2024
+#  Copyright (C) 2023-2025
 #  MIT
 #
 #
@@ -112,4 +112,4 @@ def check_full(r, summary, label='', title='', nsummary=0, test_other=None):
         assert f'<div class="dataval">{title}</div>' in r
     else:
         for line in test_other:
-            assert line in r
+            assert line in r, line

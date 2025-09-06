@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -224,7 +224,7 @@ def test_fitcontour(all_plot_backends):
                            '<div class="dataval">Model</div>'])
 
 
-def test_intproj(old_numpy_printing, all_plot_backends):
+def test_intproj(all_plot_backends):
     p = plot.IntervalProjection()
     r = p._repr_html_()
 
@@ -251,12 +251,13 @@ def test_intproj(old_numpy_printing, all_plot_backends):
 
     check_full(r, 'IntervalProjection', 'x', 'n n',
                test_other = ["<summary>IntervalProjection (8)</summary>",
-                              '<div class="dataname">x</div><div class="dataval">[ 1.        1.555556  2.111111  2.666667  3.222222  3.777778  4.333333  4.888889\n  5.444444  6.      ]</div>',
+                             '<div class="dataname">x</div><div class="dataval">[1.       1.555556 2.111111 2.666667 3.222222 3.777778 4.333333 4.888889\n 5.444444 6.      ]</div>',
                               '<div class="dataname">nloop</div><div class="dataval">10</div>'])
 
 
 
-def test_regproj(old_numpy_printing, all_plot_backends):
+
+def test_regproj(all_plot_backends):
     p = plot.RegionProjection()
     r = p._repr_html_()
 
@@ -286,10 +287,7 @@ def test_regproj(old_numpy_printing, all_plot_backends):
 
     # Issue #1372 shows that the numbers here can depend on the platform; as
     # this test is not about whether the fit converged to the same solution
-    # the tests are very basic. An alternative would be to just place
-    # the values from the fit object into the strings, but then there is
-    # the problem that this test currently requires old_numpy_printing,
-    # so the results would not necessarily match.
+    # the tests are very basic.
     #
     '<div class="dataname">parval0</div><div class="dataval">-0.5',
     '<div class="dataname">parval1</div><div class="dataval">0.5',
@@ -297,8 +295,8 @@ def test_regproj(old_numpy_printing, all_plot_backends):
 
     # These values may depend on the platform so only very-limited check.
     #
-    '<div class="dataname">y</div><div class="dataval">[ 30',
-    '<div class="dataname">levels</div><div class="dataval">[  3.6',
+    '<div class="dataname">y</div><div class="dataval">[30',
+    '<div class="dataname">levels</div><div class="dataval">[ 3.6',
 
     '<div class="dataname">min</div><div class="dataval">[-2, -1]</div>',
     '<div class="dataname">max</div><div class="dataval">[2, 2]</div>',

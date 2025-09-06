@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -29,7 +29,7 @@ from sherpa import plot
 from sherpa.plot.testing import check_full
 
 
-def test_data1d(old_numpy_printing, all_plot_backends):
+def test_data1d(all_plot_backends):
     d = data.Data1D("x x",
                     np.asarray([1, 3, 6]),
                     np.asarray([3, 4, 7]))
@@ -47,13 +47,14 @@ def test_data1d(old_numpy_printing, all_plot_backends):
 
 
 
-def test_data1d_errs(old_numpy_printing, all_plot_backends):
+def test_data1d_errs(all_plot_backends):
     d = data.Data1D("x x",
                     np.asarray([1, 3, 6]),
                     np.asarray([3, 4, 7]),
                     staterror=np.asarray([0.25, 0.52, 0.2]),
                     syserror=np.asarray([2, 3, 1]))
     r = d._repr_html_()
+    print(r)
     check_full(r, 'Data1D Plot', test_other=[
         '<div class="sherpa-text-fallback">&lt;Data1D data set instance &#x27;x x&#x27;&gt;</div>',
         '<summary>Data1D Summary (7)</summary>',
@@ -63,12 +64,12 @@ def test_data1d_errs(old_numpy_printing, all_plot_backends):
         '<div class="dataname">Using</div><div class="dataval">1.0000-6.0000 x with 3 bins</div>',
         '<div class="dataname">X</div><div class="dataval">[1 3 6]</div>',
         '<div class="dataname">Y</div><div class="dataval">[3 4 7]</div>',
-        '<div class="dataname">Statistical error</div><div class="dataval">[ 0.25  0.52  0.2 ]</div>',
+        '<div class="dataname">Statistical error</div><div class="dataval">[0.25 0.52 0.2 ]</div>',
         '<div class="dataname">Systematic error</div><div class="dataval">[2 3 1]</div>',
     ])
 
 
-def test_data1dint(old_numpy_printing, all_plot_backends):
+def test_data1dint(all_plot_backends):
     d = data.Data1DInt("x x",
                        np.asarray([1, 3, 6]),
                        np.asarray([2, 6, 7]),
@@ -90,7 +91,7 @@ def test_data1dint(old_numpy_printing, all_plot_backends):
 # We still test with both backends to note if we ever do add
 # pyplot support.
 #
-def test_data2d(old_numpy_printing, all_plot_backends):
+def test_data2d(all_plot_backends):
     d = data.Data2D("x x",
                     np.asarray([1, 3, 1, 2, 3]),
                     np.asarray([2, 2, 4, 4, 4]),
