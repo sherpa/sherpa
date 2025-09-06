@@ -81,8 +81,11 @@ In this example, we use a datafile from Sherpa's test data files
     :context:
     :nofigs:
 
+    >>> # Set the directory where the data is stored.
+    >>> # In this case, we use Sherpa's test data files
     >>> from sherpa.utils.testing import get_datadir
     >>> data_dir = get_datadir() + '/'
+    >>> # Load the data from a PHA file
     >>> from sherpa.astro.io import read_pha
     >>> data = read_pha(data_dir + '9774_bg.pi')
     >>> data.exposure = 5e5  # Simulate longer exposure than in the original data
@@ -135,8 +138,7 @@ of converting from channels to energy:
     :context:
     :nofigs:
 
-    >>> from sherpa.astro.instrument import Response1D
-    >>> resp = Response1D(data)
+    >>> resp = data.get_full_response()
     >>> full_model = resp(srcmdl)
     >>> print(full_model)
     apply_rmf(apply_arf(10000.0 * (powlaw1d + gauss1d)))
