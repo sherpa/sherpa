@@ -96,25 +96,32 @@ References
 Examples
 --------
 
-Read in a 2D dataset from the file 'image2.fits' and then filter it to
-only use those pixels that lie within 45 units from the physical
-coordinate 3150,4515:
+Read in a 2D dataset from the file 'image2.fits'.
+In this example, we use a datafile from Sherpa's test data files
+(which are large and not installed by default
+:ref:`but can be downloaded <install-sherpa-test-data>`).
 
->>> from sherpa.astro.io import read_image
->>> img = read_image(data_dir + 'image2.fits')
->>> img.set_coord('physical')
->>> img.notice2d('circle(3150,4515,45)')
+    >>> from sherpa.utils.testing import get_datadir
+    >>> data_dir = get_datadir() + '/'
+
+We filter the image to only use those pixels that lie within 45 units
+from the physical coordinate 3150,4515:
+
+    >>> from sherpa.astro.io import read_image
+    >>> img = read_image(data_dir + 'image2.fits')
+    >>> img.set_coord('physical')
+    >>> img.notice2d('circle(3150,4515,45)')
 
 Read in a PHA dataset from the file '3c273.pi', subtract the background,
 filter to only use the data 0.5 to 7 keV, and re-group the data within
 this range to have at least 20 counts per group:
 
->>> from sherpa.astro.io import read_pha
->>> pha = read_pha(data_3c273 + '3c273.pi')
->>> pha.subtract()
->>> pha.set_analysis('energy')
->>> pha.notice(0.5, 7)
->>> pha.group_counts(20)
+    >>> from sherpa.astro.io import read_pha
+    >>> pha = read_pha(data_3c273 + '3c273.pi')
+    >>> pha.subtract()
+    >>> pha.set_analysis('energy')
+    >>> pha.notice(0.5, 7)
+    >>> pha.group_counts(20)
 
 """
 
@@ -146,6 +153,10 @@ from sherpa.utils.types import ArrayType, IdType, IdTypes, \
 # uses the compile_energy_grid symbols.
 from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
     compile_energy_grid, do_group, expand_grouped_mask
+
+__doctest_requires__ = {
+    '.': ['sherpatest'],  # requirements for module-level doctest
+    }
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning

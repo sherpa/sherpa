@@ -706,7 +706,8 @@ def add_sherpa_test_data_dir(doctest_namespace):
     in the future, but it seems more important that this keeps any
     extra markup out of those files and keep them clean.
     '''
-    doctest_namespace["data_3c273"] = 'sherpa/astro/datastack/tests/data/'
+    sherpa_root = os.path.dirname(os.path.abspath(__file__))
+    doctest_namespace["data_3c273"] = os.path.join(sherpa_root, 'astro/datastack/tests/data/')
 
     # We could error out here, but we only want the tests that
     # use it to fail.

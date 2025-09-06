@@ -14,6 +14,11 @@ build:
 conda:
   environment: docs/environment.yml
 
+
+# Get sherpa-test-data submodule
+submodules:
+  include: all
+
 sphinx:
   builder: html
   configuration: docs/conf.py
@@ -25,6 +30,9 @@ python:
   install:
     - method: pip
       path: .
+    - method: pip
+      path: sherpa-test-data
 
 # Don't build any extra formats
 formats: []
+

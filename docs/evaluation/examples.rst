@@ -287,8 +287,8 @@ We can overplot the new data onto the previous plot to
 show they match::
 
    >>> x = pha.get_x()
-   >>> x.min(), x.max()
-   (0.008030000200960785, 14.943099975585938)
+   >>> print(x.min(), x.max())
+   0.008030000200960785 14.943099975585938
    >>> x = pha.apply_filter(x, pha._middle)
    >>> y = pha.get_y(filter=True)
    >>> dplot.plot(xlog=True, ylog=True)
@@ -301,7 +301,7 @@ handles the units for you. Switching the analysis setting
 to wavelength will create a plot in Angstroms::
 
    >>> pha.set_analysis('wave')
-   >>> pha.get_x().max()
+   >>> print(pha.get_x().max())
    1544.0122577477066
    >>> from sherpa.plot import DataPlot
    >>> wplot = DataPlot()
@@ -512,15 +512,15 @@ consider)::
    Method                = levmar
    Statistic             = chi2gehrels
    Initial fit statistic = 3.34091e+11
-   Final fit statistic   = 100.348 at function evaluation 33
+   Final fit statistic   = 100.348 at function evaluation 37
    Data points           = 143
    Degrees of freedom    = 140
    Probability [Q-value] = 0.995322
    Reduced statistic     = 0.716768
    Change in statistic   = 3.34091e+11
-      phabs.nH       0.0129623    +/- 0.00727297
-      powlaw1d.gamma   1.78432      +/- 0.0459881
-      powlaw1d.ampl   7.17014e-05  +/- 2.48851e-06
+      phabs.nH       0.0129631    +/- 0.00727541
+      powlaw1d.gamma   1.78432      +/- 0.0459914
+      powlaw1d.ampl   7.17016e-05  +/- 2.48877e-06
 
 We can see the amplitude has changed from 1 to :math:`\sim 10^{-4}`,
 which should make the predicted counts a lot more believable!
