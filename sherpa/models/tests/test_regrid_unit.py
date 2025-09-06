@@ -39,7 +39,7 @@ from sherpa.utils import linear_interp
 from sherpa.utils.err import DataErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
 
-from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, \
+from sherpa.models.regrid import EvaluationSpaceND, ModelDomainRegridder1D, EvaluationSpace1D, \
     EvaluationSpace2D, PointAxis, IntegratedAxis
 
 
@@ -1129,56 +1129,58 @@ def test_axis_check_not_a_scalar():
 
     with pytest.raises(DataErr,
                        match="Array must be a sequence or None"):
-        PointAxis(23)
+        _ = EvaluationSpace1D(23)
 
 
 def test_axis_check_not_multidim():
     """Mainly to ensure this error condition is checked"""
-
+    arr = np.arange(12).reshape(3, 4)
     with pytest.raises(DataErr,
                        match="Array must be 1D"):
-        PointAxis(np.arange(12).reshape(3, 4))
+        _ = EvaluationSpace1D(arr)
 
 
-def test_pointaxis_not_integrated():
+def test_cannot_create_pointaxis_if_not_using_empty_subtype():
     """Check for the empty case"""
 
-    assert not PointAxis([]).is_integrated
+    es = EvaluationSpaceND(([],))
+    assert es.axes[0].is_empty
 
 
-def test_integratedaxis_is_integrated():
+def test_cannot_create_integratedaxis_if_not_using_empty_subtype():
     """Check for the empty case"""
 
-    assert IntegratedAxis([], []).is_integrated
+    es = EvaluationSpaceND(([], []), integrated=True)
+    assert es.axes[0].is_empty
 
 
 def test_pointaxis_size():
     """Pick a descending axis for fun"""
-    assert PointAxis([4, 3, 2]).size == 3
+    assert PointAxis(np.array([4, 3, 2])).size == 3
 
 
 def test_integratedaxis_size():
-    assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).size == 3
+    assert IntegratedAxis(np.array([4, 3, 2]), np.array([4.5, 3.5, 3])).size == 3
 
 
 def test_pointaxis_start():
     """Pick a descending axis for fun"""
-    assert PointAxis([4, 3, 2]).start == 2
+    assert PointAxis(np.array([4, 3, 2])).start == 2
 
 
 def test_pointaxis_end():
     """Pick a descending axis for fun"""
-    assert PointAxis([4, 3, 2]).end == 4
+    assert PointAxis(np.array([4, 3, 2])).end == 4
 
 
 def test_integratedaxis_start():
     """Pick a descending axis for fun"""
-    assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).start == 2
+    assert IntegratedAxis(np.array([4, 3, 2]), np.array([4.5, 3.5, 3])).start == 2
 
 
 def test_integratedaxis_end():
     """Pick a descending axis for fun"""
-    assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).end == pytest.approx(4.5)
+    assert IntegratedAxis(np.array([4, 3, 2]), np.array([4.5, 3.5, 3])).end == pytest.approx(4.5)
 
 
 def test_evaluationspace1d_zeros_like_empty():
@@ -1551,14 +1553,18 @@ def test_evaluationspace_empty_is_ascending(cls):
         _ = espace.is_ascending
 
 
-@pytest.mark.parametrize("cls", [EvaluationSpace1D, EvaluationSpace2D])
 @pytest.mark.parametrize("meth", ["start", "end"])
-def test_evaluationspace_empty_range(cls, meth):
+def test_evaluationspace_empty_range(meth):
     """Simple check"""
-    espace = cls()
-    with pytest.raises(DataErr, match="^Axis is empty or has a size of 0$"):
-        # These are properties, so accessing the field causes the error
-        _ = getattr(espace, meth)
+    espace = EvaluationSpace1D()
+    assert getattr(espace, meth) is None
+
+
+@pytest.mark.parametrize("meth", ["start", "end"])
+def test_evaluationspace_empty_range_2D(meth):
+    """Simple check"""
+    espace = EvaluationSpace2D()
+    assert getattr(espace, meth) == pytest.approx((None, None))
 
 
 @pytest.mark.parametrize("cls,expected",
@@ -1587,8 +1593,7 @@ def test_evaluationspace_empty_overlaps(cls):
     """Simple check"""
     espace1 = cls()
     espace2 = cls()
-    with pytest.raises(DataErr, match="^Axis is empty or has a size of 0$"):
-        espace1.overlaps(espace2)
+    assert espace1.overlaps(espace2) is False
 
 
 @pytest.mark.parametrize("cls", [EvaluationSpace1D])
