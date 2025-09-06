@@ -563,29 +563,6 @@ def hide_logging():
     logger.setLevel(olvl)
 
 
-@pytest.fixture
-def old_numpy_printing():
-    """Force NumPy to use old-style printing for the test.
-
-    This is only needed whilst we still support NumPy 1.13
-    (I think). Calling this fixture will ensure we have
-    consistent printing of NumPy arrays (to some degree
-    anyway).
-
-    The original printoptions is reset after the test is
-    run.
-    """
-
-    oldopts = np.get_printoptions()
-    if 'legacy' in oldopts:
-        np.set_printoptions(legacy='1.13')
-
-    yield
-
-    if 'legacy' in oldopts:
-        np.set_printoptions(legacy=oldopts['legacy'])
-
-
 @pytest.fixture(params=PLOT_BACKENDS.keys())
 def all_plot_backends(request):
     """Override the plot backend for this test
