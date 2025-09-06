@@ -150,6 +150,7 @@ def test_optmethod_setattr(cls):
     opt2 = cls()
     assert opt2.config["ftol"] == pytest.approx(oldval)
 
+
 @pytest.mark.parametrize("cls", [GridSearch, LevMar, MonCar, NelderMead])
 def test_optmethod_setattr_on_init(cls):
     """Check that config options are set on init"""
