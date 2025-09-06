@@ -32,9 +32,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: MacOS Intel Full Build (Python 3.11)
+          - name: MacOS Intel Full Build (Python 3.12)
             os: macos-13
-            python-version: "3.11"
+            python-version: "3.12"
             install-type: develop
             fits: astropy
             test-data: submodule
@@ -42,9 +42,9 @@ jobs:
             bokeh-version: 3
             xspec-version: 12.14.0i
 
-          - name: MacOS ARM Full Build (Python 3.11)
+          - name: MacOS ARM Full Build (Python 3.12)
             os: macos-14
-            python-version: "3.11"
+            python-version: "3.12"
             install-type: develop
             fits: astropy
             test-data: submodule
@@ -52,19 +52,29 @@ jobs:
             bokeh-version: 3
             xspec-version: 12.13.1e
 
-          - name: Linux Minimum Setup (Python 3.10)
-            os: ubuntu-latest
-            python-version: "3.10"
-            numpy-version: "1.24"
-            install-type: develop
-            test-data: none
-
           - name: Linux Minimum Setup (Python 3.11)
             os: ubuntu-latest
             python-version: "3.11"
-            numpy-version: "1.24"
+            numpy-version: "2.3.2"
             install-type: develop
             test-data: none
+
+          - name: Linux Minimum Setup (Python 3.12)
+            os: ubuntu-latest
+            python-version: "3.12"
+            numpy-version: "2.3.2"
+            install-type: develop
+            test-data: none
+
+          - name: Linux Full Build (Python 3.13)
+            os: ubuntu-latest
+            python-version: "3.13"
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            bokeh-version: 3
+            xspec-version: 12.14.0i
 
           - name: Linux Full Build (Python 3.12)
             os: ubuntu-latest
@@ -83,29 +93,19 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
-            bokeh-version: 3
-            xspec-version: 12.14.0i
-
-          - name: Linux Full Build (Python 3.10)
-            os: ubuntu-latest
-            python-version: "3.10"
-            install-type: develop
-            fits: astropy
-            test-data: submodule
-            matplotlib-version: 3
             xspec-version: 12.13.1
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
-            python-version: "3.11"
+            python-version: "3.12"
             install-type: install
             test-data: package
             matplotlib-version: 3
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
-            python-version: "3.12"
-            numpy-version: "1.26"
+            python-version: "3.13"
+            numpy-version: "2.3.2"
             install-type: develop
             fits: astropy
             test-data: none
