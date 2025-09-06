@@ -31,6 +31,7 @@ match the desired grid.
 from abc import ABCMeta, abstractmethod
 import itertools
 import logging
+from typing import Iterable, Self
 import warnings
 
 import numpy as np
@@ -46,7 +47,7 @@ warning = logging.getLogger(__name__).warning
 PIXEL_RATIO_THRESHOLD = 0.1
 
 
-def _to_readable_array(x):
+def _to_readable_array(x: Iterable | None) -> np.ndarray | None:
     """Convert x into a ndarray that can not be edited (or is None)."""
 
     if x is None:
@@ -67,10 +68,10 @@ class Axis(metaclass=ABCMeta):
     """Represent an axis of a N-D object."""
 
     # This is set when the data is set
-    _is_ascending = None
+    _is_ascending: bool | None = None
 
     @property
-    def is_empty(self):
+    def is_empty(self) -> bool:
         """Is the axis empty?
 
         An empty axis is either set to `None` or a zero-element
@@ -80,12 +81,12 @@ class Axis(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def is_integrated(self):
+    def is_integrated(self) -> bool | None:
         """Is the axis integrated?"""
         pass
 
     @property
-    def is_ascending(self):
+    def is_ascending(self) -> bool | None:
         """Is the axis ascending?
 
         The axis is ascending if the elements in `lo` are sorted in
@@ -98,13 +99,12 @@ class Axis(metaclass=ABCMeta):
         return self._is_ascending
 
     @property
-    @abstractmethod
     def start(self):
         """The starting point (lowest value) of the data axis."""
-        pass
+        if self.is_empty:
+            raise DataErr("Axis is empty or has a size of 0")
 
     @property
-    @abstractmethod
     def end(self):
         """The ending point of the data axis
 
@@ -115,15 +115,15 @@ class Axis(metaclass=ABCMeta):
         of the `hi` array or of the `lo` array, depending on whether
         the axis is integrated or not, respectively.
         """
-        pass
+        if self.is_empty:
+            raise DataErr("Axis is empty or has a size of 0")
 
     @property
-    @abstractmethod
-    def size(self):
+    def size(self) -> int:
         """The size of the axis."""
-        pass
+        return 0
 
-    def overlaps(self, other):
+    def overlaps(self, other: Self) -> bool:
         """Check if this axis overlaps with another.
 
         Parameters
@@ -141,12 +141,54 @@ class Axis(metaclass=ABCMeta):
         #
         # if not isinstance(other, Axis):
         #     raise TypeError("other argument must be an axis")
+        if self.is_empty or other.is_empty:
+            return False
 
         num = max(0, min(self.end, other.end) - max(self.start, other.start))
         return bool(num != 0)
 
+class UnorderedPointAxis(Axis):
+    """Represent a point (not integrated) axis of a N-D object.
 
-class PointAxis(Axis):
+    The length can not be changed once set.
+
+    Parameters
+    ----------
+    x : array_like
+        The starting point of the axis. If `None` or `[]` then the
+        data axis is said to be empty. The axis can be in ascending or
+        descending order but this is not checked.
+
+    """
+    def __init__(self, x : np.ndarray | None):
+        self._x = x
+
+    @property
+    def is_integrated(self):
+        return False
+
+    @property
+    def x(self):
+        if self.is_empty:
+            raise DataErr("Axis is empty or has a size of 0")
+        return self._x
+
+    @property
+    def start(self):
+        return np.min(self.x)
+
+    @property
+    def end(self):
+        return np.max(self.x)
+
+    @property
+    def size(self):
+        if self._x is None:
+            return 0
+        return self._x.size
+
+
+class PointAxis(UnorderedPointAxis):
     """Represent a point (not integrated) axis of a N-D object.
 
     The length can not be changed once set.
@@ -160,46 +202,14 @@ class PointAxis(Axis):
 
     """
 
-    def __init__(self, x):
-        self._x = _to_readable_array(x)
-        if self._x is None:
-            return
+    def __init__(self, x: np.ndarray | None):
+        super().__init__(x)
+        if not self._x.size:
+            raise DataErr("Axis is empty or has a size of 0")
+        # Should check this is actually strictly ascending
+        self._is_ascending = self._x[-1] > self._x[0]
 
-        nx = len(self._x)
-        if nx > 0:
-            self._is_ascending = self._x[-1] > self._x[0]
-
-    @property
-    def x(self):
-        return self._x
-
-    @property
-    def is_integrated(self):
-        return False
-
-    @property
-    def start(self):
-        if self.is_ascending:
-            return self.x[0]
-
-        return self.x[-1]
-
-    @property
-    def end(self):
-        if self.is_ascending:
-            return self.x[-1]
-
-        return self.x[0]
-
-    @property
-    def size(self):
-        if self.x is None:
-            return 0
-
-        return self.x.size
-
-
-class IntegratedAxis(Axis):
+class UnorderedIntegratedAxis(Axis):
     """Represent an integrated axis of a N-D object.
 
     Parameters
@@ -216,17 +226,16 @@ class IntegratedAxis(Axis):
 
     """
 
-    _lo = None
-    _hi = None
+    def __init__(self, lo: np.ndarray | None, hi: np.ndarray | None):
 
-    def __init__(self, lo, hi):
-        self._lo = _to_readable_array(lo)
-        self._hi = _to_readable_array(hi)
+        if lo is None or lo.size == 0:
+            raise DataErr("Axis is empty or has a size of 0")
 
-        if self._lo is None:
-            if self._hi is None:
-                return
+        self._lo = lo
+        self._hi = hi
 
+        # Doesn't make sense. If self._hi is None, len(self.hi) will fail
+        if self._hi is None:
             raise DataErr("mismatchn", "lo", "hi", "None", len(self._hi))
 
         nlo = len(self._lo)
@@ -237,41 +246,57 @@ class IntegratedAxis(Axis):
         if nlo != nhi:
             raise DataErr("mismatchn", "lo", "hi", nlo, nhi)
 
-        if nlo > 0:
-            self._is_ascending = lo[-1] > lo[0]
-
-    @property
-    def lo(self):
-        return self._lo
-
-    @property
-    def hi(self):
-        return self._hi
-
     @property
     def is_integrated(self):
         return True
 
     @property
-    def start(self):
-        if self.is_ascending:
-            return self.lo[0]
+    def lo(self) -> np.ndarray:
+        if self.is_empty:
+            raise DataErr("Axis is empty or has a size of 0")
+        return self._lo
 
-        return self.lo[-1]
+    @property
+    def hi(self) -> np.ndarray:
+        if self.is_empty:
+            raise DataErr("Axis is empty or has a size of 0")
+        return self._hi
+
+    @property
+    def start(self):
+        return np.min(self.lo)
 
     @property
     def end(self):
-        if self.is_ascending:
-            return self.hi[-1]
-
-        return self.hi[0]
+        return np.max(self.hi)
 
     @property
     def size(self):
-        if self.lo is None:
+        if self._lo is None:
             return 0
+        return self._lo.size
 
-        return self.lo.size
+class IntegratedAxis(UnorderedIntegratedAxis):
+    """Represent an integrated axis of a N-D object.
+
+    Parameters
+    ----------
+    lo : array_like or None
+        The starting point of the axis.  If `lo` is `None` or `[]`
+        then the data axis is said to be empty. The axis can be in
+        ascending or descending order.
+    hi : array_like or None
+        The ending point of the axis. The number of elements must match `lo` (either `None`
+        or a sequence of the same size). Each element is expected to
+        be larger than the corresponding element of the `lo` axis,
+        even if the `lo` array is in descending order.
+
+    """
+    def __init__(self, lo: np.ndarray | None, hi: np.ndarray | None):
+        super().__init__(lo, hi)
+
+        # Should check that lo (and hi?) are actually strictly ascending?
+        self._is_ascending = lo[-1] > lo[0]
 
 
 # TO-DO: Why does this not inherit from NoNewAttributesAfterInit?
@@ -292,12 +317,12 @@ class EvaluationSpaceND():
         if integrated and not len(axes) % 2 == 0:
             raise ValueError("In integrated mode, independent variables must be pairs of lo, hi.")
 
-        self.axes = [self._clean(arg) for arg in axes]
+        axes = [_to_readable_array(a) for a in axes]
         if not integrated:
-            self.axes = [PointAxis(arg) for arg in self.axes]
+            self.axes = [PointAxis(self._clean(arg)) for arg in axes]
         else:
-            self.axes = [IntegratedAxis(arg[0], arg[1]) for arg in zip(self.axes[:len(axes)//2],
-                                                                       self.axes[len(axes)//2:])]
+            self.axes = [IntegratedAxis(self._clean(arg[0]), self._clean(arg[1])) for arg in zip(axes[:len(axes)//2],
+                                                                       axes[len(axes)//2:])]
 
     @staticmethod
     def _clean(array):
@@ -494,31 +519,6 @@ class EvaluationSpace1D(EvaluationSpaceND):
     def is_ascending(self):
         """Is the space ascending?"""
         return super().is_ascending[0]
-
-    #@property
-    #def grid(self):
-    #    """The grid representation of the space.
-    #
-    #    Returns
-    #    -------
-    #    tuple
-    #        A tuple representing the x axis. The tuple will contain
-    #        two arrays if the dataset is integrated, one otherwise.
-    #    """
-        # We can not just rely on the is_integrated setting since
-        # an integrated axis can have is_integrated set to False
-        #
-        # TODO: should we fix this? It only affects a few corner-case tests
-        #       so maybe it's something we can address upstream? Or work out
-        #       why we want is_integrated to be False when the axis size is 0?
-        #
-    #    if self.x_axis.is_integrated:
-    #        return self.x_axis.lo, self.x_axis.hi
-    #
-    #    if isinstance(self.x_axis, IntegratedAxis):
-    #        return self.x_axis.lo,
-    #
-    #    return self.x_axis.x,
 
     @property
     def midpoint_grid(self):
