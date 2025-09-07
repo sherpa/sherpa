@@ -196,7 +196,6 @@ def test_evaluate_cache2dint():
     assert mdl(x0lo, x1lo, x0hi, x1hi) == pytest.approx(2 * expected)
 
 
-
 def check_cache(mdl, expected, x, xhi=None, cache_size=1):
     """Check the cache contents.
 
