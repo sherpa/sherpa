@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2022
+#  Copyright (C) 2021-2022, 2025
 #  MIT
 #
 #
@@ -54,6 +54,58 @@ def test_backend_switch(make_data_path):
     infile = make_data_path("9774.pi")
     ui.load_pha(infile)
     assert ui.get_data().name.endswith('9774.pi')
+
+
+@requires_fits
+@requires_data
+def test_set_io_backend(make_data_path, clean_astro_ui):
+    '''Test that we can switch backends.
+
+    Of course, switching only makes sense if there is more than one backend
+    to try, so this is listed as "requires_fits".
+    '''
+    pha = make_data_path("3c273.pi")
+    ui.load_pha(pha)
+    assert ui.get_data().name.endswith('3c273.pi')
+
+    io.set_io_backend('dummy')
+
+    with pytest.raises(NotImplementedError,
+                       match="No usable I/O backend was imported."):
+         ui.load_pha(pha)
+
+    # Make this test work independent of the fits backend
+    try:
+        io.set_io_backend('astropy')
+    except IdentifierErr:
+        io.set_io_backend('pycrates')
+
+    infile = make_data_path("9774.pi")
+    ui.load_pha(infile)
+    assert ui.get_data().name.endswith('9774.pi')
+
+
+@requires_fits
+@requires_data
+def test_temporary_backend(make_data_path, clean_astro_ui):
+    '''Test that we can switch backends.
+
+    Of course, switching only makes sense if there is more than one backend
+    to try, so this is listed as "requires_fits".
+    '''
+    pha = make_data_path("3c273.pi")
+    ui.load_pha(pha)
+    assert ui.get_data().name.endswith('3c273.pi')
+
+    old_backend = io.backend.name
+
+    with io.TemporaryIOBackend('dummy'):
+        assert 'dummy' == io.backend.name
+        with pytest.raises(NotImplementedError,
+                           match="No usable I/O backend was imported."):
+            ui.load_pha(pha)
+
+    assert old_backend == io.backend.name
 
 
 def test_io_load_config_invalid_io_pkg(tmp_path):
