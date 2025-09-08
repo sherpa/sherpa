@@ -115,6 +115,11 @@ xstablemodel.mygauss
    mygauss.pos  thawed            1            0          2.4
    mygauss.norm thawed            1            0        1e+24
 
+.. testcleanup::
+
+   >>> import os
+   >>> os.remove("example.mod")
+
 Notes
 -----
 

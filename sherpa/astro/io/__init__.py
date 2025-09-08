@@ -89,6 +89,10 @@ from .types import NamesType, HdrTypeArg, HdrType, DataType, \
     Header, HeaderItem, Column, TableBlock, ImageBlock, \
     BlockList, BlockType, SpecrespBlock, MatrixBlock, EboundsBlock
 
+
+# Skip functions that need input files in their examples
+__doctest_skip__ = ['read_table', 'read_image', 'read_ascii']
+
 # Responses can often be send as the Data object or the instrument
 # version, so support it would be good to support this with types
 # like
@@ -245,6 +249,9 @@ class TemporaryIOBackend(AbstractContextManager):
 
     Examples
     --------
+    Temporarily set a different backend and print out its name. Of course,
+    for this example to be useful, we should not just print the name of
+    the backend, but use it to read or write a datafile.
 
     >>> from sherpa.astro import io
     >>> with io.TemporaryIOBackend('dummy'):
@@ -305,16 +312,23 @@ def read_arrays(*args) -> Data:
     arrays ``x`` and ``y`` (taken to be the independent and
     dependent axes respectively):
 
+    >>> import numpy as np
+    >>> from sherpa.astro.io import read_arrays
+    >>> x = np.arange(10)
+    >>> y = np.random.normal(size=10)
     >>> d = read_arrays(x, y)
 
     As in the previous example, but explicitly declaring the data type:
 
-    >>> d = read_arrays(x, y, sherpa.data.Data1D)
+    >>> from sherpa import data
+    >>> d = read_arrays(x, y, data.Data1D)
 
     Create a `sherpa.data.Data2D` instance with the independent
     axes ``x0`` and ``x1``, and dependent axis ``y``:
 
-    >>> d = read_arrays(x0, x1, y, sherpa.data.Data2D)
+    >>> x1, x0 = np.mgrid[20:30, 5:20]
+    >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+    >>> d = read_arrays(x0.flatten(), x1.flatten(), y.flatten(), data.Data2D)
 
     """
     largs = list(args)
@@ -334,6 +348,7 @@ def read_arrays(*args) -> Data:
     return dstype('', *dargs)
 
 
+# Doctest is skipped in __doctest_skip__ because example requires file input
 def read_table(arg,
                ncols: int = 2,
                colkeys: NamesType | None = None,
@@ -372,12 +387,14 @@ def read_table(arg,
     Create a `sherpa.data.Data1D` object from the first two
     columns in the file ``src.fits``:
 
+    >>> from sherpa.astro.io import read_table
     >>> d = read_table('src.fits')
 
     Create a `sherpa.data.Data1DInt` object from the first three
     columns in the file ``src.fits``:
 
-    >>> d = read_table('src.fits', ncols=3, dstype=Data1DInt)
+    >>> from sherpa import data
+    >>> d = read_table('src.fits', ncols=3, dstype=data.Data1DInt)
 
     Create a `sherpa.data.Data1D` data set from the specified
     columns in ``tbl.fits``, where ``WLEN`` is used for the
@@ -398,7 +415,7 @@ def read_table(arg,
 
 
 # TODO: should this be exported?
-#
+# Doctest is skipped in __doctest_skip__ because example requires file input
 def read_ascii(filename: str,
                ncols: int = 2,
                colkeys: NamesType | None = None,
@@ -437,6 +454,7 @@ def read_ascii(filename: str,
     Create a `sherpa.data.Data1D` object from the first two
     columns in the file ``src.dat``:
 
+    >>> from sherpa.astro.io import read_ascii
     >>> d = read_ascii('src.dat')
 
     Create A `sherpa.data.Data1DInt` object from the first three
@@ -449,7 +467,7 @@ def read_ascii(filename: str,
     independent axis, ``FLUX`` the dependent axis, and
     ``FLUXERR`` for the statistical error on the dependent axis:
 
-    >>> d = read_ascii('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
+    >>> d = read_ascii('tbl.txt', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
 
@@ -464,6 +482,7 @@ def read_ascii(filename: str,
 
 
 # TODO: Can this read in Data2D or only DataIMG?
+# Doctest is skipped in __doctest_skip__ because example requires file input
 def read_image(arg,
                coord: str = 'logical',
                dstype: Type[Data2D] = DataIMG) -> Data2D:
@@ -502,6 +521,7 @@ def read_image(arg,
     Create a `sherpa.astro.data.DataIMG` object from the FITS file
     ``img.fits``:
 
+    >>> from sherpa.astro.io import read_image
     >>> d = read_image('img.fits')
 
     Select the physical coordinate system from the file:
@@ -2356,7 +2376,9 @@ def pack_table(dataset: Data1D) -> object:
     Examples
     --------
 
-    >>> d = sherpa.data.Data1D('tmp', [1, 2, 3], [4, 10, 2])
+    >>> from sherpa.data import Data1D
+    >>> from sherpa.astro.io import pack_table
+    >>> d = Data1D('tmp', [1, 2, 3], [4, 10, 2])
     >>> tbl = pack_table(d)
 
     """
@@ -2385,6 +2407,9 @@ def pack_image(dataset: Data2D) -> Any:
     Examples
     --------
 
+    >>> import numpy as np
+    >>> import sherpa
+    >>> from sherpa.astro.io import pack_image
     >>> y, x = np.mgrid[:10, :5]
     >>> z = (x-2)**2 + (y-2)**3
     >>> d = sherpa.data.Data2D('img', x.flatten(), y.flatten(),

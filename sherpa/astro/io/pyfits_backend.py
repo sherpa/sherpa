@@ -250,9 +250,9 @@ def _get_file_contents(arg: DatasetType,
     The file will be closed after the with loop if arg is a
     string, but not if it's a astropy.io.fits object:
 
-    >>> cm, fname = _get_file_contents(arg)
-    >>> with cm as hdus:
-       ...
+    >>> cm, fname = _get_file_contents(arg)  # doctest: +SKIP
+    >>> with cm as hdus:                     # doctest: +SKIP
+    ...     # Do something with hdus         # doctest: +SKIP
 
     """
 
