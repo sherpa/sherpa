@@ -129,10 +129,10 @@ this range to have at least 20 counts per group:
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping
 import logging
 import os
-from typing import Any, Callable, Literal, Mapping, cast, overload, TYPE_CHECKING
+from typing import Any, Literal, cast, overload, TYPE_CHECKING
 import warnings
 
 import numpy as np
@@ -5441,7 +5441,7 @@ class DataIMG(Data2D):
                      x1: npt.NDArray[np.floating] | None = None,
                      staterror: npt.NDArray[np.floating] | None = None,
                      syserror: npt.NDArray[np.floating] | None = None,
-                     header: dict | None = None):   # -> Self  -- but can't so that al long as we are still 3.10 compatible
+                     header: Mapping[str, Any] | None = None) -> "DataIMG":   # -> Self  -- but can't so that al long as we are still 3.10 compatible
         '''Create a `Data2IMG` instance from a 2-dimensional array.
 
         Parameters
@@ -5522,7 +5522,7 @@ class DataIMG(Data2D):
                      sky: WCS,
                      eqpos: WCS,
                      coord: Literal["logical", "image", "physical", "world", "wcs"] = 'logical',
-                     header: dict | None = None):
+                     header: Mapping[str, Any] | None = None) -> "DataIMG":   # -> Self  -- but can't so that al long as we are still 3.10 compatible
         '''Create a DataIMG instance from 2D data and WCS information.
 
         '''
@@ -6106,8 +6106,8 @@ class DataIMGInt(DataIMG):
                      x1_bounds: npt.NDArray[np.floating] | None = None,
                      staterror: npt.NDArray[np.floating] | None = None,
                      syserror: npt.NDArray[np.floating] | None = None,
-                     header: dict | None = None,
-                     ):    # -> Self:  -- but can't so that al long as we are still 3.10 compatible
+                     header: Mapping[str, Any] | None = None,
+                     ) -> "DataIMGInt":  # -> Self:  -- but can't so that al long as we are still 3.10 compatible
         '''Create a `DataIMGInt` instance from a 2-dimensional array.
 
         Parameters
@@ -6196,7 +6196,7 @@ class DataIMGInt(DataIMG):
                      sky: WCS,
                      eqpos: WCS,
                      coord: Literal["logical", "image", "physical", "world", "wcs"] = 'logical',
-                     header: dict | None = None):
+                     header: Mapping[str, Any] | None = None) -> "DataIMGInt":
         '''Create a DataIMGInt instance from 2D data and WCS information.
 
         '''
