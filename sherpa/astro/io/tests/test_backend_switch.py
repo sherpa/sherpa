@@ -23,6 +23,7 @@ from unittest.mock import patch
 
 import pytest
 
+from sherpa.utils.err import IdentifierErr
 from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro import io
 from sherpa.astro import ui
@@ -104,6 +105,18 @@ def test_temporary_backend(make_data_path, clean_astro_ui):
         with pytest.raises(NotImplementedError,
                            match="No usable I/O backend was imported."):
             ui.load_pha(pha)
+
+    assert old_backend == io.backend.name
+
+
+def test_temporary_backend_failure():
+    '''Test that we get an error when trying to switch to a non-existent backend.
+    '''
+    old_backend = io.backend.name
+
+    with pytest.raises(IdentifierErr,
+                       match="'does_not_exist' is not a valid I/O backend, choose from"):
+        io.set_io_backend('does_not_exist')
 
     assert old_backend == io.backend.name
 
