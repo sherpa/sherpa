@@ -138,6 +138,10 @@ plot_opt_str = config.get('options', 'plot_pkg', fallback='BasicBackend')
 plot_opt = [o.strip() for o in plot_opt_str.split()]
 
 for plottry in plot_opt:
+    # For backwards compatibility we alias "dummy" to BasicBackend
+    if plottry == "dummy":
+        plottry = "BasicBackend"
+
     if plottry in PLOT_BACKENDS:
         backend = PLOT_BACKENDS[plottry]()
         break
