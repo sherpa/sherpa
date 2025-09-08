@@ -64,13 +64,20 @@ class OptMethod(NoNewAttributesAfterInit):
 
     The `optfunc` is the main input to the optimizer. It must be a
     callable with the following signature - see the example below for a
-    full implementation:
+    full implementation::
 
-      def optfunc(fcn: StatFunc,
-         x0: np.ndarray,
-         xmin: np.ndarray,
-         xmax: np.ndarray,
-         **kwargs) -> OptReturn:
+        >>> def optfunc(fcn: StatFunc,
+        ...             x0: np.ndarray,
+        ...             xmin: np.ndarray,
+        ...             xmax: np.ndarray,
+        ...             **kwargs) -> OptReturn:
+        ...     '''Do something clever here'''
+        ...      success = True # or False
+        ...      best_pars = x0 # best parameter values found
+        ...      best_stat = fcn(x0)[0] # best statistic value found
+        ...      msg = 'Did something clever' # message for user
+        ...      imsg = {'additional info': 'if any'} # dict with additional info
+        ...      return (success, best_pars, best_stat, msg, imsg)
 
 
     ``fcn`` is a callable that has only a single argument (a sequence of

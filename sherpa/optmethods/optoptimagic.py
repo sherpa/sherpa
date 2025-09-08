@@ -20,7 +20,7 @@
 """Interface to optimagic optimization methods.
 
 This module contains classes that wrap the optimization functions in
-`optimagic <https://estimagic.org>` to match the calling signature and 
+`optimagic <https://estimagic.org>`_ to match the calling signature and 
 return values to the Sherpa interface.
 
 If `optimagic <https://estimagic.org>`_ is installed, classes are created automatically and
