@@ -118,7 +118,7 @@ info = logging.getLogger(__name__).info
 T = TypeVar('T')
 
 
-__all__ = ('backend', 'IO_BACKENDS', 'set_io_backend',
+__all__ = ('backend', 'IO_BACKENDS', 'set_io_backend', 'TemporaryIOBackend',
            'read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',
            'read_pha', 'write_image', 'write_pha', 'write_table',
            'write_arf', 'write_rmf',
@@ -241,11 +241,8 @@ class TemporaryIOBackend(AbstractContextManager):
 
     Parameters
     ----------
-    new_backend : string, class, or instance
-        Set a sherpa plotting backend. The backend can be passed in as an
-        instance of a plotting backend class. For simplicity, the user can
-        also pass in a string naming a loaded backend class or the class
-        itself; calling this context manager will then create an instance.
+    new_backend : string
+        Name of a known Sherpa IO backend.
 
     Examples
     --------
@@ -257,6 +254,12 @@ class TemporaryIOBackend(AbstractContextManager):
     >>> with io.TemporaryIOBackend('dummy'):
     ...     print(io.backend.name)
     dummy
+
+    Get a list of registered backends:
+
+    >>> from sherpa.astro import io
+    >>> io.IO_BACKENDS
+    {'dummy': <module 'sherpa.astro.io.dummy_backend' ...
     '''
 
     def __init__(self, new_backend: str) -> None:
