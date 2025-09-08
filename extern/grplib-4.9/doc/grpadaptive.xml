@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE cxchelptopics SYSTEM "CXCHelp.dtd">
+<cxchelptopics>
+  <ENTRY context="group" key="grpAdaptive" refkeywords="ADAPTIVE grp group adapt count counts countsarray numcounts maxlength tabstops" seealsogroups="group-api">
+    <SYNOPSIS>
+      Group an array by the number of counts per group
+      using an adaptive scheme.
+    </SYNOPSIS>
+    <SYNTAX>
+      <LINE>
+      grpAdaptive( PyArray_Type countsArray, Integer_Type numCounts )
+      </LINE>
+      <LINE>
+      grpAdaptive( PyArray_Type countsArray, Integer_Type numCounts,
+      Integer_Type maxLength )
+      </LINE>
+      <LINE>
+      grpAdaptive( PyArray_Type countsArray, Integer_Type minCounts,
+      Integer_Type maxLength, PyArray_Type tabStops )
+      </LINE>
+      <LINE />
+      <LINE>
+	Returns: ( PyArray_Type grouping, PyArray_Type quality )
+      </LINE>
+
+    </SYNTAX>
+
+    <DESC>
+      <PARA>
+	This function returns the grouping and quality arrays
+	that represent the input data (countsArray) after
+	it has been adaptively grouped so that each group contains
+	at least numCounts counts.
+	The optional parameters maxLength and tabStops
+	represent the maximum number of elements
+	that can be combined and an array representing those
+	elements that should be ignored respectively.
+      </PARA>
+      <PARA>
+	This function provides the same functionality
+	as the ADAPTIVE option of dmgroup.
+      </PARA>
+
+      <PARA>
+        The group module is not available by default; to use it in a
+        Python program, it must be loaded using the Python
+         import function:
+      </PARA>
+<VERBATIM>  from group import *, or import group</VERBATIM>
+
+      <PARA>
+        In addition, in order to create arrays, the Python module numpy must
+        be loaded using the Python import function:
+      </PARA>
+<VERBATIM>  import numpy</VERBATIM>
+
+    </DESC>
+
+    <QEXAMPLELIST>
+      <QEXAMPLE>
+	<SYNTAX>
+		<LINE>&gt;&gt;&gt; (g,q) = grpAdaptive( y, 20 )</LINE>
+	</SYNTAX>
+
+	<DESC>
+	  <PARA>
+	    This example calculates the grouping and quality arrays
+	    that represent the input data (here the contents of the y
+	    array) after it has been adaptively grouped to at least 20 counts per
+	    group.
+	  </PARA>
+	</DESC>
+
+      </QEXAMPLE>
+
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; x = numpy.arange(0.5, 6.0, 0.05)</LINE>
+	  <LINE>&gt;&gt;&gt; y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 )</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpAdaptive( y, 15 );</LINE>
+	  <LINE>&gt;&gt;&gt; ysum = grpGetGroupSum( y, g );</LINE>
+	  <LINE>&gt;&gt;&gt; nchan = grpGetChansPerGroup( g );</LINE>
+	  <LINE>&gt;&gt;&gt; i = numpy.where( g == 1 )</LINE>
+	  <LINE>&gt;&gt;&gt; yavg = ysum[i] / nchan[i];</LINE>
+	</SYNTAX>
+	<DESC>
+	  <PARA>
+	    Here we take the function
+	    <EQUATION> y = 3 + 30 * numpy.exp( - (x-2.0)**2 / 0.1 ))</EQUATION>
+	    and adaptively group it by 15 counts per group.
+	  </PARA>
+	  <PARA>
+	    Unlike the simple grouping done by grpNumCounts() - where
+	    only the end element(s) may have non-zero quality values - the
+	    adaptive grouping scheme can create
+	    groups with non-zero quality anywhere in the array.
+	  </PARA>
+	</DESC>
+	</QEXAMPLE>
+
+      <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; cA = numpy.array([ 66, 103, 146, 219, 579, 819, 457, 228, 131, 15, 0])</LINE>
+	  <LINE>&gt;&gt;&gt; minC = 700</LINE>
+	  <LINE>&gt;&gt;&gt; maxL = 3</LINE>
+	  <LINE>&gt;&gt;&gt; tab = numpy.array([0,0,0,0,0,0,0,0,0,0,0])</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpAdaptive(countsArray=cA, minCounts=minC, maxLength=maxL, tabStops=tab)</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpAdaptive(minCounts=minC, countsArray=cA, tabStops=tab, maxLength=maxL)</LINE>
+	</SYNTAX>
+	<DESC>
+	  <PARA>
+	    In order to take advantage of the optional parameters, Python
+	    allows for keywords.  This example demonstrates the use of the keywords
+	    for the grpAdaptive function.  If all the parameters are used with
+	    keywords, the order in which they appear in the parameter list does
+	    not matter.  However, if not using keywords for all parameters,
+	    the order does matter.  See next example for syntax.
+	  </PARA>
+	</DESC>
+		</QEXAMPLE>
+
+	    <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; cA = numpy.array([ 66, 103, 146, 219, 579, 819, 457, 228, 131, 15, 0])</LINE>
+	  <LINE>&gt;&gt;&gt; minC = 700</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpAdaptive(cA, minC, maxLength=3)</LINE>
+	</SYNTAX>
+	<DESC>
+	  <PARA>
+	    This example demonstrates the use of the keywords for one optional
+	    parameter.  Here the order of the parameters does matter since all
+	    of the parameters do not have keywords.
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+	    <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; cA = numpy.array([ 66, 103, 146, 219, 579, 819, 457, 228, 131, 15, 0])</LINE>
+	  <LINE>&gt;&gt;&gt; minC = 700</LINE>
+	  <LINE>&gt;&gt;&gt; tab = numpy.array([0,0,0,0,0,0,0,0,0,0,0])</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpAdaptive(cA, minC, tabStops=tab)</LINE>
+	</SYNTAX>
+	<DESC>
+	  <PARA>
+	    This example demonstrates the use of the keywords for one optional
+	    parameter.  Here the order of the parameters does matter since all
+	    of the parameters do not have keywords.
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+	    <QEXAMPLE>
+	<SYNTAX>
+	  <LINE>&gt;&gt;&gt; cA = numpy.array([ 66, 103, 146, 219, 579, 819, 457, 228, 131, 15, 0])</LINE>
+	  <LINE>&gt;&gt;&gt; minC = 700</LINE>
+	  <LINE>&gt;&gt;&gt; maxL = 3</LINE>
+	  <LINE>&gt;&gt;&gt; tab = numpy.array([0,0,0,0,0,0,0,0,0,0,0])</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpAdaptive(cA, minC, tabStops=tab, maxLength=maxL)</LINE>
+	  <LINE>&gt;&gt;&gt; (g,q) = grpAdaptive(cA, minC, maxLength=maxL, tabStops=tab)</LINE>
+	</SYNTAX>
+	<DESC>
+	  <PARA>
+	    This example demonstrates the use of the keywords for one optional
+	    parameter.  Here the order of the parameters without keywords matters
+	    but the order of the optional parameters with keywords does not.
+	  </PARA>
+	</DESC>
+      </QEXAMPLE>
+
+    </QEXAMPLELIST>
+
+    <BUGS>
+      <PARA>
+        See the
+        <HREF link="http://cxc.harvard.edu/ciao/bugs/group.html">bugs page
+          for the group library</HREF>
+        on the CIAO website for an up-to-date listing of known bugs.
+      </PARA>
+    </BUGS>
+
+    <LASTMODIFIED>December 2013</LASTMODIFIED>
+
+  </ENTRY>
+</cxchelptopics>
