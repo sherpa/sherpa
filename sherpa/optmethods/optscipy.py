@@ -115,9 +115,8 @@ def wrap_scipy_fcn(func: Callable,
                                                             requires_finite_bounds)
 
     result = func(stat_wrapper, **converted_args, **kwargs)
-    for arg in ['bounds', 'ranges']:
-        if arg in converted_args:
-            result[f'input_{arg}'] = converted_args[arg]
+    if 'bounds' in converted_args:
+        result[f'input_bounds'] = converted_args['bounds']
     return (result.success, result.x, result.fun, result.message, result)
 
 

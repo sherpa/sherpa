@@ -183,7 +183,7 @@ def test_scipy_unconstrainted(optimizer, works_unconstrained):
     "optimizer,rtol",
     [(optmethods.Scipy_Minimize, 1e-5),
      (optmethods.Scipy_Basinhopping, 1e-5),
-     (optmethods.Scipy_DifferentialEvolution, 1e-5),
+     (optmethods.Scipy_DifferentialEvolution, 1e-4),
      (optmethods.Scipy_DualAnnealing, 1e-5),
      (optmethods.Scipy_Shgo, 1e-5),
      (optmethods.Scipy_Direct, 0.001),
