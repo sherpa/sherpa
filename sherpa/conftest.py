@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from importlib.resources import files
 import os
 import re
 import logging
@@ -706,8 +707,7 @@ def add_sherpa_test_data_dir(doctest_namespace):
     in the future, but it seems more important that this keeps any
     extra markup out of those files and keep them clean.
     '''
-    sherpa_root = os.path.dirname(os.path.abspath(__file__))
-    doctest_namespace["data_3c273"] = os.path.join(sherpa_root, 'astro/datastack/tests/data/')
+    doctest_namespace["data_3c273"] = f"{files('sherpa.astro.datastack') / 'tests' / 'data'}/"
 
     # We could error out here, but we only want the tests that
     # use it to fail.
