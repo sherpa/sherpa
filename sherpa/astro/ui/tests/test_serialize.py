@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018 - 2021, 2023 - 2025
+#  Copyright (C) 2015, 2016, 2018-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -83,14 +83,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -109,7 +109,7 @@ set_stat("leastsq")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", 5000)
@@ -133,7 +133,7 @@ set_stat("leastsq")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", 5000)
@@ -198,14 +198,14 @@ set_stat("chi2datavar")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -214,10 +214,10 @@ create_model_component("xsapec", "src")
 src.integrate = True
 
 src.kT.default_val = 1.0
-src.kT.default_min = 0.0080000000000000002
+src.kT.default_min = 0.0080000000000000002  # doctest: +FLOAT_CMP
 src.kT.default_max = 64.0
 src.kT.val     = 1.0
-src.kT.min     = 0.0080000000000000002
+src.kT.min     = 0.0080000000000000002  # doctest: +FLOAT_CMP
 src.kT.max     = 64.0
 src.kT.units   = "keV"
 src.kT.frozen  = False
@@ -242,10 +242,10 @@ src.Redshift.frozen  = True
 
 src.norm.default_val = 1.0
 src.norm.default_min = 0.0
-src.norm.default_max = 9.9999999999999998e+23
+src.norm.default_max = 9.9999999999999998e+23  # doctest: +FLOAT_CMP
 src.norm.val     = 1.0
 src.norm.min     = 0.0
-src.norm.max     = 9.9999999999999998e+23
+src.norm.max     = 9.9999999999999998e+23  # doctest: +FLOAT_CMP
 src.norm.units   = ""
 src.norm.frozen  = False
 
@@ -357,14 +357,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -470,14 +470,14 @@ set_stat("chi2xspecvar")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -683,14 +683,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -735,14 +735,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -905,7 +905,7 @@ set_stat("cash")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
@@ -938,10 +938,10 @@ sin_model.offset.units   = ""
 sin_model.offset.frozen  = False
 
 sin_model.ampl.default_val = 1.0
-sin_model.ampl.default_min = 1.0000000000000001e-05
+sin_model.ampl.default_min = 1.0000000000000001e-05  # doctest: +FLOAT_CMP
 sin_model.ampl.default_max = 3.4028234663852886e+38
 sin_model.ampl.val     = 1.0
-sin_model.ampl.min     = 1.0000000000000001e-05
+sin_model.ampl.min     = 1.0000000000000001e-05  # doctest: +FLOAT_CMP
 sin_model.ampl.max     = 3.4028234663852886e+38
 sin_model.ampl.units   = ""
 sin_model.ampl.frozen  = False
@@ -1012,7 +1012,7 @@ set_stat("cstat")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
@@ -1050,7 +1050,7 @@ set_stat("cstat")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
@@ -1091,21 +1091,21 @@ gmdl.ypos.max     = 3.4028234663852886e+38
 gmdl.ypos.units   = ""
 gmdl.ypos.frozen  = False
 
-gmdl.ellip.default_val = 0.80000000000000004
+gmdl.ellip.default_val = 0.80000000000000004  # doctest: +FLOAT_CMP
 gmdl.ellip.default_min = 0.0
 gmdl.ellip.default_max = 0.999
-gmdl.ellip.val     = 0.80000000000000004
+gmdl.ellip.val     = 0.80000000000000004  # doctest: +FLOAT_CMP
 gmdl.ellip.min     = 0.0
 gmdl.ellip.max     = 0.999
 gmdl.ellip.units   = ""
 gmdl.ellip.frozen  = True
 
 gmdl.theta.default_val = 1.2
-gmdl.theta.default_min = -6.2831853071795862
-gmdl.theta.default_max = 6.2831853071795862
+gmdl.theta.default_min = -6.2831853071795862  # doctest: +FLOAT_CMP
+gmdl.theta.default_max = 6.2831853071795862  # doctest: +FLOAT_CMP
 gmdl.theta.val     = 1.2
-gmdl.theta.min     = -6.2831853071795862
-gmdl.theta.max     = 6.2831853071795862
+gmdl.theta.min     = -6.2831853071795862  # doctest: +FLOAT_CMP
+gmdl.theta.max     = 6.2831853071795862  # doctest: +FLOAT_CMP
 gmdl.theta.units   = "radians"
 gmdl.theta.frozen  = True
 
@@ -1168,7 +1168,7 @@ set_stat("cstat")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
@@ -1213,21 +1213,21 @@ g1.ypos.max     = 3.4028234663852886e+38
 g1.ypos.units   = ""
 g1.ypos.frozen  = False
 
-g1.ellip.default_val = 0.40000000000000002
+g1.ellip.default_val = 0.40000000000000002  # doctest: +FLOAT_CMP
 g1.ellip.default_min = 0.0
 g1.ellip.default_max = 0.999
-g1.ellip.val     = 0.40000000000000002
+g1.ellip.val     = 0.40000000000000002  # doctest: +FLOAT_CMP
 g1.ellip.min     = 0.0
 g1.ellip.max     = 0.999
 g1.ellip.units   = ""
 g1.ellip.frozen  = True
 
 g1.theta.default_val = 1.2
-g1.theta.default_min = -6.2831853071795862
-g1.theta.default_max = 6.2831853071795862
+g1.theta.default_min = -6.2831853071795862  # doctest: +FLOAT_CMP
+g1.theta.default_max = 6.2831853071795862  # doctest: +FLOAT_CMP
 g1.theta.val     = 1.2
-g1.theta.min     = -6.2831853071795862
-g1.theta.max     = 6.2831853071795862
+g1.theta.min     = -6.2831853071795862  # doctest: +FLOAT_CMP
+g1.theta.max     = 6.2831853071795862  # doctest: +FLOAT_CMP
 g1.theta.units   = "radians"
 g1.theta.frozen  = True
 
@@ -1265,14 +1265,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1305,14 +1305,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1329,10 +1329,10 @@ tbl.nh.max     = 1000.0
 tbl.nh.units   = ""
 tbl.nh.frozen  = False
 
-tbl.fract.default_val = 0.20000000000000001
+tbl.fract.default_val = 0.20000000000000001  # doctest: +FLOAT_CMP
 tbl.fract.default_min = 0.0
 tbl.fract.default_max = 1.0
-tbl.fract.val     = 0.20000000000000001
+tbl.fract.val     = 0.20000000000000001  # doctest: +FLOAT_CMP
 tbl.fract.min     = 0.0
 tbl.fract.max     = 1.0
 tbl.fract.units   = ""
@@ -1373,14 +1373,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1406,11 +1406,11 @@ pmod.g0.max     = 1.0
 pmod.g0.units   = ""
 pmod.g0.frozen  = True
 
-pmod.f.default_val = 0.94999999999999996
-pmod.f.default_min = 0.90000000000000002
+pmod.f.default_val = 0.94999999999999996  # doctest: +FLOAT_CMP
+pmod.f.default_min = 0.90000000000000002  # doctest: +FLOAT_CMP
 pmod.f.default_max = 1.0
-pmod.f.val     = 0.94999999999999996
-pmod.f.min     = 0.90000000000000002
+pmod.f.val     = 0.94999999999999996  # doctest: +FLOAT_CMP
+pmod.f.min     = 0.90000000000000002  # doctest: +FLOAT_CMP
 pmod.f.max     = 1.0
 pmod.f.units   = ""
 pmod.f.frozen  = False
@@ -1424,19 +1424,19 @@ pmod.n.max     = 100.0
 pmod.n.units   = ""
 pmod.n.frozen  = True
 
-pmod.ftime.default_val = 3.2410000000000001
+pmod.ftime.default_val = 3.2410000000000001  # doctest: +FLOAT_CMP
 pmod.ftime.default_min = 1.1754943508222875e-38
 pmod.ftime.default_max = 5.0
-pmod.ftime.val     = 3.2410000000000001
+pmod.ftime.val     = 3.2410000000000001  # doctest: +FLOAT_CMP
 pmod.ftime.min     = 1.1754943508222875e-38
 pmod.ftime.max     = 5.0
 pmod.ftime.units   = "sec"
 pmod.ftime.frozen  = True
 
-pmod.fracexp.default_val = 0.98699999999999999
+pmod.fracexp.default_val = 0.98699999999999999  # doctest: +FLOAT_CMP
 pmod.fracexp.default_min = 0.0
 pmod.fracexp.default_max = 1.0
-pmod.fracexp.val     = 0.98699999999999999
+pmod.fracexp.val     = 0.98699999999999999  # doctest: +FLOAT_CMP
 pmod.fracexp.min     = 0.0
 pmod.fracexp.max     = 1.0
 pmod.fracexp.units   = ""
@@ -1484,14 +1484,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1525,14 +1525,14 @@ set_stat("cash")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1556,14 +1556,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1603,14 +1603,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1636,14 +1636,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1688,7 +1688,7 @@ mdl.PhoIndex.frozen  = True
 
 mdl.norm.default_val = 1.0
 mdl.norm.default_min = 0.0
-mdl.norm.default_max = 9.9999999999999998e+23
+mdl.norm.default_max = 9.9999999999999998e+23  # doctest: +FLOAT_CMP
 mdl.norm.val     = 1.0
 mdl.norm.min     = 0.0
 mdl.norm.max     = 100.0
@@ -1739,7 +1739,7 @@ mdl.PhoIndex.frozen  = True
 
 mdl.norm.default_val = 1.0
 mdl.norm.default_min = 0.0
-mdl.norm.default_max = 9.9999999999999998e+23
+mdl.norm.default_max = 9.9999999999999998e+23  # doctest: +FLOAT_CMP
 mdl.norm.val     = 1.0
 mdl.norm.min     = 0.0
 mdl.norm.max     = 100.0
@@ -1762,14 +1762,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1832,14 +1832,14 @@ set_stat("chi2datavar")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1864,14 +1864,14 @@ set_stat("chi2")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1924,14 +1924,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -2167,14 +2167,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -2238,7 +2238,7 @@ set_stat("cstat")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
@@ -2252,10 +2252,10 @@ set_method_opt("verbose", 0)
 create_model_component("powlaw1d", "spl")
 spl.integrate = True
 
-spl.gamma.default_val = 1.6399999999999999
+spl.gamma.default_val = 1.6399999999999999  # doctest: +FLOAT_CMP
 spl.gamma.default_min = -10.0
 spl.gamma.default_max = 10.0
-spl.gamma.val     = 1.6399999999999999
+spl.gamma.val     = 1.6399999999999999  # doctest: +FLOAT_CMP
 spl.gamma.min     = -10.0
 spl.gamma.max     = 10.0
 spl.gamma.units   = ""
@@ -2270,10 +2270,10 @@ spl.ref.max     = 3.4028234663852886e+38
 spl.ref.units   = ""
 spl.ref.frozen  = True
 
-spl.ampl.default_val = 3.8999999999999999e-05
+spl.ampl.default_val = 3.8999999999999999e-05  # doctest: +FLOAT_CMP
 spl.ampl.default_min = 0.0
 spl.ampl.default_max = 3.4028234663852886e+38
-spl.ampl.val     = 3.8999999999999999e-05
+spl.ampl.val     = 3.8999999999999999e-05  # doctest: +FLOAT_CMP
 spl.ampl.min     = 0.0
 spl.ampl.max     = 3.4028234663852886e+38
 spl.ampl.units   = ""
@@ -2282,10 +2282,10 @@ spl.ampl.frozen  = False
 create_model_component("xsphabs", "gal")
 gal.integrate = True
 
-gal.nH.default_val = 0.23999999999999999
+gal.nH.default_val = 0.23999999999999999  # doctest: +FLOAT_CMP
 gal.nH.default_min = 0.0
 gal.nH.default_max = 1000000.0
-gal.nH.val     = 0.23999999999999999
+gal.nH.val     = 0.23999999999999999  # doctest: +FLOAT_CMP
 gal.nH.min     = 0.0
 gal.nH.max     = 1000000.0
 gal.nH.units   = "10^22 atoms / cm^2"
@@ -2312,10 +2312,10 @@ bpl.ref.max     = 3.4028234663852886e+38
 bpl.ref.units   = ""
 bpl.ref.frozen  = True
 
-bpl.ampl.default_val = 2.1399999999999998e-06
+bpl.ampl.default_val = 2.1399999999999998e-06  # doctest: +FLOAT_CMP
 bpl.ampl.default_min = 0.0
 bpl.ampl.default_max = 3.4028234663852886e+38
-bpl.ampl.val     = 2.1399999999999998e-06
+bpl.ampl.val     = 2.1399999999999998e-06  # doctest: +FLOAT_CMP
 bpl.ampl.min     = 0.0
 bpl.ampl.max     = 3.4028234663852886e+38
 bpl.ampl.units   = ""
@@ -2357,7 +2357,7 @@ set_xsxset("NEIVERS", "3.0.4")
 
 
 @pytest.fixture(autouse=True)
-def setup(hide_logging, old_numpy_printing, clean_astro_ui):
+def setup(hide_logging, clean_astro_ui):
     """Setup for all the tests"""
 
     if has_xspec:
@@ -2394,30 +2394,14 @@ def compileit(output):
     compile(output, "test.py", "exec")
 
 
-def compare_lines(expected, got):
-    """Check that each line in got matches that in
-    expected. This is to provide a more-readable
-    set of error messages (may prefer a diff-style
-    analysis).
-    """
-
-    elines = expected.split('\n')
-    glines = got.split('\n')
-
-    for e, g in zip(elines, glines):
-        assert e == g, f"expected='{e}' got='{g}'"
-
-    # Do the line length after checking for the file
-    # contents as it is easier to see what the difference
-    # is this way around, since a difference in the
-    # number of lines is often not very informative.
-    #
-    assert len(elines) == len(glines)
-
-
-def compare(expected):
+def compare(check_str, expected):
     """Run save_all and check the output (saved to a
     StringIO object) to the string value expected.
+
+    Since check_str is sent in, lines in expected can end with '#
+    doctest: +FLOAT_CMP' to allow for approximate numeric checks (but
+    limited by the check_str fixture).
+
     """
     output = StringIO()
     ui.save_all(output)
@@ -2428,7 +2412,7 @@ def compare(expected):
     # but ensures that the program can compile.
     #
     compileit(output)
-    compare_lines(expected, output)
+    check_str(output, expected.split("\n"))
 
 
 def restore():
@@ -2600,21 +2584,21 @@ def test_save_all_does_clobber(tmp_path):
     assert cts.startswith("import numpy\n")
 
 
-def test_canonical_empty():
+def test_canonical_empty(check_str):
     "Contents of empty state are as expected"
-    compare(_canonical_empty)
+    compare(check_str, _canonical_empty)
 
 
-def test_canonical_empty_outfile(tmp_path):
+def test_canonical_empty_outfile(tmp_path, check_str):
     "Can read in a save file"
 
     outfile = tmp_path / "save.sherpa"
     ui.save_all(str(outfile))
     output = outfile.read_text()
-    compare_lines(_canonical_empty, output)
+    check_str(output, _canonical_empty.split("\n"))
 
 
-def test_canonical_empty_stats():
+def test_canonical_empty_stats(check_str):
     "Change several settings but load no data"
 
     ui.set_stat('leastsq')
@@ -2623,10 +2607,10 @@ def test_canonical_empty_stats():
     ui.set_method_opt('maxfev', 5000)
     ui.set_method_opt('verbose', 1)
 
-    compare(_canonical_empty_stats)
+    compare(check_str, _canonical_empty_stats)
 
 
-def test_canonical_empty_iterstat():
+def test_canonical_empty_iterstat(check_str):
     "Check iterated-fit setting"
 
     ui.set_stat('leastsq')
@@ -2638,16 +2622,16 @@ def test_canonical_empty_iterstat():
     ui.set_iter_method('sigmarej')
     ui.set_iter_method_opt('grow', 1)
 
-    compare(_canonical_empty_iterstat)
+    compare(check_str, _canonical_empty_iterstat)
 
 
 @requires_data
 @requires_xspec
 @requires_fits
-def test_canonical_pha_basic(make_data_path):
+def test_canonical_pha_basic(make_data_path, check_str):
 
     _, canonical = setup_pha_basic(make_data_path)
-    compare(canonical)
+    compare(check_str, canonical)
 
 
 @requires_data
@@ -2678,10 +2662,10 @@ def test_restore_pha_basic(make_data_path):
 @requires_xspec
 @requires_fits
 @requires_group
-def test_canonical_pha_grouped(make_data_path):
+def test_canonical_pha_grouped(make_data_path, check_str):
 
     _, _, canonical = setup_pha_grouped(make_data_path)
-    compare(canonical)
+    compare(check_str, canonical)
 
 
 @requires_data
@@ -2721,10 +2705,10 @@ def test_restore_pha_grouped(make_data_path):
 @requires_xspec
 @requires_fits
 @requires_group
-def test_canonical_pha_back(make_data_path):
+def test_canonical_pha_back(make_data_path, check_str):
 
     _, _, canonical = setup_pha_back(make_data_path)
-    compare(canonical)
+    compare(check_str, canonical)
 
 
 @requires_data
@@ -2796,7 +2780,7 @@ def test_restore_pha_back(make_data_path):
 
 @requires_data
 @requires_fits
-def test_pha_no_response(make_data_path):
+def test_pha_no_response(make_data_path, check_str):
     """Check when there's no ARF / RMF or grouping, and switch to counts"""
 
     infile = make_data_path("source1.pi")
@@ -2809,7 +2793,7 @@ def test_pha_no_response(make_data_path):
     assert ui.get_dep("x", filter=True).sum() == 2904
     assert ui.get_dep("x").sum() == 3328
 
-    compare(add_datadir_path(_canonical_pha_no_response))
+    compare(check_str, add_datadir_path(_canonical_pha_no_response))
 
     restore()
 
@@ -2818,10 +2802,10 @@ def test_pha_no_response(make_data_path):
     assert ui.get_dep("x").sum() == 3328
 
 
-def test_canonical_usermodel():
+def test_canonical_usermodel(check_str):
     "Can we save a usermodel?"
     setup_usermodel()
-    compare(_canonical_usermodel)
+    compare(check_str, _canonical_usermodel)
 
 
 def test_restore_usermodel():
@@ -2850,7 +2834,7 @@ def test_restore_usermodel():
 
 @requires_data
 @requires_fits
-def test_restore_img_no_filter_no_model(make_data_path):
+def test_restore_img_no_filter_no_model(make_data_path, check_str):
     """Check issue #437"""
 
     ui.load_image(make_data_path('img.fits'))
@@ -2863,7 +2847,7 @@ def test_restore_img_no_filter_no_model(make_data_path):
     assert sorig == pytest.approx(5041.44)
     assert ui.get_filter() == ''
 
-    compare(add_datadir_path(_canonical_img_no_filter_no_model))
+    compare(check_str, add_datadir_path(_canonical_img_no_filter_no_model))
 
     restore()
     snew = ui.calc_data_sum2d()
@@ -2874,7 +2858,7 @@ def test_restore_img_no_filter_no_model(make_data_path):
 @requires_data
 @requires_fits
 @requires_region
-def test_restore_img_filter_model(make_data_path):
+def test_restore_img_filter_model(make_data_path, check_str):
     """Simple image check"""
 
     ui.load_image(make_data_path('img.fits'))
@@ -2906,7 +2890,7 @@ def test_restore_img_filter_model(make_data_path):
     assert sorig == pytest.approx(1861.978)
     assert corig == pytest.approx(7122.753868262877)
 
-    compare(add_datadir_path(_canonical_img_filter_model))
+    compare(check_str, add_datadir_path(_canonical_img_filter_model))
 
     restore()
     fnew = ui.get_filter()
@@ -2919,7 +2903,7 @@ def test_restore_img_filter_model(make_data_path):
 
 @requires_data
 @requires_fits
-def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
+def test_restore_img_no_filter_model_psf(make_data_path, recwarn, check_str):
     """Can we save a PSF setup? See issue #1873"""
 
     # This is not a great image to fit any data to!
@@ -2962,7 +2946,7 @@ def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
 
     assert ui.get_filter() == ''
 
-    compare(add_datadir_path(_canonical_img_no_filter_model_psf))
+    compare(check_str, add_datadir_path(_canonical_img_no_filter_model_psf))
 
     with pytest.warns(UserWarning, match=wmsg):
         restore()
@@ -2986,13 +2970,13 @@ def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
 
 @requires_data
 @requires_fits
-def test_restore_table_model(make_data_path):
+def test_restore_table_model(make_data_path, check_str):
     """Note: this only sets the table model"""
 
     ui.load_table_model("tbl", make_data_path('test_rmfimg.fits'))
     tbl.ampl.set(10, min=0, max=20, frozen=True)
 
-    compare(add_datadir_path(_canonical_table_model))
+    compare(check_str, add_datadir_path(_canonical_table_model))
 
     restore()
 
@@ -3010,7 +2994,7 @@ def test_restore_table_model(make_data_path):
 @requires_xspec
 @requires_data
 @requires_fits
-def test_restore_xstable_model(make_data_path):
+def test_restore_xstable_model(make_data_path, check_str):
     """Note: this only sets the table model
 
     This is a regression test as it currently does not do the right
@@ -3028,7 +3012,7 @@ def test_restore_xstable_model(make_data_path):
     #
     orig = str(tbl)
 
-    compare(add_datadir_path(_canonical_xstable_model))
+    compare(check_str, add_datadir_path(_canonical_xstable_model))
 
     restore()
 
@@ -3036,7 +3020,7 @@ def test_restore_xstable_model(make_data_path):
     assert str(tbl) == orig
 
 
-def test_restore_pileup_model():
+def test_restore_pileup_model(check_str):
     """Note: this is not a realistic pileup-model case.
 
     It is assumed that other tests check the other parts we'd have
@@ -3049,7 +3033,7 @@ def test_restore_pileup_model():
     ui.set_pileup_model(pmod)
     ui.set_pileup_model(2, pmod)
 
-    compare(_canonical_pileup_model)
+    compare(check_str, _canonical_pileup_model)
 
     restore()
 
@@ -3060,7 +3044,7 @@ def test_restore_pileup_model():
     assert isinstance(mod1, JDPileup)
 
 
-def test_restore_dataspace1d_int():
+def test_restore_dataspace1d_int(check_str):
     """Can we restore a dataspace1d case?"""
 
     ui.dataspace1d(1, 10, step=2)
@@ -3072,7 +3056,7 @@ def test_restore_dataspace1d_int():
     assert ui.get_filter() == fstr
     assert ui.get_dep(filter=True) == pytest.approx(expected)
 
-    compare(_canonical_dataspace1d_int)
+    compare(check_str, _canonical_dataspace1d_int)
 
     restore()
 
@@ -3081,7 +3065,7 @@ def test_restore_dataspace1d_int():
 
 
 @requires_region
-def test_restore_dataspace2d_img():
+def test_restore_dataspace2d_img(check_str):
     """Can we restore a dataspace2d case?"""
 
     ui.set_stat("cash")
@@ -3095,7 +3079,7 @@ def test_restore_dataspace2d_img():
     assert ui.get_filter() == fstr
     assert ui.get_dep(filter=True) == pytest.approx(expected)
 
-    compare(_canonical_dataspace2d_img)
+    compare(check_str, _canonical_dataspace2d_img)
 
     restore()
 
@@ -3103,7 +3087,7 @@ def test_restore_dataspace2d_img():
     assert ui.get_dep(filter=True) == pytest.approx(expected)
 
 
-def test_restore_load_arrays_simple():
+def test_restore_load_arrays_simple(check_str):
     """Can we re-create a load_arrays/Data1D case
 
     The test_restore_dataspace1d_int call has checked we
@@ -3112,7 +3096,7 @@ def test_restore_load_arrays_simple():
 
     ui.load_arrays("f", [-50, -20], [-2e4, 3e5])
 
-    compare(_canonical_load_arrays_simple)
+    compare(check_str, _canonical_load_arrays_simple)
 
     restore()
 
@@ -3123,7 +3107,7 @@ def test_restore_load_arrays_simple():
 
 
 @requires_group
-def test_restore_load_arrays_pha():
+def test_restore_load_arrays_pha(check_str):
     """Can we re-create a load_arrays/DataPHA case?"""
 
     dset = ui.DataPHA("ex", [1, 2, 3, 4, 5], [12, 2, 1, 0, 1])
@@ -3134,7 +3118,7 @@ def test_restore_load_arrays_pha():
     ui.set_data(dset)
     ui.group_counts(3, tabStops=numpy.asarray([0, 0, 0, 1, 0]))
 
-    compare(_canonical_load_arrays_pha)
+    compare(check_str, _canonical_load_arrays_pha)
 
     restore()
 
@@ -3153,7 +3137,7 @@ def test_restore_load_arrays_pha():
     assert pha.counts == pytest.approx([12, 2, 1, 0, 1])
 
 
-def test_restore_load_arrays_data2d():
+def test_restore_load_arrays_data2d(check_str):
     """Can we re-create a load_arrays/Data2D case
 
     Note that test_restore_dataspace2d_img is a basic DataIMG test.
@@ -3166,7 +3150,7 @@ def test_restore_load_arrays_data2d():
     assert ui.get_dep() == pytest.approx([3, 4, 5])
     assert ui.get_staterror() == pytest.approx([0.1, 0.1, 0.2])
 
-    compare(_canonical_load_arrays_data2d)
+    compare(check_str, _canonical_load_arrays_data2d)
 
     restore()
 
@@ -3177,7 +3161,7 @@ def test_restore_load_arrays_data2d():
 
 
 @requires_xspec
-def test_canonical_xspec_hard_limit_min():
+def test_canonical_xspec_hard_limit_min(check_str):
     "Can we save an XSPEC model with the hard limit extended: min"
 
     # Reset the optimiser parameters to make them easy to check,
@@ -3190,11 +3174,11 @@ def test_canonical_xspec_hard_limit_min():
     mdl.phoindex.set(val=-5, hard_min=-5, frozen=True)
     mdl.norm.max = 100
 
-    compare(_canonical_xspec_hard_limit_min)
+    compare(check_str, _canonical_xspec_hard_limit_min)
 
 
 @requires_xspec
-def test_canonical_xspec_hard_limit_max():
+def test_canonical_xspec_hard_limit_max(check_str):
     "Can we save an XSPEC model with the hard limit extended: max"
 
     # Reset the optimiser parameters to make them easy to check,
@@ -3207,7 +3191,7 @@ def test_canonical_xspec_hard_limit_max():
     mdl.phoindex.set(val=15, hard_max=15, frozen=True)
     mdl.norm.max = 100
 
-    compare(_canonical_xspec_hard_limit_max)
+    compare(check_str, _canonical_xspec_hard_limit_max)
 
 
 @requires_xspec
@@ -3288,7 +3272,7 @@ def test_restore_linker_parameter_with_function(clean_astro_ui):
     assert mm1.fwhm.val == pytest.approx(expected)
 
 
-def test_link_par():
+def test_link_par(check_str):
     """Check we can set up a simple parameter link
 
     Similar to test_restore_linker_parameter_with_function but
@@ -3310,7 +3294,7 @@ def test_link_par():
     assert m2.c0.link is not None
     assert m2.c0.link.name == "m1.c0 + sep.c0"
 
-    compare(_canonical_link_par)
+    compare(check_str, _canonical_link_par)
 
     restore()
 
@@ -3324,7 +3308,7 @@ def test_link_par():
 @pytest.mark.xfail
 @requires_data
 @requires_fits
-def test_pha_full_model(make_data_path):
+def test_pha_full_model(make_data_path, check_str):
     """A basic set_full_model test.
 
     Related to issue #1050
@@ -3358,7 +3342,7 @@ def test_pha_full_model(make_data_path):
 
     assert ui.get_model().name == "apply_rmf(apply_arf(38564.6089269 * powlaw1d.pl)) + polynom1d.con"
 
-    compare(add_datadir_path(_canonical_pha_full_model))
+    compare(check_str, add_datadir_path(_canonical_pha_full_model))
 
     # check we get the expected error
     #
@@ -3377,7 +3361,7 @@ def test_pha_full_model(make_data_path):
 
 @requires_data
 @requires_fits
-def test_load_data(make_data_path):
+def test_load_data(make_data_path, check_str):
     """Check load_data path for Data1D case with staterror"""
 
     # Unfortunately we need to care about the backend here.
@@ -3413,7 +3397,7 @@ def test_load_data(make_data_path):
         expected_output = _canonical_load_data
 
     expected_output = add_datadir_path(expected_output)
-    compare(expected_output)
+    compare(check_str, expected_output)
 
     restore()
 
@@ -3435,7 +3419,7 @@ def test_load_data(make_data_path):
 
 @requires_data
 @requires_fits
-def test_load_data_basic(make_data_path):
+def test_load_data_basic(make_data_path, check_str):
     """Check load_data path for Data1D case with no errors"""
 
     ui.set_stat("chi2")
@@ -3466,7 +3450,7 @@ def test_load_data_basic(make_data_path):
         ui.get_syserror()
 
     expected_output = add_datadir_path(_canonical_load_data_basic)
-    compare(expected_output)
+    compare(check_str, expected_output)
 
     restore()
 
@@ -3491,7 +3475,7 @@ def test_load_data_basic(make_data_path):
 
 @requires_data
 @requires_fits
-def test_restore_pha_multiple_backgrounds(make_data_path):
+def test_restore_pha_multiple_backgrounds(make_data_path, check_str):
     """Can we restore a grating dataset with multiple backgrounds?
 
     See issue #320
@@ -3522,7 +3506,7 @@ def test_restore_pha_multiple_backgrounds(make_data_path):
     check_data()
 
     expected_output = add_datadir_path(_canonical_pha_multiple_backgrounds)
-    compare(expected_output)
+    compare(check_str, expected_output)
 
     restore()
 
@@ -3532,7 +3516,7 @@ def test_restore_pha_multiple_backgrounds(make_data_path):
 
 @requires_data
 @requires_fits
-def test_restore_pha2(make_data_path):
+def test_restore_pha2(make_data_path, check_str):
     """Can we restore a pha2 file?
 
     See issue #1882.
@@ -3568,7 +3552,7 @@ def test_restore_pha2(make_data_path):
     check_data()
 
     expected_output = add_datadir_path(_canonical_pha2)
-    compare(expected_output)
+    compare(check_str, expected_output)
 
     restore()
 
@@ -3580,7 +3564,7 @@ def test_restore_pha2(make_data_path):
 @requires_group
 @requires_fits
 @requires_xspec
-def test_restore_pha_csc(make_data_path):
+def test_restore_pha_csc(make_data_path, check_str):
     """Can we restore a CSC file.
 
     This just checks that results of reading in. It doesn't
@@ -3631,7 +3615,7 @@ def test_restore_pha_csc(make_data_path):
     assert ui.calc_stat("csc") == pytest.approx(expected_stat)
 
     expected_output = add_datadir_path(_canonical_pha_csc)
-    compare(expected_output)
+    compare(check_str, expected_output)
 
     restore()
 

@@ -685,22 +685,22 @@ def _print_par(par: ParameterType) -> tuple[str, str]:
     parstrs = []
     try:
         if par.hard_min_changed():
-            parstrs.append(f'{par.fullname}.hard_min    = {repr(par.hard_min)}')
+            parstrs.append(f'{par.fullname}.hard_min    = {par.hard_min}')
     except AttributeError:
         pass
 
     try:
         if par.hard_max_changed():
-            parstrs.append(f'{par.fullname}.hard_max    = {repr(par.hard_max)}')
+            parstrs.append(f'{par.fullname}.hard_max    = {par.hard_max}')
     except AttributeError:
         pass
 
-    parstrs.extend([f'{par.fullname}.default_val = {repr(par.default_val)}',
-                    f'{par.fullname}.default_min = {repr(par.default_min)}',
-                    f'{par.fullname}.default_max = {repr(par.default_max)}',
-                    f'{par.fullname}.val     = {repr(par.val)}',
-                    f'{par.fullname}.min     = {repr(par.min)}',
-                    f'{par.fullname}.max     = {repr(par.max)}',
+    parstrs.extend([f'{par.fullname}.default_val = {par.default_val}',
+                    f'{par.fullname}.default_min = {par.default_min}',
+                    f'{par.fullname}.default_max = {par.default_max}',
+                    f'{par.fullname}.val     = {par.val}',
+                    f'{par.fullname}.min     = {par.min}',
+                    f'{par.fullname}.max     = {par.max}',
                     f'{par.fullname}.units   = {unitstr}',
                     f'{par.fullname}.frozen  = {par.frozen}'])
     parstr = '\n'.join(parstrs) + '\n'
@@ -846,20 +846,19 @@ def _handle_usermodel(out: OutType,
     cmd = f'load_user_model({mod.calc.__name__}, "{modelname}")'
     _output(out, cmd)
 
-    # Work out the add_user_pars call; this is explicit, i.e.
-    # it does not include logic to work out what arguments
-    # are not needed.
+    # Work out the add_user_pars call; this is explicit, i.e.  it does
+    # not include logic to work out what arguments are not needed.
     #
-    # Some of these values are over-written later on, but
-    # needed to set up the number of parameters, and good
-    # documentation (hopefully).
+    # Some of these values are over-written later on, but needed to
+    # set up the number of parameters, and good documentation
+    # (hopefully).
+    #
+    # Explicitly cast to float to avoid "np.float64(...)" output.
     #
     parnames = [p.name for p in mod.pars]
-    parvals = [p.default_val for p in mod.pars]
-    # parmins = [p.default_min for p in mod.pars]
-    # parmaxs = [p.default_max for p in mod.pars]
-    parmins = [p.min for p in mod.pars]
-    parmaxs = [p.max for p in mod.pars]
+    parvals = [float(p.default_val) for p in mod.pars]
+    parmins = [float(p.min) for p in mod.pars]
+    parmaxs = [float(p.max) for p in mod.pars]
     parunits = [p.units for p in mod.pars]
     parfrozen = [p.frozen for p in mod.pars]
 
@@ -1398,7 +1397,7 @@ def _save_dataset(out: OutType,
         _output(out, f"{spacer}{xs[1].tolist()},")
         _output(out, f"{spacer}{ys},")
         if data.shape is not None:
-            _output(out, f"{spacer}{tuple(data.shape)},")
+            _output(out, f"{spacer}({data.shape[0]}, {data.shape[1]}),")
 
         _output(out, f"{spacer}DataIMG)")
 
