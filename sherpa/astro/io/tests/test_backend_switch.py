@@ -79,7 +79,7 @@ def test_set_io_backend(make_data_path, clean_astro_ui):
     try:
         io.set_io_backend('astropy')
     except IdentifierErr:
-        io.set_io_backend('pycrates')
+        io.set_io_backend('crates')
 
     infile = make_data_path("9774.pi")
     ui.load_pha(infile)
