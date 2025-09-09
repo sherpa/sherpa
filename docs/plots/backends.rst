@@ -1,3 +1,5 @@
+.. _Plotting-backends:
+
 ************************
 Plotting backend details
 ************************

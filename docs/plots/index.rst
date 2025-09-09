@@ -11,9 +11,12 @@ Visualization
 Overview
 ========
 
-Sherpa has support for different plot backends, although
-at present there is only one, which uses the
-:term:`matplotlib` package.
+Sherpa has support for different plot backends, with the default
+being the :term:`matplotlib` package; :term:`bokeh` is also available
+for interactive plots :ref:`in a web browser or notebook <bokeh-api>`.
+See :ref:`the backend documentation <Plotting-backends>` for more
+details on the available backends and how to select them.
+
 Interactive visualizations of images is provided by
 :term:`DS9` - an Astronomical image viewer - if installed, whilst
 there is limited support for visualizing two-dimensional data sets
@@ -94,9 +97,7 @@ data:
    >>> dplot.prepare(d)
    >>> dplot.plot()
 
-The appearance of the plot will depend on the chosen backend (although
-as of the Sherpa 4.12.0 release there is only one, using the
-:term:`matplotlib` package).
+The appearance of the plot will depend on the chosen backend.
 
 Plotting data directly
 ----------------------
