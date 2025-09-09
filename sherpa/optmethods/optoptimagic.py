@@ -143,15 +143,14 @@ try:
         """Wrap `optimagic.minimize` to the Sherpa interface.
         """
 
-        bounds = None
         if hasattr(kwargs['algorithm'], 'algo_info'):
             algo_info = kwargs['algorithm'].algo_info
         else:
             try:
                 algorithm = getattr(om.algos, kwargs['algorithm'])
-            except AttributeError:
+            except AttributeError as AE:
                 raise AttributeError('optimagic does not have an algorithm '
-                                     f'named {kwargs["algorithm"]}. ')
+                                     f'named {kwargs["algorithm"]}. ') from AE
             else:
                 algo_info = algorithm.algo_info
 
@@ -185,7 +184,7 @@ try:
         out = (# I don't think we'll ever get None as a return value, but Mypy complains
                # that the type declaration in optimagic is "bool | None", while we want "bool".
                # None certainly isn't a valid success.
-               result.success if result.success else False, 
+               bool(result.success), 
                result.params, 
                result.fun, 
                # The message in optimagic is "str | None", while Sherpa expects "str".

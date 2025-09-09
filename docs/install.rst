@@ -50,10 +50,9 @@ if installed:
   `report any problems <https://github.com/sherpa/sherpa/issues/>`_
   you find.
 * `scipy <https://www.scipy.org>`_ for the `sherpa.optmethods.optscipy`
-  module, which provides an interface to use several optimizers from Scipy
-  for Sherpa fitting.
+  module, which provides an interface to several optimizers from Scipy.
 * `optimagic <https://optimagic.readthedocs.io>`_ for the 
-  `sherpa.optmethods.optoptimagic` which provides an interface to `optimagic.minimize`.
+  `sherpa.optmethods.optoptimagic` module which provides an interface to `optimagic.minimize`.
   Optimagic provides a single interface to dozens of optimizers, many of which
   rely on other external packages that need to be installed separately, see
   https://optimagic.readthedocs.io/en/latest/installation.html
