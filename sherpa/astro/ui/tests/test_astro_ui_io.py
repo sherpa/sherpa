@@ -230,9 +230,13 @@ def test_pha3_roundtrip_check(make_data_path, clean_astro_ui, tmp_path):
     ui.clean()
 
     ui.load_pha(src)
-    ui.load_bkg(bkg)
     ui.load_rmf(rmf)
     ui.load_arf(arf)
+
+    # Load the background after the responses so that they are
+    # associated with it.
+    #
+    ui.load_bkg(bkg)
 
     check_fit_stats()
 
