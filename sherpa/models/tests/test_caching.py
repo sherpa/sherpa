@@ -312,7 +312,7 @@ def test_evaluate_cache1d():
 def test_cache_is_actually_used():
     """Most other tests check that the cache has values in it,
     but not that those values are actually returned.
-    Here, we manipulte the cached value and then call the model
+    Here, we manipulate the cached value and then call the model
     to check that the cached value is used.
     """
     xgrid = np.arange(2, 10, 1.5)
