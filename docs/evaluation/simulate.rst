@@ -208,10 +208,10 @@ Sometimes, more than one response is needed, e.g. in Chandra LETG/HRC-S
 different orders of the grating overlap on the detector, so they all
 contribute to the observed source
 spectrum.
-The models that is passed into :py:func:`~sherpa.astro.fake.fake_pha`
+The models that are passed into :py:func:`~sherpa.astro.fake.fake_pha`
 can be arbitrarily complex and can contain multiple components. For example,
-:py:func:`~sherpa.astro.fake.fake_pha` can be used
-complex models which may include such components as the instrumental
+:py:func:`~sherpa.astro.fake.fake_pha` can simulate
+models which may include such components as the instrumental
 background (which should not be folded through the ARF) or arbitrary
 other components::
 
