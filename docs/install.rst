@@ -54,8 +54,8 @@ if installed:
 * `optimagic <https://optimagic.readthedocs.io>`_ for the 
   `sherpa.optmethods.optoptimagic` module which provides an interface to `optimagic.minimize`.
   Optimagic provides a single interface to dozens of optimizers, many of which
-  rely on other external packages that need to be installed separately, see
-  https://optimagic.readthedocs.io/en/latest/installation.html
+  rely on other external packages that need to be `installed separately
+  <https://optimagic.readthedocs.io/en/latest/installation.html>`_.
 * `ArviZ <https://python.arviz.org>`_ for visualisation and analysis of
   `sherpa.sim.MCMC` results.
 

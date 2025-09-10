@@ -177,6 +177,20 @@ def test_optimagic_set_options():
     assert result2.succeeded is False
 
 
+def test_optimagic_invalid_algorithm_by_default():
+    """Test that set a default string for algorithm that gives a useful error.
+    """
+
+    gauss = Gauss1D(name='gauss')
+
+    opt = Optimagic()
+    fit = Fit(data=data, model=gauss, stat=Chi2(), method=opt)
+
+    # Perform the fit
+    with pytest.raises(AttributeError, match="optimagic does not have an algorithm named set_algorithm_name."):
+        result = fit.fit()
+
+
 def test_optimagic_invalid_algorithm():
     """Test that we get optimagic error for non-exiting algorithm.
     """

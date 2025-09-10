@@ -323,9 +323,7 @@ dataset we used in the beginning and try a different optimizer:
 
 If the answers from different optimizers are similar, that is usually a good
 sign, though not a guarantee that the best fit has been found. If they are
-different, that deserves a closer look. In our example, we artificially
-generated the data, so we know that the absorption line that the MonCar
-algorithm found is not correct. However, in real data, that is different.
+different, that deserves a closer look.
 
 Look at the shape of the statistic function
 -------------------------------------------
@@ -364,7 +362,7 @@ about most and try to understand what is happening.
     >>> _ = plt.ylabel(rproj.ylabel)
     >>> rproj.contour(overplot=True)
     >>> _ = plt.annotate("Fit can get stuck here",
-    ...                     xy=fit_result2.parvals[2:],
+    ...                     xy=(652.2, 0.27),
     ... xytext=(652, -.4),
     ... arrowprops=dict(arrowstyle='->', lw=1.5, color='w'),
     ... fontsize=12, color='w')
@@ -374,8 +372,7 @@ about most and try to understand what is happening.
     ... fontsize=12, color='w')
 
 The contours and the background image show the value of the statistic
-as a function of the two parameters. There is a small local minimum
-close to the starting value where one if the fits gets stuck.
+as a function of the two parameters.
 
 See the space explored by the optimizer
 ---------------------------------------
@@ -392,7 +389,7 @@ that this optimizer tried are stored in the output and we can plot them
     >>> _ = plt.scatter(fit_result2.record_steps['Halpha.pos'],
     ...                 fit_result2.record_steps['Halpha.ampl'])
 
-Uups! We forgot to :ref:`fit-strategies-setminmax` and MonCar is a global
+Woops! We forgot to :ref:`fit-strategies-setminmax` and MonCar is a global
 optimizer, so it jumped way outside the data range. Let's fix that and
 try again:
 

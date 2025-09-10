@@ -35,7 +35,7 @@ line and the second member of the [Si II] doublet at 6731 Ang.
     >>> from sherpa.models import Gauss1D
     >>> wave_order26 = np.arange(6686, 6720, 1.1)
     >>> wave_order27 = np.arange(6705, 6735, 1.2)
-    >>> rng = np.random.default_rng()
+    >>> rng = np.random.default_rng(seed=1234)
     >>> # Make two components to simulate the lines
     >>> line1 = Gauss1D('line1')
     >>> line1.pos = 6716
@@ -56,7 +56,7 @@ want to get an idea what it looks before fitting!
 
 .. plot::
     :include-source:
-    :context:
+    :context: close-figs
 
     >>> from matplotlib import pyplot as plt
     >>> _ = plt.plot(wave_order26, flux_order26, 'o', label='order 26')

@@ -57,8 +57,8 @@ Most inputs for optimagic are automatically filled by Sherpa
 This module wraps the `optimagic.minimize` function in such a way that
 all the information that Sherpa already has about the model, the data, and the
 statistic is passed to the optimizer. Sherpa will automatically pick the correct
-format of the statistic function, convert the parameter minimum and maximum
-to the format for optimagic bounds etc.
+format of the statistic function and convert the parameter minimum and maximum
+to the format for optimagic bounds.
 
 Caveats to watch out for
 -------------------------
@@ -309,8 +309,12 @@ try:
         """
         def _get_default_config(self) -> dict[str, Any]:
             sig = inspect.signature(om.minimize)
-            return {p.name: p.default for p in sig.parameters.values()
-                    if p.name in APPLICABLE_OPTIMAGIC_MINIMIZE_KEYWORDS}   
+            defaults = {p.name: p.default for p in sig.parameters.values()
+                    if p.name in APPLICABLE_OPTIMAGIC_MINIMIZE_KEYWORDS}
+            # Default is None, but setting a string gives a better error message
+            # and reminds the user to set the algorithm.
+            defaults['algorithm'] = 'set_algorithm_name'
+            return defaults
         
         default_config = property(_get_default_config,
                                 doc='The default settings for the optimiser.') 

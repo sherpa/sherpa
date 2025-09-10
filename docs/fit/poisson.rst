@@ -31,9 +31,10 @@ Sherpa implements `sherpa.stats.Chi2Gehrels` which applies a
 weighting scheme to allow a :math:`\chi^2`-like statistic to be used (details and
 references are given in the documentation for that statistic).
 In general, though, Poisson distributed data should be fit by minimizing the
-likelihood. Two options are available in Sherpa:
+likelihood. Three options are available in Sherpa:
 `sherpa.stats.Cash` and `sherpa.stats.CStat` differ slightly in the equations used (details
-in the documentation for each class).
+in the documentation for each class) and `sherpa.stats.WStat` allows has a different approach
+to the background.
 
 
 Keep your models positive

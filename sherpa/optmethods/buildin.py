@@ -72,12 +72,12 @@ class OptMethod(NoNewAttributesAfterInit):
         ...             xmax: np.ndarray,
         ...             **kwargs) -> OptReturn:
         ...     '''Do something clever here'''
-        ...      success = True # or False
-        ...      best_pars = x0 # best parameter values found
-        ...      best_stat = fcn(x0)[0] # best statistic value found
-        ...      msg = 'Did something clever' # message for user
-        ...      imsg = {'additional info': 'if any'} # dict with additional info
-        ...      return (success, best_pars, best_stat, msg, imsg)
+        ...     success = True # or False
+        ...     best_pars = x0 # best parameter values found
+        ...     best_stat = fcn(x0)[0] # best statistic value found
+        ...     msg = 'Did something clever' # message for user
+        ...     imsg = {'additional info': 'if any'} # dict with additional info
+        ...     return (success, best_pars, best_stat, msg, imsg)
 
 
     ``fcn`` is a callable that has only a single argument (a sequence of
