@@ -243,8 +243,6 @@ try:
         statname       = chi2
         succeeded      = True
         parnames       = ('const.c0', 'gauss.fwhm', 'gauss.pos', 'gauss.ampl')
-        parvals        = (26.06715425374017, 3.285588554348949, 5.0425169187544565, 42.00624527682233)
-        statval        = 6.879954385987281
         ...
 
         We can change the method used in the optimization and set some of the
@@ -257,9 +255,8 @@ try:
         >>> print(fit.fit())
         datasets       = None
         ...
-        rstat          = 1.1466659346262622
         message        = Converged (|x_n-x_(n-1)| ~= 0)
-        nfev           = 725
+        ...
         """
         _scipy_func = staticmethod(optimize.minimize)
         _requires_finite_bounds = False

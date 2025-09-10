@@ -86,7 +86,7 @@ Thus, we pick `~sherpa.stats.CStat` as the statistic and use the default
     :include-source:
     :context:
 
-    >>> from sherpa.plot import DataPlot, ModelPlot
+    >>> from sherpa.plot import DataHistogramPlot, ModelHistogramPlot
     >>> xraydistribution = Gauss1D('xraydistribution')
     >>> xfit = Fit(data=xrayflux, model=xraydistribution, stat=CStat(), method=LevMar())
     >>> xfit.guess()
@@ -108,11 +108,11 @@ Thus, we pick `~sherpa.stats.CStat` as the statistic and use the default
     message        = successful termination
     nfev           = 25
 
-    >>> dplot = DataPlot()
+    >>> dplot = DataHistogramPlot()
     >>> dplot.prepare(xfit.data)
-    >>> mplot = ModelPlot()
+    >>> mplot = ModelHistogramPlot()
     >>> mplot.prepare(xfit.data, xfit.model)
-    >>> dplot.plot()
+    >>> dplot.plot(linestyle='solid')
     >>> mplot.overplot()
 
 
