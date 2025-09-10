@@ -61,7 +61,8 @@ from sherpa.models.template import add_interpolator, create_template_model, \
 import sherpa.optmethods
 from sherpa.optmethods import OptMethod
 import sherpa.plot
-from sherpa.plot import Plot, MultiPlot, set_backend, get_per_plot_kwargs
+from sherpa.plot import Plot, HistogramPlot, MultiPlot, \
+    set_backend, get_per_plot_kwargs
 import sherpa.sim
 import sherpa.stats
 from sherpa.stats import Stat, UserStat
@@ -14022,7 +14023,7 @@ class Session(NoNewAttributesAfterInit):
         get = getattr(self, f"_get_{plotmeth}type")
         check = getattr(self, f"_check_{plotmeth}type")
 
-        # Store the per plot-area positinal arguments in plots and
+        # Store the per plot-area positional arguments in plots and
         # the keyword arguments in stores.
         #
         plots = []
@@ -14596,7 +14597,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("fit", "nucleus", "fit", "jet")
 
-        A single plot is diplayed with the fit plot for dataset "jet"
+        A single plot is displayed with the fit plot for dataset "jet"
         overlain on that for dataset "nucleus":
 
         >>> plot("fit", ids=["nucleus", "jet"])
@@ -14650,13 +14651,21 @@ class Session(NoNewAttributesAfterInit):
         >>> plot("data", "resid", color="black")
         >>> plot("data", 2, "resid", 2, overplot=True, color="black", alpha=0.5)
 
-        Draw the data and residuals for the default dataset and then
-        overplot those from dataset 2:
+        An alternative way to plot multiple datasets is to use the
+        ``ids`` argument to define the datasets to use for each plot
+        type:
 
         >>> plot("data", "resid", ids=[1, 2], color="black", alpha=[1, 0.5])
 
         Draw the data and residual plots for datasets 1 and 2 with
-        per-plot options:
+        per-plot options. Here, all data will be shown slight
+        transparent (the same value of ``alpha=0.5`` is applied to
+        both datasets), but with different line styles. The first
+        dataset will be shown with a dashed line and the second with a
+        dash-dotted line as specified in the list of linestyle
+        values. The second plot with the residuals will be in orange
+        for both datasets, since ``opts2`` only contains a single
+        value and not a list of parameters.
 
         >>> opts1 = {"linestyle": ["--", "-."], "alpha": 0.5}
         >>> opts2 = {"color": "orange"}
@@ -14879,7 +14888,7 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_model(2, overplot=True)
 
         Overlay the two datasets on the same plot, both in black with
-        with data set 2 usniog a dashed line style:
+        with data set 2 using a dashed line style:
 
         >>> plot_model([1, 2], color="black", linestyle=["solid", "dashed"])
 
@@ -15520,7 +15529,7 @@ class Session(NoNewAttributesAfterInit):
         This function displays the square of the residuals (data -
         model) divided by the error, for a data set.
 
-        .. versionchanged:: 4.17.0
+        .. versionchanged:: 4.18.0
            Multiple data sets can be displayed by using a list of
            identifiers. Per-plot options can now be given by using a
            list of values.
