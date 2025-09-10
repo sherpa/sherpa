@@ -143,9 +143,9 @@ contains the current value::
     default_val = 10.0
     default_min = 1.17549435082e-38
     default_max = 3.40282346639e+38
-    >>> h.fwhm.val
+    >>> print(h.fwhm.val)
     10.0
-    >>> h.fwhm.min
+    >>> print(h.fwhm.min)
     1.1754943508222875e-38
     >>> h.fwhm.val = 15
     >>> print(h.fwhm)
@@ -362,11 +362,11 @@ Equality
 After the following, the two gaussian components have the same
 width::
 
-    >>> g2.fwhm.val
+    >>> print(g2.fwhm.val)
     10.0
     >>> g2.fwhm = g1.fwhm
     >>> g1.fwhm = 1024
-    >>> g2.fwhm.val
+    >>> print(g2.fwhm.val)
     1024.0
     >>> g1.fwhm.link is None
     True
@@ -393,7 +393,7 @@ such as adding a constant.
 
     >>> g2.pos = g1.pos + 8234
     >>> g1.pos = 1200
-    >>> g2.pos.val
+    >>> print(g2.pos.val)
     9434.0
 
 The :py:class:`~sherpa.models.parameter.CompositeParameter` class

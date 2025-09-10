@@ -475,8 +475,9 @@ needed if the DS9 tests are run)::
 Building the documentation
 --------------------------
 
-Building the documentation requires a Sherpa installation and several
-additional packages:
+Building the documentation requires a Sherpa installation, *including*
+the test data suite (either as a submodule or installed with the
+``sherpa-test-data`` package), and several additional packages:
 
 * `Sphinx <https://sphinx.pocoo.org/>`_, version 1.8 or later
 * The ``sphinx_rtd_theme``
@@ -555,6 +556,8 @@ configured when built)::
 The ``sherpa_test`` command supports the same optional arguments as
 ``pytest`` does (the ``--pyargs sherpa`` option is, however, not
 needed).
+
+.. _install-sherpa-test-data:
 
 The
 `Sherpa test data suite <https://github.com/sherpa/sherpa-test-data>`_
