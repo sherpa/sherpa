@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023 - 2025
+#  Copyright (C) 2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -81,7 +81,7 @@ def test_read_arf(make_data_path):
     assert hdr["CTI_CORR"]
     assert hdr["DTCOR"] == pytest.approx(0.98318749385508,)
 
-    for field in ["energ_lo", "energ_hi", "specresp", "bin_lo", "bin_hi"]:
+    for field in ["energ_lo", "energ_hi", "specresp"]:
         attr = getattr(arf, field)
         assert len(attr) == 8192
         assert attr.dtype == np.float64
@@ -92,10 +92,6 @@ def test_read_arf(make_data_path):
 
     assert arf.specresp.sum() == pytest.approx(67517.7296)
     assert np.argmax(arf.specresp) == 7041
-
-    assert (arf.bin_lo[:-1] == arf.bin_hi[1:]).all()
-    assert arf.bin_lo[-1] == pytest.approx(1.0)
-    assert arf.bin_hi[0] == pytest.approx(41.959999084)
 
 
 @requires_data
@@ -214,9 +210,6 @@ def test_write_arf_fits(make_data_path, tmp_path):
     assert new.energ_hi.sum() == pytest.approx(TEST_ARF_EHI_SUM)
     assert new.specresp.sum() == pytest.approx(TEST_ARF_SPECRESP_SUM)
 
-    assert new.bin_lo is None
-    assert new.bin_hi is None
-
 
 @requires_data
 @requires_fits
@@ -245,14 +238,11 @@ def test_write_arf_ascii(make_data_path, tmp_path):
 @requires_data
 @requires_fits
 def test_write_arf_fits_chandra_acis_hetg(make_data_path, tmp_path):
-    """Check we can write out an ARF with BIN_LO/HI as a FITS file.
-    """
+    """Check we can write out a Chandra ACIS grating ARF as a FITS file."""
 
     infile = make_data_path("3c120_meg_-1.arf.gz")
     orig = io.read_arf(infile)
     assert orig.exposure > 10
-    assert orig.bin_lo is not None
-    assert orig.bin_hi.size == orig.specresp.size
 
     outpath = tmp_path / "out.arf"
     outfile = str(outpath)
@@ -283,15 +273,11 @@ def test_write_arf_fits_chandra_acis_hetg(make_data_path, tmp_path):
     assert new.energ_hi == pytest.approx(orig.energ_hi)
     assert new.specresp == pytest.approx(orig.specresp)
 
-    assert new.bin_lo == pytest.approx(orig.bin_lo)
-    assert new.bin_hi == pytest.approx(orig.bin_hi)
-
 
 @requires_data
 @requires_fits
 def test_write_arf_ascii_chandra_acis_hetg(make_data_path, tmp_path):
-    """Check we can write out an ARF with BIN_LO/HI as an ASCII file.
-    """
+    """Check we can write out a Chandra ACIS grating ARF as an ASCII file."""
 
     infile = make_data_path("3c120_meg_-1.arf.gz")
     orig = io.read_arf(infile)
@@ -301,10 +287,10 @@ def test_write_arf_ascii_chandra_acis_hetg(make_data_path, tmp_path):
     io.write_arf(outfile, orig, ascii=True)
 
     new = io.read_ascii(outfile, ncols=3, dstype=Data1DInt,
-                        colkeys=["BIN_LO", "BIN_HI", "SPECRESP"])
+                        colkeys=["ENERG_LO", "ENERG_HI", "SPECRESP"])
 
-    assert new.xlo == pytest.approx(orig.bin_lo)
-    assert new.xhi == pytest.approx(orig.bin_hi)
+    assert new.xlo == pytest.approx(orig.energ_lo)
+    assert new.xhi == pytest.approx(orig.energ_hi)
     assert new.y == pytest.approx(orig.specresp)
 
 
@@ -923,9 +909,6 @@ def test_write_fake_arf(tmp_path):
     assert new.energ_lo == pytest.approx(elo)
     assert new.energ_hi == pytest.approx(ehi)
     assert new.specresp == pytest.approx(y)
-
-    assert new.bin_lo is None
-    assert new.bin_hi is None
 
 
 # Is offset=10 valid? As far as I can see there's no reason to not

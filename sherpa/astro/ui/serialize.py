@@ -1271,12 +1271,6 @@ def _save_dataset_pha(out: OutType, idstr: str, pha: DataPHA) -> None:
     # setarray("quality")
     # setarray("grouping")
 
-    if pha.bin_lo is not None and pha.bin_hi is not None:
-        # no use restoring only one of these
-        #
-        _output(out, f"get_data({idstr}).bin_lo = {pha.bin_lo.tolist()}")
-        _output(out, f"get_data({idstr}).bin_hi = {pha.bin_hi.tolist()}")
-
 
 def _save_dataset(out: OutType,
                   state: SessionType,

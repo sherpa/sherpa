@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2023
+#  Copyright (C) 2020 - 2021, 2023 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -547,7 +547,7 @@ def test_fake_pha_has_valid_ogip_keywords_all_fake(tmp_path):
     assert inpha.channel == pytest.approx(channels)
     assert inpha.counts == pytest.approx(data.counts)
 
-    for field in ["staterror", "syserror", "bin_lo", "bin_hi",
+    for field in ["staterror", "syserror",
                   "grouping", "quality"]:
         assert getattr(inpha, field) is None
 
@@ -622,7 +622,7 @@ def test_fake_pha_has_valid_ogip_keywords_from_real(make_data_path, tmp_path):
     assert inpha.channel == pytest.approx(np.arange(1, 1025))
     assert inpha.counts == pytest.approx(data.counts)
 
-    for field in ["staterror", "syserror", "bin_lo", "bin_hi",
+    for field in ["staterror", "syserror",
                   "grouping", "quality"]:
         assert getattr(inpha, field) is None
 
