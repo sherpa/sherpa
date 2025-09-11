@@ -252,6 +252,20 @@ def process_definitions(invals: list[str]
 
         assert modelname not in unversioned, f"model={modelname} already seen"
 
+        # Before 4.18.0, additive models used a _NORM symbol. Catch
+        # this case and convert to the new form. This is a temporary
+        # change, only needed to support existing XSPEC PRs.
+        #
+        # Convert "XSPECMODELFCTxxx_NORM(sym, npar)," to
+        # "XSPECMODELFCTxxx(sym, npar-1),".
+        #
+        idx = model.find("_NORM")
+        if idx > 0:
+            lhs = model[:idx]
+            toks = model[idx + 5:].split(",", 1)
+            npar = int(toks[1][:-2])
+            model = f"{lhs}{toks[0]}, {npar - 1}),"
+
         if version is None:
             assert modelname not in versioned, f"model={modelname} already seen"
             unversioned[modelname] = model

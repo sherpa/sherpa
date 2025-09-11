@@ -337,6 +337,9 @@ class BasicParameterDefinition(ParameterDefinition):
 
     Most XSPEC parameters use this.
 
+    .. versionchanged:: 4.18.0
+       The norm parameter is no-longer included for additive models.
+
     """
 
     paramtype = "Basic"
@@ -387,20 +390,7 @@ class BasicParameterDefinition(ParameterDefinition):
 
     def param_string(self) -> str:
 
-        # We need to decide between
-        #   XSParameter
-        #   XSBaseParameter
-        #   Parameter
-        #
-        # For this case we don't need to bother with XSBaseParameter
-        # and Parameter is only for the norm parameter.
-        #
-        if self.name == 'norm':
-            out = "Parameter"
-        else:
-            out = "XSParameter"
-
-        out += f"(name, '{self.name}', {self.default}, "
+        out = f"XSParameter(name, '{self.name}', {self.default}, "
         out += f"min={self.softmin}, max={self.softmax}, "
         out += f"hard_min={self.hardmin}, hard_max={self.hardmax}"
         if self.frozen:
@@ -419,6 +409,9 @@ def read_model_definition(fh,
     The code attempts to handle the wide variety of model definitions
     found in both the XSPEC model.dat file and in user models but may
     error out in cases that are supported by XSPEC.
+
+    .. versionchanged:: 4.18.0
+       Additive models no-longer contain a norm parameter.
 
     Parameters
     ----------
@@ -493,8 +486,6 @@ def read_model_definition(fh,
     factory: type[ModelDefinition] | None = None
 
     if modeltype == "add":
-        nstr = 'norm " " 1.0 0.0 0.0 1.0e24 1.0e24 0.1'
-        pars.append(process_parameter_definition(nstr, model=name))
         factory = AddModelDefinition
 
     elif modeltype == "mul":
@@ -869,6 +860,10 @@ def simple_wrap(modelname: str,
     for par in mdl.pars:
         out += f'{t1}{par.name}\n'
 
+    # Add in the norm parameter for additive models.
+    if isinstance(mdl, AddModelDefinition):
+        out += f'{t1}norm\n'
+
     if internal is not None:
         # This may not be the correct URL, such as the redshift variant, but
         # but it should be close.
@@ -1041,8 +1036,6 @@ def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
     elif mdl.modeltype == "Add":
         if not is_fortran:
             wrapcode += '_C'
-
-        wrapcode += '_NORM'
 
     elif mdl.modeltype == "Mul":
         # Do we have any double-precision C/C++ models to worry about?
