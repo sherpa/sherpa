@@ -216,7 +216,7 @@ made to the ``xspec_config`` section of the ``setup.cfg`` file. The
 available options (with default values) are::
 
     with_xspec = False
-    xspec_version = 12.12.0
+    xspec_version = 12.14.1
     xspec_lib_dirs = None
     xspec_include_dirs = None
     xspec_libraries = XSFunctions XSUtil XS
@@ -238,7 +238,7 @@ the XSPEC model library or the full XSPEC system has been installed.
 
 In the examples below, the ``$HEADAS`` value **must be replaced**
 by the actual path to the HEADAS installation, and the versions of
-the libraries - such as ``CCfits_2.6`` - may need to be changed to
+the libraries - such as ``CCfits_2.7`` - may need to be changed to
 match the contents of the XSPEC installation.
 
 1. If the full XSPEC 12.15.0 system has been built then use::
@@ -303,27 +303,7 @@ match the contents of the XSPEC installation.
        ccfits_libraries = CCfits_2.6
        wcslib_libraries = wcs-7.7
 
-6. If the full XSPEC 12.12.1 system has been built then use::
-
-       with_xspec = True
-       xspec_version = 12.12.1
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.30
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-7.7
-
-7. If the full XSPEC 12.12.0 system has been built then use::
-
-       with_xspec = True
-       xspec_version = 12.12.0
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.29
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-7.3.1
-
-8. If the model-only build of XSPEC - created with the
+6. If the model-only build of XSPEC - created with the
    ``--enable-xs-models-only`` flag when building HEASOFT - has been
    installed, then the configuration is similar, but the library names
    may not need version numbers and locations, depending on how the
