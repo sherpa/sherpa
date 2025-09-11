@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2025
+#  Copyright (C) 2010, 2015 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -23,9 +23,12 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
+from functools import partial
 import logging
 import os
 import sys
+from types import MethodType
+import warnings
 
 import numpy as np
 
@@ -1367,7 +1370,7 @@ class Session(sherpa.ui.utils.Session):
             return sherpa.astro.io.read_arrays(*args)
         except NotImplementedError:
             # if the astro backend is not set, fall back on io module version.
-            return sherpa.io.read_arrays(*args)
+            return super().unpack_arrays(*args)
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: rework the Data type notes section (also needed for
@@ -11068,43 +11071,46 @@ class Session(sherpa.ui.utils.Session):
         self._background_sources.get(idval, {}).pop(bkg_id, None)
 
     def _read_user_model(self, filename, *args, **kwargs):
-        x = None
-        y = None
-        try:
-            data = self.unpack_ascii(filename, *args, **kwargs)
-            x = data.get_x()
-            y = data.get_y()
+        """Read in user model data from a file.
 
-        # we have to check for the case of a *single* column in an ascii file
-        # extract the single array from the read and bypass the dataset
-        except TypeError:
-            hdu, _ = sherpa.astro.io.backend.get_ascii_data(filename,
-                                                            *args,
-                                                            **kwargs)
-            y = hdu.columns[0].values
-        except Exception:
+        While some options can be set by keyword arguments,
+        fundamentally, this is trying out a list of possible formats
+        (ASCII with the backend, general table (e. g. fits), image)
+        until one works.
+        If no working backend is loaded, this falls back to the
+        sherpa.ui version, which can read ascii files.
+        """
+        def read_backend(func, filename, *args, **kwargs):
+            hdu, _ = func(filename, *args, **kwargs)
+            cols = hdu.columns
+            if len(cols) == 0:
+                raise IOErr(f"No column data found in {filename}")
+            if len(cols) == 1:
+                return (None, cols[0].values)
+            return (cols[0].values, cols[1].values)
+
+        read_backend_ascii = partial(read_backend,
+                                     sherpa.astro.io.backend.get_ascii_data)
+        read_backend_table = partial(read_backend,
+                                     sherpa.astro.io.backend.get_table_data)
+
+        def read_backend_image(self, filename, *args, **kwargs):
+            data = self.unpack_image(filename, *args, **kwargs)
+            return (None, data.get_y())
+
+        def read_with_super(self, filename, *args, **kwargs):
+            return super()._read_user_model(filename, *args, **kwargs)
+
+        for func in (read_backend_ascii,
+                     read_backend_table,
+                     # The following two need "self", so we make them a method
+                     MethodType(read_backend_image, self),
+                     MethodType(read_with_super, self)):
             try:
-                data = self.unpack_table(filename, *args, **kwargs)
-                x = data.get_x()
-                y = data.get_y()
-
-            # we have to check for the case of a *single* column in a
-            # fits table
-            # extract the single array from the read and bypass the dataset
-            except TypeError:
-                hdu, _ = sherpa.astro.io.backend.get_table_data(filename,
-                                                                *args,
-                                                                **kwargs)
-                y = hdu.columns[0].values
-
-            except Exception:
-                # unpack_data doesn't include a call to try
-                # getting data from image, so try that here.
-                data = self.unpack_image(filename, *args, **kwargs)
-                # x = data.get_x()
-                y = data.get_y()
-
-        return (x, y)
+                return func(filename, *args, **kwargs)
+            except:
+                pass
+        raise IOErr(f"No column data found in {filename} with supported file formats")
 
     def load_xstable_model(self, modelname, filename,
                            etable=False) -> None:
@@ -11199,11 +11205,15 @@ class Session(sherpa.ui.utils.Session):
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
-    # also in sherpa.utils
+    # implementation just calls super, but that calls `self._read_user_model`
+    # which is overwritten in this class.
+    # As a consequence, this method accepts a wider range of inputs
+    # (such as fits files) than the super method (only ascii files) and
+    # thus we do define a method here just so we can write a new docstring.
     # DOC-NOTE: can filename be a crate/hdulist?
     # DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
     def load_table_model(self, modelname, filename,
-                         method=sherpa.utils.linear_interp, *args,
+                         *args,
                          **kwargs) -> None:
         # pylint: disable=W1113
         """Load tabular or image data and use it as a model component.
@@ -11223,11 +11233,6 @@ class Session(sherpa.ui.utils.Session):
            The name of the file containing the data, which should
            contain two columns, which are the x and y values for
            the data, or be an image.
-        method : func
-           The interpolation method to use to map the input data onto
-           the coordinate grid of the data set. Linear,
-           nearest-neighbor, and polynomial schemes are provided in
-           the sherpa.utils module.
         args
            Arguments for reading in the data.
         kwargs
@@ -11267,22 +11272,7 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source('img', emap * gauss2d)
 
         """
-
-        x = None
-        y = None
-        try:
-            x, y = self._read_user_model(filename, *args, **kwargs)
-        except Exception:
-            data = sherpa.io.read_data(filename, ncols=2)
-            x = data.x
-            y = data.y
-
-        tablemodel = TableModel(modelname)
-        tablemodel.method = method
-        tablemodel.filename = filename
-        tablemodel.load(x, y)
-        self._tbl_models.append(tablemodel)
-        self._add_model_component(tablemodel)
+        super().load_table_model(modelname, filename, *args, **kwargs)
 
     # ## also in sherpa.utils
     # DOC-TODO: how to describe *args/**kwargs
