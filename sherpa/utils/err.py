@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2019, 2020, 2022, 2023
+#  Copyright (C) 2010, 2016-2017, 2019-2020, 2022-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -110,6 +110,7 @@ class IdentifierErr(SherpaErr):
             'badidnative': "'%s' is reserved for the native Python function",
             'nomodelcmpt': "model component '%s' does not exist",
             'noplotbackend': "'%s' is not a valid plotting backend, choose from %s",
+            'noiobackend': "'%s' is not a valid I/O backend, choose from %s",
             }
 
     def __init__(self, key, *args):

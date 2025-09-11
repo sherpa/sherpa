@@ -11,6 +11,9 @@ The sherpa.astro.io module
    .. autosummary::
       :toctree: api
 
+      set_io_backend
+      TemporaryIOBackend
+      IO_BACKENDS
       read_table
       read_image
       read_arf

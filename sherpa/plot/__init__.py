@@ -251,7 +251,6 @@ def set_backend(new_backend: str | BaseBackend | type[BaseBackend]) -> None:
 class TemporaryPlottingBackend(contextlib.AbstractContextManager):
     '''Set the Sherpa plotting backend as a context, e.g. for a single plot
 
-    This changes the logging level globally for all modules in sherpa.
 
     Parameters
     ----------
