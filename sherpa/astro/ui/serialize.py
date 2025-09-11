@@ -29,6 +29,7 @@ import inspect
 import logging
 import os
 import sys
+import textwrap
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
     TextIO, TypedDict, Union
@@ -92,7 +93,7 @@ ParameterType = Any
 def _output(out: OutType, msg: str, indent: int = 0) -> None:
     """Output the line"""
     space = ' ' * (indent * 4)
-    out["main"].append(f"{space}{msg}")
+    out["main"].append(textwrap.indent(msg, space))
 
 
 def _output_nl(out: OutType) -> None:
@@ -779,27 +780,6 @@ def _save_iter_method(out: OutType, state: SessionType) -> None:
     _output_nl(out)
 
 
-# Is there something in the standard libraries that does this?
-def _reindent(code: str) -> str:
-    """Try to remove leading spaces. Somewhat hacky."""
-
-    # Assume the first line is 'def func()'
-    nspaces = code.find('def')
-    if nspaces < 1:
-        return code
-
-    # minimal safety checks (e.g. if there was an indented
-    # comment line).
-    out = []
-    for line in code.split("\n"):
-        if line[:nspaces].isspace():
-            out.append(line[nspaces:])
-        else:
-            out.append(line)
-
-    return "\n".join(out)
-
-
 # for user models, try to access the function definition via
 # the inspect module and then re-create it in the script.
 # An alternative would be to use the marshal module, and
@@ -842,7 +822,7 @@ def _handle_usermodel(out: OutType,
     # Ensure the message is also seen if the script is run.
     _output(out, f'print("{msg}")')
 
-    _output(out, _reindent(pycode))
+    _output(out, textwrap.dedent(pycode))
     cmd = f'load_user_model({mod.calc.__name__}, "{modelname}")'
     _output(out, cmd)
 
