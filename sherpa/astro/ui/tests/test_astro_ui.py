@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015 - 2024
+#  Copyright (C) 2012, 2015-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,6 +22,7 @@ from collections import namedtuple
 import os
 import re
 import logging
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 from numpy.testing import assert_allclose
@@ -343,6 +344,39 @@ def test_ui_table_model_fits_table(setup_files):
 @requires_data
 def test_ui_table_model_fits_image(setup_files):
     ui.load_table_model('tbl', setup_files.img)
+
+
+@pytest.mark.parametrize("comment", ['#', '!'])
+@pytest.mark.parametrize("ncols", [1, 2])
+def test_ui_table_model_1d_testfile(clean_astro_ui, comment, ncols):
+    """Test table model with simple 1D ASCII files
+
+    This should work for any IO backend, because it falls through
+    to the sherpa.io ASCII reader is necessary.
+
+    Regression test for https://github.com/sherpa/sherpa/issues/1648
+    """
+    with NamedTemporaryFile(suffix='.dat', mode='w+') as f:
+        f.write(f'{comment}\n1\n2\n3\n')
+        f.seek(0)
+        ui.load_table_model('tbl', f.name, comment=comment, ncols=ncols)
+        assert tbl.get_x() is None
+        assert tbl.get_y() == pytest.approx([1, 2, 3])
+
+
+def test_ui_table_model_1d_testfile_fails(clean_astro_ui):
+    """Test table model with simple 1D ASCII files
+
+    Here the comment character is ! in the file, while the default #
+    is used for the read, so no data lines are found.
+
+    Regression test for https://github.com/sherpa/sherpa/issues/1648
+    """
+    with NamedTemporaryFile(suffix='.dat', mode='w+') as f:
+        f.write(f'!\n1\n2\n3\n')
+        f.seek(0)
+        with pytest.raises(IOErr, match="No column data found in "):
+            ui.load_table_model('tbl', f.name)
 
 
 # Test user model
