@@ -148,6 +148,8 @@ from .types import HeaderItem, Header, Column, TableBlock, BlockList
 __all__ = ("BaseParam", "Param", "make_xstable_model",
            "write_xstable_model")
 
+__doctest_requires__ = {'*': ['sherpa.astro.xspec._xspec'],
+                        }
 
 @dataclass
 class BaseParam:

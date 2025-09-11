@@ -93,6 +93,10 @@ from .types import NamesType, HdrTypeArg, HdrType, DataType, \
 # Skip functions that need input files in their examples
 __doctest_skip__ = ['read_table', 'read_image', 'read_ascii']
 
+__doctest_requires__ = {# for some tests pycrates would also do, but the syntax does not allow for an OR
+                        '*': ['astropy'],
+                        }
+
 # Responses can often be send as the Data object or the instrument
 # version, so support it would be good to support this with types
 # like
