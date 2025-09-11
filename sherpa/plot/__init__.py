@@ -1018,7 +1018,7 @@ class ModelHistogramPlot(HistogramPlot):
         (_, y, _, _, self.xlabel, self.ylabel) = plot
 
         # taken from get_x from Data1DInt
-        indep = data.get_evaluation_indep(filter=True, model=model)
+        indep = data.get_indep(filter=True)
 
         self.xlo = indep[0]
         self.xhi = indep[1]
@@ -1964,7 +1964,7 @@ class ComponentSourceHistogramPlot(SourceHistogramPlot):
         (_, y, _, _, self.xlabel, self.ylabel) = plot
 
         # taken from get_x from Data1DInt
-        indep = data.get_evaluation_indep(filter=True, model=model)
+        indep = data.get_indep(filter=True)
 
         self.xlo = indep[0]
         self.xhi = indep[1]
@@ -2364,7 +2364,7 @@ class BaseResidualHistogramPlot(ModelHistogramPlot):
         """Define the xlo and xhi fields"""
 
         # taken from get_x from Data1DInt
-        indep = data.get_evaluation_indep(filter=True, model=model)
+        indep = data.get_indep(filter=True)
         self.xlo = indep[0]
         self.xhi = indep[1]
 
@@ -2586,7 +2586,7 @@ class ChisqrHistogramPlot(ModelHistogramPlot):
         """Define the xlo and xhi fields"""
 
         # taken from get_x from Data1DInt
-        indep = data.get_evaluation_indep(filter=True, model=model)
+        indep = data.get_indep(filter=True)
         self.xlo = indep[0]
         self.xhi = indep[1]
 
