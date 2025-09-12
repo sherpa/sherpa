@@ -4454,9 +4454,13 @@ class Session(NoNewAttributesAfterInit):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        method : func
-           The function used to create a random realisation of
-           a data set.
+        method : callable or None, optional
+           If None, the default, then the data is simulated using the
+           `sherpa.utils.poisson_noise` routine. If set, it must be a
+           callable that takes a ndarray of the predicted values and
+           an optional rng argument that takes a NumPy random
+           generator, and returns a ndarray of the same size with the
+           simulated data.
 
         See Also
         --------

@@ -9778,7 +9778,9 @@ class Session(sherpa.ui.utils.Session):
            If None, the default, then the data is simulated using the
            `sherpa.utils.poisson_noise` routine. If set, it must be a
            callable that takes a ndarray of the predicted values and
-           returns a ndarray of the same size with the simulated data.
+           an optional rng argument that takes a NumPy random
+           generator, and returns a ndarray of the same size with the
+           simulated data.
 
         Raises
         ------
