@@ -15380,10 +15380,11 @@ class Session(sherpa.ui.utils.Session):
                 id: IdType | None = None,
                 lo=None, hi=None,
                 bkg_id: IdType | None = None,
-                error=False, params=None,
+                error: bool = False,
+                params: np.ndarray | None = None,
                 otherids: IdTypes = (),
-                niter=1000,
-                covar_matrix=None):
+                niter: int = 1000,
+                covar_matrix: np.ndarray | None = None):
         """Calculate the equivalent width of an emission or absorption line.
 
         The `equivalent width <https://en.wikipedia.org/wiki/Equivalent_width>`_
@@ -15530,6 +15531,8 @@ class Session(sherpa.ui.utils.Session):
                 if covar_matrix is None:
                     try:
                         # check just in case usr has run covar()
+                        # TODO: should this validate the covariance
+                        # results?
                         covar_results = self.get_covar_results()
                         covar_matrix = covar_results.extra_output
                     except SessionErr:

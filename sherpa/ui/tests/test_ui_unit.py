@@ -2521,7 +2521,7 @@ def test_get_draws_multiple_datasets(order, clean_ui):
     setup_multiple_datasets()
 
     ui.fit(*order)
-    ui.covar(*order)
+    # ui.covar(*order)  as of 4.18.0 this is not needed
 
     # Ensure repeatability (unlike the _linked version the covariance
     # matrix is the same, so this is repeatable).
@@ -2549,7 +2549,7 @@ def test_get_draws_multiple_datasets_linked(order, parnames, clean_ui):
     setup_multiple_datasets_linked()
 
     ui.fit(*order)
-    ui.covar(*order)
+    # ui.covar(*order)  as of 4.18.0 this is not needed
 
     # Ensure repeatability. However, unlike the fit and covar results,
     # we do not get the same results.
@@ -2576,15 +2576,15 @@ def test_get_draws_mismatched_covar_linked(clean_ui, caplog):
 
     # Not only are the datasets swapped in the covar call, only one
     # component is asked for, and not all of them. This does not
-    # actually matter since the covariance matrix is calculated
-    # for all the free parameters.
+    # actually matter since get_draws recalculates the covariance
+    # matrix.
     #
     ui.fit(1, 2)
     ui.covar(2, 1, scale.c0)
 
     ui.set_rng(np.random.RandomState(3287))
     n1 = len(caplog.records)
-    stats, accept, params = ui.get_draws(1, [2], niter=5)
+    stats, accept, params = ui.get_draws(1, [2], niter=100)
     n2 = len(caplog.records)
 
     # Check the expected extra messages.
@@ -2594,7 +2594,13 @@ def test_get_draws_mismatched_covar_linked(clean_ui, caplog):
     assert caplog.records[n1 + 1].getMessage().startswith("pol1.c1: ")
     assert caplog.records[n1 + 2].getMessage().startswith("pol2.c0: ")
 
-    # The covariance matrix is invalid but has the correct shape,
-    # so the code runs. However, the parameters do not move.
+    # Unlike test_get_draws_multiple_datasets_linked we know the
+    # ordering and can be much more precise in the tests.
     #
-    assert accept == pytest.approx([False] * 6)
+    means = params.mean(axis=1)
+    assert means[0] == pytest.approx(1.73371932)
+    assert means[1] == pytest.approx(-10.46427734)
+    assert means[2] == pytest.approx(22.00661571)
+
+    # There's at least one accept.
+    assert any(accept)
