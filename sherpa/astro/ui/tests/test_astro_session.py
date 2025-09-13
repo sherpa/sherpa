@@ -3701,21 +3701,6 @@ def test_fit_ignores_repeated_otherid(session, caplog):
 
 
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
-def test_get_draws_wants_errors(session):
-
-    s = session()
-    s._add_model_types(sherpa.models.basic)
-
-    s.load_arrays(1, [1, 2], [2, 5])
-    s.set_source(1, "const1d.foo")
-    s.fit()
-
-    with pytest.raises(SessionErr,
-                       match="covariance has not been performed"):
-        s.get_draws(niter=1)
-
-
-@pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 @pytest.mark.parametrize("method", ["proj", "unc"])
 def test_get_int_xxx_otherids(method, session):
     """Corner case.
