@@ -15498,78 +15498,81 @@ class Session(sherpa.ui.utils.Session):
         """
         data = self._get_data_or_bkg(id, bkg_id)
 
-        ####################################################
-        if error:
+        if not error:
+            return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
-            def is_numpy_ndarray(arg, name, npars, dim1=None):
-                if not isinstance(arg, np.ndarray):
-                    msg = name + ' must be of type numpy.ndarray'
-                    raise IOErr(msg)
-                shape = arg.shape
-                if len(shape) != 2:
-                    msg = name + ' must be 2d numpy.ndarray'
-                    raise IOErr(msg)
-                if shape[0] != npars:
-                    msg = name + f' must be of dimension ({npars}, x)'
-                    raise IOErr(msg)
-                if dim1 is not None:
-                    if shape[1] != npars:
-                        msg = name + f' must be of dimension ({npars}, {npars})'
-                        raise IOErr(msg)
+        def is_numpy_ndarray2d(arg, name, npars, square=False):
+            if not isinstance(arg, np.ndarray):
+                msg = name + ' must be of type numpy.ndarray'
+                raise IOErr(msg)
+            shape = arg.shape
+            if len(shape) != 2:
+                msg = name + ' must be 2d numpy.ndarray'
+                raise IOErr(msg)
+            if shape[0] != npars:
+                msg = name + f' must be of dimension ({npars}, x)'
+                raise IOErr(msg)
+            if square and shape[1] != npars:
+                msg = name + f' must be of dimension ({npars}, {npars})'
+                raise IOErr(msg)
 
-            _, fit = self._get_fit(id)
-            fit_results = self.get_fit_results()
-            parnames = fit_results.parnames
-            npar = len(parnames)
-            orig_par_vals = np.array(fit_results.parvals)
+        _, fit = self._get_fit(id)
+        fit_results = self.get_fit_results()
+        parnames = fit_results.parnames
+        npar = len(parnames)
+        orig_par_vals = np.array(fit_results.parvals)
 
-            if params is None:
-                # run get_draws or normal distribution depending on fit stat
-                if covar_matrix is None:
-                    try:
-                        # check just in case usr has run covar()
-                        # TODO: should this validate the covariance
-                        # results?
-                        covar_results = self.get_covar_results()
-                        covar_matrix = covar_results.extra_output
-                    except SessionErr:
-                        # usr has not run covar, will have to run it
-                        covar_matrix = fit.est_errors().extra_output
-                is_numpy_ndarray(covar_matrix, 'covar_matrix', npar, npar)
+        if params is None:
+            # run get_draws or normal distribution depending on fit stat
+            if covar_matrix is None:
+                try:
+                    # check just in case usr has run covar()
+                    # TODO: should this validate the covariance
+                    # results?
+                    covar_results = self.get_covar_results()
+                    covar_matrix = covar_results.extra_output
+                except SessionErr:
+                    # usr has not run covar, will have to run it
+                    covar_matrix = fit.est_errors().extra_output
 
-                # Have enough stuff to generate samples
-                if isinstance(self._current_stat, (Cash, CStat, WStat)):
-                    _, _, params = \
-                        self.get_draws(id, otherids=otherids, niter=niter,
-                                       covar_matrix=covar_matrix)
-                else:
-                    sampler = NormalParameterSampleFromScaleMatrix()
-                    tmp = sampler.get_sample(fit, mycov=covar_matrix,
-                                             num=niter + 1, rng=self.get_rng())
-                    params = tmp.transpose()
+            is_numpy_ndarray2d(covar_matrix, 'covar_matrix', npar, True)
 
+            # Have enough stuff to generate samples
+            if isinstance(self._current_stat, (Cash, CStat, WStat)):
+                _, _, params = \
+                    self.get_draws(id, otherids=otherids, niter=niter,
+                                   covar_matrix=covar_matrix)
             else:
-                is_numpy_ndarray(params, 'params', npar)
+                sampler = NormalParameterSampleFromScaleMatrix()
+                tmp = sampler.get_sample(fit, mycov=covar_matrix,
+                                         num=niter + 1, rng=self.get_rng())
+                params = tmp.transpose()
 
-            mins = fit.model._get_thawed_par_mins()
-            maxs = fit.model._get_thawed_par_maxes()
-            eqw = np.zeros_like(params[0, :])
-            for params_index in range(len(params[0, :])):
-                for parnames_index, parname in enumerate(parnames):
-                    val = params[parnames_index, params_index]
-                    # Note: the normal dist does not respect the soft limits
-                    mymin = mins[parnames_index]
-                    mymax = maxs[parnames_index]
-                    val = max(mymin, min(val, mymax))
-                    self.set_par(parname, val)
-                eqw[params_index] = \
-                    sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
-            median, lower, upper = get_error_estimates(eqw)
-            fit.model.thawedpars = orig_par_vals
-            return median, lower, upper, params, eqw
+        else:
+            is_numpy_ndarray2d(params, 'params', npar)
 
-        ####################################################
-        return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+        thawed = fit.model.get_thawed_pars()
+        mins = [p.min for p in thawed]
+        maxs = [p.max for p in thawed]
+        eqw = np.zeros_like(params[0, :])
+        for params_index in range(len(params[0, :])):
+            # If #2335 gets fixed then we should just be able to set
+            # fit.model.thawedpars to params[:, params_index],
+            # although is the draws data guaranteed to be restricted
+            # to the soft limits?
+            #
+            for parnames_index, parname in enumerate(parnames):
+                val = params[parnames_index, params_index]
+                mymin = mins[parnames_index]
+                mymax = maxs[parnames_index]
+                self.set_par(parname, np.clip(val, mymin, mymax))
+
+            eqw[params_index] = \
+                sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+
+        median, lower, upper = get_error_estimates(eqw)
+        fit.model.thawedpars = orig_par_vals
+        return median, lower, upper, params, eqw
 
     def calc_photon_flux(self, lo=None, hi=None,
                          id: IdType | None = None,
