@@ -25,7 +25,6 @@ from dataclasses import dataclass
 import logging
 import os
 import sys
-import warnings
 
 import numpy as np
 
@@ -58,14 +57,12 @@ import sherpa.io
 from sherpa.models.basic import TableModel, UserModel
 from sherpa.models.model import Model
 import sherpa.plot
-from sherpa.plot import get_per_plot_kwargs
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     ReSampleData
 from sherpa.stats import Cash, CStat, WStat
 
 import sherpa.ui.utils
-from sherpa.ui.utils import _check_type, _check_str_type, _is_str, \
-    get_plot_prefs
+from sherpa.ui.utils import _check_type, _check_str_type, _is_str
 
 import sherpa.utils
 from sherpa.utils import bool_cast, get_error_estimates, is_subclass, \
