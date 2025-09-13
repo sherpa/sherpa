@@ -8900,7 +8900,8 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_fit_obj(self,
                      store: Sequence[FitStore],
-                     estmethod, numcores=1
+                     estmethod: EstMethod | None,
+                     numcores: int = 1
                      ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object given the data and models.
 
@@ -8958,8 +8959,10 @@ class Session(NoNewAttributesAfterInit):
             if idval not in idvals:
                 idvals.append(idval)
 
-        return tuple(idvals), Fit(d, m, self._current_stat, self._current_method,
-                                  estmethod, self._current_itermethod)
+        return tuple(idvals), Fit(d, m, stat=self._current_stat,
+                                  method=self._current_method,
+                                  estmethod=estmethod,
+                                  itermethod_opts=self._current_itermethod)
 
     def _prepare_fit(self,
                      id: IdType | None,
@@ -9017,7 +9020,8 @@ class Session(NoNewAttributesAfterInit):
     def _get_fit(self,
                  id: IdType | None,
                  otherids: IdTypes = (),
-                 estmethod=None, numcores=1
+                 estmethod: EstMethod | None = None,
+                 numcores: int = 1
                  ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object for the given identifiers.
 

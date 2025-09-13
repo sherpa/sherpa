@@ -68,7 +68,7 @@ import sherpa.utils
 from sherpa.utils import bool_cast, get_error_estimates, is_subclass, \
     sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
-    IdentifierErr, ImportErr, IOErr, ModelErr, SessionErr
+    IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.types import IdType, IdTypes
 
@@ -15516,6 +15516,7 @@ class Session(sherpa.ui.utils.Session):
                 msg = name + f' must be of dimension ({npars}, {npars})'
                 raise IOErr(msg)
 
+        # Since estmethod is not set it defaults to Covariance.
         _, fit = self._get_fit(id)
         fit_results = self.get_fit_results()
         parnames = fit_results.parnames
@@ -15525,15 +15526,8 @@ class Session(sherpa.ui.utils.Session):
         if params is None:
             # run get_draws or normal distribution depending on fit stat
             if covar_matrix is None:
-                try:
-                    # check just in case usr has run covar()
-                    # TODO: should this validate the covariance
-                    # results?
-                    covar_results = self.get_covar_results()
-                    covar_matrix = covar_results.extra_output
-                except SessionErr:
-                    # usr has not run covar, will have to run it
-                    covar_matrix = fit.est_errors().extra_output
+                # Calculate the covariance matrix.
+                covar_matrix = fit.est_errors().extra_output
 
             is_numpy_ndarray2d(covar_matrix, 'covar_matrix', npar, True)
 
