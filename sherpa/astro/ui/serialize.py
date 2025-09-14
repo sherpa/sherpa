@@ -26,6 +26,7 @@ routines in this module are subject to change.
 """
 
 from collections.abc import Callable
+from contextlib import suppress
 import inspect
 import logging
 import os
@@ -546,7 +547,14 @@ def _save_dataset_settings_pha(out: OutType,
             _save_rmf_response(out, state, pha, id, rid)
 
     # Check if this data set has associated backgrounds.
+    # This is complicated by an attempt to avoid loading
+    # backgrounds when a PHA2 file is loaded.
     #
+    try:
+        multi = state._load_data_store[id]
+    except KeyError:
+        multi = None
+
     bids = pha.background_ids
     if len(bids) > 0:
         _output_banner(out, "Load Background Data Sets")
@@ -557,9 +565,12 @@ def _save_dataset_settings_pha(out: OutType,
             if TYPE_CHECKING:
                 assert isinstance(bpha, DataPHA)
 
+            # If this is a PHA2 file then do not add the load call.
+            #
             bname = bpha.name
-            cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
-            _output(out, cmd)
+            if multi is None or multi["filename"] != bname:
+                cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
+                _output(out, cmd)
 
             # Only store group flags and quality flags if they were
             # changed from flags in the file
@@ -635,23 +646,23 @@ def _save_data(out: OutType, state: SessionType) -> None:
     cmd_id = ""
     cmd_bkg_id = ""
 
-    for id in ids:
+    for idval in ids:
         # But if id is a string, then quote as a string
         # But what about the rest of any possible load_data() options;
         # how do we replicate the optional keywords that were possibly
         # used?  Store them with data object?
-        cmd_id = _id_to_str(id)
+        cmd_id = _id_to_str(idval)
 
-        data = state.get_data(id)
+        data = state.get_data(idval)
         if TYPE_CHECKING:
             # Assert an actual type rather than the base type of Data
             assert isinstance(data, (Data1D, Data2D))
 
-        _save_dataset(out, state, data, id)
-        _save_dataset_settings_pha(out, state, data, id)
-        _save_dataset_settings_2d(out, state, data, id)
+        _save_dataset(out, state, data, idval)
+        _save_dataset_settings_pha(out, state, data, idval)
+        _save_dataset_settings_2d(out, state, data, idval)
 
-        _handle_filter(out, state, data, id)
+        _handle_filter(out, state, data, idval)
 
 
 def _print_par(par: ParameterType) -> tuple[str, str]:
@@ -1186,6 +1197,23 @@ def _save_dataset_file(out: OutType, idstr: str, dset: Data) -> None:
     _output(out, cmd)
 
 
+def _save_dataset_pha2(out: OutType, multi: dict[str, Any]) -> None:
+    """The data can be read in from a PHA2 file."""
+
+    idval = multi["id"]
+    idvals = multi["idvals"]
+    filename = multi["filename"]
+
+    _output(out, f"# Load PHA2 into: {idvals}")
+
+    cmd = f'load_pha({repr(idval)}, "{filename}"'
+    with suppress(KeyError):
+        cmd += f', use_errors={multi["kwargs"]["use_errors"]}'
+
+    cmd += ")"
+    _output(out, cmd)
+
+
 def _output_wcs_import(out: OutType) -> None:
     """Import the WCS symbol if not done already.
 
@@ -1269,9 +1297,30 @@ def _save_dataset(out: OutType,
 
     - if in the correct directory (so paths may be wrong)
 
+    The state._load_data_store dictionary is used to indicate PHA2
+    files.
+
     """
 
-    idstr = _id_to_str(id)
+    # If this is a PHA2 file and the identifier is not the first
+    # one then do nothing.
+    #
+    try:
+        multi = state._load_data_store[id]
+        if id != multi["idvals"][0]:
+            # Can skip this dataset (as not the first).
+            return
+
+        # Assume the file exists (as otherwise it should not
+        # be in _load_data_store).
+        #
+        _save_dataset_pha2(out, multi)
+        return
+
+    except KeyError:
+        idval = id
+
+    idstr = _id_to_str(idval)
 
     # If the name of the object is a file then we assume that the data
     # was read in from that location, otherwise we recreate the data
@@ -1383,7 +1432,7 @@ def _save_dataset(out: OutType,
             _output_add_wcs(out, idstr, "eqpos", data.eqpos)
 
     elif isinstance(data, Data2DInt):
-        msg = f"Unable to re-create Data2DInt data set '{id}'"
+        msg = f"Unable to re-create Data2DInt data set '{idval}'"
         warning(msg)
         _output(out, f'print("{msg}")')
 
@@ -1398,7 +1447,7 @@ def _save_dataset(out: OutType,
         _output(out, f"{spacer}Data2D)")
 
     else:
-        msg = f"Unable to re-create {data.__class__} data set '{id}'"
+        msg = f"Unable to re-create {data.__class__} data set '{idval}'"
         warning(msg)
         _output(out, f'print("{msg}")')
         return
@@ -1436,6 +1485,9 @@ def save_all(state: SessionType, fh: TextIO | None = None) -> None:
      2. data sets are not included in the file
 
      3. some settings and values may not be recorded.
+
+     .. versionchanged:: 4.18.0
+        Handling of PHA2 data sets has been improved.
 
     Parameters
     ----------

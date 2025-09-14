@@ -1940,12 +1940,11 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
+# Load PHA2 into: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 load_pha(1, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(1, "@@/3c120_pha2", bkg_id=1)
-load_bkg(1, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -1958,12 +1957,9 @@ notice_id(1, bkg_id=1)
 notice_id(1, "3793:6192", bkg_id=1)
 notice_id(1, bkg_id=2)
 notice_id(1, "3793:6192", bkg_id=2)
-load_pha(10, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(10, "@@/3c120_pha2", bkg_id=1)
-load_bkg(10, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -1976,12 +1972,9 @@ notice_id(10, bkg_id=1)
 notice_id(10, "7593:7992", bkg_id=1)
 notice_id(10, bkg_id=2)
 notice_id(10, "7593:7992", bkg_id=2)
-load_pha(11, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(11, "@@/3c120_pha2", bkg_id=1)
-load_bkg(11, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -1994,12 +1987,9 @@ notice_id(11, bkg_id=1)
 notice_id(11, "6793:7592", bkg_id=1)
 notice_id(11, bkg_id=2)
 notice_id(11, "6793:7592", bkg_id=2)
-load_pha(12, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(12, "@@/3c120_pha2", bkg_id=1)
-load_bkg(12, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -2012,12 +2002,9 @@ notice_id(12, bkg_id=1)
 notice_id(12, "5993:7192", bkg_id=1)
 notice_id(12, bkg_id=2)
 notice_id(12, "5993:7192", bkg_id=2)
-load_pha(2, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(2, "@@/3c120_pha2", bkg_id=1)
-load_bkg(2, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -2030,12 +2017,9 @@ notice_id(2, bkg_id=1)
 notice_id(2, "5393:6992", bkg_id=1)
 notice_id(2, bkg_id=2)
 notice_id(2, "5393:6992", bkg_id=2)
-load_pha(3, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(3, "@@/3c120_pha2", bkg_id=1)
-load_bkg(3, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -2048,12 +2032,9 @@ notice_id(3, bkg_id=1)
 notice_id(3, "6993:7792", bkg_id=1)
 notice_id(3, bkg_id=2)
 notice_id(3, "6993:7792", bkg_id=2)
-load_pha(4, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(4, "@@/3c120_pha2", bkg_id=1)
-load_bkg(4, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -2066,12 +2047,9 @@ notice_id(4, bkg_id=1)
 notice_id(4, "6993:7792", bkg_id=1)
 notice_id(4, bkg_id=2)
 notice_id(4, "6993:7792", bkg_id=2)
-load_pha(5, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(5, "@@/3c120_pha2", bkg_id=1)
-load_bkg(5, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -2084,12 +2062,9 @@ notice_id(5, bkg_id=1)
 notice_id(5, "5393:6992", bkg_id=1)
 notice_id(5, bkg_id=2)
 notice_id(5, "5393:6992", bkg_id=2)
-load_pha(6, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(6, "@@/3c120_pha2", bkg_id=1)
-load_bkg(6, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -2102,12 +2077,9 @@ notice_id(6, bkg_id=1)
 notice_id(6, "3793:6192", bkg_id=1)
 notice_id(6, bkg_id=2)
 notice_id(6, "3793:6192", bkg_id=2)
-load_pha(7, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(7, "@@/3c120_pha2", bkg_id=1)
-load_bkg(7, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -2120,12 +2092,9 @@ notice_id(7, bkg_id=1)
 notice_id(7, "5993:7192", bkg_id=1)
 notice_id(7, bkg_id=2)
 notice_id(7, "5993:7192", bkg_id=2)
-load_pha(8, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(8, "@@/3c120_pha2", bkg_id=1)
-load_bkg(8, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -2138,12 +2107,9 @@ notice_id(8, bkg_id=1)
 notice_id(8, "6793:7592", bkg_id=1)
 notice_id(8, bkg_id=2)
 notice_id(8, "6793:7592", bkg_id=2)
-load_pha(9, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(9, "@@/3c120_pha2", bkg_id=1)
-load_bkg(9, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -3577,8 +3543,7 @@ def test_restore_pha2(make_data_path, check_str):
 
     restore()
 
-    assert len(ui.list_data_ids()) == 23   # TODO fix this
-    # check_data()
+    check_data()
 
 
 @requires_data
