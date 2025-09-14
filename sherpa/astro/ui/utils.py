@@ -15388,6 +15388,12 @@ class Session(sherpa.ui.utils.Session):
         is calculated in the selected units
         for the data set (which can be retrieved with `get_analysis`).
 
+        .. versionchanged:: 4.18.0
+           If ``covar_matrix`` is left unset then the covariance
+           matrix is now always re-calculated. This means that
+           `covar` is no-longer needed to be called before this
+           routine.
+
         .. versionchanged:: 4.16.0
            The random number generation is now controlled by the
            `set_rng` routine.
@@ -15431,8 +15437,8 @@ class Session(sherpa.ui.utils.Session):
         niter : int, optional
            The number of draws to use. The default is ``1000``.
         covar_matrix : 2D array, optional
-           The covariance matrix to use. If ``None`` then the
-           result from `get_covar_results().extra_output` is used.
+           The covariance matrix to use. If ``None`` then the matrix
+           is calculated for the dataset given by the ``id`` argument.
 
         Returns
         -------
@@ -15464,7 +15470,7 @@ class Session(sherpa.ui.utils.Session):
         >>> eqwidth(cont, cont+line)
         2.1001988282497308
 
-        The calculation is restricted to the range 20 to 20
+        The calculation is restricted to the range 20 to 24
         Angstroms.
 
         >>> eqwidth(cont, cont+line, lo=20, hi=24)
@@ -15480,7 +15486,8 @@ class Session(sherpa.ui.utils.Session):
 
         With the `error` flag set to `True`, the return value is
         enhanced with extra information, such as the median and
-        one-sigma ranges on the equivalent width::
+        one-sigma ranges on the equivalent width. These values can be
+        displayed with Sherpa plotting commands.
 
         >>> res = eqwidth(p1, p1 + g1, error=True)
         >>> ewidth = res[0]  # the median equivalent width
@@ -15488,12 +15495,17 @@ class Session(sherpa.ui.utils.Session):
         >>> errhi = res[2]   # the one-sigma upper limit
         >>> pars = res[3]    # the parameter values used
         >>> ews = res[4]     # array of eq. width values
+        >>> plot_pdf(ews)    # probability density
+        >>> plot_cdf(ews)    # cumalitive distribution
 
-        which can be used to display the probability density or
-        cumulative distribution function of the equivalent widths::
+        Fit dataset 2, assumed to contain components ``p2`` and
+        ``g2``, calculate the covariance matrix, and then send this
+        matrix to the eqwidth call:
 
-        >>> plot_pdf(ews)
-        >>> plot_cdf(ews)
+        >>> fit(2)
+        >>> covar(2)
+        >>> cmat = get_covar_results().extra_output
+        >>> res2 = eqwidth(p2, p2 + g2, id=2, covar_matrix=cmat, error=True)
 
         """
         data = self._get_data_or_bkg(id, bkg_id)

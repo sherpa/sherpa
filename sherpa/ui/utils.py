@@ -10938,7 +10938,7 @@ class Session(NoNewAttributesAfterInit):
         matrix is just the variance of the parameter:
 
         >>> res.extra_output
-        array([[ 6.19847635]])
+        array([[6.19847635]])
 
         """
         if self._covariance_results is None:
@@ -12041,7 +12041,7 @@ class Session(NoNewAttributesAfterInit):
         .. versionchanged:: 4.18.0
            If ``covar_matrix`` is left unset then the covariance
            matrix is now always re-calculated. This means that
-           ``covar`` is no-longer needed to be called before this
+           `covar` is no-longer needed to be called before this
            routine.
 
         Parameters
@@ -12054,9 +12054,9 @@ class Session(NoNewAttributesAfterInit):
         niter : int, optional
            The number of draws to use. The default is ``1000``.
         covar_matrix : 2D array, optional
-           The covariance matrix to use. If ``None`` then the
-           covariance matrix from the current parameter values
-           is calculated.
+           The covariance matrix to use. If ``None`` then the matrix
+           is calculated for the dataset given by the ``id`` and
+           ``otherids`` arguments.
 
         Returns
         -------
@@ -12128,6 +12128,16 @@ class Session(NoNewAttributesAfterInit):
 
         >>> res = get_draws('core', ['jet1', 'jet2'], niter=1e4)
         >>> stats, accept, params = res
+
+        Fit models to datasets 3 and 4, then calculate the covariance
+        matrix (stored in the extra_output field) and pass it through
+        to get_draws (which also evaluates the models for datasets 3
+        and 4):
+
+        >>> fit(3, 4)
+        >>> covar(3, 4)
+        >>> cmat = get_covar_results().extra_output
+        >>> res = get_draws(3, [4], covar_matrix=cmat)
 
         """
 
