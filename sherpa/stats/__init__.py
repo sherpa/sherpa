@@ -577,15 +577,15 @@ class CStatNegativePenalty(CStat):
     that are 0 or negative because of the term log(1/model).
     In Sherpa CStat, we deal with that by truncating the model values to a
     small positive value.
-    (At least that's the default. An error cna be raised instead if the
+    (At least that's the default. An error can be raised instead if the
     user sets the truncate option to False in the .sherpa.rc file.)
 
     THIS IS ALREADY A CRUDGE, just to make it work numerically.
-    In practice, most model will have mostly positive values all the time,
+    In practice, most models will have mostly positive values all the time,
     but in numerical optimization it can happen that the optimizer tries
-    e.g. an absorption lines that is too deep and get a few bins in the
+    e.g. an absorption line that is too deep and get a few bins in the
     model to a negative value. That's usually not a good fit (since the data
-    is always >=0) and the optimizer would usually step the parameter such
+    is always >=0) and the optimizer would usually set the parameter so
     that the model is positive again. So, we use the truncation to make
     sure that it doesn't crash in the middle of the optimization.
 
@@ -599,7 +599,7 @@ class CStatNegativePenalty(CStat):
     of the line will improve the fit on the edges of the line, even if the
     center of the line is still truncated and thus the fit will walk back
     to positive values. But in some cases, e.g. a narrow Gaussian line
-    there might be only one one bin that is negative and stays negative for
+    there might be only one bin that is negative and stays negative for
     a range of parameter values.
     This can happen in two cases:
 
@@ -624,8 +624,8 @@ class CStatNegativePenalty(CStat):
     the optimizer back to positive values, but not so strong that it creates
     a giant step in the statistic value which might confuse the optimizer,
     i.e. we don't want it to be 1e-38, but also not 1e+23.
-    For Poisson data, the natural scale is "1", so we use penalt the sum of
-    all negative model values as penalty.
+    For Poisson data, the natural scale is "1", so we use the sum of
+    all negative model values as the penalty.
 
     Again, the exact choice does not matter, because we expect this penalty
     to apply only in intermediate steps and not in the final fit.
