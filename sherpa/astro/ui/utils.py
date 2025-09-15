@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 import logging
 import os
@@ -359,6 +360,17 @@ class Session(sherpa.ui.utils.Session):
 
         self._energyfluxplot = sherpa.astro.plot.EnergyFluxHistogram()
         self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
+
+        # Used to identify PHA2 datasets.
+        #
+        # The value field could be more-precisely typed, but leave as
+        # generic for the moment. It is also likely that this approach
+        # (of storing the actual file name and arguments) can be
+        # extended to all the load_xxx calls, so that
+        # .serialize.save_all can use it rather than the current
+        # approach.
+        #
+        self._load_data_store: dict[IdType, dict[str, Any]] = {}
 
         # This is a new dictionary of XSPEC module settings.  It
         # is meant only to be populated by the save function, so
@@ -1964,7 +1976,9 @@ class Session(sherpa.ui.utils.Session):
 
     def _load_data(self,
                    id: IdType | None,
-                   datasets: Data | Sequence[Data]
+                   datasets: Data | Sequence[Data],
+                   filename: str,
+                   kwargs: dict[str, Any]
                    ) -> None:
         """Load one or more datasets.
 
@@ -1982,11 +1996,25 @@ class Session(sherpa.ui.utils.Session):
         datasets : Data instance or iterable of Data instances
            The data to load, either as a single item or, for
            multiple-dataset files, an iterable of them.
+        filename : str
+           The name of the file used to load the data (only used
+           when datasets is a sequence, which implies a PHA2 file).
+        kwargs : dict
+           The keyword arguments used in the load call (only used
+           for PHA2 data).
 
         """
 
+        if id is None:
+            idval = self.get_default_id()
+        else:
+            idval = id
+
         if not np.iterable(datasets):
-            self.set_data(id, datasets)
+            self.set_data(idval, datasets)
+            with suppress(KeyError):
+                del self._load_data_store[idval]
+
             return
 
         # One issue with the following is that if there's
@@ -1994,20 +2022,28 @@ class Session(sherpa.ui.utils.Session):
         # output will be "foo1" rather than "foo" (when
         # id="foo").  DJB thinks we can live with this.
         #
-        if id is None:
-            id = self.get_default_id()
-
         num = len(datasets)
         ids = []
         for ctr, data in enumerate(datasets):
             try:
-                idval = id + ctr
+                id_ = idval + ctr
             except TypeError:
                 # id is assumed to be a string
-                idval = id + str(ctr + 1)
+                id_ = idval + str(ctr + 1)
 
-            self.set_data(idval, data)
-            ids.append(idval)
+            self.set_data(id_, data)
+            ids.append(id_)
+
+            # Store a mapping between the actual identifiers used for
+            # the data to the arguments of the call (this is assumed
+            # to be a PHA2 file). Note that since ids is mutated, this
+            # will store the full list of matching identifiers for
+            # each id_ value.
+            #
+            self._load_data_store[id_] = {"id": idval,
+                                          "idvals": ids,
+                                          "filename": filename,
+                                          "kwargs": kwargs}
 
         if num > 1:
             info("Multiple data sets have been input: %s-%s",
@@ -2090,7 +2126,7 @@ class Session(sherpa.ui.utils.Session):
             id, filename = filename, id
 
         datasets = self.unpack_data(filename, *args, **kwargs)
-        self._load_data(id, datasets)
+        self._load_data(id, datasets, filename=filename, kwargs=kwargs)
 
     def unpack_image(self, arg, coord='logical',
                      dstype=DataIMG):
@@ -2482,7 +2518,14 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
 
         phasets = self.unpack_pha(arg, use_errors)
-        self._load_data(id, phasets)
+
+        # Only store the use_errors call if set (i.e. not the default).
+        #
+        kwargs = {}
+        if use_errors:
+            kwargs["use_errors"] = True
+
+        self._load_data(id, phasets, filename=arg, kwargs=kwargs)
 
     def _get_pha_data(self,
                       id: IdType | None,
@@ -16823,6 +16866,9 @@ class Session(sherpa.ui.utils.Session):
          3. some settings and values may not be recorded (such as
             header information).
 
+        .. versionchanged:: 4.18.0
+           Handling of PHA2 data sets has been improved.
+
         .. versionchanged:: 4.17.0
            The file will now contain a `set_default_id` call if the
            default identifier has been changed.
@@ -16868,8 +16914,6 @@ class Session(sherpa.ui.utils.Session):
         used. Not all Sherpa settings are saved. Items not fully restored
         include:
 
-        - grating data is not guaranteed to be restored correctly,
-
         - data changed from the version on disk - e.g. by calls to
           `set_counts` - will not be restored correctly,
 
@@ -16879,6 +16923,12 @@ class Session(sherpa.ui.utils.Session):
         - user models may not be restored correctly,
 
         - and only a subset of Sherpa commands are saved.
+
+        The `save` command can also be used for storing a Sherpa
+        session and avoids some of these issues. However, it is not
+        recommended if the session is likely to be restored with newer
+        versions of Sherpa. It is suggested that the output of both
+        should be checked when the output may be used long term.
 
         Examples
         --------
