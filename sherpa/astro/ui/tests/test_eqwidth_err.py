@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2018, 2021, 2023
+#  Copyright (C) 2018, 2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -225,3 +225,220 @@ def test_eqwidth_err_arg_square(clean_astro_ui):
         ui.eqwidth(cmdl, cmdl + pmdl, **arglist)
 
     assert str(exc.value) == 'covar_matrix must be of dimension (2, 2)'
+
+
+def setup_multi_id():
+    """Setup the data for the multi-id case."""
+
+    # We could have data with different responses but the simplest
+    # case is to have the same response.
+    #
+    nchan = 200
+    ui.dataspace1d(1, nchan, id="a", dstype=ui.DataPHA)
+    ui.dataspace1d(1, nchan, id="b", dstype=ui.DataPHA)
+
+    egrid = np.linspace(0.1, 2, nchan + 1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    perfect_rmf = ui.create_rmf(elo, ehi)
+
+    # Change the ARF just to get a different "response"
+    arf_a = ui.create_arf(elo, ehi, np.full(nchan, 0.5))
+    arf_b = ui.create_arf(elo, ehi, np.full(nchan, 2))
+
+    ui.set_rmf("a", perfect_rmf)
+    ui.set_rmf("b", perfect_rmf)
+
+    ui.set_arf("a", arf_a)
+    ui.set_arf("b", arf_b)
+
+    # The "truth".
+    #
+    pl_t = ui.create_model_component("powlaw1d", "pl_t")
+    gline_t = ui.create_model_component("gauss1d", "gline_t")
+
+    # Ensure the counts are large enough for ~ gaussian statistics.
+    # The line is roughly x=0.85 to 1.15.
+    #
+    pl_t.ampl = 5000
+    pl_t.gamma = 1
+    gline_t.pos = 1
+    gline_t.fwhm = 0.1
+    gline_t.ampl = 2000
+
+    truth = pl_t - gline_t
+    ui.set_source("a", truth)
+    ui.set_source("b", truth)
+
+    # Fake up the data
+    #
+    ui.set_rng(np.random.RandomState(382134))
+    ui.fake_pha(id="a")
+    ui.fake_pha(id="b")
+
+    # To fit.
+    pl = ui.create_model_component("powlaw1d", "pl")
+    gline = ui.create_model_component("gauss1d", "gline")
+    to_fit = pl - gline
+    pl.ampl = 5000
+    gline.pos = 1
+    gline.pos.freeze()
+    gline.fwhm = 0.1
+    gline.fwhm.freeze()
+    gline.ampl = 2000
+
+    ui.set_source("a", to_fit)
+    ui.set_source("b", to_fit)
+
+
+def test_eqwidth_multi_id_chisq(clean_astro_ui):
+    """Regression test for handling multiple ids (chi-square).
+
+    This is only an issue when error=True. At the moment this is
+    treated as a regression test as it is unclear what we want the
+    results to be.
+
+    """
+
+    setup_multi_id()
+
+    ui.set_stat("chi2datavar")
+    ui.fit()
+    fres = ui.get_fit_results()
+    assert fres.datasets == ("a", "b")
+
+    # Run eqwidth with no errors: the result should be the same
+    # no matter the choice of id/otherids.
+    #
+    val1 = ui.eqwidth(pl, pl + gline, id="a", otherids=())
+    val2 = ui.eqwidth(pl, pl + gline, id="b", otherids=())
+    val3 = ui.eqwidth(pl, pl + gline, id="a", otherids=("b", ))
+    val4 = ui.eqwidth(pl, pl + gline, id="b", otherids=("a", ))
+
+    # These should be identical.
+    assert val2 == val1
+    assert val3 == val1
+    assert val4 == val1
+
+    # A regression to check if the calculation changes.
+    #
+    assert val1 == pytest.approx(0.040235587264827975)
+
+    # Check the error results. We are using gaussian statistics
+    # so this will not use get_draws but will sample the values
+    # using the covariance matrix.
+    #
+    # Fix the random state before each run. Since the same model is
+    # used for both datasets the random distributions should be the
+    # same, so that the difference covariance matrices should be
+    # apparent.
+    #
+    ui.set_rng(np.random.RandomState(287))
+    resa = ui.eqwidth(pl, pl + gline, id="a", otherids=(), error=True, niter=100)
+    ui.set_rng(np.random.RandomState(287))
+    resb = ui.eqwidth(pl, pl + gline, id="b", otherids=(), error=True, niter=100)
+    ui.set_rng(np.random.RandomState(287))
+    resab = ui.eqwidth(pl, pl + gline, id="a", otherids=("b", ), error=True, niter=100)
+    ui.set_rng(np.random.RandomState(287))
+    resba = ui.eqwidth(pl, pl + gline, id="b", otherids=("a"), error=True, niter=100)
+
+    # This is a "simple" check to see if the results are as
+    # expected. For now all that we check against is the different
+    # median values and assume that this means the correct data has
+    # been used in creating the parameter values used for each
+    # iteration.
+    #
+    # Ideally the distributions for the multi-id case would be
+    # "tighter" than the single case, which is hard to check but can
+    # be approximated by a "smaller" sigma limits range, and the
+    # "a + b" and "b + a" would give the same results. However,
+    # for now the otherids argument is ignored (issue #2379).
+    #
+    assert resab[4] == pytest.approx(resa[4])
+    assert resba[4] == pytest.approx(resb[4])
+
+    assert resa[0] == pytest.approx(0.040947827224568634)
+    assert resb[0] == pytest.approx(0.04060370992021427)
+
+    delta_a = resa[2] - resa[1]
+    delta_ab = resab[2] - resab[1]
+    assert delta_ab == delta_a
+
+    delta_b = resb[2] - resb[1]
+    delta_ba = resba[2] - resba[1]
+    assert delta_ba == delta_b
+
+
+def test_eqwidth_multi_id_poisson(clean_astro_ui):
+    """Regression test for handling multiple ids (poisson).
+
+    This is only an issue when error=True. At the moment this is
+    treated as a regression test as it is unclear what we want the
+    results to be.
+
+    """
+
+    setup_multi_id()
+
+    ui.set_stat("cstat")
+    ui.fit()
+    fres = ui.get_fit_results()
+    assert fres.datasets == ("a", "b")
+
+    # Run eqwidth with no errors: the result should be the same
+    # no matter the choice of id/otherids.
+    #
+    val1 = ui.eqwidth(pl, pl + gline, id="a", otherids=())
+    val2 = ui.eqwidth(pl, pl + gline, id="b", otherids=())
+    val3 = ui.eqwidth(pl, pl + gline, id="a", otherids=("b", ))
+    val4 = ui.eqwidth(pl, pl + gline, id="b", otherids=("a", ))
+
+    # These should be identical.
+    assert val2 == val1
+    assert val3 == val1
+    assert val4 == val1
+
+    # A regression to check if the calculation changes.
+    #
+    assert val1 == pytest.approx(0.0409343934694133)
+
+    # Check the error results. This is calculated via get_draws,
+    # which handles the multiple-id case.
+    #
+    # Fix the random state before each run, although we expect the
+    # results to be different.
+    #
+    ui.set_rng(np.random.RandomState(287))
+    resa = ui.eqwidth(pl, pl + gline, id="a", otherids=(), error=True, niter=100)
+    ui.set_rng(np.random.RandomState(287))
+    resb = ui.eqwidth(pl, pl + gline, id="b", otherids=(), error=True, niter=100)
+    ui.set_rng(np.random.RandomState(287))
+    resab = ui.eqwidth(pl, pl + gline, id="a", otherids=("b", ), error=True, niter=100)
+    ui.set_rng(np.random.RandomState(287))
+    resba = ui.eqwidth(pl, pl + gline, id="b", otherids=("a"), error=True, niter=100)
+
+    # This is a "simple" check to see if the results are as
+    # expected. For now all that we check against is the different
+    # median values and assume that this means the correct data has
+    # been used in creating the parameter values used for each
+    # iteration.
+    #
+    # Ideally the distributions for the multi-id case would be
+    # "tighter" than the single case, which is hard to check but can
+    # be approximated by a "smaller" sigma limits range, and the
+    # "a + b" and "b + a" would give the same results (the latter does
+    # not hold at this time, so is it a bug in the code or our
+    # understanding of the code?).
+    #
+    assert resa[0] == pytest.approx(0.04259715629705425)
+    assert resb[0] == pytest.approx(0.043209134605777154)
+    assert resab[0] == pytest.approx(0.04307866629966477)
+    assert resba[0] == pytest.approx(0.04104380634099836)
+
+    delta_a = resa[2] - resa[1]
+    delta_ab = resab[2] - resab[1]
+    assert delta_ab < delta_a
+
+    delta_b = resb[2] - resb[1]
+    delta_ba = resba[2] - resba[1]
+    assert delta_ba < delta_b
