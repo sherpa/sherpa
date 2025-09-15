@@ -16829,9 +16829,7 @@ class Session(sherpa.ui.utils.Session):
             warning("XSPEC support is not available")
             return
 
-        # Very similar to the XSPEC "show abund" format, except that
-        # we do not have the "documentation" for the abundance table.
-        # This can be added but needs changes to the _xspec module.
+        # Very similar to the XSPEC "show abund" format.
         #
         lines = ["Solar Abundance Table:",
                  f"{xspec.get_xsabund():4s}  {xspec.get_xsabund_doc()}",
