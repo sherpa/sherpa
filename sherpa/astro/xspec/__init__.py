@@ -20,10 +20,10 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, 12.13.0,
-12.12.1, and 12.12.0 of XSPEC [1]_, and can be built against the model
-library or the full application.  There is no guarantee of support for
-older or newer versions of XSPEC.
+Sherpa supports versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, and
+12.13.0 of XSPEC [1]_, and can be built against the model library or
+the full application.  There is no guarantee of support for older or
+newer versions of XSPEC.
 
 To be able to use most routines from this module, the HEADAS environment
 variable must be set. The `get_xsversion` function can be used to return the
@@ -18113,14 +18113,12 @@ class XSclumin(XSConvolutionKernel):
         XSConvolutionKernel.__init__(self, name, pars)
 
 
-@version_at_least("12.13.0")
 class XScglumin(XSConvolutionKernel):
     """The XSPEC cglumin convolution model: calculate luminosity
 
     The model is described at [1]_.
 
     .. versionadded:: 4.15.1
-       This model requires XSPEC 12.13.0 or later.
 
     Attributes
     ----------
@@ -18145,8 +18143,6 @@ class XScglumin(XSConvolutionKernel):
     See [1]_ for the meaning and restrictions, in particular the
     necessity of freezing the amplitude, or normalization, of the
     emission component (or components) at 1.
-
-    This model is only available when used with XSPEC 12.13.0 or later.
 
     References
     ----------

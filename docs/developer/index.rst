@@ -204,7 +204,7 @@ value) can be used. For most cases, the ``scripts/use_ciao_config``
 script can be used::
 
   % ./scripts/use_ciao_config
-  Found XSPEC version: 12.12.0
+  Found XSPEC version: 12.14.1
   Updating setup.cfg
   % git diff setup.cfg
   ...
@@ -213,7 +213,7 @@ Otherwise the file can be edited manually. First find out what
 XSPEC version is present with::
 
   % conda list xspec-modelsonly --json | grep version
-      "version": "12.12.0"
+      "version": "12.14.1"
 
 then change the ``setup.cfg`` to change the following lines, noting
 that the `${ASCDS_INSTALL}` environment variable **must** be
@@ -244,12 +244,12 @@ should be updated to match the output above::
     wcs_libraries=wcs
 
     with_xspec=True
-    xspec_version = 12.12.0
+    xspec_version = 12.14.1
     xspec_lib_dirs = ${ASCDS_INSTALL}/lib
     xspec_include_dirs = ${ASCDS_INSTALL}/include
 
 .. note::
-   The XSPEC version may include the patch level, such as ``12.12.0e``,
+   The XSPEC version may include the patch level, such as ``12.14.1d``,
    and this can be included in the configuration file.
 
 To avoid accidentally committing the modified ``setup.cfg`` into git,
@@ -345,8 +345,7 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, 12.13.0, 12.12.1,
-and 12.12.0.
+:term:`XSPEC` versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, and 12.13.0.
 It may build against newer versions, but if it does it will not provide
 access to any new models in the release. The following sections of the
 `XSPEC manual
@@ -475,8 +474,6 @@ noted as not being supported::
   #include <xsTypes.h>
   #include <XSFunctions/Utilities/funcType.h>
 
-  #define XSPEC_12_12_0
-  #define XSPEC_12_12_1
   #define XSPEC_12_13_0
 
   #include "sherpa/astro/xspec_extension.hh"

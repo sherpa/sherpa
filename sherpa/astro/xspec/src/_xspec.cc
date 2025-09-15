@@ -877,13 +877,8 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT(xsphei, 3),                        // XSheilin
   XSPECMODELFCT(xshecu, 2),                        // XShighecut
   XSPECMODELFCT(xshrfl, 8),                        // XShrefl
-#ifdef XSPEC_12_12_1
   XSPECMODELFCT_DBL(ismabs, 31),                   // XSismabs
   XSPECMODELFCT_DBL(ismdust, 3),                   // XSismdust
-#else
-  XSPECMODELFCT(ismabs, 31),                       // XSismabs
-  XSPECMODELFCT(ismdust, 3),                       // XSismdust
-#endif
   XSPECMODELFCT_C(C_logconst, 1),                  // XSlogconst
   XSPECMODELFCT_C(C_log10con, 1),                  // XSlog10con
 #ifdef XSPEC_12_15_0
@@ -891,11 +886,7 @@ static PyMethodDef XSpecMethods[] = {
 #endif
   XSPECMODELFCT(xslyman, 4),                       // XSlyman
   XSPECMODELFCT(xsntch, 3),                        // XSnotch
-#ifdef XSPEC_12_12_1
   XSPECMODELFCT_DBL(olivineabs, 2),                // XSolivineabs
-#else
-  XSPECMODELFCT(olivineabs, 2),                    // XSolivineabs
-#endif
   XSPECMODELFCT(xsabsp, 2),                        // XSpcfabs
   XSPECMODELFCT(xsphab, 1),                        // XSphabs
   XSPECMODELFCT(xsplab, 2),                        // XSplabs
@@ -974,9 +965,7 @@ static PyMethodDef XSpecMethods[] = {
 
   XSPECMODELFCT_CON(C_cflux, 3),                   // XScflux
   XSPECMODELFCT_CON(C_clumin, 4),                  // XSclumin
-#ifdef XSPEC_12_13_0
   XSPECMODELFCT_CON(C_cglumin, 4),                 // XScglumin
-#endif
   XSPECMODELFCT_CON(C_cpflux, 3),                  // XScpflux
   XSPECMODELFCT_CON(C_gsmooth, 2),                 // XSgsmooth
   XSPECMODELFCT_CON(C_ireflct, 7),                 // XSireflect
