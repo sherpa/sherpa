@@ -25,14 +25,14 @@ intended for public use. The API and semantics of the
 routines in this module are subject to change.
 """
 
+from collections.abc import Callable
 import inspect
 import logging
 import os
 import sys
 import textwrap
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
-    TextIO, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Mapping, TextIO, TypedDict
 
 import numpy
 
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     # Avoid an import cycle
     from sherpa.astro.ui.utils import Session
 
-xspec: Optional[ModuleType]
+xspec: ModuleType | None
 try:
     from sherpa.astro import xspec
 except ImportError:
@@ -66,8 +66,8 @@ string_types = (str, )
 #
 
 OutType = TypedDict("OutType", {"imports": set[str], "main": list[str]})
-MaybeIdType = Optional[IdType]
-DataType = Union[Data1D, Data2D]
+MaybeIdType = IdType | None
+DataType = Data1D | Data2D
 
 # Typing the state argument is awkward since it causes an import
 # error, so for runtime we default to Any and only when run under a
@@ -78,8 +78,8 @@ if TYPE_CHECKING:
 else:
     SessionType = Any
 
-# The par parameter is hard to type as it's Union[Parameter,
-# XSBaseParameter] but the latter is only defined if XSPEC support is
+# The par parameter is hard to type as it's Parameter |
+# XSBaseParameter but the latter is only defined if XSPEC support is
 # enabled. One way around this is to create a Protocol for defining
 # the parameter interface rather than have it be based on a class.
 #
@@ -1425,7 +1425,7 @@ def _save_id(out: OutType, state: SessionType) -> None:
     _output_nl(out)
 
 
-def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
+def save_all(state: SessionType, fh: TextIO | None = None) -> None:
     """Save the information about the current session to a file handle.
 
     This differs to the `save` command in that the output is human
