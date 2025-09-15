@@ -15508,6 +15508,14 @@ class Session(sherpa.ui.utils.Session):
         >>> res2 = eqwidth(p2, p2 + g2, id=2, covar_matrix=cmat, error=True)
 
         """
+
+        # The dataset is only used to define the grid for the model
+        # evaluation, so just use the "default" version and do not
+        # bother about multiple datasets. This could be an issue if
+        # the model evaluation should be used on an extension of the
+        # grid in this default dataset, but this is a theoretical
+        # concern.
+        #
         data = self._get_data_or_bkg(id, bkg_id)
 
         if not error:

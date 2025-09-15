@@ -24,8 +24,6 @@
 
 """
 
-from typing import Optional
-
 import numpy as np
 
 from sherpa.astro import hc, charge_e
@@ -57,7 +55,7 @@ def reshape_2d_arrays(x0, x1):
 
 def get_xspec_position(y: np.ndarray,
                        x: np.ndarray,
-                       xhi: Optional[np.ndarray] = None
+                       xhi: np.ndarray | None = None
                        ) -> ValueAndRange:
     """Estimate a position for an XSPEC model."""
 
@@ -892,44 +890,71 @@ def calc_model_sum2d(data, model, reg=None):
     return _counts2d(data, reg, data.eval_model_to_fit, model)
 
 
-def eqwidth(data, model, combo, lo=None, hi=None):
+# Adding types does not help at the moment, e.g. somehting like
+#   data: Data, model: Model, combo: ArithmeticModel
+#
+def eqwidth(data, model, combo, lo=None, hi=None) -> float:
+    """Calculate the equilavent width of combo.
 
-    lo, hi = bounds_check(lo, hi)
+    The `equivalent width <https://en.wikipedia.org/wiki/Equivalent_width>`_
+    is calculated for the combo model (continuum + line) compared
+    to the model expression (continuum).
 
-    my = None
-    cy = None
-    xlo = None
-    xhi = None
-    num = None
-    eqw = 0.0
+    Parameters
+    ----------
+    data
+       The data object used to define the grid on which the model is
+       evaluated.
+    model
+       The continuum model (this may contain multiple components).
+    combo
+       The continuum plus line (absorption or emission) model.
+    lo : optional
+       The lower limit for the calculation. The default value of
+       ``None`` means that the lower range of the data set is used.
+    hi : optional
+       The upper limit for the calculation. The default value of
+       ``None`` means that the lower range of the data set is used.
+
+    """
+
+    loval, hival = bounds_check(lo, hi)
+
+    # This relies on only DataPHA having get_response and _get_indep
+    # attributes.
+    #
     if hasattr(data, 'get_response'):
         xlo, xhi = data._get_indep(filter=False)
         my = model(xlo, xhi)
         cy = combo(xlo, xhi)
-        num = len(xlo)
     else:
+        # TODO: should this error out as the bin widths are not really
+        # well defined?
         my = data.eval_model_to_fit(model)
         cy = data.eval_model_to_fit(combo)
         xlo = data.get_indep(filter=True)[0]
-        num = len(xlo)
+        xhi = None
 
     # TODO: should this follow _flux and handle the case when
     #       we have xlo, xhi differently?
     #
-    mask = filter_bins((lo,), (hi,), (xlo,))
+    mask = filter_bins((loval,), (hival,), (xlo,))
     if mask is not None:
         my = my[mask]
         cy = cy[mask]
         xlo = xlo[mask]
-        num = len(xlo)
 
-    for ebin, val in enumerate(xlo):
+    num = len(xlo)
+    eqw = 0.0
+    for ebin, continuum in enumerate(my):
+        # TODO: calculate the actual bin width for integrated data sets.
         if ebin < (num - 1):
             eave = np.abs(xlo[ebin + 1] - xlo[ebin])
         else:
             eave = np.abs(xlo[ebin - 1] - xlo[ebin])
         if my[ebin] != 0.0:
-            eqw += eave * (cy[ebin] - my[ebin]) / my[ebin]
+            # TOD: shouldn't this be (continuum - cy[ebin]) / continuum?
+            eqw += eave * (cy[ebin] - continuum) / continuum
 
     return eqw
 
