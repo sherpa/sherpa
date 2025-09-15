@@ -6,7 +6,7 @@ Fitting the data
 
    In "Estimating Errors", the warning block needs work.
 
-   
+
 The :py:class:`~sherpa.fit.Fit` class takes the
 :doc:`data <../data/index>` and :doc:`model expression <../models/index>`
 to be fit, and uses the
@@ -86,7 +86,7 @@ used in the fit:
        polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38
        polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38
        polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38
-    
+
 .. _fitting_data:
 
 Creating a fit object
@@ -97,13 +97,13 @@ A :py:class:`~sherpa.fit.Fit` object requires both a
 :doc:`model <../models/index>` object, and will use the
 :py:class:`~sherpa.stats.Chi2Gehrels`
 :doc:`statistic <../statistics/index>` with the
-:py:class:`~sherpa.optmethods.LevMar`     
+:py:class:`~sherpa.optmethods.LevMar`
 :doc:`optimiser <../optimisers/index>`
 unless explicitly over-riden with the ``stat`` and
 ``method`` parameters (when creating the object) or the
 :py:attr:`~sherpa.fit.Fit.stat` and
 :py:attr:`~sherpa.fit.Fit.method` attributes
-(once the object has been created).    
+(once the object has been created).
 
 .. plot::
     :include-source:
@@ -145,12 +145,12 @@ the values when it was created or used. For example, in the following
 the model is changed directly, and the value stored in the fit
 object is also changed:
 
-    >>> f.model.c2.val
+    >>> print(f.model.c2.val)
     0.0
     >>> mdl.c2 = 1
-    >>> f.model.c2.val
+    >>> print(f.model.c2.val)
     1.0
-   
+
 Using the optimiser and statistic
 =================================
 
@@ -190,7 +190,7 @@ has a reduced statistic of :math:`\sim 200` which indicates
 that the fit is not very good (if the error bars in the
 dataset are correct then a good fit is indicated by
 a reduced statistic :math:`\simeq 1` for
-chi-square based statistics).      
+chi-square based statistics).
 
 As with the model and statistic, if the data object is changed then
 the results of calculations made on the fit object can be changed.
@@ -275,7 +275,7 @@ The information is also available directly as fields of the
     rstat          = 24.20477252523945
     message        = successful termination
     nfev           = 6
-    
+
 The reduced chi square fit is now lower, :math:`\sim 25`, but still
 not close to 1.
 
@@ -328,10 +328,10 @@ In this case the statistic value has not changed, as shown by
 
     >>> fit2 = Fit(d, mdl, method=NelderMead())
     >>> result2 = fit2.fit()
-   
+
 Adjusting the model
 -------------------
-   
+
 This suggests that the problem is not that a local minimum has been
 found, but that the model is not expressive enough to represent the
 data. One possible approach is to change the set of points used for
@@ -350,7 +350,7 @@ polynomial to be fit, but a new model could have been tried.
     :nofigs:
 
     >>> mdl.c1.thaw()
-   
+
 For the remainder of the analysis the original (Levenberg-Marquardt)
 optimiser will be used:
 
@@ -449,7 +449,7 @@ Rather than print out all the components, most of which are fixed at
 0, the first three can be looped over using the model's
 :py:attr:`~sherpa.models.model.Model.pars` attribute:
 
-   >>> [(p.name, p.val, p.frozen) for p in mdl.pars[:3]]
+   >>> [(p.name, float(p.val), p.frozen) for p in mdl.pars[:3]]
    [('c0', 1.0, False), ('c1', 0.0, False), ('c2', 1.0, False)]
 
 There are many ways to choose the starting location; in this case
@@ -469,12 +469,12 @@ be able to find the best-fit location.
    since it does not contain the same overloaded accessor functionality
    that allows the setting of the parameter directly from the model.
    The fields of the parameter object are:
-   
+
    >>> print(mdl.pars[1])
    val         = 10.0
    min         = -3.4028234663852886e+38
    max         = 3.4028234663852886e+38
-   units       = 
+   units       =
    frozen      = False
    link        = None
    default_val = 10.0
@@ -502,9 +502,9 @@ to make sure that any existing file is overwritten):
    Probability [Q-value] = 0.259653
    Reduced statistic     = 1.33894
    Change in statistic   = 196013
-      polynom1d.c0   -9.38489     +/- 2.91751     
-      polynom1d.c1   -2.41692     +/- 0.250889    
-      polynom1d.c2   0.478273     +/- 0.0312677   
+      polynom1d.c0   -9.38489     +/- 2.91751
+      polynom1d.c1   -2.41692     +/- 0.250889
+      polynom1d.c2   0.478273     +/- 0.0312677
 
 .. testcleanup::
 
@@ -513,7 +513,7 @@ to make sure that any existing file is overwritten):
 
 The output file is a simple ASCII file where the columns give the
 function evaluation number, the statistic, and the parameter values::
-  
+
    # nfev statistic polynom1d.c0 polynom1d.c1 polynom1d.c2
    0.000000e+00 1.960165e+05 1.000000e+01 1.000000e+01 1.000000e+01
    1.000000e+00 1.960165e+05 1.000000e+01 1.000000e+01 1.000000e+01
@@ -531,8 +531,7 @@ the same as
 :ref:`the previous attempt <fit_c0_c1_c2>`? The final statistic
 values are the same up to numerical precision:
 
-   >>> np.isclose(res3.statval, res2.statval)
-   True
+   >>> assert np.isclose(res3.statval, res2.statval)
    >>> res3.statval - res2.statval
    1.7763568394002505e-15
 
@@ -549,7 +548,7 @@ as are the parameter values:
    -1.47e-13
    -8.87e-14
 
-The fact that the parameter values are very similar 
+The fact that the parameter values are very similar
 is good evidence for having found the "best fit" location, although
 this data set was designed to be easy to fit.
 Real-world examples often require more in-depth analysis.
@@ -564,7 +563,8 @@ number of degrees of freedom and chi-square statistic) to
 see if freeing up :math:`c_1` is statistically meaningful.
 
    >>> from sherpa.utils import calc_mlr
-   >>> calc_mlr(res.dof - res2.dof, res.statval - res2.statval)
+   >>> mlr = calc_mlr(res.dof - res2.dof, res.statval - res2.statval)
+   >>> print(mlr)
    5.778887632582094e-22
 
 This provides evidence that the three-term model (with :math:`c_1`
@@ -669,7 +669,7 @@ call.
    issue an error.
 
 .. _fit_change_sigma:
-   
+
 Changing the error bounds
 -------------------------
 
@@ -700,10 +700,10 @@ approximately :math:`\sigma = 1.6`:
        polynom1d.c2     0.478273   -0.0500283    0.0500283
 
 .. note::
-   
+
    As can be seen, 1.6 sigma isn't quite 90%
 
-     >>> coverrs90.percent
+     >>> print(coverrs90.percent)
      89.0401416600884
 
 .. _fit_covar_matrix:
@@ -793,7 +793,7 @@ than the fit. When using the
 is to use all available CPU cores on the machine (the error range
 for each parameter can be thought of as a separate task, and the
 Python multiprocessing module is used to evaluate these tasks).
-This is why the order of the 
+This is why the order of the
 :ref:`screen output <fit_confidence_call>` from the
 :py:meth:`~sherpa.fit.Fit.est_errors` call can vary.
 
@@ -801,7 +801,7 @@ The
 :py:attr:`~sherpa.estmethod.EstMethod.parallel`
 attribute of the error estimator controls whether the
 calculation should be run in parallel (``True``) or
-not, and the 
+not, and the
 :py:attr:`~sherpa.estmethod.EstMethod.numcores` attribute
 determines how many CPU cores are used (the default is
 to use all available cores).
@@ -815,7 +815,7 @@ The :py:class:`~sherpa.estmethods.Covariance` technique does not
 provide a parallel option.
 
 .. _fit_error_subset:
-   
+
 Using a subset of parameters
 ----------------------------
 
@@ -881,13 +881,13 @@ covariance error estimate using the ``fac`` argument:
     >>> iproj.prepare(fac=5, nloop=51)
 
 The number of points has also been increased (the ``nloop`` argument)
-to keep the curve smooth. Before re-plotting, the 
+to keep the curve smooth. Before re-plotting, the
 :py:meth:`~sherpa.plot.IntervalProjection.calc`
 method needs to be re-run to calculate the new data.
 The one-sigma range is also added as vertical dotted
 lines using
 :py:meth:`~sherpa.plot.IntervalProjection.vline`:
-    
+
 .. plot::
     :include-source:
     :context: close-figs
@@ -905,14 +905,14 @@ lines using
    method is a simple wrapper routine. Direct calls to
    matplotlib can also be used to :ref:`annotate the
    visualization <fit_rproj_manual>`.
-   
+
 The :py:class:`~sherpa.plot.RegionProjection` class allows the
 correlation between two parameters to be shown as a contour plot.
 It follows a similar approach as
 :py:class:`~sherpa.plot.IntervalProjection`, although the
 final visualization is created with a call to
 :py:meth:`~sherpa.plot.RegionProjection.contour` rather than
-plot:    
+plot:
 
 .. plot::
     :include-source:
@@ -953,7 +953,7 @@ The vertical lines are added to indicate the one-sigma errors
 :ref:`calculated by the confidence method earlier <fit_confidence_call>`.
 
 The :py:class:`~sherpa.plot.RegionProjection.calc` call
-sets the fields of the 
+sets the fields of the
 :py:class:`~sherpa.plot.RegionProjection` object with the
 data needed to create the plot. In the following example the
 data is used to show the search statistic as an image, with the
@@ -987,7 +987,7 @@ needs to be reshaped before it can be displayed:
     >>> _ = plt.xlabel(rproj.xlabel)
     >>> _ = plt.ylabel(rproj.ylabel)
     >>> rproj.contour(overplot=True)
-   
+
 
 More on fitting
 ===============
