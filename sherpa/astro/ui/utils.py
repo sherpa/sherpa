@@ -15390,9 +15390,10 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.18.0
            If ``covar_matrix`` is left unset then the covariance
-           matrix is now always re-calculated. This means that
-           `covar` is no-longer needed to be called before this
-           routine.
+           matrix is now always re-calculated. This means that `covar`
+           is no-longer needed to be called before this routine. The
+           error analysis now correctly handles the case when
+           ``otherids`` is not empty.
 
         .. versionchanged:: 4.16.0
            The random number generation is now controlled by the
@@ -15507,6 +15508,11 @@ class Session(sherpa.ui.utils.Session):
         >>> cmat = get_covar_results().extra_output
         >>> res2 = eqwidth(p2, p2 + g2, id=2, covar_matrix=cmat, error=True)
 
+        Evaluate the equivalent-width distributions using datasets 1,
+        2, and 3:
+
+        >>> res = eqwidth(p, p+g, id=1, otherids=[2,3], error=True)
+
         """
 
         # The dataset is only used to define the grid for the model
@@ -15537,7 +15543,7 @@ class Session(sherpa.ui.utils.Session):
                 raise IOErr(msg)
 
         # Since estmethod is not set it defaults to Covariance.
-        _, fit = self._get_fit(id)
+        _, fit = self._get_fit(id, otherids=otherids)
         fit_results = self.get_fit_results()
         parnames = fit_results.parnames
         npar = len(parnames)

@@ -351,22 +351,21 @@ def test_eqwidth_multi_id_chisq(clean_astro_ui):
     # Ideally the distributions for the multi-id case would be
     # "tighter" than the single case, which is hard to check but can
     # be approximated by a "smaller" sigma limits range, and the
-    # "a + b" and "b + a" would give the same results. However,
-    # for now the otherids argument is ignored (issue #2379).
+    # "a + b" and "b + a" give the same results.
     #
-    assert resab[4] == pytest.approx(resa[4])
-    assert resba[4] == pytest.approx(resb[4])
-
     assert resa[0] == pytest.approx(0.040947827224568634)
     assert resb[0] == pytest.approx(0.04060370992021427)
+    assert resab[0] == pytest.approx(0.04056324619950931)
+
+    # The resba results are identical to resab
+    assert resba[4] == pytest.approx(resab[4])
 
     delta_a = resa[2] - resa[1]
     delta_ab = resab[2] - resab[1]
-    assert delta_ab == delta_a
+    assert delta_ab < delta_a
 
     delta_b = resb[2] - resb[1]
-    delta_ba = resba[2] - resba[1]
-    assert delta_ba == delta_b
+    assert delta_ab < delta_b
 
 
 def test_eqwidth_multi_id_poisson(clean_astro_ui):
@@ -426,19 +425,18 @@ def test_eqwidth_multi_id_poisson(clean_astro_ui):
     # Ideally the distributions for the multi-id case would be
     # "tighter" than the single case, which is hard to check but can
     # be approximated by a "smaller" sigma limits range, and the
-    # "a + b" and "b + a" would give the same results (the latter does
-    # not hold at this time, so is it a bug in the code or our
-    # understanding of the code?).
+    # "a + b" and "b + a" give the same results.
     #
     assert resa[0] == pytest.approx(0.04259715629705425)
     assert resb[0] == pytest.approx(0.043209134605777154)
-    assert resab[0] == pytest.approx(0.04307866629966477)
-    assert resba[0] == pytest.approx(0.04104380634099836)
+    assert resab[0] == pytest.approx(0.04104216531226462)
+
+    # The resba results are identical to resab
+    assert resba[4] == pytest.approx(resab[4])
 
     delta_a = resa[2] - resa[1]
     delta_ab = resab[2] - resab[1]
     assert delta_ab < delta_a
 
     delta_b = resb[2] - resb[1]
-    delta_ba = resba[2] - resba[1]
-    assert delta_ba < delta_b
+    assert delta_ab < delta_b
