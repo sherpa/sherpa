@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2023
+#  Copyright (C) 2007, 2015-2016, 2018-2020, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -144,3 +144,34 @@ def test_optmethod_setattr(cls):
     # which would mean changing newval
     #
     assert oldval != pytest.approx(newval)
+
+    # confirm that ftol is set on instance, not class by making a new
+    # instance and checking that it has the old value
+    opt2 = cls()
+    assert opt2.config["ftol"] == pytest.approx(oldval)
+
+
+@pytest.mark.parametrize("cls", [GridSearch, LevMar, MonCar, NelderMead])
+def test_optmethod_setattr_on_init(cls):
+    """Check that config options are set on init"""
+
+    opt = cls()
+    # Unlike test_optmethod_getattr, only check one config value
+    oldval = opt.config["ftol"]
+    assert opt.ftol == pytest.approx(oldval)
+
+    newval = 0.01
+    opt = cls(ftol=newval)
+    assert opt.config["ftol"] == pytest.approx(newval)
+    assert opt.ftol == pytest.approx(newval)
+
+    # just to check that ftol doesn't happen to match the new value,
+    # which would mean changing newval
+    #
+    assert oldval != pytest.approx(newval)
+
+    # confirm that ftol is set on instance, not class by making a new
+    # instance and checking that it has something like the old value
+    # (hardcoding here to be different from test_optmethod_setattr)
+    opt2 = cls()
+    assert opt2.config["ftol"] < 1e-6

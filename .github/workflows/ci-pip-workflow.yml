@@ -52,6 +52,7 @@ jobs:
             matplotlib-pkg: 'matplotlib>=3,<4'
             bokeh-pkg: 'bokeh>=3,<4'
             arviz-pkg: 'arviz'
+            optimagic-pkg: 'optimagic'
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
@@ -87,12 +88,13 @@ jobs:
         MATPLOTLIBVER: ${{ matrix.matplotlib-pkg }}
         BOKEHVER: ${{ matrix.BOKEH-pkg }}
         ARVIZVER: ${{ matrix.arviz-pkg }}
+        OPTIMAGICVER: ${{ matrix.optimagic-pkg }}
       run: |
         # In case we forget to set matrix.numpy-pkg
         if [ ! -n "${NUMPYVER}" ] ; then
           NUMPYVER='numpy'
         fi
-        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} ${BOKEHVER} ${ARVIZVER}
+        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} ${BOKEHVER} ${ARVIZVER}  ${OPTIMAGICVER}
         # These packages are not always needed, but the install should
         # be relatively quick.
         pip install pytest-xvfb pytest-cov
