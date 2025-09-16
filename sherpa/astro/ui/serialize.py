@@ -603,12 +603,11 @@ def _save_dataset_settings_pha(out: OutType,
             if TYPE_CHECKING:
                 assert isinstance(bpha, DataPHA)
 
-            # If this is a PHA2 file then do not add the load call.
-            # This could check multi["bkg_ids"] but we can just check
-            # the filename.
+            # Has this been automatically loaded?
             #
             bname = bpha.name
-            if multi is None or multi["filename"] != bname:
+            if multi is None or bid not in multi["bkg_ids"] or \
+               multi["bkg_ids"][bid] != bname:
                 cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
                 _output(out, cmd)
 

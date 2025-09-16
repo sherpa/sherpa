@@ -2055,41 +2055,12 @@ class Session(sherpa.ui.utils.Session):
         else:
             idval = id
 
-        if not np.iterable(datasets):
-            self.set_data(idval, datasets)
-            with suppress(KeyError):
-                del self._load_data_store[idval]
+        def mk_pha_store(data: DataPHA) -> dict[str, Any]:
+            """The basic storage information for a PHA file."""
 
-            return
-
-        # One issue with the following is that if there's
-        # only one dataset in phasets and id is a string then the
-        # output will be "foo1" rather than "foo" (when
-        # id="foo").  DJB thinks we can live with this.
-        #
-        num = len(datasets)
-        ids = []
-        for ctr, data in enumerate(datasets):
-            try:
-                id_ = idval + ctr
-            except TypeError:
-                # id is assumed to be a string
-                id_ = idval + str(ctr + 1)
-
-            self.set_data(id_, data)
-            ids.append(id_)
-
-            # Store a mapping between the actual identifiers used for
-            # the data to the arguments of the call (this is assumed
-            # to be a PHA2 file). Note that since ids is mutated, this
-            # will store the full list of matching identifiers for
-            # each id_ value.
-            #
             store = {"id": idval,
-                     "idvals": ids,
                      "filename": filename,
-                     "kwargs": kwargs
-                     }
+                     "kwargs": kwargs}
 
             # What files were automatically loaded? Track the
             # identifier and file name in case the user loads
@@ -2098,19 +2069,15 @@ class Session(sherpa.ui.utils.Session):
             #
             # The responses can be None, so strip them out.
             #
-            store["arf_ids"] = {
-                resp_id: data.get_response(resp_id)[0].name
-                for resp_id in data.response_ids
-                if data.get_response(resp_id)[0] is not None
-            }
-            store["rmf_ids"] = {
-                resp_id: data.get_response(resp_id)[1].name
-                for resp_id in data.response_ids
-                if data.get_response(resp_id)[1] is not None
-            }
+            store["arf_ids"] = {}
+            store["rmf_ids"] = {}
+            for resp_id in data.response_ids:
+                arf, rmf = data.get_response(resp_id)
+                if arf is not None:
+                    store["arf_ids"][resp_id] = arf.name
+                if rmf is not None:
+                    store["rmf_ids"][resp_id] = rmf.name
 
-            # The background handling is easier for the data file.
-            #
             store["bkg_ids"] = {
                 bkg_id: data.get_background(bkg_id).name
                 for bkg_id in data.background_ids
@@ -2134,6 +2101,44 @@ class Session(sherpa.ui.utils.Session):
                 store["bkg_arf_ids"][bkg_id] = bkg_arfs
                 store["bkg_rmf_ids"][bkg_id] = bkg_rmfs
 
+            return store
+
+        if not np.iterable(datasets):
+            self.set_data(idval, datasets)
+
+            if isinstance(datasets, DataPHA):
+                self._load_data_store[idval] = mk_pha_store(datasets)
+
+            else:
+                with suppress(KeyError):
+                    del self._load_data_store[idval]
+
+            return
+
+        # One issue with the following is that if there's
+        # only one dataset in phasets and id is a string then the
+        # output will be "foo1" rather than "foo" (when
+        # id="foo").  DJB thinks we can live with this.
+        #
+        num = len(datasets)
+        ids = []
+        for ctr, data in enumerate(datasets):
+            try:
+                id_ = idval + ctr
+            except TypeError:
+                # id is assumed to be a string
+                id_ = idval + str(ctr + 1)
+
+            self.set_data(id_, data)
+            ids.append(id_)
+
+            store = mk_pha_store(data)
+
+            # Note that since ids is a mutable argument, the final
+            # value stored in idvals will list all related
+            # identifiers.
+            #
+            store["idvals"] = ids
             self._load_data_store[id_] = store
 
         if num > 1:

@@ -166,18 +166,13 @@ group(1)
 
 ######### Data Spectral Responses
 
-load_arf(1, "@@/3c273.arf", resp_id=1)
-load_rmf(1, "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg(1, "@@/3c273_bg.pi", bkg_id=1)
 group(1, bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf(1, "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -317,12 +312,9 @@ group("grp")
 
 ######### Data Spectral Responses
 
-load_arf("grp", "@@/3c273.arf", resp_id=1)
-load_rmf("grp", "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg("grp", "@@/3c273_bg.pi", bkg_id=1)
 
 ######### Background grouping flags
 
@@ -335,8 +327,6 @@ group("grp", bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf("grp", "@@/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf("grp", "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -429,12 +419,9 @@ group("bgrp")
 
 ######### Data Spectral Responses
 
-load_arf("bgrp", "@@/3c273.arf", resp_id=1)
-load_rmf("bgrp", "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg("bgrp", "@@/3c273_bg.pi", bkg_id=1)
 
 ######### Background grouping flags
 
@@ -447,8 +434,6 @@ group("bgrp", bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf("bgrp", "@@/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf("bgrp", "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -752,7 +737,6 @@ load_rmf(1, "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg(1, "@@/3c273_bg.pi", bkg_id=1)
 group(1, bkg_id=1)
 
 ######### Background Spectral Responses
@@ -1927,23 +1911,15 @@ load_pha(1, "@@/3c120_meg_1.pha")
 
 ######### Data Spectral Responses
 
-load_arf(1, "@@/3c120_meg_1.arf", resp_id=1)
-load_rmf(1, "@@/3c120_meg_1.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg(1, "@@/3c120_meg_1.pha", bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/3c120_meg_1.arf", resp_id=1, bkg_id=1)
-load_rmf(1, "@@/3c120_meg_1.rmf", resp_id=1, bkg_id=1)
-load_bkg(1, "@@/3c120_meg_1.pha", bkg_id=2)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/3c120_meg_1.arf", resp_id=1, bkg_id=2)
-load_rmf(1, "@@/3c120_meg_1.rmf", resp_id=1, bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -2251,23 +2227,15 @@ load_pha(1, "@@/3c120_heg_-1.pha")
 
 ######### Data Spectral Responses
 
-load_arf(1, "@@/3c120_heg_-1.arf", resp_id=1)
-load_rmf(1, "@@/3c120_heg_-1.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg(1, "@@/3c120_heg_-1.pha", bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/3c120_heg_-1.arf", resp_id=1, bkg_id=1)
-load_rmf(1, "@@/3c120_heg_-1.rmf", resp_id=1, bkg_id=1)
-load_bkg(1, "@@/3c120_heg_-1.pha", bkg_id=2)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/3c120_heg_-1.arf", resp_id=1, bkg_id=2)
-load_rmf(1, "@@/3c120_heg_-1.rmf", resp_id=1, bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -2320,12 +2288,9 @@ group("csc")
 
 ######### Data Spectral Responses
 
-load_arf("csc", "@@/acisf01575_001N001_r0085_arf3.fits", resp_id=1)
-load_rmf("csc", "@@/acisf01575_001N001_r0085_rmf3.fits", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg("csc", "@@/acisf01575_001N001_r0085_pha3.fits", bkg_id=1)
 
 ######### Background grouping flags
 
@@ -2338,8 +2303,6 @@ group("csc", bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf("csc", "@@/acisf01575_001N001_r0085_arf3.fits", resp_id=1, bkg_id=1)
-load_rmf("csc", "@@/acisf01575_001N001_r0085_rmf3.fits", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -3675,14 +3638,7 @@ def test_load_data_basic(make_data_path, check_str):
 @requires_data
 @requires_fits
 def test_restore_pha_multiple_backgrounds(make_data_path, check_str):
-    """Can we restore a grating dataset with multiple backgrounds?
-
-    See issue #320
-
-    This is a regression test so we can see as soon as things have
-    changed, rather than marking it as xfail.
-
-    """
+    """Can we restore a grating dataset with multiple backgrounds?"""
 
     # Note: not including .gz for the file name
     ui.load_pha(make_data_path("3c120_meg_1.pha"))
@@ -3709,21 +3665,13 @@ def test_restore_pha_multiple_backgrounds(make_data_path, check_str):
 
     restore()
 
-    assert ui.get_dep(filter=True, bkg_id=1).sum() == 31911  # TODO fix this
-    # check_data()
+    check_data()
 
 
 @requires_data
 @requires_fits
 def test_restore_pha2(make_data_path, check_str):
-    """Can we restore a pha2 file?
-
-    See issue #1882.
-
-    This is a regression test so we can see as soon as things have
-    changed, rather than marking it as xfail.
-
-    """
+    """Can we restore a pha2 file?"""
 
     # Note: not including .gz for the file name
     ui.load_pha(make_data_path("3c120_pha2"))
@@ -3863,6 +3811,10 @@ def test_restore_pha_hetg(make_data_path, check_str):
             assert ui.get_arf(bkg_id=bkg_id).name.endswith("/3c120_heg_-1.arf")
             assert ui.get_rmf(bkg_id=bkg_id).name.endswith("/3c120_heg_-1.rmf")
 
+        assert ui.get_data().counts == pytest.approx(c)
+        assert ui.get_bkg(bkg_id=1).counts == pytest.approx(b1)
+        assert ui.get_bkg(bkg_id=2).counts == pytest.approx(b2)
+
     check_data()
 
     expected_output = add_datadir_path(_canonical_pha_hetg)
@@ -3871,14 +3823,6 @@ def test_restore_pha_hetg(make_data_path, check_str):
     restore()
 
     check_data()
-
-    # This should be in check_data but not until #320 is fixed.
-    #
-    assert ui.get_data().counts == pytest.approx(c)
-    assert ui.get_bkg(bkg_id=1).counts == pytest.approx(c)
-    assert ui.get_bkg(bkg_id=2).counts == pytest.approx(c)
-    # assert ui.get_bkg(bkg_id=1).counts == pytest.approx(b1)
-    # assert ui.get_bkg(bkg_id=2).counts == pytest.approx(b2)
 
 
 @requires_data
