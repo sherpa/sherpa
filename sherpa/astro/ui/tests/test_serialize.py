@@ -2144,6 +2144,61 @@ set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
+_canonical_pha2_delete = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(10, quantity="channel", type="rate", factor=0)
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(3, quantity="channel", type="rate", factor=0)
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(4, quantity="channel", type="rate", factor=0)
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(9, quantity="channel", type="rate", factor=0)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+
+"""
+
 _canonical_pha_hetg = """import numpy
 from sherpa.astro.ui import *
 
@@ -3604,6 +3659,43 @@ def test_restore_pha2(make_data_path, check_str):
     restore()
 
     check_data()
+
+
+@requires_data
+@requires_fits
+def test_restore_pha2_delete(make_data_path, check_str):
+    """Can we restore a pha2 file after deleting files?
+
+    This is a regression test so we can see as soon as things have
+    changed, rather than marking it as xfail.
+
+    """
+
+    # Note: not including .gz for the file name
+    ui.load_pha(make_data_path("3c120_pha2"))
+
+    # Select just the first order (|TG_M| = 1) datasets.
+    #
+    for idval in [1, 2, 5, 6, 7, 8, 11, 12]:
+        ui.delete_data(idval)
+
+    def check_data():
+        assert ui.list_data_ids() == pytest.approx([10, 3, 4, 9])
+
+    check_data()
+
+    expected_output = add_datadir_path(_canonical_pha2_delete)
+    compare(check_str, expected_output)
+
+    # The current save_all output will fail when restored, so catch
+    # the expected error.
+    #
+    with pytest.raises(IdentifierErr,
+                       match="^data set 10 has not been set$"):
+        restore()
+
+    # check_data()
+    assert ui.list_data_ids() == []
 
 
 @requires_data
