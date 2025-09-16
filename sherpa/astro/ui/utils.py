@@ -1032,6 +1032,51 @@ class Session(sherpa.ui.utils.Session):
     # Data
     ###########################################################################
 
+    def delete_data(self, id: IdType | None = None) -> None:
+        idval = self._fix_id(id)
+        super().delete_data(idval)
+
+        # Ensure the load-data store is cleared
+        with suppress(KeyError):
+            del self._load_data_store[idval]
+
+    delete_data.__doc__ = sherpa.ui.utils.Session.delete_data.__doc__
+
+    def set_data(self, id, data=None) -> None:
+        if data is None:
+            idval = self.get_default_id()
+            data = id
+        else:
+            idval = self._fix_id(id)
+
+        super().set_data(idval, data=data)
+
+        # Ensure the load-data store is cleared.
+        with suppress(KeyError):
+            del self._load_data_store[idval]
+
+    set_data.__doc__ = sherpa.ui.utils.Session.set_data.__doc__
+
+    def copy_data(self, fromid: IdType, toid: IdType) -> None:
+        super().copy_data(fromid, toid)
+
+        # Copy over the load-data information if it exists, otherwise
+        # ensure it is cleared out.
+        #
+        try:
+            old = self._load_data_store[fromid]
+
+            # Copy the dict rather than share a reference.
+            #
+            self._load_data_store[toid] = {k: v for k, v in old.items()}
+            self._load_data_store[toid]["id"] = toid
+
+        except KeyError:
+            with suppress(KeyError):
+                del self._load_data_store[toid]
+
+    copy_data.__doc__ = sherpa.ui.utils.Session.copy_data.__doc__
+
     # DOC-NOTE: also in sherpa.utils
     def dataspace1d(self, start, stop, step=1, numbins=None,
                     id: IdType | None = None,
@@ -2040,10 +2085,56 @@ class Session(sherpa.ui.utils.Session):
             # will store the full list of matching identifiers for
             # each id_ value.
             #
-            self._load_data_store[id_] = {"id": idval,
-                                          "idvals": ids,
-                                          "filename": filename,
-                                          "kwargs": kwargs}
+            store = {"id": idval,
+                     "idvals": ids,
+                     "filename": filename,
+                     "kwargs": kwargs
+                     }
+
+            # What files were automatically loaded? Track the
+            # identifier and file name in case the user loads
+            # something different. If the code tracks the load
+            # commands then this logic could be removed.
+            #
+            # The responses can be None, so strip them out.
+            #
+            store["arf_ids"] = {
+                resp_id: data.get_response(resp_id)[0].name
+                for resp_id in data.response_ids
+                if data.get_response(resp_id)[0] is not None
+            }
+            store["rmf_ids"] = {
+                resp_id: data.get_response(resp_id)[1].name
+                for resp_id in data.response_ids
+                if data.get_response(resp_id)[1] is not None
+            }
+
+            # The background handling is easier for the data file.
+            #
+            store["bkg_ids"] = {
+                bkg_id: data.get_background(bkg_id).name
+                for bkg_id in data.background_ids
+            }
+
+            # The backgrounds can have responses.
+            #
+            store["bkg_arf_ids"] = {}
+            store["bkg_rmf_ids"] = {}
+            for bkg_id in data.background_ids:
+                bkg = data.get_background(bkg_id)
+                bkg_arfs = {}
+                bkg_rmfs = {}
+                for resp_id in bkg.response_ids:
+                    barf, brmf = bkg.get_response(resp_id)
+                    if barf is not None:
+                        bkg_arfs[resp_id] = barf.name
+                    if brmf is not None:
+                        bkg_rmfs[resp_id] = brmf.name
+
+                store["bkg_arf_ids"][bkg_id] = bkg_arfs
+                store["bkg_rmf_ids"][bkg_id] = bkg_rmfs
+
+            self._load_data_store[id_] = store
 
         if num > 1:
             info("Multiple data sets have been input: %s-%s",
@@ -2361,7 +2452,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: how best to include datastack support?
     def load_pha(self, id, arg=None,
-                 use_errors=False) -> None:
+                 use_errors: bool = False) -> None:
         """Load a PHA data set.
 
         This will load the PHA data and any related information, such
@@ -8200,7 +8291,8 @@ class Session(sherpa.ui.utils.Session):
             self.ignore2d_id(idval, regions)
 
     # DOC-TODO: how best to include datastack support? How is it handled here?
-    def load_bkg(self, id, arg=None, use_errors=False,
+    def load_bkg(self, id, arg=None,
+                 use_errors: bool = False,
                  bkg_id: IdType | None = None
                  ) -> None:
         """Load the background from a file and add it to a PHA data set.

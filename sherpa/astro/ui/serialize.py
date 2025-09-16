@@ -537,23 +537,61 @@ def _save_dataset_settings_pha(out: OutType,
     if pha.grouped:
         _output(out, f"group({cmd_id})")
 
-    # Add responses and ARFs, if any.
-    #
-    rids = pha.response_ids
-    if len(rids) > 0:
-        _output_banner(out, "Data Spectral Responses")
-        for rid in rids:
-            _save_arf_response(out, state, pha, id, rid)
-            _save_rmf_response(out, state, pha, id, rid)
-
-    # Check if this data set has associated backgrounds.
-    # This is complicated by an attempt to avoid loading
-    # backgrounds when a PHA2 file is loaded.
+    # Check if this data set has associated data that is automatically
+    # loaded by Sherpa, so does not need to be included in the
+    # serialization.
     #
     try:
         multi = state._load_data_store[id]
     except KeyError:
         multi = None
+
+    if multi is None:
+        store_arfs = {}
+        store_rmfs = {}
+    else:
+        store_arfs = multi["arf_ids"]
+        store_rmfs = multi["rmf_ids"]
+
+    # Add responses and ARFs, if any.
+    #
+    # For PHA2 files the multi["arf/rmf_ids"] fields can be checked to
+    # see if the output is needed.
+    #
+    rids = pha.response_ids
+    if len(rids) > 0:
+        _output_banner(out, "Data Spectral Responses")
+
+        for rid in rids:
+
+            arf, rmf = pha.get_response(rid)
+
+            # Display the load command if:
+            #
+            # - the response exists
+            #
+            # - its name does not match the version that was
+            #   automatically loaded with the source dataset
+            #
+            want = False
+            if arf is not None:
+                try:
+                    want = arf.name != store_arfs[rid]
+                except KeyError:
+                    want = True
+
+            if want:
+                _save_arf_response(out, state, pha, id, rid)
+
+            want = False
+            if rmf is not None:
+                try:
+                    want = rmf.name != store_rmfs[rid]
+                except KeyError:
+                    want = True
+
+            if want:
+                _save_rmf_response(out, state, pha, id, rid)
 
     bids = pha.background_ids
     if len(bids) > 0:
@@ -566,6 +604,8 @@ def _save_dataset_settings_pha(out: OutType,
                 assert isinstance(bpha, DataPHA)
 
             # If this is a PHA2 file then do not add the load call.
+            # This could check multi["bkg_ids"] but we can just check
+            # the filename.
             #
             bname = bpha.name
             if multi is None or multi["filename"] != bname:
@@ -582,13 +622,50 @@ def _save_dataset_settings_pha(out: OutType,
             if bpha.grouped:
                 _output(out, f"group({cmd_id}, bkg_id={cmd_bkg_id})")
 
-            # Load background response, ARFs if any
+            # Load background response, ARFs if any.
+            #
+            # For PHA2 files the multi["bkg_arf/rmf_ids"] fields can be
+            # checked to see if the output is needed.
+            #
             rids = bpha.response_ids
+
             if len(rids) > 0:
+                # Can we only print this banner when we need to load
+                # the response?
+                #
                 _output_banner(out, "Background Spectral Responses")
                 for rid in rids:
-                    _save_arf_response(out, state, bpha, id, rid, bid=bid)
-                    _save_rmf_response(out, state, bpha, id, rid, bid=bid)
+
+                    bkg_arf, bkg_rmf = bpha.get_response(rid)
+
+                    # Display the load command if:
+                    #
+                    # - the response exists
+                    #
+                    # - its name does not match the version that was
+                    #   automatically loaded with the source dataset
+                    #
+                    want = False
+                    if bkg_arf is not None:
+                        try:
+                            want = bkg_arf.name != store_arfs[rid]
+                        except KeyError:
+                            want = True
+
+                    if want:
+                        _save_arf_response(out, state, bpha, id, rid,
+                                           bid=bid)
+
+                    want = False
+                    if bkg_rmf is not None:
+                        try:
+                            want = bkg_rmf.name != store_rmfs[rid]
+                        except KeyError:
+                            want = True
+
+                    if want:
+                        _save_rmf_response(out, state, bpha, id, rid,
+                                           bid=bid)
 
     # Set energy units if applicable
     #
