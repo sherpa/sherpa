@@ -2144,6 +2144,66 @@ set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
+_canonical_pha_hetg = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_pha(1, "@@/3c120_heg_-1.pha")
+
+######### Data Spectral Responses
+
+load_arf(1, "@@/3c120_heg_-1.arf", resp_id=1)
+load_rmf(1, "@@/3c120_heg_-1.rmf", resp_id=1)
+
+######### Load Background Data Sets
+
+load_bkg(1, "@@/3c120_heg_-1.pha", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_arf(1, "@@/3c120_heg_-1.arf", resp_id=1, bkg_id=1)
+load_rmf(1, "@@/3c120_heg_-1.rmf", resp_id=1, bkg_id=1)
+load_bkg(1, "@@/3c120_heg_-1.pha", bkg_id=2)
+
+######### Background Spectral Responses
+
+load_arf(1, "@@/3c120_heg_-1.arf", resp_id=1, bkg_id=2)
+load_rmf(1, "@@/3c120_heg_-1.rmf", resp_id=1, bkg_id=2)
+
+######### Set Energy or Wave Units
+
+set_analysis(1, quantity="wavelength", type="rate", factor=0)
+
+######### Filter Data
+
+notice_id(1, "5.000000222571:10.000000445141")
+notice_id(1, bkg_id=1)
+notice_id(1, "5.000000222571:10.000000445141", bkg_id=1)
+notice_id(1, bkg_id=2)
+notice_id(1, "5.000000222571:10.000000445141", bkg_id=2)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
+
+"""
+
 _canonical_pha_csc = """import numpy
 from sherpa.astro.ui import *
 
@@ -3544,6 +3604,71 @@ def test_restore_pha2(make_data_path, check_str):
     restore()
 
     check_data()
+
+
+@requires_data
+@requires_fits
+def test_restore_pha_hetg(make_data_path, check_str):
+    """Can we restore a HETG file?
+
+    See issue #320.
+
+    This is a regression test so we can see as soon as things have
+    changed, rather than marking it as xfail.
+
+    """
+
+    # Note: not including .gz for the file name
+    ui.load_pha(make_data_path("3c120_heg_-1.pha"))
+    ui.set_analysis("wave")
+    ui.notice(5, 10)
+
+    # Make sure we have a copy of the count values.
+    #
+    c = ui.get_data().counts.copy()
+    b1 = ui.get_bkg(bkg_id=1).counts.copy()
+    b2 = ui.get_bkg(bkg_id=2).counts.copy()
+
+    # Check they are different
+    assert (c != b1).any()
+    assert (c != b2).any()
+    assert (b1 != b2).any()
+
+    def check_data():
+        assert ui.list_data_ids() == pytest.approx([1])
+        data = ui.get_data(1)
+        assert data.background_ids == pytest.approx([1, 2])
+        assert data.response_ids == pytest.approx([1])
+
+        assert ui.get_arf().name.endswith("/3c120_heg_-1.arf")
+        assert ui.get_rmf().name.endswith("/3c120_heg_-1.rmf")
+
+        # Although the backgrounds do not have a response, they get
+        # automatically set to the source response.
+        #
+        for bkg_id in [1, 2]:
+            bkg = ui.get_bkg(bkg_id=bkg_id)
+            assert bkg.response_ids == [1], f"bkg_id={bkg_id}"
+
+            assert ui.get_arf(bkg_id=bkg_id).name.endswith("/3c120_heg_-1.arf")
+            assert ui.get_rmf(bkg_id=bkg_id).name.endswith("/3c120_heg_-1.rmf")
+
+    check_data()
+
+    expected_output = add_datadir_path(_canonical_pha_hetg)
+    compare(check_str, expected_output)
+
+    restore()
+
+    check_data()
+
+    # This should be in check_data but not until #320 is fixed.
+    #
+    assert ui.get_data().counts == pytest.approx(c)
+    assert ui.get_bkg(bkg_id=1).counts == pytest.approx(c)
+    assert ui.get_bkg(bkg_id=2).counts == pytest.approx(c)
+    # assert ui.get_bkg(bkg_id=1).counts == pytest.approx(b1)
+    # assert ui.get_bkg(bkg_id=2).counts == pytest.approx(b2)
 
 
 @requires_data
