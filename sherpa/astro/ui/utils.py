@@ -13155,8 +13155,10 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
+    # TODO: should resp_id allow multiple values?
+    #
     def plot_arf(self,
-                 id: IdType | None = None,
+                 id: IdType | IdTypes | None = None,
                  resp_id: IdType | None = None,
                  replot: bool = False,
                  overplot: bool = False,
@@ -13167,9 +13169,14 @@ class Session(sherpa.ui.utils.Session):
         Display the effective area curve from the ARF
         component of a PHA data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set with an ARF. If not given then the default
            identifier is used, as returned by `get_default_id`.
         resp_id : int, str, or None, optional
@@ -13226,13 +13233,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_arf_plot(id, resp_id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot,
-                   clearwindow=clearwindow, **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_arf_plot,
+                                         resp_id=resp_id,
+                                         recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
-
+    # TODO: should resp_id allow multiple values?
+    #
     def plot_rmf(self,
-                 id: IdType | None = None,
+                 id: IdType | IdTypes | None = None,
                  resp_id: IdType | None = None,
                  replot: bool = False,
                  overplot: bool = False,
@@ -13245,11 +13255,16 @@ class Session(sherpa.ui.utils.Session):
         and generates a plot with several histograms that show the energy
         redistribution for those specific energies.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionadded:: 4.16.0
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set with a RMF. If not given then the default
            identifier is used, as returned by `get_default_id`.
         resp_id : int, str, or None, optional
@@ -13305,14 +13320,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_rmf_plot(id, resp_id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_rmf_plot,
+                                         resp_id=resp_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self,
-                    id: IdType | None = None,
+                    id: IdType | IdTypes | None = None,
                     lo: float | None = None,
                     hi: float | None = None,
                     replot: bool = False,
@@ -13326,9 +13342,14 @@ class Session(sherpa.ui.utils.Session):
         created by `set_psf` or ARF and RMF automatically created for
         a PHA data set).
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         lo : number, optional
@@ -13369,6 +13390,11 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_source(1)
         >>> plot_source(2, overplot=True)
 
+        Overplot the source model for data set 2 in blue on data set 1
+        in green:
+
+        >>> plot_source([1, 2], color=["green", "blue"])
+
         Restrict the plot to values between 0.5 and 7 for the
         independent axis:
 
@@ -13384,22 +13410,24 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        data = self.get_data(id)
-        if isinstance(data, DataPHA):
-            # Note: lo/hi arguments mean we can not just rely on superclass
-            recalc = not replot
-            plotobj = self.get_source_plot(id, lo=lo, hi=hi,
-                                           recalc=recalc)
-            self._plot(plotobj, overplot=overplot,
-                       clearwindow=clearwindow, **kwargs)
-            return
+        def get(id, recalc=False):
+            data = self.get_data(id)
+            if isinstance(data, DataPHA):
+                kwargs = {"lo": lo, "hi": hi}
+            else:
+                kwargs = {}
 
-        super().plot_source(id=id, replot=replot, overplot=overplot,
-                            clearwindow=clearwindow, **kwargs)
+            return self.get_source_plot(id, recalc=recalc,
+                                        **kwargs)
 
-    # DOC-TODO: is orders the same as resp_id?
+        plotobj = self._get_plot_objects(id, get, recalc=not replot)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
+
+    # TODO: should orders allow multiple values (i.e. per identifier)?
+    #
     def plot_order(self,
-                   id: IdType | None = None,
+                   id: IdType | IdTypes | None = None,
                    orders=None,
                    replot: bool = False,
                    overplot: bool = False,
@@ -13412,9 +13440,14 @@ class Session(sherpa.ui.utils.Session):
         in that it displays the model after passing through a
         response, but allows the user to select which response to use.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         orders : optional
@@ -13458,13 +13491,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_order_plot(id, orders=orders,
-                                      recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_order_plot,
+                                         orders=orders,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg(self,
-                 id: IdType | None = None,
+                 id: IdType | IdTypes | None = None,
                  bkg_id: IdType | None = None,
                  replot: bool = False,
                  overplot: bool = False,
@@ -13472,9 +13506,14 @@ class Session(sherpa.ui.utils.Session):
                  **kwargs) -> None:
         """Plot the background values for a PHA data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13527,14 +13566,20 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg(1, 1)
         >>> plot_bkg(1, 2, overplot=True)
 
+        Plot background components for datasets "flare" and "quiet":
+
+        >>> plot_bkg(["flare", "quiet"], alpha=0.5)
+
         """
 
-        plotobj = self.get_bkg_plot(id, bkg_id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_model(self,
-                       id: IdType | None = None,
+                       id: IdType | IdTypes | None = None,
                        bkg_id: IdType | None = None,
                        replot: bool = False,
                        overplot: bool = False,
@@ -13546,9 +13591,14 @@ class Session(sherpa.ui.utils.Session):
         set, which includes any instrument response (the
         ARF and RMF).
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13591,13 +13641,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_model_plot(id, bkg_id,
-                                          recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_model_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
+
     def plot_bkg_resid(self,
-                       id: IdType | None = None,
+                       id: IdType | IdTypes | None = None,
                        bkg_id: IdType | None = None,
                        replot: bool = False,
                        overplot: bool = False,
@@ -13608,12 +13660,17 @@ class Session(sherpa.ui.utils.Session):
         Display the residuals for the background of a PHA data set
         when it is being fit, rather than subtracted from the source.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13663,13 +13720,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_resid_plot(id, bkg_id,
-                                          recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_resid_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_ratio(self,
-                       id: IdType | None = None,
+                       id: IdType | IdTypes | None = None,
                        bkg_id: IdType | None = None,
                        replot: bool = False,
                        overplot: bool = False,
@@ -13681,12 +13739,17 @@ class Session(sherpa.ui.utils.Session):
         of a PHA data set when it is being fit, rather than subtracted
         from the source.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13735,13 +13798,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_ratio_plot(id, bkg_id,
-                                          recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_ratio_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_delchi(self,
-                        id: IdType | None = None,
+                        id: IdType | IdTypes | None = None,
                         bkg_id: IdType | None = None,
                         replot: bool = False,
                         overplot: bool = False,
@@ -13753,12 +13817,17 @@ class Session(sherpa.ui.utils.Session):
         values for the background of a PHA data set when it is being
         fit, rather than subtracted from the source.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13807,13 +13876,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_delchi_plot(id, bkg_id,
-                                           recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_delchi_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_chisqr(self,
-                        id: IdType | None = None,
+                        id: IdType | IdTypes | None = None,
                         bkg_id: IdType | None = None,
                         replot: bool = False,
                         overplot: bool = False,
@@ -13825,9 +13895,14 @@ class Session(sherpa.ui.utils.Session):
         the error values for the background of a PHA data set when it
         is being fit, rather than subtracted from the source.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13871,13 +13946,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_chisqr_plot(id, bkg_id,
-                                           recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_chisqr_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit(self,
-                     id: IdType | None = None,
+                     id: IdType | IdTypes | None = None,
                      bkg_id: IdType | None = None,
                      replot: bool = False,
                      overplot: bool = False,
@@ -13885,9 +13961,14 @@ class Session(sherpa.ui.utils.Session):
                      **kwargs) -> None:
         """Plot the fit results (data, model) for the background of a PHA data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13934,12 +14015,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_fit_plot(id, bkg_id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_fit_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_source(self,
-                        id: IdType | None = None,
+                        id: IdType | IdTypes | None = None,
                         lo: float | None = None,
                         hi: float | None = None,
                         bkg_id: IdType | None = None,
@@ -13953,9 +14036,14 @@ class Session(sherpa.ui.utils.Session):
         set. It does not include the instrument response (the ARF and
         RMF).
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         lo : number, optional
@@ -14001,11 +14089,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_source_plot(id, bkg_id=bkg_id, lo=lo,
-                                           hi=hi, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_source_plot,
+                                         bkg_id=bkg_id, lo=lo, hi=hi,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
+    # For now do not try to support multiple identifiers.
+    #
     def plot_energy_flux(self,
                          lo: float | None = None,
                          hi: float | None = None,
@@ -14176,6 +14267,8 @@ class Session(sherpa.ui.utils.Session):
         self._plot(efplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
+    # For now do not try to support multiple identifiers.
+    #
     def plot_photon_flux(self,
                          lo: float | None = None,
                          hi: float | None = None,
@@ -14347,7 +14440,7 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_bkg_fit_ratio(self,
-                           id: IdType | None = None,
+                           id: IdType | IdTypes | None = None,
                            bkg_id: IdType | None = None,
                            replot: bool = False,
                            overplot: bool = False,
@@ -14359,6 +14452,11 @@ class Session(sherpa.ui.utils.Session):
         This creates two plots - the first from `plot_bkg_fit` and the
         second from `plot_bkg_ratio` - for a data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
 
@@ -14366,7 +14464,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -14422,13 +14520,15 @@ class Session(sherpa.ui.utils.Session):
         """
 
         recalc = not replot
-        plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
-        plot2obj = self.get_bkg_ratio_plot(id, bkg_id, recalc=recalc)
+        plot1obj = self._get_plot_objects(id, self.get_bkg_fit_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_bkg_ratio_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
         self._jointplot2(plot1obj, plot2obj, overplot=overplot,
                          clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit_resid(self,
-                           id: IdType | None = None,
+                           id: IdType | IdTypes | None = None,
                            bkg_id: IdType | None = None,
                            replot: bool = False,
                            overplot: bool = False,
@@ -14440,6 +14540,11 @@ class Session(sherpa.ui.utils.Session):
         This creates two plots - the first from `plot_bkg_fit` and the
         second from `plot_bkg_resid` - for a data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
 
@@ -14449,7 +14554,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -14504,13 +14609,15 @@ class Session(sherpa.ui.utils.Session):
         """
 
         recalc = not replot
-        plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
-        plot2obj = self.get_bkg_resid_plot(id, bkg_id, recalc=recalc)
+        plot1obj = self._get_plot_objects(id, self.get_bkg_fit_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_bkg_resid_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
         self._jointplot2(plot1obj, plot2obj, overplot=overplot,
                          clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit_delchi(self,
-                            id: IdType | None = None,
+                            id: IdType | IdTypes | None = None,
                             bkg_id: IdType | None = None,
                             replot: bool = False,
                             overplot: bool = False,
@@ -14521,6 +14628,11 @@ class Session(sherpa.ui.utils.Session):
 
         This creates two plots - the first from `plot_bkg_fit` and the
         second from `plot_bkg_delchi` - for a data set.
+
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -14587,8 +14699,10 @@ class Session(sherpa.ui.utils.Session):
         """
 
         recalc = not replot
-        plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
-        plot2obj = self.get_bkg_delchi_plot(id, bkg_id, recalc=recalc)
+        plot1obj = self._get_plot_objects(id, self.get_bkg_fit_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_bkg_delchi_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
         self._jointplot2(plot1obj, plot2obj, overplot=overplot,
                          clearwindow=clearwindow, **kwargs)
 
