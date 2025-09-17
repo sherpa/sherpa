@@ -519,20 +519,20 @@ def _handle_filter(out: OutType,
 def _save_dataset_settings_pha(out: OutType,
                                state: SessionType,
                                pha: DataType,
-                               id: IdType) -> None:
+                               idval: IdType) -> None:
     """What settings need to be set for DataPHA"""
 
     if not isinstance(pha, DataPHA):
         return
 
-    cmd_id = _id_to_str(id)
+    cmd_id = _id_to_str(idval)
 
     # Only store group flags and quality flags if they were changed
     # from flags in the file.
     #
     if not pha._original_groups:
-        _save_pha_grouping(out, state, pha, id)
-        _save_pha_quality(out, state, pha, id)
+        _save_pha_grouping(out, state, pha, idval)
+        _save_pha_quality(out, state, pha, idval)
 
     if pha.grouped:
         _output(out, f"group({cmd_id})")
@@ -542,7 +542,7 @@ def _save_dataset_settings_pha(out: OutType,
     # serialization.
     #
     try:
-        store = state._load_data_store[id]
+        store = state._load_data_store[idval]
     except KeyError:
         store = None
 
@@ -569,7 +569,6 @@ def _save_dataset_settings_pha(out: OutType,
             # Display the load command if:
             #
             # - the response exists
-            #
             # - its name does not match the version that was
             #   automatically loaded with the source dataset
             #
@@ -581,7 +580,7 @@ def _save_dataset_settings_pha(out: OutType,
                     want = True
 
             if want:
-                _save_arf_response(out, state, pha, id, rid)
+                _save_arf_response(out, state, pha, idval, rid)
 
             want = False
             if rmf is not None:
@@ -591,10 +590,16 @@ def _save_dataset_settings_pha(out: OutType,
                     want = True
 
             if want:
-                _save_rmf_response(out, state, pha, id, rid)
+                _save_rmf_response(out, state, pha, idval, rid)
 
     bids = pha.background_ids
     if len(bids) > 0:
+
+        # Only try to load the background if we have information in
+        # _load_bkg_store. Although there is support for PHA2
+        # background files, do not make use of this knowledge here as
+        # we do not have any such files to test on.
+        #
         _output_banner(out, "Load Background Data Sets")
         for bid in bids:
             cmd_bkg_id = _id_to_str(bid)
@@ -603,46 +608,67 @@ def _save_dataset_settings_pha(out: OutType,
             if TYPE_CHECKING:
                 assert isinstance(bpha, DataPHA)
 
-            # Has this been automatically loaded?
+            try:
+                bstore = state._load_bkg_store[idval][bid]
+            except KeyError:
+                bstore = None
+
+            # How are we checking for response files? It depends on
+            # whether the background was loaded with load_bkg,
+            # load_pha/data, or some other way?
+            #
+            if bstore is not None:
+                store_arfs = bstore.get("arf_ids", {})
+                store_rmfs = bstore.get("rmf_ids", {})
+            elif store is not None and "bkg_arf_ids" in store:
+                store_arfs = store["bkg_arf_ids"][bid]
+                store_rmfs = store["bkg_rmf_ids"][bid]
+            else:
+                store_arfs = {}
+                store_rmfs = {}
+
+            # Was this explicitly loaded?
             #
             bname = bpha.name
-            if store is None or bid not in store["bkg_ids"] or \
-               store["bkg_ids"][bid] != bname:
-                cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
+            if bstore is not None and \
+               bstore["filename"] == bname:
+                cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id}'
+                if "use_errors" in bstore:
+                    cmd += f", use_errors={bstore['use_errors']}"
+                cmd += ')'
                 _output(out, cmd)
 
             # Only store group flags and quality flags if they were
             # changed from flags in the file
             #
             if not bpha._original_groups:
-                _save_pha_grouping(out, state, bpha, id, bid=bid)
-                _save_pha_quality(out, state, bpha, id, bid=bid)
+                _save_pha_grouping(out, state, bpha, idval, bid=bid)
+                _save_pha_quality(out, state, bpha, idval, bid=bid)
 
             if bpha.grouped:
                 _output(out, f"group({cmd_id}, bkg_id={cmd_bkg_id})")
 
             # Load background response, ARFs if any.
             #
-            # For PHA2 files the store["bkg_arf/rmf_ids"] fields can be
-            # checked to see if the output is needed.
-            #
             rids = bpha.response_ids
-
             if len(rids) > 0:
                 # Can we only print this banner when we need to load
                 # the response?
                 #
                 _output_banner(out, "Background Spectral Responses")
                 for rid in rids:
-
                     bkg_arf, bkg_rmf = bpha.get_response(rid)
 
                     # Display the load command if:
                     #
                     # - the response exists
-                    #
                     # - its name does not match the version that was
-                    #   automatically loaded with the source dataset
+                    #   automatically loaded with the dataset
+                    #
+                    # The latter is hard to check because the
+                    # background could have been loaded implicitly (so
+                    # use store as the check) or explicitly (use
+                    # bstore).
                     #
                     want = False
                     if bkg_arf is not None:
@@ -652,8 +678,8 @@ def _save_dataset_settings_pha(out: OutType,
                             want = True
 
                     if want:
-                        _save_arf_response(out, state, bpha, id, rid,
-                                           bid=bid)
+                        _save_arf_response(out, state, bpha, idval,
+                                           rid, bid=bid)
 
                     want = False
                     if bkg_rmf is not None:
@@ -663,8 +689,8 @@ def _save_dataset_settings_pha(out: OutType,
                             want = True
 
                     if want:
-                        _save_rmf_response(out, state, bpha, id, rid,
-                                           bid=bid)
+                        _save_rmf_response(out, state, bpha, idval,
+                                           rid, bid=bid)
 
     # Set energy units if applicable
     #

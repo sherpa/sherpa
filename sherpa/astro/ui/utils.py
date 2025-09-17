@@ -371,6 +371,7 @@ class Session(sherpa.ui.utils.Session):
         # approach.
         #
         self._load_data_store: dict[IdType, dict[str, Any]] = {}
+        self._load_bkg_store: dict[IdType, dict[IdType, dict[str, Any]]] = {}
 
         # This is a new dictionary of XSPEC module settings.  It
         # is meant only to be populated by the save function, so
@@ -1035,7 +1036,11 @@ class Session(sherpa.ui.utils.Session):
         idval = self._fix_id(id)
         super().delete_data(idval)
 
-        # Ensure the load-data store is cleared
+        # Ensure the load-bkg/data stores are cleared.
+        #
+        with suppress(KeyError):
+            del self._load_bkg_store[idval]
+
         with suppress(KeyError):
             del self._load_data_store[idval]
 
@@ -1050,7 +1055,11 @@ class Session(sherpa.ui.utils.Session):
 
         super().set_data(idval, data=data)
 
-        # Ensure the load-data store is cleared.
+        # Ensure the load-bkg/data stores are cleared.
+        #
+        with suppress(KeyError):
+            del self._load_bkg_store[idval]
+
         with suppress(KeyError):
             del self._load_data_store[idval]
 
@@ -1071,6 +1080,9 @@ class Session(sherpa.ui.utils.Session):
             self._load_data_store[toid]["id"] = toid
 
         except KeyError:
+            with suppress(KeyError):
+                del self._load_bkg_store[toid]
+
             with suppress(KeyError):
                 del self._load_data_store[toid]
 
@@ -2052,7 +2064,7 @@ class Session(sherpa.ui.utils.Session):
         if id is None:
             idval = self.get_default_id()
         else:
-            idval = id
+            idval = self._fix_id(id)
 
         def mk_pha_store(data: DataPHA) -> dict[str, Any]:
             """The basic storage information for a PHA file."""
@@ -7286,10 +7298,23 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if bkg is None:
-            id, bkg = bkg, id
-        data = self._get_pha_data(id)
+            idval = self.get_default_id()
+            bkg = id
+        else:
+            idval = self._fix_id(id)
+
+        # Ensure we have PHA data (for source and background).
+        data = self._get_pha_data(idval)
         _check_type(bkg, DataPHA, 'bkg', 'a PHA data set')
-        data.set_background(bkg, bkg_id)
+
+        bkg_idval = self._fix_background_id(idval, bkg_id)
+        data.set_background(bkg, bkg_idval)
+
+        # Ensure the load-bkg store is cleared.
+        with suppress(KeyError):
+            del self._load_bkg_store[idval][bkg_idval]
+            if len(self._load_bkg_store[idval]) == 0:
+                del self._load_bkg_store[idval]
 
     def list_bkg_ids(self,
                      id: IdType | None = None
@@ -8362,15 +8387,78 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
 
         bkgsets = self.unpack_bkg(arg, use_errors)
 
+        def mk_pha_store(data: DataPHA) -> dict[str, Any]:
+            """The basic storage information for a PHA file."""
+
+            store = {"id": idval,
+                     "filename": arg,
+                     }
+            if use_errors:
+                store["use_errors"] = use_errors
+
+            # What files were automatically loaded? Track the
+            # identifier and file name in case the user loads
+            # something different. If the code tracks the load
+            # commands then this logic could be removed.
+            #
+            # The responses can be None, so strip them out.
+            #
+            store["arf_ids"] = {}
+            store["rmf_ids"] = {}
+            for resp_id in data.response_ids:
+                arf, rmf = data.get_response(resp_id)
+                if arf is not None:
+                    store["arf_ids"][resp_id] = arf.name
+                if rmf is not None:
+                    store["rmf_ids"][resp_id] = rmf.name
+
+            # Unlike the load_pha/data case, there is no need
+            # to track background information here (as this is
+            # the background).
+            #
+            return store
+
+        # Store values for each bkg_id value, hence the idval is a
+        # dict of dicts, unlike the _load_data_store, which is just a
+        # dict.
+        #
+        fullstore = {}
+        self._load_bkg_store[idval] = fullstore
+
         if np.iterable(bkgsets):
-            for bkgid, bkg in enumerate(bkgsets):
-                self.set_bkg(id, bkg, bkgid + 1)
+            # QUS: do we support PHA2 background files? Technically
+            # we do, but in reality we do not have files like this.
+            #
+            # NOTE: this ignores the bkg_id argument.
+            #
+            bkgids = []
+            for bkgid, bkg in enumerate(bkgsets, 1):
+                self.set_bkg(idval, bkg, bkgid)
+                bkgids.append(bkgid)
+
+                store = mk_pha_store(bkg)
+                store["bkg_id"] = bkgid
+
+                # Note that since bkgids is a mutable argument, the
+                # final value stored in bkgidvals will list all
+                # related identifiers.
+                #
+                fullstore[bkg_id] = store
+
         else:
-            self.set_bkg(id, bkgsets, bkg_id)
+            bkg_idval = self._fix_background_id(idval, bkg_id)
+            self.set_bkg(idval, bkgsets, bkg_idval)
+
+            store = mk_pha_store(bkgsets)
+            store["bkg_id"] = bkg_idval
+            fullstore[bkg_idval] = store
 
     def group(self,
               id: IdType | None = None,

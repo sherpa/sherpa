@@ -655,7 +655,7 @@ load_arrays("x",
 
 ######### Load Background Data Sets
 
-load_bkg("x", "@@/MNLup_2138_0670580101_EMOS1_S001_specbg.fits", bkg_id="foo")
+load_bkg("x", "@@/MNLup_2138_0670580101_EMOS1_S001_specbg.fits", bkg_id="foo", use_errors=True)
 
 ######### Background Spectral Responses
 
