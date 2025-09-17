@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015 - 2024
+#  Copyright (C) 2012, 2015 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -35,7 +35,7 @@ from sherpa.data import Data1D, Data2D, Data2DInt
 from sherpa.utils.err import ArgumentErr, DataErr, IdentifierErr, IOErr, StatErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_group, requires_xspec
+    requires_group, requires_xspec, requires_psf
 
 logger = logging.getLogger("sherpa")
 
@@ -898,6 +898,7 @@ def test_image_with_id(make_data_path, clean_astro_ui):
 # has now been included in the test so that we can check
 # the behavior if the PSF centering code is ever changed.
 #
+@requires_psf
 @pytest.mark.parametrize("model,center", [('beta1d', 4.0),
                                           ('lorentz1d', 1.0),
                                           ('normbeta1d', 4.0)])
@@ -909,6 +910,7 @@ def test_psf_model1d(model, center, clean_astro_ui):
     assert mdl.get_center() == (center, )
 
 
+@requires_psf
 @pytest.mark.parametrize("model", ['beta2d', 'devaucouleurs2d', 'hubblereynolds', 'lorentz2d'])
 def test_psf_model2d(model, clean_astro_ui):
     ui.dataspace2d([216, 261])
@@ -964,6 +966,7 @@ def test_dataspace2d_data2dint(clean_astro_ui):
     assert data.x1 == pytest.approx([1] * 3 + [2] * 3 + [3] * 3 + [4] * 3 + [5] * 3)
 
 
+@requires_psf
 def test_psf_pars_are_frozen(clean_astro_ui):
     "bug #12503"
     ui.create_model_component("beta2d", "p1")

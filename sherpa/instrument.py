@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2008, 2016, 2018 - 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -29,9 +29,12 @@ from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \
 from sherpa.models.parameter import Parameter
 from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D, rebin_2d
 from sherpa.utils import bool_cast, NoNewAttributesAfterInit
-from sherpa.utils.err import PSFErr
-from sherpa.utils._psf import extract_kernel, get_padsize, normalize, \
-    pad_data, set_origin, tcdData, unpad_data
+from sherpa.utils.err import ImportErr, PSFErr
+
+try:
+    from sherpa.utils import _psf
+except ImportError:
+    _psf = None
 
 import sherpa
 info = logging.getLogger(__name__).info
@@ -46,9 +49,12 @@ __all__ = ('Kernel', 'PSFKernel', 'RadialProfileKernel', 'PSFModel',
 def make_renorm_shape(shape):
     """Given a shape, calculate the appropriate renorm_shape."""
 
+    if _psf is None:
+        raise ImportErr('importfailed', 'sherpa.utils._psf', 'PSF')
+
     out = []
     for axis in shape:
-        out.append(get_padsize(2 * axis))
+        out.append(_psf.get_padsize(2 * axis))
 
     return out
 
@@ -99,6 +105,9 @@ class Kernel(NoNewAttributesAfterInit):
                  center=None, args=[], kwargs={},
                  do_pad=False, pad_mask=None, origin=None):
 
+        if _psf is None:
+            raise ImportErr('importfailed', 'sherpa.utils._psf', 'PSF')
+
         # As these are low-level routines use Python exceptions
         # rather than the Sherpa-specific ones.
         #
@@ -142,11 +151,11 @@ class Kernel(NoNewAttributesAfterInit):
         self.do_pad = do_pad
         self.pad_mask = pad_mask
         self.frac = None
-        self._tcd = tcdData()
+        self._tcd = _psf.tcdData()
         super().__init__()
 
     def __setstate__(self, state):
-        state['_tcd'] = tcdData()
+        state['_tcd'] = _psf.tcdData()
         self.__dict__.update(state)
 
     def __getstate__(self):
@@ -187,12 +196,12 @@ class Kernel(NoNewAttributesAfterInit):
         renorm_shape = make_renorm_shape(self.dshape)
         self.renorm_shape = tuple(renorm_shape)
 
-        kernpad = pad_data(kernel, self.dshape, self.renorm_shape)
+        kernpad = _psf.pad_data(kernel, self.dshape, self.renorm_shape)
 
         renorm = self._tcd.convolve(numpy.ones(len(kernel)), kernpad,
                                     self.dshape, renorm_shape,
                                     self.origin)
-        self.renorm = unpad_data(renorm, renorm_shape, self.dshape)
+        self.renorm = _psf.unpad_data(renorm, renorm_shape, self.dshape)
         return (kernel, self.dshape)
 
     def init_data(self, data):
@@ -201,12 +210,12 @@ class Kernel(NoNewAttributesAfterInit):
             self.renorm_shape = tuple(renorm_shape)
 
         # pad the data and convolve with unpadded kernel
-        datapad = pad_data(data, self.dshape, self.renorm_shape)
+        datapad = _psf.pad_data(data, self.dshape, self.renorm_shape)
         return (datapad, self.renorm_shape)
 
     def deinit(self, vals):
         if self.renorm is not None:
-            vals = unpad_data(vals, self.renorm_shape, self.dshape)
+            vals = _psf.unpad_data(vals, self.renorm_shape, self.dshape)
             vals = vals / self.renorm
 
         if self.do_pad:
@@ -235,13 +244,17 @@ class Kernel(NoNewAttributesAfterInit):
 class ConvolutionKernel(Model):
 
     def __init__(self, kernel, name='conv'):
+
+        if _psf is None:
+            raise ImportErr('importfailed', 'sherpa.utils._psf', 'PSF')
+
         self.kernel = kernel
         self.name = name
-        self._tcd = tcdData()
+        self._tcd = _psf.tcdData()
         super().__init__(name)
 
     def __setstate__(self, state):
-        state['_tcd'] = tcdData()
+        state['_tcd'] = _psf.tcdData()
         self.__dict__.update(state)
 
     def __getstate__(self):
@@ -297,6 +310,9 @@ class PSFKernel(Kernel):
                  args=[], kwargs={},
                  pad_mask=None, do_pad=False, origin=None):
 
+        if _psf is None:
+            raise ImportErr('importfailed', 'sherpa.utils._psf', 'PSF')
+
         self.is_model = is_model
         self.size = size
         self.lo = lo
@@ -328,11 +344,12 @@ class PSFKernel(Kernel):
         # If PSF dataset, normalize before kernel extraction
         # if not self.is_model and self.norm:
         if self.norm:
-            kernel = normalize(kernel)
+            kernel = _psf.normalize(kernel)
 
         (kernel, kshape, self.frac,
-         lo, hi) = extract_kernel(kernel, self.kshape, self.size, self.center,
-                                  self.lo, self.hi, self.width, self.radial)
+         lo, hi) = _psf.extract_kernel(kernel, self.kshape, self.size,
+                                       self.center, self.lo, self.hi,
+                                       self.width, self.radial)
 
         # If PSF model, then normalize integrated volume to 1, after
         # kernel extraction
@@ -351,7 +368,7 @@ class PSFKernel(Kernel):
         # time of kernel extraction, so that should be middle of subkernel.
         origin = None
         if (not numpy.isscalar(brightPixel)) and len(brightPixel) != 1:
-            origin = set_origin(kshape)
+            origin = _psf.set_origin(kshape)
         else:
             # brightPixel is a NumPy index (int64) which - as of NumPy 1.18
             # and Python 3.8 - causes a TypeError with the message
@@ -367,7 +384,7 @@ class PSFKernel(Kernel):
                 loc = brightPixel[0]
             else:
                 loc = brightPixel
-            origin = set_origin(kshape, int(loc))
+            origin = _psf.set_origin(kshape, int(loc))
 
         if self.origin is None:
             self.origin = origin
@@ -500,6 +517,9 @@ class PSFModel(Model):
     """
 
     def __init__(self, name='psfmodel', kernel=None):
+
+        if _psf is None:
+            raise ImportErr('importfailed', 'sherpa.utils._psf', 'PSF')
 
         # store the name without the leading "psfmodel." term that Model adds.
         self._name = name
@@ -909,14 +929,14 @@ they do not match.
             if (numpy.array(kshape) != numpy.array(newshape)).any():
                 newindep = []
                 for axis in indep:
-                    args = extract_kernel(axis,
-                                          self.model.kshape,
-                                          self.model.size,
-                                          self.model.center,
-                                          self.model.lo,
-                                          self.model.hi,
-                                          self.model.width,
-                                          self.model.radial)
+                    args = _psf.extract_kernel(axis,
+                                               self.model.kshape,
+                                               self.model.size,
+                                               self.model.center,
+                                               self.model.lo,
+                                               self.model.hi,
+                                               self.model.width,
+                                               self.model.radial)
                     newindep.append(args[0])
 
                     # TODO: shouldn't we store these values like we do

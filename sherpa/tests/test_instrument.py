@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020 - 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,6 +34,9 @@ from sherpa.instrument import Kernel, PSFModel, RadialProfileKernel, \
 from sherpa.models.basic import Box1D, Box2D, Const1D, Const2D, Gauss1D, \
     StepLo1D, TableModel
 from sherpa.utils.err import PSFErr
+
+# skip these tests if there is no PSF support
+pytest.importorskip("sherpa.utils._psf", reason="FFT/PSF required")
 
 
 def check_lines(out, lines):

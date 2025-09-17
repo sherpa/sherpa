@@ -43,9 +43,17 @@ import numpy as np
 #       this module; is this intentional?
 from ._utils import hist1d, hist2d  # type: ignore
 from . import _utils  # type: ignore
-from . import _psf    # type: ignore
 
-from .err import IOErr
+warning = logging.getLogger(__name__).warning
+
+try:
+    from . import _psf    # type: ignore
+except ImportError:
+    _psf = None
+    warning('Sherpa was built without FFT support so PSF convolution '
+            'is not supported.')
+
+from .err import ImportErr, IOErr
 
 # We re-export symbols from sherpa.utils modules but this will be
 # removed at some point.
@@ -862,6 +870,9 @@ def extract_kernel(kernel, dims_kern, dims_new, center, xlo, xhi, widths,
 
     """
 
+    if _psf is None:
+        raise ImportErr('importfailed', 'sherpa.utils._psf', 'PSF')
+
     return _psf.extract_kernel(kernel, dims_kern, dims_new, center,
                                xlo, xhi, widths, radial)
 
@@ -880,6 +891,9 @@ def normalize(xs):
        The values of xs / sum of xs.
 
     """
+
+    if _psf is None:
+        raise ImportErr('importfailed', 'sherpa.utils._psf', 'PSF')
 
     return _psf.normalize(xs)
 
@@ -923,6 +937,9 @@ def set_origin(dims, maxindex=None):
 
     """
 
+    if _psf is None:
+        raise ImportErr('importfailed', 'sherpa.utils._psf', 'PSF')
+
     if maxindex is None:
         return _psf.set_origin(dims)
 
@@ -955,6 +972,9 @@ def pad_bounding_box(kernel, mask):
     array([ 1.,  2.,  0.,  3.,  4.,  0.,  0.,  0.,  0.])
 
     """
+
+    if _psf is None:
+        raise ImportErr('importfailed', 'sherpa.utils._psf', 'PSF')
 
     return _psf.pad_bounding_box(kernel, mask)
 

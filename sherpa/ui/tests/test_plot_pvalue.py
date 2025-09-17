@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2024
+#  Copyright (C) 2019 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -29,7 +29,7 @@ import numpy as np
 import pytest
 
 from sherpa.utils.logging import SherpaVerbosity
-from sherpa.utils.testing import requires_data, \
+from sherpa.utils.testing import requires_data, requires_psf, \
     requires_xspec, requires_fits, requires_group
 
 from sherpa.astro import ui
@@ -516,6 +516,7 @@ def check_imgdata_convolved():
     assert tmp.y.shape == (6, )
 
 
+@requires_psf
 @requires_fits
 @requires_data
 def test_plot_pvalue_imgpsf_model_unconvolved(clean_astro_ui, hide_logging,
@@ -538,6 +539,7 @@ def test_plot_pvalue_imgpsf_model_unconvolved(clean_astro_ui, hide_logging,
     check_imgdata_unconvolved(caplog)
 
 
+@requires_psf
 @requires_fits
 @requires_data
 def test_plot_pvalue_imgpsf_model_convolved(clean_astro_ui, hide_logging, setup_imgdata_model):
@@ -551,6 +553,7 @@ def test_plot_pvalue_imgpsf_model_convolved(clean_astro_ui, hide_logging, setup_
     check_imgdata_convolved()
 
 
+@requires_psf
 @requires_fits
 @requires_data
 def test_plot_pvalue_imgpsf_file_unconvolved(clean_astro_ui, hide_logging,
@@ -569,6 +572,7 @@ def test_plot_pvalue_imgpsf_file_unconvolved(clean_astro_ui, hide_logging,
     check_imgdata_unconvolved(caplog)
 
 
+@requires_psf
 @requires_fits
 @requires_data
 def test_plot_pvalue_imgpsf_file_convolved(clean_astro_ui, hide_logging, setup_imgdata_file):

@@ -57,6 +57,7 @@ class sherpa_config(Command):
 
     def initialize_options(self):
         self.install_dir = os.path.join(os.getcwd(), 'build')
+        self.disable_fftw = False
         self.fftw = None
         self.fftw_include_dirs = None
         self.fftw_lib_dirs = None
@@ -129,11 +130,15 @@ class sherpa_config(Command):
         if self.region_use_cxc_parser:
             region_macros = [("USE_CXCDM_PARSER", None)]
 
-        psfext = build_ext(self, 'psf', 'fftw')
+        # Do not build the psf module if FFT support is disabled.
+        if not self.disable_fftw:
+            psfext = build_ext(self, 'psf', 'fftw')
+            self.distribution.ext_modules.append(psfext)
+
         wcsext = build_ext(self, 'wcs')
-        regext = build_ext(self, 'region', define_macros=region_macros)
-        self.distribution.ext_modules.append(psfext)
         self.distribution.ext_modules.append(wcsext)
+
+        regext = build_ext(self, 'region', define_macros=region_macros)
         self.distribution.ext_modules.append(regext)
 
         configure = ['./configure', '--prefix=' + self.install_dir,
@@ -143,8 +148,11 @@ class sherpa_config(Command):
             configure.append(f'GROUP_CFLAGS="{self.group_cflags}"')
         if self.configure != 'None':
             configure.extend(self.configure.split(' '))
-        if self.fftw != 'local':
+
+        # Is the FFTW library built?
+        if not self.disable_fftw and self.fftw != 'local':
             configure.append('--enable-fftw')
+
         if self.region != 'local':
             configure.append('--enable-region')
 
