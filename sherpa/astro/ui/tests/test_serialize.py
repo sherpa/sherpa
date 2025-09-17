@@ -2745,7 +2745,6 @@ def test_restore_pha_basic(make_data_path):
     assert ui.calc_stat() == pytest.approx(statval)
 
 
-@pytest.mark.xfail  # issue #2383
 @requires_data
 @requires_xspec
 @requires_fits
@@ -4118,7 +4117,6 @@ def test_store_default_id(defid):
     assert d.y == pytest.approx(y)
 
 
-@pytest.mark.xfail  # issue #2383
 @requires_data
 @requires_fits
 def test_copy_data_pha(make_data_path):

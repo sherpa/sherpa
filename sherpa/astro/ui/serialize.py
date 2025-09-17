@@ -542,20 +542,20 @@ def _save_dataset_settings_pha(out: OutType,
     # serialization.
     #
     try:
-        multi = state._load_data_store[id]
+        store = state._load_data_store[id]
     except KeyError:
-        multi = None
+        store = None
 
-    if multi is None:
+    if store is None:
         store_arfs = {}
         store_rmfs = {}
     else:
-        store_arfs = multi["arf_ids"]
-        store_rmfs = multi["rmf_ids"]
+        store_arfs = store["arf_ids"]
+        store_rmfs = store["rmf_ids"]
 
     # Add responses and ARFs, if any.
     #
-    # For PHA2 files the multi["arf/rmf_ids"] fields can be checked to
+    # For PHA2 files the store_arfs/rms fields can be checked to
     # see if the output is needed.
     #
     rids = pha.response_ids
@@ -606,8 +606,8 @@ def _save_dataset_settings_pha(out: OutType,
             # Has this been automatically loaded?
             #
             bname = bpha.name
-            if multi is None or bid not in multi["bkg_ids"] or \
-               multi["bkg_ids"][bid] != bname:
+            if store is None or bid not in store["bkg_ids"] or \
+               store["bkg_ids"][bid] != bname:
                 cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
                 _output(out, cmd)
 
@@ -623,7 +623,7 @@ def _save_dataset_settings_pha(out: OutType,
 
             # Load background response, ARFs if any.
             #
-            # For PHA2 files the multi["bkg_arf/rmf_ids"] fields can be
+            # For PHA2 files the store["bkg_arf/rmf_ids"] fields can be
             # checked to see if the output is needed.
             #
             rids = bpha.response_ids
@@ -1251,6 +1251,7 @@ def _save_dataset_file(out: OutType, idstr: str, dset: Data) -> None:
     #
     ncols = None
     if isinstance(dset, DataPHA):
+        # This path should no-longer be used, but leave in for now.
         dtype = 'pha'
     elif isinstance(dset, DataIMG):
         dtype = 'image'
@@ -1273,18 +1274,34 @@ def _save_dataset_file(out: OutType, idstr: str, dset: Data) -> None:
     _output(out, cmd)
 
 
-def _save_dataset_pha2(out: OutType, multi: dict[str, Any]) -> None:
+def _save_dataset_pha(out: OutType, store: dict[str, Any]) -> None:
+    """The data can be read in from a PHA file."""
+
+    idval = store["id"]
+    filename = store["filename"]
+    idstr = _id_to_str(idval)
+
+    cmd = f'load_pha({idstr}, "{filename}"'
+    with suppress(KeyError):
+        cmd += f', use_errors={store["kwargs"]["use_errors"]}'
+
+    cmd += ")"
+    _output(out, cmd)
+
+
+def _save_dataset_pha2(out: OutType, store: dict[str, Any]) -> None:
     """The data can be read in from a PHA2 file."""
 
-    idval = multi["id"]
-    idvals = multi["idvals"]
-    filename = multi["filename"]
+    idval = store["id"]
+    idvals = store["idvals"]
+    filename = store["filename"]
+    idstr = _id_to_str(idval)
 
     _output(out, f"# Load PHA2 into: {idvals}")
 
-    cmd = f'load_pha({repr(idval)}, "{filename}"'
+    cmd = f'load_pha({idstr}, "{filename}"'
     with suppress(KeyError):
-        cmd += f', use_errors={multi["kwargs"]["use_errors"]}'
+        cmd += f', use_errors={store["kwargs"]["use_errors"]}'
 
     cmd += ")"
     _output(out, cmd)
@@ -1320,7 +1337,7 @@ def _output_add_wcs(out: OutType,
         _output(out, f"crota={wcs.crota}, epoch={wcs.epoch}, equinox={wcs.equinox})", indent=1)
 
 
-def _save_dataset_pha(out: OutType, idstr: str, pha: DataPHA) -> None:
+def _save_dataset_pha_manual(out: OutType, idstr: str, pha: DataPHA) -> None:
     """Try to recreate the PHA"""
 
     spacer = "            "
@@ -1378,19 +1395,24 @@ def _save_dataset(out: OutType,
 
     """
 
-    # If this is a PHA2 file and the identifier is not the first
-    # one then do nothing.
+    # Do we have direct information on how this dataset was loaded?
     #
     try:
-        multi = state._load_data_store[id]
-        if id != multi["idvals"][0]:
-            # Can skip this dataset (as not the first).
-            return
+        store = state._load_data_store[id]
 
-        # Assume the file exists (as otherwise it should not
-        # be in _load_data_store).
+        # Is this a PHA2 dataset?
         #
-        _save_dataset_pha2(out, multi)
+        if "idvals" in store:
+            if id != store["idvals"][0]:
+                # Can skip this dataset (as not the first).
+                # TODO: this can cause problems and so needs to
+                # be improved
+                return
+
+            _save_dataset_pha2(out, store)
+        else:
+            _save_dataset_pha(out, store)
+
         return
 
     except KeyError:
@@ -1457,7 +1479,7 @@ def _save_dataset(out: OutType,
     # class is poorly tested, documented, or used.
     #
     if isinstance(data, DataPHA):
-        _save_dataset_pha(out, idstr, data)
+        _save_dataset_pha_manual(out, idstr, data)
         return
 
     if isinstance(data, DataIMG):

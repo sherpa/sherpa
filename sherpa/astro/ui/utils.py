@@ -2611,7 +2611,10 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
 
         phasets = self.unpack_pha(arg, use_errors)
 
@@ -2621,7 +2624,7 @@ class Session(sherpa.ui.utils.Session):
         if use_errors:
             kwargs["use_errors"] = True
 
-        self._load_data(id, phasets, filename=arg, kwargs=kwargs)
+        self._load_data(idval, phasets, filename=arg, kwargs=kwargs)
 
     def _get_pha_data(self,
                       id: IdType | None,
