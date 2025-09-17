@@ -2745,6 +2745,44 @@ def test_restore_pha_basic(make_data_path):
     assert ui.calc_stat() == pytest.approx(statval)
 
 
+@pytest.mark.xfail  # issue #2383
+@requires_data
+@requires_xspec
+@requires_fits
+def test_canonical_pha_basic_errors(make_data_path, check_str):
+    """Do we acknowledge the use_errors setting in load_pha?"""
+
+    fname = make_data_path('3c273.pi')
+    ui.set_default_id("sos")
+    ui.load_pha(fname, use_errors=True)
+    ui.notice(0.5, 6)
+    ui.subtract()
+
+    # Approximate fit just so the statistic isn't too large.
+    gal = ui.create_model_component("xsphabs", "gal")
+    pl = ui.create_model_component("powlaw1d", "pl")
+    ui.set_source(gal * pl)
+    gal.nh = 0.04
+    pl.gamma = 2.03
+    pl.ampl = 1.96e-4
+
+    # The assumption here is that the error values are different to
+    # those from use_errors=False. This is not explicitly tested in
+    # this set of tests.
+    #
+    statval = ui.calc_stat()
+    evals = ui.get_staterror()
+
+    restore()
+
+    assert ui.get_default_id() == "sos"
+
+    # Check the "error values" from the file are being used.
+    #
+    assert ui.calc_stat() == pytest.approx(statval)
+    assert ui.get_staterror() == pytest.approx(evals)
+
+
 @requires_data
 @requires_xspec
 @requires_fits
@@ -2879,9 +2917,13 @@ def test_canonical_pha_load_bkg(make_data_path, check_str):
 
     ui.dataspace1d(0, 799, id="x", dstype=ui.DataPHA)
 
+    # NOTE: use_errors setting is currently ignored; for now this is
+    # treated as a regression test (i.e. _canonical_pha_load_bkg will
+    # need to be updated once this is fixed). Issue #2383.
+    #
     BASENAME = "MNLup_2138_0670580101_EMOS1_S001_specbg.fits"
     bgfile = make_data_path(BASENAME)
-    ui.load_bkg("x", bgfile, bkg_id="foo")
+    ui.load_bkg("x", bgfile, bkg_id="foo", use_errors=True)
 
     # Load a response, but for the background only. These responses
     # cause warning messages to get displayed, so hide them.
@@ -4074,3 +4116,47 @@ def test_store_default_id(defid):
     assert d.name == ""
     assert d.x == pytest.approx(x)
     assert d.y == pytest.approx(y)
+
+
+@pytest.mark.xfail  # issue #2383
+@requires_data
+@requires_fits
+def test_copy_data_pha(make_data_path):
+    """Can we copy a PHA dataset and track it?"""
+
+    # This file does not have ANCR/BACK/RESPFILE settings.
+    #
+    ui.load_pha(make_data_path("source.pi"), use_errors=True)
+    ui.load_rmf(make_data_path("source.rmf"))
+    ui.load_arf(make_data_path("source.arf"))
+
+    # Is the filter and grouping copied over?
+    ui.notice(0.5, 7)
+    ui.group_counts(20)
+
+    # What can we easily check to see that we have the filtered and
+    # grouped dataset?
+    #
+    filter_expr = ui.get_filter()
+    dep = ui.get_dep(filter=True)
+    evals = ui.get_staterror()
+
+    ui.copy_data(1, 2)
+    ui.delete_data(1)
+
+    def check_data():
+        assert ui.list_data_ids() == [2]
+        assert ui.list_bkg_ids(2) == []
+        assert ui.get_data(2).name.endswith("/source.pi")
+        assert ui.get_arf(2).name.endswith("/source.arf")
+        assert ui.get_rmf(2).name.endswith("/source.rmf")
+
+        assert ui.get_filter(2) == filter_expr
+        assert ui.get_dep(2, filter=True) == pytest.approx(dep)
+        assert ui.get_staterror(2) == pytest.approx(evals)
+
+    check_data()
+
+    restore()
+
+    check_data()
