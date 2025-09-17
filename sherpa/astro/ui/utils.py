@@ -332,9 +332,9 @@ class Session(sherpa.ui.utils.Session):
             data = self._get_pha_data(id)
             return data.default_background_id
 
-            # return self._default_id
-
-        # We rely on the validation made by _fix_id
+        # We rely on the validation made by _fix_id. This is not
+        # expected to change the value (as bkg_id is not None).
+        #
         return self._fix_id(bkg_id)
 
     def __setstate__(self, state):
@@ -1026,7 +1026,6 @@ class Session(sherpa.ui.utils.Session):
 
         output.append(statinfo)
         return output
-
 
     ###########################################################################
     # Data
@@ -2104,14 +2103,10 @@ class Session(sherpa.ui.utils.Session):
             return store
 
         if not np.iterable(datasets):
+            # set_data clears _load_data_store
             self.set_data(idval, datasets)
-
             if isinstance(datasets, DataPHA):
                 self._load_data_store[idval] = mk_pha_store(datasets)
-
-            else:
-                with suppress(KeyError):
-                    del self._load_data_store[idval]
 
             return
 
@@ -2401,10 +2396,10 @@ class Session(sherpa.ui.utils.Session):
 
         """
         use_errors = bool_cast(use_errors)
-        return sherpa.astro.io.read_pha(arg, use_errors)
+        return sherpa.astro.io.read_pha(arg, use_errors=use_errors)
 
     # DOC-TODO: what does this return when given a PHA2 file?
-    def unpack_bkg(self, arg, use_errors=False):
+    def unpack_bkg(self, arg, use_errors: bool = False):
         """Create a PHA data structure for a background data set.
 
         Any instrument information referenced in the header of the PHA
@@ -2453,7 +2448,8 @@ class Session(sherpa.ui.utils.Session):
 
         """
         use_errors = bool_cast(use_errors)
-        return sherpa.astro.io.read_pha(arg, use_errors, True)
+        return sherpa.astro.io.read_pha(arg, use_errors=use_errors,
+                                        use_background=True)
 
     # DOC-TODO: how best to include datastack support?
     def load_pha(self, id, arg=None,
