@@ -748,6 +748,36 @@ def _save_data(out: OutType, state: SessionType) -> None:
     cmd_id = ""
     cmd_bkg_id = ""
 
+    # Special case PHA2 files, as
+    # - they create multiple ids in one go
+    # - some of those ids may get deleted or over-written
+    # So process them first.
+    #
+    seen = set()
+    for idval, store in state._load_data_store.items():
+        if "idvals" not in store:
+            continue
+
+        # Only bother processing the first version of this PHA2
+        # dataset, although note that the idval may no-longer be
+        # present (e.g.  delete_data) or over-written with a different
+        # dataset. Fortunately we can use the idvals array to find out
+        # what datasets were originally created.
+        #
+        if idval in seen:
+            continue
+
+        _save_dataset_pha2(out, store)
+        seen = seen.union(store["idvals"])
+
+        # Add any delete_data calls for this dataset.
+        #
+        for delid in store["idvals"]:
+            if delid in state._load_data_store:
+                continue
+
+            _output(out, f"delete_data({_id_to_str(delid)})")
+
     for idval in ids:
         # But if id is a string, then quote as a string
         # But what about the rest of any possible load_data() options;
@@ -1422,6 +1452,8 @@ def _save_dataset(out: OutType,
     """
 
     # Do we have direct information on how this dataset was loaded?
+    # Note that identifiers associated with a PHA2 dataset have
+    # already been loaded.
     #
     try:
         store = state._load_data_store[id]
@@ -1429,13 +1461,8 @@ def _save_dataset(out: OutType,
         # Is this a PHA2 dataset?
         #
         if "idvals" in store:
-            if id != store["idvals"][0]:
-                # Can skip this dataset (as not the first).
-                # TODO: this can cause problems and so needs to
-                # be improved
-                return
+            return
 
-            _save_dataset_pha2(out, store)
         else:
             _save_dataset_pha(out, store)
 

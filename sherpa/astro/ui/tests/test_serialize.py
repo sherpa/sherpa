@@ -2168,6 +2168,16 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
+# Load PHA2 into: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+load_pha(1, "@@/3c120_pha2")
+delete_data(1)
+delete_data(2)
+delete_data(5)
+delete_data(6)
+delete_data(7)
+delete_data(8)
+delete_data(11)
+delete_data(12)
 
 ######### Load Background Data Sets
 
@@ -3794,15 +3804,9 @@ def test_restore_pha2_delete(make_data_path, check_str):
     expected_output = add_datadir_path(_canonical_pha2_delete)
     compare(check_str, expected_output)
 
-    # The current save_all output will fail when restored, so catch
-    # the expected error.
-    #
-    with pytest.raises(IdentifierErr,
-                       match="^data set 10 has not been set$"):
-        restore()
+    restore()
 
-    # check_data()
-    assert ui.list_data_ids() == []
+    check_data()
 
 
 @requires_data
