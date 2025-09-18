@@ -1625,7 +1625,11 @@ def _save_id(out: OutType, state: SessionType) -> None:
     _output_nl(out)
 
 
-def save_all(state: SessionType, fh: TextIO | None = None) -> None:
+def save_all(state: SessionType,
+             fh: TextIO | None = None,
+             *,
+             always_load: bool = False
+             ) -> None:
     """Save the information about the current session to a file handle.
 
     This differs to the `save` command in that the output is human
@@ -1638,7 +1642,11 @@ def save_all(state: SessionType, fh: TextIO | None = None) -> None:
      3. some settings and values may not be recorded.
 
      .. versionchanged:: 4.18.0
-        Handling of PHA2 data sets has been improved.
+        Handling of PHA data has been improved, and the output now
+        defaults to not including automatically-loaded ancillary files
+        (such as background and responses). Set the ``always_load``
+        flag to True to add these commands back to the save file (and
+        match previous versions).
 
     Parameters
     ----------
@@ -1646,6 +1654,7 @@ def save_all(state: SessionType, fh: TextIO | None = None) -> None:
     fh : file_like, optional
        If not given the results are displayed to standard out,
        otherwise they are written to this file handle.
+    always_load : bool, optional
 
     See Also
     --------
@@ -1692,7 +1701,7 @@ def save_all(state: SessionType, fh: TextIO | None = None) -> None:
             "main": []
            }
 
-    _save_data(out, state)
+    _save_data(out, state, always_load=always_load)
     _output_nl(out)
     _save_statistic(out, state)
     _save_fit_method(out, state)

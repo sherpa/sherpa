@@ -17158,7 +17158,11 @@ class Session(sherpa.ui.utils.Session):
     # Session Text Save Function
     ###########################################################################
 
-    def save_all(self, outfile=None, clobber=False) -> None:
+    def save_all(self,
+                 outfile=None,
+                 clobber: bool = False,
+                 always_load: bool = False
+                 ) -> None:
         """Save the information about the current session to a text file.
 
         This differs to the `save` command in that the output is human
@@ -17172,7 +17176,11 @@ class Session(sherpa.ui.utils.Session):
             header information).
 
         .. versionchanged:: 4.18.0
-           Handling of PHA2 data sets has been improved.
+           Handling of PHA data has been improved, and the output now
+           defaults to not including automatically-loaded ancillary
+           files (such as background and responses). Set the
+           ``always_load`` flag to True to add these commands back to
+           the save file (and match previous versions).
 
         .. versionchanged:: 4.17.0
            The file will now contain a `set_default_id` call if the
@@ -17198,8 +17206,11 @@ class Session(sherpa.ui.utils.Session):
         clobber : bool, optional
            If `outfile` is a filename, then this flag controls
            whether an existing file can be overwritten (``True``)
-           or if it raises an exception (``False``, the default
+           orysif it raises an exception (``False``, the default
            setting).
+        always_load : bool, optional
+           Should automatically-loaded PHA files, such as backgrounds,
+           ARFS, and RMFs, be explicitly included in the file?
 
         Raises
         ------
@@ -17222,8 +17233,7 @@ class Session(sherpa.ui.utils.Session):
         - data changed from the version on disk - e.g. by calls to
           `set_counts` - will not be restored correctly,
 
-        - any optional keywords to commands such as `load_data`
-          or `load_pha`,
+        - any optional keywords to commands such as `load_data`,
 
         - user models may not be restored correctly,
 
@@ -17257,6 +17267,14 @@ class Session(sherpa.ui.utils.Session):
         from sherpa.astro.ui import *
         ...
 
+        The two files should re-create the same session but
+        restore2.py will include lines such as load_arf and load_bkg
+        that are not necessary, as Sherpa will load them due to the
+        ANCRFILE, BACKFILE, and RESPFILE keywords in the PHA file(s).
+
+        >>> save_all("restore1.py")
+        >>> save_all("restore2.py", always_load=True)
+
         """
 
         if _is_str(outfile):
@@ -17267,7 +17285,7 @@ class Session(sherpa.ui.utils.Session):
                     raise IOErr('filefound', outfile)
 
             with open(outfile, 'w', encoding="UTF-8") as fh:
-                serialize.save_all(self, fh)
+                serialize.save_all(self, fh, always_load=always_load)
 
         else:
             if outfile is not None:
@@ -17275,4 +17293,4 @@ class Session(sherpa.ui.utils.Session):
             else:
                 fh = sys.stdout
 
-            serialize.save_all(self, fh)
+            serialize.save_all(self, fh, always_load=always_load)
