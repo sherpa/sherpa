@@ -40,6 +40,11 @@ import numpy
 from sherpa.astro.data import DataIMG, DataPHA, DataARF, DataRMF
 from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
+
+from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
+from sherpa.models.basic import UserModel
+from sherpa.utils.types import IdType
+
 if TYPE_CHECKING:
     # Avoid an import cycle
     from sherpa.astro.ui.utils import Session
@@ -49,12 +54,6 @@ try:
     from sherpa.astro import xspec
 except ImportError:
     xspec = None
-
-from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
-from sherpa.models.basic import UserModel
-import sherpa.utils
-from sherpa.utils.err import ArgumentErr
-from sherpa.utils.types import IdType
 
 
 logger = logging.getLogger(__name__)
@@ -239,7 +238,7 @@ def _save_response(out: OutType,
 
 
 def _save_arf_response(out: OutType,
-                       state: SessionType,
+                       state: SessionType,  # currently unused
                        pha: DataPHA,
                        id: IdType,
                        rid: IdType,
@@ -275,7 +274,7 @@ def _save_arf_response(out: OutType,
 
 
 def _save_rmf_response(out: OutType,
-                       state: SessionType,
+                       state: SessionType,  # currently unused
                        pha: DataPHA,
                        id: IdType,
                        rid: IdType,
@@ -463,7 +462,7 @@ def _add_bkg_filter(out: OutType,
 
 
 def _handle_filter(out: OutType,
-                   state: SessionType,
+                   state: SessionType,  # currently unused
                    data: DataType,
                    id: IdType) -> None:
     """Set any filter expressions for source and background
@@ -713,7 +712,7 @@ def _save_dataset_settings_pha(out: OutType,
 
 
 def _save_dataset_settings_2d(out: OutType,
-                              state: SessionType,
+                              state: SessionType,  # currently unused
                               data: DataType,
                               id: IdType) -> None:
     """What settings need to be set for Data2D/IMG?"""
@@ -759,9 +758,6 @@ def _save_data(out: OutType,
     #
     _output_banner(out, "Load Data Sets")
 
-    cmd_id = ""
-    cmd_bkg_id = ""
-
     # Special case PHA2 files, as
     # - they create multiple ids in one go
     # - some of those ids may get deleted or over-written
@@ -793,12 +789,6 @@ def _save_data(out: OutType,
             _output(out, f"delete_data({_id_to_str(delid)})")
 
     for idval in ids:
-        # But if id is a string, then quote as a string
-        # But what about the rest of any possible load_data() options;
-        # how do we replicate the optional keywords that were possibly
-        # used?  Store them with data object?
-        cmd_id = _id_to_str(idval)
-
         data = state.get_data(idval)
         if TYPE_CHECKING:
             # Assert an actual type rather than the base type of Data
@@ -1478,9 +1468,7 @@ def _save_dataset(out: OutType,
         if "idvals" in store:
             return
 
-        else:
-            _save_dataset_pha(out, store)
-
+        _save_dataset_pha(out, store)
         return
 
     except KeyError:
