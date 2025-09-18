@@ -548,28 +548,6 @@ class CStat(Likelihood):
         super().__init__(name=name)
 
 
-# No docstring means it inherits from parent class
-class CStatNumpy(CStat):
-    def _calc(self, data, model, weight, trunc_value):
-
-        if np.any(model < 0.0) and trunc_value <= 0:
-            raise ValueError("Model values are negative and truncation value is not set.")
-
-        model = np.maximum(model, trunc_value)
-        d = model
-
-        # Work with subset of data where the log is valid
-        ind = data > 0
-        dint = data[ind]
-        mind = model[ind]
-        d[ind] = mind - dint + (dint * np.log(dint / mind))
-        if weight is not None:
-            d = d * weight
-
-        d *= 2
-        return d.sum(), np.sqrt(np.abs(d))
-
-
 class CStatNegativePenalty(CStat):
     """CStat with negative penalty for negative model values.
 
