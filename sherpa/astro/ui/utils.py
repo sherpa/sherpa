@@ -15519,8 +15519,7 @@ class Session(sherpa.ui.utils.Session):
         # evaluation, so just use the "default" version and do not
         # bother about multiple datasets. This could be an issue if
         # the model evaluation should be used on an extension of the
-        # grid in this default dataset, but this is a theoretical
-        # concern.
+        # grid in this default dataset.
         #
         data = self._get_data_or_bkg(id, bkg_id)
 

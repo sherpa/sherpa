@@ -4456,11 +4456,11 @@ class Session(NoNewAttributesAfterInit):
            the default identifier is used, as returned by
            `get_default_id`.
         method : callable or None, optional
-           If None, the default, then the data is simulated using the
+           If None (the default) then the data is simulated using the
            `sherpa.utils.poisson_noise` routine. If set, it must be a
-           callable that takes a ndarray of the predicted values and
+           callable that takes an ndarray of the predicted values and
            an optional rng argument that takes a NumPy random
-           generator, and returns a ndarray of the same size with the
+           generator, and returns an ndarray of the same size with the
            simulated data.
 
         See Also
@@ -12137,7 +12137,7 @@ class Session(NoNewAttributesAfterInit):
         >>> fit(3, 4)
         >>> covar(3, 4)
         >>> cmat = get_covar_results().extra_output
-        >>> res = get_draws(3, [4], covar_matrix=cmat)
+        >>> res = get_draws(id=3, otherids=[4], covar_matrix=cmat)
 
         """
 

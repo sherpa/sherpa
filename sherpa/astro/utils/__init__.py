@@ -953,7 +953,7 @@ def eqwidth(data, model, combo, lo=None, hi=None) -> float:
         else:
             eave = np.abs(xlo[ebin - 1] - xlo[ebin])
         if my[ebin] != 0.0:
-            # TOD: shouldn't this be (continuum - cy[ebin]) / continuum?
+            # TODO: shouldn't this be (continuum - cy[ebin]) / continuum? See issue #2381
             eqw += eave * (cy[ebin] - continuum) / continuum
 
     return eqw

@@ -2382,7 +2382,7 @@ def setup_multiple_datasets_linked():
     # different for the two datasets: m = 2, c_1 = 20, c_2 = -20.
     # However, the exact values do not matter for this test, as long
     # as they are separate enough that generating values for them
-    # result in obviously-different values.
+    # results in obviously-different values.
     #
     # The c_1 parameter is set via a link so that the thawed parameters
     # are in a different order for dataset 1 and 2.

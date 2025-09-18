@@ -371,9 +371,7 @@ def test_eqwidth_multi_id_chisq(clean_astro_ui):
 def test_eqwidth_multi_id_poisson(clean_astro_ui):
     """Regression test for handling multiple ids (poisson).
 
-    This is only an issue when error=True. At the moment this is
-    treated as a regression test as it is unclear what we want the
-    results to be.
+    This is only an issue when error=True.
 
     """
 
