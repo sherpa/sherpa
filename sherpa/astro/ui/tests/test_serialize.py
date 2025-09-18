@@ -1641,6 +1641,58 @@ set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
+_canonical_load_arrays_pha_response = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_arrays(1,
+            [1, 2, 3, 4, 5],
+            [12, 2, 1, 0, 1],
+            DataPHA)
+set_exposure(1, 100)
+set_backscal(1, 0.002)
+set_areascal(1, 0.001)
+
+######### Data grouping flags
+
+set_grouping(1, val=numpy.array([1, 1, -1, 0, 1], numpy.int16))
+
+######### Data quality flags
+
+set_quality(1, val=numpy.array([0, 0, 0, 0, 2], numpy.int16))
+group(1)
+
+######### Data Spectral Responses
+
+load_arf(1, "test-arf", resp_id=1)
+load_rmf(1, "delta-rmf", resp_id=1)
+
+######### Set Energy or Wave Units
+
+set_analysis(1, quantity="energy", type="rate", factor=0)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+
+"""
+
 _canonical_load_arrays_data2d = """import numpy
 from sherpa.astro.ui import *
 
@@ -3344,10 +3396,48 @@ def test_restore_load_arrays_pha(check_str):
     assert pha.grouping == pytest.approx([1, 1, -1, 0, 1])
     assert pha.quality == pytest.approx([0, 0, 0, 0, 2])
 
-    # This is corrected by thebin width and the areascal values
+    # This is corrected by the bin width and the areascal values
     assert ui.get_dep() == pytest.approx([12000, 1500, 0, 1000])
 
     assert pha.counts == pytest.approx([12, 2, 1, 0, 1])
+
+
+@requires_fits  # only needed because of incorrect serialization
+@requires_group
+def test_restore_load_arrays_pha_response(check_str):
+    """Can we re-create a load_arrays/DataPHA case?
+
+    This tests whether we can restore manually-created responses.  At
+    the moment we can not, so this is a regression test.
+
+    """
+
+    dset = ui.DataPHA("ex", [1, 2, 3, 4, 5], [12, 2, 1, 0, 1])
+    dset.exposure = 100
+    dset.backscal = 0.002
+    dset.areascal = 0.001
+
+    ui.set_data(dset)
+    ui.group_counts(3, tabStops=np.asarray([0, 0, 0, 1, 0]))
+
+    # Create an ARF and RMF
+    #
+    egrid = np.asarray([0.1, 0.2, 0.4, 0.8, 1.2, 1.6])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    ui.set_arf(ui.create_arf(elo, ehi))
+    ui.set_rmf(ui.create_rmf(elo, ehi))
+
+    compare(check_str, _canonical_load_arrays_pha_response)
+
+    # The error response likely depends on the backend, but it happens
+    # because the ARF "file name" - in this case "test-arf" - does not
+    # exist, hence the restoration fails.
+    #
+    with pytest.raises(IOErr):
+        restore()
+
+    # TODO: come up with tests once the state can be restored
 
 
 def test_restore_load_arrays_data2d(check_str):
