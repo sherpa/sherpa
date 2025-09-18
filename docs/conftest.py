@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2022
+#  Copyright (C) 2022, 2025
 #  MIT
 #
 #
@@ -25,8 +25,13 @@ documentation only, it will therefore not find that fixtures that are
 defined in sherpa/conftest.py, thus this file copies over the fixtures we
 need.
 '''
+
+from pathlib import Path
+
 import pytest
+
 from sherpa.utils.testing import get_datadir
+
 
 @pytest.fixture(autouse=True)
 def add_sherpa_test_data_dir(doctest_namespace):
@@ -50,3 +55,16 @@ def add_sherpa_test_data_dir(doctest_namespace):
         path += '/'
 
     doctest_namespace["data_dir"] = path
+
+
+@pytest.fixture(autouse=True)
+def add_sherpa_test_doc_dir(doctest_namespace):
+    """Define `doc_dir` for doctests.
+
+    Add the doc_test variable to indicate the location of the
+    documentation.
+
+    """
+
+    path = Path(__file__).parent
+    doctest_namespace["doc_dir"] = f"{path}/"
