@@ -33,8 +33,8 @@ AC_ARG_ENABLE([group],
   AS_HELP_STRING([--enable-group], [Build group module shipped with Sherpa]))
 
 AS_IF([test "x$enable_group" = "xyes"], [
-  AC_CONFIG_SUBDIRS([grplib-4.9])
-  AC_SUBST(grplib, grplib-4.9)
+  AC_CONFIG_SUBDIRS([grplib-4.18])
+  AC_SUBST(grplib, grplib-4.18)
 ])
 
 AC_ARG_ENABLE([wcssubs],

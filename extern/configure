@@ -819,7 +819,7 @@ CPPFLAGS
 LT_SYS_LIBRARY_PATH'
 ac_subdirs_all='fftw-3.3.10
 region-4.14
-grplib-4.9
+grplib-4.18
 wcssubs
 stklib-4.18'
 
@@ -12507,9 +12507,9 @@ fi
 if test "x$enable_group" = "xyes"
 then :
 
-  subdirs="$subdirs grplib-4.9"
+  subdirs="$subdirs grplib-4.18"
 
-  grplib=grplib-4.9
+  grplib=grplib-4.18
 
 
 fi
