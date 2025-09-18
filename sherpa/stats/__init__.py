@@ -35,7 +35,7 @@ from sherpa.utils.types import StatFunc, StatResults
 
 from . import _statfcts  # type: ignore
 
-__all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',
+__all__ = ('Stat', 'Cash', 'CStat', 'CStatNegativePenalty', 'LeastSq',
            'Chi2Gehrels', 'Chi2ConstVar', 'Chi2DataVar', 'Chi2ModVar',
            'Chi2XspecVar', 'Chi2',
            'UserStat', 'WStat')
