@@ -361,14 +361,23 @@ class Session(sherpa.ui.utils.Session):
         self._energyfluxplot = sherpa.astro.plot.EnergyFluxHistogram()
         self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
 
-        # Used to identify PHA2 datasets.
+        # Used to identify PHA datasets.
         #
-        # The value field could be more-precisely typed, but leave as
-        # generic for the moment. It is also likely that this approach
-        # (of storing the actual file name and arguments) can be
-        # extended to all the load_xxx calls, so that
-        # .serialize.save_all can use it rather than the current
-        # approach.
+        # These dictionaries are always cleared by set_data/bkg for
+        # the IdType value, and a few other commands
+        # (e.g. delete_data, delete_bkg, copy_data). Data is stored by
+        # the relevant load_pha/data/bkg commands after they call
+        # set_data/bkg.  This information is used by
+        # .serialize.save_all to re-create the relevant load_xxx
+        # command. At present this is restricted to PHA data but could
+        # be extended for the other types (e.g. tables, images).  The
+        # value type of "dict[str, Any]" could have better typing, but
+        # leave as this generic form for now.
+        #
+        # Note that the automatically-loaded ancillary data for PHA
+        # files (background, ARF, RMF) are included in this store so
+        # that save_all knows that these files do not need to be
+        # explicitly loaded.
         #
         self._load_data_store: dict[IdType, dict[str, Any]] = {}
         self._load_bkg_store: dict[IdType, dict[IdType, dict[str, Any]]] = {}
