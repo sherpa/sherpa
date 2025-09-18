@@ -519,7 +519,9 @@ def _handle_filter(out: OutType,
 def _save_dataset_settings_pha(out: OutType,
                                state: SessionType,
                                pha: DataType,
-                               idval: IdType) -> None:
+                               idval: IdType,
+                               auto_load: bool
+                               ) -> None:
     """What settings need to be set for DataPHA"""
 
     if not isinstance(pha, DataPHA):
@@ -553,10 +555,11 @@ def _save_dataset_settings_pha(out: OutType,
         store_arfs = store["arf_ids"]
         store_rmfs = store["rmf_ids"]
 
+    if not auto_load:
+        store_arfs = {}
+        store_rmfs = {}
+
     # Add responses and ARFs, if any.
-    #
-    # For PHA2 files the store_arfs/rms fields can be checked to
-    # see if the output is needed.
     #
     rids = pha.response_ids
     if len(rids) > 0:
@@ -627,13 +630,18 @@ def _save_dataset_settings_pha(out: OutType,
                 store_arfs = {}
                 store_rmfs = {}
 
+            if not auto_load:
+                store_arfs = {}
+                store_rmfs = {}
+
             # Was this explicitly loaded?
             #
             bname = bpha.name
-            if bstore is not None and \
-               bstore["filename"] == bname:
+            want = not auto_load or (bstore is not None and
+                                     bstore["filename"] == bname)
+            if want:
                 cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id}'
-                if "use_errors" in bstore:
+                if bstore is not None and "use_errors" in bstore:
                     cmd += f", use_errors={bstore['use_errors']}"
                 cmd += ')'
                 _output(out, cmd)
@@ -717,7 +725,10 @@ def _save_dataset_settings_2d(out: OutType,
     _output(out, f"set_coord({_id_to_str(id)}, '{data.coord}')")
 
 
-def _save_data(out: OutType, state: SessionType) -> None:
+def _save_data(out: OutType,
+               state: SessionType,
+               auto_load: bool
+               ) -> None:
     """Save the data.
 
     This can just be references to files, or serialization of
@@ -728,6 +739,9 @@ def _save_data(out: OutType, state: SessionType) -> None:
     out : dict
        The output state
     state
+    auto_load : bool
+       If ``False`` then the output will contain `load_arf`,
+       `load_rmf`, and `load_bkg` calls for ancillary PHA files.
 
     Notes
     -----
@@ -791,7 +805,8 @@ def _save_data(out: OutType, state: SessionType) -> None:
             assert isinstance(data, (Data1D, Data2D))
 
         _save_dataset(out, state, data, idval)
-        _save_dataset_settings_pha(out, state, data, idval)
+        _save_dataset_settings_pha(out, state, data, idval,
+                                   auto_load=auto_load)
         _save_dataset_settings_2d(out, state, data, idval)
 
         _handle_filter(out, state, data, idval)
@@ -1628,7 +1643,7 @@ def _save_id(out: OutType, state: SessionType) -> None:
 def save_all(state: SessionType,
              fh: TextIO | None = None,
              *,
-             always_load: bool = False
+             auto_load: bool = True
              ) -> None:
     """Save the information about the current session to a file handle.
 
@@ -1644,9 +1659,9 @@ def save_all(state: SessionType,
      .. versionchanged:: 4.18.0
         Handling of PHA data has been improved, and the output now
         defaults to not including automatically-loaded ancillary files
-        (such as background and responses). Set the ``always_load``
-        flag to True to add these commands back to the save file (and
-        match previous versions).
+        (such as background and responses). Set the ``auto_load``
+        flag to False to add these commands back to the save file (and
+        match previous versions of Sherpa).
 
     Parameters
     ----------
@@ -1654,7 +1669,9 @@ def save_all(state: SessionType,
     fh : file_like, optional
        If not given the results are displayed to standard out,
        otherwise they are written to this file handle.
-    always_load : bool, optional
+    auto_load : bool, optional
+       If ``False`` then the output will contain `load_arf`,
+       `load_rmf`, and `load_bkg` calls for ancillary PHA files.
 
     See Also
     --------
@@ -1673,7 +1690,6 @@ def save_all(state: SessionType,
       `sherpa.astro.ui.set_counts`
 
     - any optional keywords to commands such as `load_data`
-      or `load_pha`
 
     - user models may not be restored correctly
 
@@ -1701,7 +1717,7 @@ def save_all(state: SessionType,
             "main": []
            }
 
-    _save_data(out, state, always_load=always_load)
+    _save_data(out, state, auto_load=auto_load)
     _output_nl(out)
     _save_statistic(out, state)
     _save_fit_method(out, state)

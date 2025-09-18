@@ -294,6 +294,59 @@ set_source(1, xsphabs.gal * (powlaw1d.pl + xsapec.src))
 
 """
 
+_canonical_pha_basic_load = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_pha(1, "@@/3c273.pi")
+group(1)
+
+######### Data Spectral Responses
+
+load_arf(1, "@@/3c273.arf", resp_id=1)
+load_rmf(1, "@@/3c273.rmf", resp_id=1)
+
+######### Load Background Data Sets
+
+load_bkg(1, "@@/3c273_bg.pi", bkg_id=1)
+group(1, bkg_id=1)
+
+######### Background Spectral Responses
+
+load_arf(1, "@@/3c273.arf", resp_id=1, bkg_id=1)
+load_rmf(1, "@@/3c273.rmf", resp_id=1, bkg_id=1)
+
+######### Set Energy or Wave Units
+
+set_analysis(1, quantity="energy", type="rate", factor=0)
+subtract(1)
+
+######### Filter Data
+
+notice_id(1, "0.467200011015:9.869600296021")
+
+
+######### Set Statistic
+
+set_stat("chi2datavar")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+
+"""
+
 _canonical_pha_grouped = """import numpy
 from sherpa.astro.ui import *
 
@@ -2543,7 +2596,7 @@ def compileit(output):
     compile(output, "test.py", "exec")
 
 
-def compare(check_str, expected):
+def compare(check_str, expected, **kwargs):
     """Run save_all and check the output (saved to a
     StringIO object) to the string value expected.
 
@@ -2553,7 +2606,7 @@ def compare(check_str, expected):
 
     """
     output = StringIO()
-    ui.save_all(output)
+    ui.save_all(output, **kwargs)
     output = output.getvalue()
 
     # check the output is a valid Python program.
@@ -2805,6 +2858,25 @@ def test_restore_pha_basic(make_data_path):
     assert ui.xsapec.src.name == 'xsapec.src'
 
     assert ui.calc_stat() == pytest.approx(statval)
+
+
+@requires_data
+@requires_xspec
+@requires_fits
+@requires_group
+def test_canonical_pha_load(make_data_path, check_str):
+    """Do we explicitly load the ancillary files?"""
+
+    # This is setup_pha_basic but without the source model.
+    #
+    fname = make_data_path('3c273.pi')
+    ui.load_pha(1, fname)
+    ui.subtract()
+    ui.set_stat('chi2datavar')
+    ui.notice(0.5, 7)
+
+    canonical = add_datadir_path(_canonical_pha_basic_load)
+    compare(check_str, canonical, auto_load=False)
 
 
 @requires_data

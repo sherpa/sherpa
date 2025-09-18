@@ -17161,7 +17161,7 @@ class Session(sherpa.ui.utils.Session):
     def save_all(self,
                  outfile=None,
                  clobber: bool = False,
-                 always_load: bool = False
+                 auto_load: bool = True
                  ) -> None:
         """Save the information about the current session to a text file.
 
@@ -17179,7 +17179,7 @@ class Session(sherpa.ui.utils.Session):
            Handling of PHA data has been improved, and the output now
            defaults to not including automatically-loaded ancillary
            files (such as background and responses). Set the
-           ``always_load`` flag to True to add these commands back to
+           ``auto_load`` flag to False to add these commands back to
            the save file (and match previous versions).
 
         .. versionchanged:: 4.17.0
@@ -17208,9 +17208,11 @@ class Session(sherpa.ui.utils.Session):
            whether an existing file can be overwritten (``True``)
            orysif it raises an exception (``False``, the default
            setting).
-        always_load : bool, optional
-           Should automatically-loaded PHA files, such as backgrounds,
-           ARFS, and RMFs, be explicitly included in the file?
+        auto_load : bool, optional
+           If set to ``False`` then automatically-loaded PHA files,
+           such as backgrounds, ARFS, and RMFs, will be included in
+           the output with `load_arf`, `load_rmf`, and `load_bkg`
+           calls.
 
         Raises
         ------
@@ -17273,7 +17275,7 @@ class Session(sherpa.ui.utils.Session):
         ANCRFILE, BACKFILE, and RESPFILE keywords in the PHA file(s).
 
         >>> save_all("restore1.py")
-        >>> save_all("restore2.py", always_load=True)
+        >>> save_all("restore2.py", auto_load=False)
 
         """
 
@@ -17285,7 +17287,7 @@ class Session(sherpa.ui.utils.Session):
                     raise IOErr('filefound', outfile)
 
             with open(outfile, 'w', encoding="UTF-8") as fh:
-                serialize.save_all(self, fh, always_load=always_load)
+                serialize.save_all(self, fh, auto_load=auto_load)
 
         else:
             if outfile is not None:
@@ -17293,4 +17295,4 @@ class Session(sherpa.ui.utils.Session):
             else:
                 fh = sys.stdout
 
-            serialize.save_all(self, fh, always_load=always_load)
+            serialize.save_all(self, fh, auto_load=auto_load)
