@@ -574,12 +574,13 @@ class CStatNegativePenalty(CStat):
     .. versionadded:: 4.18.0
 
     """
+
     def _calc(self, data, model, weight, trunc_value):
 
-        if np.any(model < 0.0) and trunc_value <= 0:
-            raise ValueError("Model values are negative and truncation value is not set.")
+        if np.any(model <= 0.0) and trunc_value <= 0:
+            raise StatErr("Model values are negative and truncation value is not positive")
 
-        penalty =  - np.sum(model[model < 0])
+        penalty = -np.sum(model[model < 0])
 
         model = np.maximum(model, trunc_value)
         d = model
