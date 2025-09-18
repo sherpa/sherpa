@@ -549,65 +549,29 @@ class CStat(Likelihood):
 
 
 class CStatNegativePenalty(CStat):
-    """CStat with negative penalty for negative model values.
+    """CStat with penalty for negative model values.
 
-    CStat as defined in the literature will not work with model values
-    that are 0 or negative because of the term log(1/model).
-    In Sherpa CStat, we deal with that by truncating the model values to a
-    small positive value.
-    (At least that's the default. An error can be raised instead if the
-    user sets the truncate option to False in the .sherpa.rc file.)
+    The Cash statistic assumes that the model evaluation is always
+    positive, as it requires evaluating the log of the model values.
+    The `CStat` class replaces any model value that is 0 or negative
+    by a small positive model (the ``trunc_value`` term).
 
-    THIS IS ALREADY A CRUDGE, just to make it work numerically.
-    In practice, most models will have mostly positive values all the time,
-    but in numerical optimization it can happen that the optimizer tries
-    e.g. an absorption line that is too deep and get a few bins in the
-    model to a negative value. That's usually not a good fit (since the data
-    is always >=0) and the optimizer would usually set the parameter so
-    that the model is positive again. So, we use the truncation to make
-    sure that it doesn't crash in the middle of the optimization.
+    The `CStatNegativePenalty` statistic instead applies a penalty to
+    any model evaluation that leads to model values 0 or less, and
+    this penalty increases as the values move further away from zero
+    (in `CStat` the penalty is a constant term). The aim is to guide
+    the optimizer back to models that are all positive.
 
-    This solution is incomplete though: Once a value is negative the
-    statistics do not change with how negative it is. A model value of 0
-    and -10000 will be clipped to the same number and thus the optimizer
-    has no incentive to walk back to positive values.
+    The penalty term is (where M represents the model):
 
-    Again, in many models that is not a problem, e.g. in a Gaussian
-    absorption line that is several bins wide, reducing the amplitude
-    of the line will improve the fit on the edges of the line, even if the
-    center of the line is still truncated and thus the fit will walk back
-    to positive values. But in some cases, e.g. a narrow Gaussian line
-    there might be only one bin that is negative and stays negative for
-    a range of parameter values.
-    This can happen in two cases:
+       - (sum_j M(j))
 
-    - The initial guess for the model is wrong. While we typically do not
-      start with negative values for Poisson data, that can happen
-      incidentially, e.g. we might describe a model by a continuum and
-      an absorption line. If the absorption line is too deep, the intial
-      model might be negative.
-    - We start with a model that is all positive, but then the optimizer
-      takes a big step on the absorption line parameter and ends up in
-      negative territory.
+    where j represents only those model values that are 0 or less.
 
-    So, in addtion to the truncation, this class adds a penalty for negative
-    model values that grows to more negative the value is.
-    THIS IS STILL A CRUDGE and not grounded in mathematical statistics, it's
-    just a way to make the optimizer work better in some cases.
-    As before, we expect that the optimizer will walk back to positive values
-    and thus the penalty in intermediate steps will not influence the statistic
-    value in the final fit at all.
+    When the model values are positive the statistic is the same
+    as calculated by `CStat`.
 
-    The scale of the penalty needs to be chosen such that it actually edges
-    the optimizer back to positive values, but not so strong that it creates
-    a giant step in the statistic value which might confuse the optimizer,
-    i.e. we don't want it to be 1e-38, but also not 1e+23.
-    For Poisson data, the natural scale is "1", so we use the sum of
-    all negative model values as the penalty.
-
-    Again, the exact choice does not matter, because we expect this penalty
-    to apply only in intermediate steps and not in the final fit.
-
+    .. versionadded:: 4.18.0
 
     """
     def _calc(self, data, model, weight, trunc_value):
