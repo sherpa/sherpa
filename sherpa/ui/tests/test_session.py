@@ -510,7 +510,7 @@ def test_get_stat_named(name, req):
                           ("LEASTSQ", "leastsq"),
                           ("cash", "cash"),
                           ("cstat", "cstat"),
-                          ("cstatNegativepenalty", "cstat"),
+                          ("cstatNegativepenalty", "cstatnegativepenalty"),
                           ("Wstat", "wstat")])
 def test_get_stat_name_response(requested, expected):
     """get_stat_name returns expected value"""

@@ -241,7 +241,7 @@ space where the predicted model values are positive:
     >>> res2 = fit2.fit()
     >>> print(res2.format())
     Method                = neldermead
-    Statistic             = cstat
+    Statistic             = cstatnegativepenalty
     Initial fit statistic = 116234
     Final fit statistic   = 17.816 at function evaluation 445
     Data points           = 23

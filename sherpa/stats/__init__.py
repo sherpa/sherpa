@@ -575,6 +575,9 @@ class CStatNegativePenalty(CStat):
 
     """
 
+    def __init__(self, name: str = 'cstatnegativepenalty') -> None:
+        super().__init__(name=name)
+
     def _calc(self, data, model, weight, trunc_value):
 
         if np.any(model <= 0.0) and trunc_value <= 0:
