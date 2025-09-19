@@ -5431,7 +5431,7 @@ class DataIMG(Data2D):
 
     # This could be moved up Data2D, but the inheritance pathway of the
     # DataIMG classes makes that a bit awkward, since DataIMG and DataIMGInt
-    # both inherit from Data2D, but DataIMGInt does not inherit from Data2dInt.
+    # both inherit from Data2D, but DataIMGInt does not inherit from Data2DInt.
     @classmethod
     def from_2d_array(cls,
                      name: str,
@@ -5441,8 +5441,9 @@ class DataIMG(Data2D):
                      x1: npt.NDArray[np.floating] | None = None,
                      staterror: npt.NDArray[np.floating] | None = None,
                      syserror: npt.NDArray[np.floating] | None = None,
-                     header: Mapping[str, Any] | None = None) -> "DataIMG":   # -> Self  -- but can't so that al long as we are still 3.10 compatible
-        '''Create a `Data2IMG` instance from a 2-dimensional array.
+                     header: Mapping[str, Any] | None = None
+                     ) -> "DataIMG":   # change to Self once Python 3.10 support has been dropped
+        '''Create a `DataIMG` instance from a 2-dimensional array.
 
         Parameters
         ----------
@@ -5522,7 +5523,8 @@ class DataIMG(Data2D):
                      sky: WCS,
                      eqpos: WCS,
                      coord: Literal["logical", "image", "physical", "world", "wcs"] = 'logical',
-                     header: Mapping[str, Any] | None = None) -> "DataIMG":   # -> Self  -- but can't so that al long as we are still 3.10 compatible
+                     header: Mapping[str, Any] | None = None
+                     ) -> "DataIMG":   # change to Self once Python 3.10 support has been dropped
         '''Create a DataIMG instance from 2D data and WCS information.
 
         '''
@@ -6107,7 +6109,7 @@ class DataIMGInt(DataIMG):
                      staterror: npt.NDArray[np.floating] | None = None,
                      syserror: npt.NDArray[np.floating] | None = None,
                      header: Mapping[str, Any] | None = None,
-                     ) -> "DataIMGInt":  # -> Self:  -- but can't so that al long as we are still 3.10 compatible
+                     ) -> "DataIMGInt":   # change to Self once Python 3.10 support has been dropped
         '''Create a `DataIMGInt` instance from a 2-dimensional array.
 
         Parameters
@@ -6196,7 +6198,8 @@ class DataIMGInt(DataIMG):
                      sky: WCS,
                      eqpos: WCS,
                      coord: Literal["logical", "image", "physical", "world", "wcs"] = 'logical',
-                     header: Mapping[str, Any] | None = None) -> "DataIMGInt":
+                     header: Mapping[str, Any] | None = None
+                     ) -> "DataIMGInt":   # change to Self once Python 3.10 support has been dropped
         '''Create a DataIMGInt instance from 2D data and WCS information.
 
         '''
