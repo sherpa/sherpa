@@ -93,11 +93,17 @@ def setup_covar(make_data_path):
 
 
 @requires_data
-@pytest.mark.parametrize('stat', sorted(set(ui.list_stats()) - RIGHT_STATS))
+@pytest.mark.parametrize('stat', sorted(set(ui.list_stats())
+                                        - RIGHT_STATS
+                                        # As of 4.18.0 chi2/... now error out
+                                        # with unique errors, so skip testing
+                                        # them
+                                        - {"chi2", "leastsq", "userstat"}
+                                        ))
 def test_covar_wrong_stat(stat, clean_ui, setup_covar):
     "Test an exception is thrown is the proper stat is not set"
 
-    ui.covar()
+    # ui.covar()  this is not needed as of 4.18.0
     ui.set_stat(stat)
     with pytest.raises(ValueError,
                        match=WRONG_STAT_MSG.format(stat)):
@@ -112,17 +118,6 @@ def test_covar_wstat_no_background(clean_ui, setup_covar):
     ui.set_stat("wstat")
     with pytest.raises(StatErr,
                        match=WSTAT_ERR_MSG):
-        ui.get_draws()
-
-
-@requires_data
-@pytest.mark.parametrize("stat", sorted(RIGHT_STATS))
-def test_no_covar(stat, clean_ui, setup_covar):
-    "Test an exception is thrown if covar is not run"
-
-    ui.set_stat(stat)
-    with pytest.raises(SessionErr,
-                       match=NO_COVAR_MSG):
         ui.get_draws()
 
 
@@ -186,7 +181,7 @@ def test_covar_as_none(statname, clean_ui, setup_covar):
 
     ui.set_stat(statname)
     ui.fit()
-    ui.covar()
+    # ui.covar() as of 4.18.0 this is no-longer needed
 
     ui.set_rng(np.random.RandomState(SEED_VALUE))
 
