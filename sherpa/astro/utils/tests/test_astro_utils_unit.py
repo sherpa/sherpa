@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020 - 2022, 2024
+#  Copyright (C) 2017, 2018, 2020-2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,12 +25,14 @@ import numpy as np
 import pytest
 
 from sherpa.astro.data import DataPHA, DataIMG, DataIMGInt
-from sherpa.astro.instrument import matrix_to_rmf
+from sherpa.astro.instrument import create_arf, create_delta_rmf, \
+    matrix_to_rmf
 from sherpa.astro import ui
 from sherpa.astro import utils
-from sherpa.astro.utils import do_group, expand_grouped_mask, filter_resp, \
-    range_overlap_1dint
+from sherpa.astro.utils import do_group, eqwidth, expand_grouped_mask, \
+    filter_resp, range_overlap_1dint
 from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
+from sherpa.models.basic import Const1D, NormGauss1D
 from sherpa.utils.err import DataErr, IOErr
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_region
@@ -872,3 +874,113 @@ def test_expand_grouped_mask(mask, group, expected):
 
     evals = np.asarray(expected)
     assert expand_grouped_mask(mask, group) == pytest.approx(evals)
+
+
+POS_GAUSS = NormGauss1D()
+POS_GAUSS.ampl = 4
+POS_GAUSS.pos = 5
+POS_GAUSS.fwhm = 1
+
+
+def setup_eqwidth_datapha() -> DataPHA:
+    """Create a PHA datastet for use with eqwidth tests"""
+
+    # Pick an energy grid that encomposes the line emission of
+    # POS_GAUSS.
+    #
+    egrid = np.arange(0.1, 10, 0.01)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    nchan = len(elo)
+
+    pha = DataPHA("ex", np.arange(1, nchan + 1), [0] * nchan)
+
+    # A "perfect" response
+    rmf = create_delta_rmf(elo, ehi)
+    arf = create_arf(elo, ehi)
+    pha.set_rmf(rmf)
+    pha.set_arf(arf)
+
+    pha.set_analysis("energy")
+    return pha
+
+
+@pytest.mark.parametrize("lmodel", [POS_GAUSS, -POS_GAUSS])
+def test_eqwidth_datapha_absolute(lmodel):
+    """A eqwidth value is expected (absolute check)."""
+
+    pha = setup_eqwidth_datapha()
+
+    continuum = Const1D("continuum")
+    continuum.c0 = 10
+
+    got = eqwidth(pha, continuum, continuum + lmodel)
+
+    # Check the absolute value. Given that the equivalent width is
+    #    integral( (combined - continuum) / continuum )
+    # and the continuuum here is a constant, and
+    #
+    # a) the evaluation grid is large enough to capture all the line emission,
+    # b) the line model .ampl parameter gives the expected sum of the
+    #    model
+    #
+    # then we have (for combined == continuum + line)
+    #
+    #    integral( (combined - continuum) / continuum )            ==
+    #    integral( (continuum + line - continuum) / continuum )    ==
+    #    integral(line / continuum )                               ==
+    #    integral( line ) / c0                                     ==
+    #    ampl / c0
+    #
+    # Which here is
+    #    4 / 10
+    #
+    # For combined == continuum - line then we get -4/10
+    #
+    # (although the George & Fabian paper do not talk about absorption
+    # features).
+    #
+    # So |expected equivalent width| == 0.4
+    #
+    assert abs(got) == pytest.approx(0.4)
+
+
+@pytest.mark.parametrize("lmodel", [POS_GAUSS, -POS_GAUSS])
+@pytest.mark.parametrize("lo,hi", [(0, 4.999),  # Need < 5 not <= 5
+                                   (5, 10)])
+def test_eqwidth_datapha_absolute_half(lmodel, lo, hi):
+    """Check subsetting the range works.
+
+    These tests rely on the line emission being symmetric about
+    x=5.
+
+    """
+
+    pha = setup_eqwidth_datapha()
+
+    continuum = Const1D("continuum")
+    continuum.c0 = 10
+
+    # Selected to account for half the signal
+    got = eqwidth(pha, continuum, continuum + lmodel, lo=lo, hi=hi)
+    assert abs(got) == pytest.approx(0.4 / 2)
+
+
+@pytest.mark.parametrize("lmodel, sign",
+                         [(POS_GAUSS, 1),
+                          (-POS_GAUSS, -1)])
+def test_eqwidth_datapha_sign(lmodel, sign):
+    """Is the sign of the value correct?
+
+    Absorption features are negative and emission are positive
+    (assumed, based on George & Fabian paper).
+
+    """
+
+    pha = setup_eqwidth_datapha()
+
+    continuum = Const1D("continuum")
+    continuum.c0 = 10
+
+    got = eqwidth(pha, continuum, continuum + lmodel)
+    assert np.sign(got) == sign
