@@ -7,7 +7,7 @@ The sherpa.stats module
 .. automodule:: sherpa.stats
 
    .. rubric:: Classes
-               
+
    .. autosummary::
       :toctree: api
 
@@ -22,6 +22,7 @@ The sherpa.stats module
       Likelihood
       Cash
       CStat
+      CStatNegativePenalty
       WStat
       UserStat
 
@@ -30,4 +31,3 @@ Class Inheritance Diagram
 
 .. inheritance-diagram::  Stat Chi2 LeastSq Chi2ConstVar Chi2DataVar Chi2Gehrels Chi2ModVar Chi2XspecVar Likelihood Cash CStat WStat UserStat
    :parts: 1
-             

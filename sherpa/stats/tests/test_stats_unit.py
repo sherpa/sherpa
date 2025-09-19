@@ -50,12 +50,13 @@ from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.data import Data1D, Data1DInt, Data2D, DataSimulFit
 from sherpa.models.model import SimulFitModel
-from sherpa.models.basic import Const1D, Polynom1D
+from sherpa.models.basic import Const1D, Polynom1D, TableModel
 from sherpa.astro.models import Lorentz2D
 from sherpa.utils.err import DataErr, FitErr, StatErr
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
-    Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Cash, CStat, WStat, UserStat
+    Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Cash, CStat, \
+    CStatNegativePenalty, WStat, UserStat
 
 
 def setup_single(stat, sys):
@@ -848,6 +849,10 @@ stat_cstat = 0.630015576282
     (CStat, True, False, stat_cstat),
     (CStat, False, True, stat_cstat),
     (CStat, False, False, stat_cstat),
+    (CStatNegativePenalty, True, True, stat_cstat),  # same as CStat here
+    (CStatNegativePenalty, True, False, stat_cstat),
+    (CStatNegativePenalty, False, True, stat_cstat),
+    (CStatNegativePenalty, False, False, stat_cstat),
 
 ])
 def test_stats_calc_stat(stat, usestat, usesys, expected):
@@ -917,6 +922,10 @@ stat1dint_cstat = 5.72588729301
     (CStat, True, False, stat1dint_cstat),
     (CStat, False, True, stat1dint_cstat),
     (CStat, False, False, stat1dint_cstat),
+    (CStatNegativePenalty, True, True, stat1dint_cstat),
+    (CStatNegativePenalty, True, False, stat1dint_cstat),
+    (CStatNegativePenalty, False, True, stat1dint_cstat),
+    (CStatNegativePenalty, False, False, stat1dint_cstat),
 
 ])
 def test_stats_calc_stat_1dint(stat, usestat, usesys, expected):
@@ -965,6 +974,10 @@ stat2d_cstat = 1.86643403865
     (CStat, True, False, stat2d_cstat),
     (CStat, False, True, stat2d_cstat),
     (CStat, False, False, stat2d_cstat),
+    (CStatNegativePenalty, True, True, stat2d_cstat),
+    (CStatNegativePenalty, True, False, stat2d_cstat),
+    (CStatNegativePenalty, False, True, stat2d_cstat),
+    (CStatNegativePenalty, False, False, stat2d_cstat),
 
 ])
 def test_stats_calc_stat_2d(stat, usestat, usesys, expected):
@@ -1037,6 +1050,10 @@ delta_cstat = 0.340992230887
     (CStat, True, False, stat_cstat, delta_cstat),
     (CStat, False, True, stat_cstat, delta_cstat),
     (CStat, False, False, stat_cstat, delta_cstat),
+    (CStatNegativePenalty, True, True, stat_cstat, delta_cstat),
+    (CStatNegativePenalty, True, False, stat_cstat, delta_cstat),
+    (CStatNegativePenalty, False, True, stat_cstat, delta_cstat),
+    (CStatNegativePenalty, False, False, stat_cstat, delta_cstat),
 
 ])
 def test_stats_calc_stat_multi(stat, usestat, usesys, expected1, delta):
@@ -1119,6 +1136,8 @@ stat_pha_wstat = 1.81735155799
 
     (CStat, True, True, False, False, stat_pha_cstat),
     (CStat, False, False, False, False, stat_pha_cstat),
+    (CStatNegativePenalty, True, True, False, False, stat_pha_cstat),
+    (CStatNegativePenalty, False, False, False, False, stat_pha_cstat),
 
     # Using havebg=False for wstat will raise an error
     (WStat, False, False, True, False, stat_pha_wstat),
@@ -1315,3 +1334,26 @@ def test_stats_calc_stat_pha_multi(stat, usestat, usesys,
     # correct for the one missing bin in the second dataset
     expected = 2 * expected1 - delta
     assert_almost_equal(answer, expected)
+
+
+# The truncation value of 1e-25 is not going to affect any approximate
+# equality checks with values ~ 1.
+#
+ZEROVAL = 10.85240844637142
+ZERODELT = 0.2
+@pytest.mark.parametrize("stat,expected",
+                         [(CStat, ZEROVAL),
+                          (CStatNegativePenalty, ZEROVAL + ZERODELT)])
+def test_cstat_negative_model(stat, expected):
+    """If a model has <= 0 values, what happens?"""
+
+    # Use a table model as it is an easy way to get a negative model
+    # value. Match the data except for the discrepant point.
+    #
+    data = Data1D("x", [1, 2, 3], [1, 0.1, 3])
+    model = TableModel()
+    model.load(None, [1, -ZERODELT, 3])
+
+    statobj = stat()
+    answer, _ = statobj.calc_stat(data, model)
+    assert answer == pytest.approx(expected)

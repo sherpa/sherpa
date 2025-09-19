@@ -82,7 +82,7 @@ is None.
 WRONG_STAT_MSG = "Fit statistic must be cash, cstat or wstat, not {}"
 WSTAT_ERR_MSG = "No background data has been supplied. Use cstat"
 NO_COVAR_MSG = "covariance has not been performed"
-RIGHT_STATS = {'cash', 'cstat', 'wstat'}
+RIGHT_STATS = {'cash', 'cstat', 'cstatnegativepenalty', 'wstat'}
 
 
 @pytest.fixture
