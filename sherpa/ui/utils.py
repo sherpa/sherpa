@@ -3054,6 +3054,9 @@ class Session(NoNewAttributesAfterInit):
         the numerical measure that determines how closely the model
         represents the data.
 
+        .. versionchanged:: 4.18.0
+           The cstatnegativepenalty statistic has been added.
+
         Parameters
         ----------
         stat : str or sherpa.stats.Stat instance
@@ -3110,6 +3113,13 @@ class Session(NoNewAttributesAfterInit):
            A maximum likelihood function (the XSPEC implementation of
            the Cash function) [3]. This does *not* include support
            for including the background.
+
+        cstatnegativepenalty
+           The cstat statistic penalizes models that predict negative
+           values with a constant term. This can cause the optimiser
+           problems, potentially leading to the fit getting stuck.
+           This statistic applies a variable penalty, which may allow
+           the optimiser to move the search back into a valid space.
 
         wstat
            A maximum likelihood function which includes the background
