@@ -492,6 +492,9 @@ def test_get_stat_default():
                          [("chi2gehrels", stats.Chi2Gehrels),
                           ("Chi2DataVar", stats.Chi2DataVar),
                           ("leastsq", stats.LeastSq),
+                          ("cash", stats.Cash),
+                          ("cstat", stats.CStat),
+                          ("cstatNegativepenalty", stats.CStatNegativePenalty),
                           ("Wstat", stats.WStat)])
 def test_get_stat_named(name, req):
     """get_stat returns requested instance"""
@@ -499,6 +502,22 @@ def test_get_stat_named(name, req):
     s = Session()
     stat = s.get_stat(name)
     assert isinstance(stat, req)
+
+
+@pytest.mark.parametrize("requested,expected",
+                         [("chi2gehrels", "chi2gehrels"),
+                          ("Chi2DataVar", "chi2datavar"),
+                          ("LEASTSQ", "leastsq"),
+                          ("cash", "cash"),
+                          ("cstat", "cstat"),
+                          ("cstatNegativepenalty", "cstat"),
+                          ("Wstat", "wstat")])
+def test_get_stat_name_response(requested, expected):
+    """get_stat_name returns expected value"""
+
+    s = Session()
+    s.set_stat(requested)
+    assert s.get_stat_name() == expected
 
 
 def test_get_stat_invalid():
