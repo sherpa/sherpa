@@ -15384,9 +15384,14 @@ class Session(sherpa.ui.utils.Session):
                 covar_matrix: np.ndarray | None = None):
         """Calculate the equivalent width of an emission or absorption line.
 
-        The `equivalent width <https://en.wikipedia.org/wiki/Equivalent_width>`_
-        is calculated in the selected units
-        for the data set (which can be retrieved with `get_analysis`).
+        The equivalent width (EW) is calculated following `George &
+        Fabian (1991)
+        <https://ui.adsabs.harvard.edu/abs/1991MNRAS.249..352G/abstract>`_
+        as "(combo - src) / src". As combo is assumed to be the
+        continuum model (src) combined with the source model,
+        e.g. "src + line", then this is equivalent to "line / src".
+        This means that emission lines have a positive EW and
+        absorption lines a negative EW.
 
         .. versionchanged:: 4.18.0
            If ``covar_matrix`` is left unset then the covariance
@@ -15468,13 +15473,13 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source(powlaw1d.cont + gauss1d.line)
         >>> set_analysis('wavelength')
         >>> fit()
-        >>> eqwidth(cont, cont+line)
+        >>> eqwidth(cont, cont + line)
         2.1001988282497308
 
         The calculation is restricted to the range 20 to 24
         Angstroms.
 
-        >>> eqwidth(cont, cont+line, lo=20, hi=24)
+        >>> eqwidth(cont, cont + line, lo=20, hi=24)
         1.9882824973082310
 
         The calculation is done for the background model of
@@ -15482,7 +15487,7 @@ class Session(sherpa.ui.utils.Session):
         are whatever the analysis setting for this data set id).
 
         >>> set_bkg_source(2, const1d.flat + gauss1d.bline)
-        >>> eqwidth(flat, flat+bline, id=2, bkg_id=1, lo=0.5, hi=2)
+        >>> eqwidth(flat, flat + bline, id=2, bkg_id=1, lo=0.5, hi=2)
         0.45494599793003426
 
         With the `error` flag set to `True`, the return value is
@@ -15511,7 +15516,7 @@ class Session(sherpa.ui.utils.Session):
         Evaluate the equivalent-width distributions using datasets 1,
         2, and 3:
 
-        >>> res = eqwidth(p, p+g, id=1, otherids=[2,3], error=True)
+        >>> res = eqwidth(p, p + g, id=1, otherids=[2,3], error=True)
 
         """
 
