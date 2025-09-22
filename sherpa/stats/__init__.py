@@ -35,7 +35,7 @@ from sherpa.utils.types import StatFunc, StatResults
 
 from . import _statfcts  # type: ignore
 
-__all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',
+__all__ = ('Stat', 'Cash', 'CStat', 'CStatNegativePenalty', 'LeastSq',
            'Chi2Gehrels', 'Chi2ConstVar', 'Chi2DataVar', 'Chi2ModVar',
            'Chi2XspecVar', 'Chi2',
            'UserStat', 'WStat')
@@ -546,6 +546,58 @@ class CStat(Likelihood):
 
     def __init__(self, name: str = 'cstat') -> None:
         super().__init__(name=name)
+
+
+class CStatNegativePenalty(CStat):
+    """CStat with penalty for negative model values.
+
+    The Cash statistic assumes that the model evaluation is always
+    positive, as it requires evaluating the log of the model values.
+    The `CStat` class replaces any model value that is 0 or negative
+    by a small positive model (the ``trunc_value`` term).
+
+    The `CStatNegativePenalty` statistic instead applies a penalty to
+    any model evaluation that leads to model values 0 or less, and
+    this penalty increases as the values move further away from zero
+    (in `CStat` the penalty is a constant term). The aim is to guide
+    the optimizer back to models that are all positive.
+
+    The penalty term is (where M represents the model):
+
+       - (sum_j M(j))
+
+    where j represents only those model values that are 0 or less.
+
+    When the model values are positive the statistic is the same
+    as calculated by `CStat`.
+
+    .. versionadded:: 4.18.0
+
+    """
+
+    def __init__(self, name: str = 'cstatnegativepenalty') -> None:
+        super().__init__(name=name)
+
+    def _calc(self, data, model, weight, trunc_value):
+
+        if np.any(model <= 0.0) and trunc_value <= 0:
+            raise StatErr("Model values are negative and truncation value is not positive")
+
+        penalty = -np.sum(model[model < 0])
+
+        model = np.maximum(model, trunc_value)
+        d = model
+
+        # Work with subset of data where the log is valid
+        ind = data > 0
+        dint = data[ind]
+        mind = model[ind]
+        d[ind] = mind - dint + (dint * np.log(dint / mind))
+        if weight is not None:
+            d = d * weight
+
+        d *= 2
+        return d.sum() + penalty, np.sqrt(np.abs(d))
 
 
 class Chi2(Stat):
