@@ -17228,9 +17228,9 @@ class Session(sherpa.ui.utils.Session):
         -----
 
         This command will create a series of commands that restores
-        the current Sherpa set up. It does not save the set of commands
-        used. Not all Sherpa settings are saved. Items not fully restored
-        include:
+        the current Sherpa set up. It does not save the original set
+        of commands used, and not all Sherpa settings are saved. Items
+        not fully restored include:
 
         - data changed from the version on disk - e.g. by calls to
           `set_counts` - will not be restored correctly,
@@ -17246,6 +17246,19 @@ class Session(sherpa.ui.utils.Session):
         recommended if the session is likely to be restored with newer
         versions of Sherpa. It is suggested that the output of both
         should be checked when the output may be used long term.
+
+        Using the output of `save_all` depends on what interpreter is
+        being used. If it is IPython then the ``%run`` `command
+        <https://ipython.org/ipython-doc/3/interactive/magics.html#magic-run>`_
+        can be used. So, if ``save_all("save.out")`` was used then the
+        output file can be loaded with:
+
+            %run -i save.out
+
+        When using the Python interactive environment the following
+        can be used:
+
+            exec(open("save.out").read())
 
         Examples
         --------
