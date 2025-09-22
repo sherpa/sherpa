@@ -332,9 +332,9 @@ class Session(sherpa.ui.utils.Session):
             data = self._get_pha_data(id)
             return data.default_background_id
 
-            # return self._default_id
-
-        # We rely on the validation made by _fix_id
+        # We rely on the validation made by _fix_id. This is not
+        # expected to change the value (as bkg_id is not None).
+        #
         return self._fix_id(bkg_id)
 
     def __setstate__(self, state):
@@ -361,16 +361,26 @@ class Session(sherpa.ui.utils.Session):
         self._energyfluxplot = sherpa.astro.plot.EnergyFluxHistogram()
         self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
 
-        # Used to identify PHA2 datasets.
+        # Used to identify PHA datasets.
         #
-        # The value field could be more-precisely typed, but leave as
-        # generic for the moment. It is also likely that this approach
-        # (of storing the actual file name and arguments) can be
-        # extended to all the load_xxx calls, so that
-        # .serialize.save_all can use it rather than the current
-        # approach.
+        # These dictionaries are always cleared by set_data/bkg for
+        # the IdType value, and a few other commands
+        # (e.g. delete_data, delete_bkg, copy_data). Data is stored by
+        # the relevant load_pha/data/bkg commands after they call
+        # set_data/bkg.  This information is used by
+        # .serialize.save_all to re-create the relevant load_xxx
+        # command. At present this is restricted to PHA data but could
+        # be extended for the other types (e.g. tables, images).  The
+        # value type of "dict[str, Any]" could have better typing, but
+        # leave as this generic form for now.
+        #
+        # Note that the automatically-loaded ancillary data for PHA
+        # files (background, ARF, RMF) are included in this store so
+        # that save_all knows that these files do not need to be
+        # explicitly loaded.
         #
         self._load_data_store: dict[IdType, dict[str, Any]] = {}
+        self._load_bkg_store: dict[IdType, dict[IdType, dict[str, Any]]] = {}
 
         # This is a new dictionary of XSPEC module settings.  It
         # is meant only to be populated by the save function, so
@@ -1027,10 +1037,65 @@ class Session(sherpa.ui.utils.Session):
         output.append(statinfo)
         return output
 
-
     ###########################################################################
     # Data
     ###########################################################################
+
+    def delete_data(self, id: IdType | None = None) -> None:
+        idval = self._fix_id(id)
+        super().delete_data(idval)
+
+        # Ensure the load-bkg/data stores are cleared.
+        #
+        with suppress(KeyError):
+            del self._load_bkg_store[idval]
+
+        with suppress(KeyError):
+            del self._load_data_store[idval]
+
+    delete_data.__doc__ = sherpa.ui.utils.Session.delete_data.__doc__
+
+    def set_data(self, id, data=None) -> None:
+        if data is None:
+            idval = self.get_default_id()
+            data = id
+        else:
+            idval = self._fix_id(id)
+
+        super().set_data(idval, data=data)
+
+        # Ensure the load-bkg/data stores are cleared.
+        #
+        with suppress(KeyError):
+            del self._load_bkg_store[idval]
+
+        with suppress(KeyError):
+            del self._load_data_store[idval]
+
+    set_data.__doc__ = sherpa.ui.utils.Session.set_data.__doc__
+
+    def copy_data(self, fromid: IdType, toid: IdType) -> None:
+        super().copy_data(fromid, toid)
+
+        # Copy over the load-data information if it exists, otherwise
+        # ensure it is cleared out.
+        #
+        try:
+            old = self._load_data_store[fromid]
+
+            # Copy the dict rather than share a reference.
+            #
+            self._load_data_store[toid] = {k: v for k, v in old.items()}
+            self._load_data_store[toid]["id"] = toid
+
+        except KeyError:
+            with suppress(KeyError):
+                del self._load_bkg_store[toid]
+
+            with suppress(KeyError):
+                del self._load_data_store[toid]
+
+    copy_data.__doc__ = sherpa.ui.utils.Session.copy_data.__doc__
 
     # DOC-NOTE: also in sherpa.utils
     def dataspace1d(self, start, stop, step=1, numbins=None,
@@ -2008,12 +2073,61 @@ class Session(sherpa.ui.utils.Session):
         if id is None:
             idval = self.get_default_id()
         else:
-            idval = id
+            idval = self._fix_id(id)
+
+        def mk_pha_store(data: DataPHA) -> dict[str, Any]:
+            """The basic storage information for a PHA file."""
+
+            store = {"id": idval,
+                     "filename": filename,
+                     "kwargs": kwargs}
+
+            # What files were automatically loaded? Track the
+            # identifier and file name in case the user loads
+            # something different. If the code tracks the load
+            # commands then this logic could be removed.
+            #
+            # The responses can be None, so strip them out.
+            #
+            store["arf_ids"] = {}
+            store["rmf_ids"] = {}
+            for resp_id in data.response_ids:
+                arf, rmf = data.get_response(resp_id)
+                if arf is not None:
+                    store["arf_ids"][resp_id] = arf.name
+                if rmf is not None:
+                    store["rmf_ids"][resp_id] = rmf.name
+
+            store["bkg_ids"] = {
+                bkg_id: data.get_background(bkg_id).name
+                for bkg_id in data.background_ids
+            }
+
+            # The backgrounds can have responses.
+            #
+            store["bkg_arf_ids"] = {}
+            store["bkg_rmf_ids"] = {}
+            for bkg_id in data.background_ids:
+                bkg = data.get_background(bkg_id)
+                bkg_arfs = {}
+                bkg_rmfs = {}
+                for resp_id in bkg.response_ids:
+                    barf, brmf = bkg.get_response(resp_id)
+                    if barf is not None:
+                        bkg_arfs[resp_id] = barf.name
+                    if brmf is not None:
+                        bkg_rmfs[resp_id] = brmf.name
+
+                store["bkg_arf_ids"][bkg_id] = bkg_arfs
+                store["bkg_rmf_ids"][bkg_id] = bkg_rmfs
+
+            return store
 
         if not np.iterable(datasets):
+            # set_data clears _load_data_store
             self.set_data(idval, datasets)
-            with suppress(KeyError):
-                del self._load_data_store[idval]
+            if isinstance(datasets, DataPHA):
+                self._load_data_store[idval] = mk_pha_store(datasets)
 
             return
 
@@ -2034,16 +2148,14 @@ class Session(sherpa.ui.utils.Session):
             self.set_data(id_, data)
             ids.append(id_)
 
-            # Store a mapping between the actual identifiers used for
-            # the data to the arguments of the call (this is assumed
-            # to be a PHA2 file). Note that since ids is mutated, this
-            # will store the full list of matching identifiers for
-            # each id_ value.
+            store = mk_pha_store(data)
+
+            # Note that since ids is a mutable argument, the final
+            # value stored in idvals will list all related
+            # identifiers.
             #
-            self._load_data_store[id_] = {"id": idval,
-                                          "idvals": ids,
-                                          "filename": filename,
-                                          "kwargs": kwargs}
+            store["idvals"] = ids
+            self._load_data_store[id_] = store
 
         if num > 1:
             info("Multiple data sets have been input: %s-%s",
@@ -2305,10 +2417,10 @@ class Session(sherpa.ui.utils.Session):
 
         """
         use_errors = bool_cast(use_errors)
-        return sherpa.astro.io.read_pha(arg, use_errors)
+        return sherpa.astro.io.read_pha(arg, use_errors=use_errors)
 
     # DOC-TODO: what does this return when given a PHA2 file?
-    def unpack_bkg(self, arg, use_errors=False):
+    def unpack_bkg(self, arg, use_errors: bool = False):
         """Create a PHA data structure for a background data set.
 
         Any instrument information referenced in the header of the PHA
@@ -2357,11 +2469,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
         use_errors = bool_cast(use_errors)
-        return sherpa.astro.io.read_pha(arg, use_errors, True)
+        return sherpa.astro.io.read_pha(arg, use_errors=use_errors,
+                                        use_background=True)
 
     # DOC-TODO: how best to include datastack support?
     def load_pha(self, id, arg=None,
-                 use_errors=False) -> None:
+                 use_errors: bool = False) -> None:
         """Load a PHA data set.
 
         This will load the PHA data and any related information, such
@@ -2515,7 +2628,10 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
 
         phasets = self.unpack_pha(arg, use_errors)
 
@@ -2525,7 +2641,7 @@ class Session(sherpa.ui.utils.Session):
         if use_errors:
             kwargs["use_errors"] = True
 
-        self._load_data(id, phasets, filename=arg, kwargs=kwargs)
+        self._load_data(idval, phasets, filename=arg, kwargs=kwargs)
 
     def _get_pha_data(self,
                       id: IdType | None,
@@ -7191,10 +7307,23 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if bkg is None:
-            id, bkg = bkg, id
-        data = self._get_pha_data(id)
+            idval = self.get_default_id()
+            bkg = id
+        else:
+            idval = self._fix_id(id)
+
+        # Ensure we have PHA data (for source and background).
+        data = self._get_pha_data(idval)
         _check_type(bkg, DataPHA, 'bkg', 'a PHA data set')
-        data.set_background(bkg, bkg_id)
+
+        bkg_idval = self._fix_background_id(idval, bkg_id)
+        data.set_background(bkg, bkg_idval)
+
+        # Ensure the load-bkg store is cleared.
+        with suppress(KeyError):
+            del self._load_bkg_store[idval][bkg_idval]
+            if len(self._load_bkg_store[idval]) == 0:
+                del self._load_bkg_store[idval]
 
     def list_bkg_ids(self,
                      id: IdType | None = None
@@ -8200,7 +8329,8 @@ class Session(sherpa.ui.utils.Session):
             self.ignore2d_id(idval, regions)
 
     # DOC-TODO: how best to include datastack support? How is it handled here?
-    def load_bkg(self, id, arg=None, use_errors=False,
+    def load_bkg(self, id, arg=None,
+                 use_errors: bool = False,
                  bkg_id: IdType | None = None
                  ) -> None:
         """Load the background from a file and add it to a PHA data set.
@@ -8266,15 +8396,78 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
 
         bkgsets = self.unpack_bkg(arg, use_errors)
 
+        def mk_pha_store(data: DataPHA) -> dict[str, Any]:
+            """The basic storage information for a PHA file."""
+
+            store = {"id": idval,
+                     "filename": arg,
+                     }
+            if use_errors:
+                store["use_errors"] = use_errors
+
+            # What files were automatically loaded? Track the
+            # identifier and file name in case the user loads
+            # something different. If the code tracks the load
+            # commands then this logic could be removed.
+            #
+            # The responses can be None, so strip them out.
+            #
+            store["arf_ids"] = {}
+            store["rmf_ids"] = {}
+            for resp_id in data.response_ids:
+                arf, rmf = data.get_response(resp_id)
+                if arf is not None:
+                    store["arf_ids"][resp_id] = arf.name
+                if rmf is not None:
+                    store["rmf_ids"][resp_id] = rmf.name
+
+            # Unlike the load_pha/data case, there is no need
+            # to track background information here (as this is
+            # the background).
+            #
+            return store
+
+        # Store values for each bkg_id value, hence the idval is a
+        # dict of dicts, unlike the _load_data_store, which is just a
+        # dict.
+        #
+        fullstore = {}
+        self._load_bkg_store[idval] = fullstore
+
         if np.iterable(bkgsets):
-            for bkgid, bkg in enumerate(bkgsets):
-                self.set_bkg(id, bkg, bkgid + 1)
+            # QUS: do we support PHA2 background files? Technically
+            # we do, but in reality we do not have files like this.
+            #
+            # NOTE: this ignores the bkg_id argument.
+            #
+            bkgids = []
+            for bkgid, bkg in enumerate(bkgsets, 1):
+                self.set_bkg(idval, bkg, bkgid)
+                bkgids.append(bkgid)
+
+                store = mk_pha_store(bkg)
+                store["bkg_id"] = bkgid
+
+                # Note that since bkgids is a mutable argument, the
+                # final value stored in bkgidvals will list all
+                # related identifiers.
+                #
+                fullstore[bkg_id] = store
+
         else:
-            self.set_bkg(id, bkgsets, bkg_id)
+            bkg_idval = self._fix_background_id(idval, bkg_id)
+            self.set_bkg(idval, bkgsets, bkg_idval)
+
+            store = mk_pha_store(bkgsets)
+            store["bkg_id"] = bkg_idval
+            fullstore[bkg_idval] = store
 
     def group(self,
               id: IdType | None = None,
@@ -16965,7 +17158,11 @@ class Session(sherpa.ui.utils.Session):
     # Session Text Save Function
     ###########################################################################
 
-    def save_all(self, outfile=None, clobber=False) -> None:
+    def save_all(self,
+                 outfile=None,
+                 clobber: bool = False,
+                 auto_load: bool = True
+                 ) -> None:
         """Save the information about the current session to a text file.
 
         This differs to the `save` command in that the output is human
@@ -16979,7 +17176,11 @@ class Session(sherpa.ui.utils.Session):
             header information).
 
         .. versionchanged:: 4.18.0
-           Handling of PHA2 data sets has been improved.
+           Handling of PHA data has been improved, and the output now
+           defaults to not including automatically-loaded ancillary
+           files (such as background and responses). Set the
+           ``auto_load`` flag to False to add these commands back to
+           the save file (and match previous versions).
 
         .. versionchanged:: 4.17.0
            The file will now contain a `set_default_id` call if the
@@ -17005,8 +17206,13 @@ class Session(sherpa.ui.utils.Session):
         clobber : bool, optional
            If `outfile` is a filename, then this flag controls
            whether an existing file can be overwritten (``True``)
-           or if it raises an exception (``False``, the default
+           orysif it raises an exception (``False``, the default
            setting).
+        auto_load : bool, optional
+           If set to ``False`` then automatically-loaded PHA files,
+           such as backgrounds, ARFS, and RMFs, will be included in
+           the output with `load_arf`, `load_rmf`, and `load_bkg`
+           calls.
 
         Raises
         ------
@@ -17022,15 +17228,14 @@ class Session(sherpa.ui.utils.Session):
         -----
 
         This command will create a series of commands that restores
-        the current Sherpa set up. It does not save the set of commands
-        used. Not all Sherpa settings are saved. Items not fully restored
-        include:
+        the current Sherpa set up. It does not save the original set
+        of commands used, and not all Sherpa settings are saved. Items
+        not fully restored include:
 
         - data changed from the version on disk - e.g. by calls to
           `set_counts` - will not be restored correctly,
 
-        - any optional keywords to commands such as `load_data`
-          or `load_pha`,
+        - any optional keywords to commands such as `load_data`,
 
         - user models may not be restored correctly,
 
@@ -17041,6 +17246,19 @@ class Session(sherpa.ui.utils.Session):
         recommended if the session is likely to be restored with newer
         versions of Sherpa. It is suggested that the output of both
         should be checked when the output may be used long term.
+
+        Using the output of `save_all` depends on what interpreter is
+        being used. If it is IPython then the ``%run`` `command
+        <https://ipython.org/ipython-doc/3/interactive/magics.html#magic-run>`_
+        can be used. So, if ``save_all("save.out")`` was used then the
+        output file can be loaded with:
+
+            %run -i save.out
+
+        When using the Python interactive environment the following
+        can be used:
+
+            exec(open("save.out").read())
 
         Examples
         --------
@@ -17064,6 +17282,14 @@ class Session(sherpa.ui.utils.Session):
         from sherpa.astro.ui import *
         ...
 
+        The two files should re-create the same session but
+        restore2.py will include lines such as load_arf and load_bkg
+        that are not necessary, as Sherpa will load them due to the
+        ANCRFILE, BACKFILE, and RESPFILE keywords in the PHA file(s).
+
+        >>> save_all("restore1.py")
+        >>> save_all("restore2.py", auto_load=False)
+
         """
 
         if _is_str(outfile):
@@ -17074,7 +17300,7 @@ class Session(sherpa.ui.utils.Session):
                     raise IOErr('filefound', outfile)
 
             with open(outfile, 'w', encoding="UTF-8") as fh:
-                serialize.save_all(self, fh)
+                serialize.save_all(self, fh, auto_load=auto_load)
 
         else:
             if outfile is not None:
@@ -17082,4 +17308,4 @@ class Session(sherpa.ui.utils.Session):
             else:
                 fh = sys.stdout
 
-            serialize.save_all(self, fh)
+            serialize.save_all(self, fh, auto_load=auto_load)
