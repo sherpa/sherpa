@@ -5785,7 +5785,6 @@ class Session(sherpa.ui.utils.Session):
                                      clobber=clobber)
 
     # DOC-TODO: setting ascii=True is not supported for crates
-    # and in pyfits it seems to just be a 1D array (needs thinking about)
     def save_image(self, id, filename=None, ascii=False,
                    clobber=False) -> None:
         """Save the pixel values of a 2D data set to a file.
