@@ -139,7 +139,7 @@ import numpy as np
 import numpy.typing as npt
 
 from sherpa.astro import hc
-from sherpa.data import Data1DInt, Data2D, Data2DInt, Data, Data1D, \
+from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
