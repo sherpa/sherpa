@@ -2036,13 +2036,13 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
     # the correlate=False case assume that it is correct and do not
     # test it here.
 
-    # Now check with the default clip setting. The checks
+    # Now check with the clip=hard setting. The checks
     # are limited:
     #  - do we get the same statistic values
     #  - are the values clipped?
     #
     reset_seed()
-    res_false2 = ui.normal_sample(num=5, correlate=False)
+    res_false2 = ui.normal_sample(num=5, correlate=False, clip="hard")
 
     assert res_false2[:, 0] == pytest.approx(stat_false)
 
@@ -2050,7 +2050,7 @@ def test_normal_sample_2335_upper_limit(clean_ui, caplog):
     assert res_false2[:, 1] == pytest.approx(c_false2)
 
     reset_seed()
-    res_true2 = ui.normal_sample(num=5, correlate=True)
+    res_true2 = ui.normal_sample(num=5, correlate=True, clip="hard")
 
     c_true2 = np.clip(c_true, 0, None)
     assert res_true2[:, 1] == pytest.approx(c_true2)
@@ -2156,13 +2156,13 @@ def test_normal_sample_2335_lower_limit(clean_ui, caplog):
               -0.97178205]
     assert res_true[:, 1] == pytest.approx(c_true)
 
-    # Now check with the default clip setting. The checks
+    # Now check with the clip=hard setting. The checks
     # are limited:
     #  - do we get the same statistic values
     #  - are the values clipped?
     #
     reset_seed()
-    res_false2 = ui.normal_sample(num=5, correlate=False)
+    res_false2 = ui.normal_sample(num=5, correlate=False, clip="hard")
 
     assert res_false2[:, 0] == pytest.approx(stat_false)
 
@@ -2170,7 +2170,7 @@ def test_normal_sample_2335_lower_limit(clean_ui, caplog):
     assert res_false2[:, 1] == pytest.approx(c_false2)
 
     reset_seed()
-    res_true2 = ui.normal_sample(num=5, correlate=True)
+    res_true2 = ui.normal_sample(num=5, correlate=True, clip="hard")
 
     c_true2 = np.clip(c_true, None, 0)
     assert res_true2[:, 1] == pytest.approx(c_true2)
@@ -2190,27 +2190,32 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
     # correlate=False
     reset_seed()
     nlog1 = len(caplog.records)
-    resf_sigma1 = ui.normal_sample(num=5, correlate=False)
+    resf_sigma1 = ui.normal_sample(num=5, correlate=False,
+                                   clip="hard")
     nlog2 = len(caplog.records)
 
     reset_seed()
-    resf_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=False)
+    resf_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=False,
+                                    clip="hard")
     nlog3 = len(caplog.records)
 
     reset_seed()
-    resf_sigma2 = ui.normal_sample(num=5, scale=2, correlate=False)
+    resf_sigma2 = ui.normal_sample(num=5, scale=2, correlate=False,
+                                   clip="hard")
     nlog4 = len(caplog.records)
 
     reset_seed()
-    rest_sigma1 = ui.normal_sample(num=5, correlate=True)
+    rest_sigma1 = ui.normal_sample(num=5, correlate=True, clip="hard")
     nlog5 = len(caplog.records)
 
     reset_seed()
-    rest_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=True)
+    rest_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=True,
+                                    clip="hard")
     nlog6 = len(caplog.records)
 
     reset_seed()
-    rest_sigma2 = ui.normal_sample(num=5, scale=2, correlate=True)
+    rest_sigma2 = ui.normal_sample(num=5, scale=2, correlate=True,
+                                   clip="hard")
     nlog7 = len(caplog.records)
 
     # This does not have the "x sigma bounds not found" message,
@@ -2306,27 +2311,33 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
     # correlate=False
     reset_seed()
     nlog1 = len(caplog.records)
-    resf_sigma1 = ui.normal_sample(num=5, correlate=False)
+    resf_sigma1 = ui.normal_sample(num=5, correlate=False,
+                                   clip="hard")
     nlog2 = len(caplog.records)
 
     reset_seed()
-    resf_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=False)
+    resf_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=False,
+                                    clip="hard")
     nlog3 = len(caplog.records)
 
     reset_seed()
-    resf_sigma2 = ui.normal_sample(num=5, scale=2, correlate=False)
+    resf_sigma2 = ui.normal_sample(num=5, scale=2, correlate=False,
+                                   clip="hard")
     nlog4 = len(caplog.records)
 
     reset_seed()
-    rest_sigma1 = ui.normal_sample(num=5, correlate=True)
+    rest_sigma1 = ui.normal_sample(num=5, correlate=True,
+                                   clip="hard")
     nlog5 = len(caplog.records)
 
     reset_seed()
-    rest_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=True)
+    rest_sigma16 = ui.normal_sample(num=5, scale=1.6, correlate=True,
+                                    clip="hard")
     nlog6 = len(caplog.records)
 
     reset_seed()
-    rest_sigma2 = ui.normal_sample(num=5, scale=2, correlate=True)
+    rest_sigma2 = ui.normal_sample(num=5, scale=2, correlate=True,
+                                   clip="hard")
     nlog7 = len(caplog.records)
 
     ngot21 = nlog2 - nlog1
@@ -2429,7 +2440,7 @@ def test_uniform_sample_upper_limit(clean_ui, caplog):
 
     # clip=hard
     reset_seed()
-    res = ui.uniform_sample(num=5)
+    res = ui.uniform_sample(num=5, clip="hard")
 
     c = np.clip(c, 0, None)
     assert res[:, 0] == pytest.approx(stat)
@@ -2461,7 +2472,7 @@ def test_t_sample_upper_limit(clean_ui, caplog):
 
     # clip=hard
     reset_seed()
-    res = ui.t_sample(num=5)
+    res = ui.t_sample(num=5, clip="hard")
 
     c = np.clip(c, 0, None)
     assert res[:, 0] == pytest.approx(stat)
