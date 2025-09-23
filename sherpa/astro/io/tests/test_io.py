@@ -42,12 +42,28 @@ def test_mod_fits(make_data_path, clean_astro_ui, caplog):
     This is no longer supported.
     """
 
-    # It is not really important to know how this fails, but test the
-    # error just to make sure it is failing in the expected location.
+    from sherpa.astro import io
+
+    # The error message depends on the backend:
+    #
+    # - astropy raises a ModelErr with message "Unable to treat array
+    # as numeric: ..."  (this may depend on NumPy version)
+    #
+    # - crates raises an IOErr with message "file
+    # '.../xspec-table=model-RCS.mod' does not appear to be ASCII"
     #
     tablemodelfile = make_data_path("xspec-tablemodel-RCS.mod")
-    with pytest.raises(ModelErr,
-                       match="^Unable to treat array as numeric:"):
+    if io.backend.name == "pyfits":
+        etype = ModelErr
+        emsg = "^Unable to treat array as numeric:"
+    elif io.backend.name == "crates":
+        etype = IOErr
+        emsg = "^file '.*/xspec-tablemodel-RCS.mod' does not " + \
+            "appear to be ASCII$"
+    else:
+        assert False, f"Unknown backend: {io.backend.name}"
+
+    with pytest.raises(etype, match=emsg):
         ui.load_table_model("tmod", tablemodelfile)
 
 
