@@ -778,15 +778,13 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
                    num: int = 1,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "hard"
+                   clip: ClipValue = "none"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
-           has an extra column, indicating if the row was clipped. To
-           match earlier versions results set clip to "none", although
-           the clipped column will still be returned.
+           has an extra column, indicating if the row was clipped.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -809,9 +807,9 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
            be controlled by calling `numpy.random.seed`.
         clip : {'hard', 'soft', 'none'}, optional
            What clipping strategy should be applied to the sampled
-           parameters. The default ('hard') is to fix values at their
-           hard limits if they exceed them. A value of 'soft' uses the
-           soft limits instead, and 'none' applies no clipping.
+           parameters. The default ('none') applies no clipping,
+           'hard' uses the hard parameter limits, and 'soft' the soft
+           limits.
 
         Returns
         -------
@@ -846,15 +844,13 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
                    num: int = 1,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "hard"
+                   clip: ClipValue = "none"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
-           has an extra column, indicating if the row was clipped. To
-           match earlier versions results set clip to "none", although
-           the clipped column will still be returned.
+           has an extra column, indicating if the row was clipped.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -877,9 +873,9 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
            be controlled by calling `numpy.random.seed`.
         clip : {'hard', 'soft', 'none'}, optional
            What clipping strategy should be applied to the sampled
-           parameters. The default ('hard') is to fix values at their
-           hard limits if they exceed them. A value of 'soft' uses the
-           soft limits instead, and 'none' applies no clipping.
+           parameters. The default ('none') applies no clipping,
+           'hard' uses the hard parameter limits, and 'soft' the soft
+           limits.
 
         Returns
         -------
@@ -913,15 +909,13 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
                    factor: float = 4,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "hard"
+                   clip: ClipValue = "none"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
-           has an extra column, indicating if the row was clipped. To
-           match earlier versions results set clip to "none", although
-           the clipped column will still be returned.
+           has an extra column, indicating if the row was clipped.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -945,6 +939,11 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('none') applies no clipping,
+           'hard' uses the hard parameter limits, and 'soft' the soft
+           limits.
 
         Returns
         -------
@@ -979,15 +978,13 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
                    dof: int = 2,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "hard"
+                   clip: ClipValue = "none"
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
-           has an extra column, indicating if the row was clipped. To
-           match earlier versions results set clip to "none", although
-           the clipped column will still be returned.
+           has an extra column, indicating if the row was clipped.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -1012,9 +1009,9 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
            be controlled by calling `numpy.random.seed`.
         clip : {'hard', 'soft', 'none'}, optional
            What clipping strategy should be applied to the sampled
-           parameters. The default ('hard') is to fix values at their
-           hard limits if they exceed them. A value of 'soft' uses the
-           soft limits instead, and 'none' applies no clipping.
+           parameters. The default ('none') applies no clipping,
+           'hard' uses the hard parameter limits, and 'soft' the soft
+           limits.
 
         Returns
         -------
@@ -1038,7 +1035,7 @@ def normal_sample(fit: Fit,
                   correlate: bool = True,
                   numcores: int | None = None,
                   rng: random.RandomType | None = None,
-                  clip: ClipValue = "hard"
+                  clip: ClipValue = "none"
                   ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values
     from a normal distribution.
@@ -1048,10 +1045,9 @@ def normal_sample(fit: Fit,
     distribution, and calculate the fit statistic.
 
     .. versionchanged:: 4.18.0
-       The sigma parameter has been renamed to scale, and the code
-       has been updated so that changing it will change the sampled
-       values. The clip parameter has been added (to match
-       earlier versions change clip to "none"), and the return value
+       The sigma parameter has been renamed to scale, and the code has
+       been updated so that changing it will change the sampled
+       values. The clip parameter has been added, and the return value
        contains an extra column indicating whether a parameter in the
        row was clipped.
 
@@ -1079,10 +1075,9 @@ def normal_sample(fit: Fit,
        the routines from `numpy.random` are used, and so can be
        controlled by calling `numpy.random.seed`.
     clip : {'hard', 'soft', 'none'}, optional
-        What clipping strategy should be applied to the sampled
-        parameters. The default ('hard') is to fix values at their
-        hard limits if they exceed them. A value of 'soft' uses the
-        soft limits instead, and 'none' applies no clipping.
+       What clipping strategy should be applied to the sampled
+       parameters. The default ('none') applies no clipping, 'hard'
+       uses the hard parameter limits, and 'soft' the soft limits.
 
     Returns
     -------
@@ -1125,7 +1120,7 @@ def uniform_sample(fit: Fit,
                    factor: float = 4,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "hard"
+                   clip: ClipValue = "none"
                    ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values
     from an uniform distribution.
@@ -1135,10 +1130,9 @@ def uniform_sample(fit: Fit,
     fit statistic.
 
     .. versionchanged:: 4.18.0
-       The sigma parameter has been renamed to scale, and the code
-       has been updated so that changing it will change the sampled
-       values. The clip parameter has been added (to match
-       earlier versions change clip to "none"), and the return value
+       The sigma parameter has been renamed to scale, and the code has
+       been updated so that changing it will change the sampled
+       values. The clip parameter has been added, and the return value
        contains an extra column indicating whether a parameter in the
        row was clipped.
 
@@ -1161,10 +1155,9 @@ def uniform_sample(fit: Fit,
        the routines from `numpy.random` are used, and so can be
        controlled by calling `numpy.random.seed`.
     clip : {'hard', 'soft', 'none'}, optional
-        What clipping strategy should be applied to the sampled
-        parameters. The default ('hard') is to fix values at their
-        hard limits if they exceed them. A value of 'soft' uses the
-        soft limits instead, and 'none' applies no clipping.
+       What clipping strategy should be applied to the sampled
+       parameters. The default ('none') applies no clipping, 'hard'
+       uses the hard parameter limits, and 'soft' the soft limits.
 
     Returns
     -------
@@ -1193,7 +1186,7 @@ def t_sample(fit: Fit,
              dof: int = 2,
              numcores: int | None = None,
              rng: random.RandomType | None = None,
-             clip: ClipValue = "hard"
+             clip: ClipValue = "none"
              ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values from
     a Student's t-distribution.
@@ -1203,10 +1196,9 @@ def t_sample(fit: Fit,
     calculate the fit statistic.
 
     .. versionchanged:: 4.18.0
-       The sigma parameter has been renamed to scale, and the code
-       has been updated so that changing it will change the sampled
-       values. The clip parameter has been added (to match
-       earlier versions change clip to "none"), and the return value
+       The sigma parameter has been renamed to scale, and the code has
+       been updated so that changing it will change the sampled
+       values. The clip parameter has been added, and the return value
        contains an extra column indicating whether a parameter in the
        row was clipped.
 
@@ -1230,10 +1222,9 @@ def t_sample(fit: Fit,
        the routines from `numpy.random` are used, and so can be
        controlled by calling `numpy.random.seed`.
     clip : {'hard', 'soft', 'none'}, optional
-        What clipping strategy should be applied to the sampled
-        parameters. The default ('hard') is to fix values at their
-        hard limits if they exceed them. A value of 'soft' uses the
-        soft limits instead, and 'none' applies no clipping.
+       What clipping strategy should be applied to the sampled
+       parameters. The default ('none') applies no clipping, 'hard'
+       uses the hard parameter limits, and 'soft' the soft limits.
 
     Returns
     -------

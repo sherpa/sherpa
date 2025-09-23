@@ -10133,7 +10133,7 @@ class Session(NoNewAttributesAfterInit):
                       id: IdType | None = None,
                       otherids: IdTypes = (),
                       numcores: int | None = None,
-                      clip: ClipValue = "hard"
+                      clip: ClipValue = "none"
                       ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values
         from a normal distribution.
@@ -10146,10 +10146,9 @@ class Session(NoNewAttributesAfterInit):
            The sigma parameter has been renamed to scale, and the code
            has been updated so that changing it will change the
            sampled values. The random state returned by get_rng is now
-           used for the sampling. The clip parameter has been added
-           (to match earlier versions change clip to "none"), and the
-           return array now ends in a column indicating whether any
-           parameter in the row was clipped.
+           used for the sampling. The clip parameter has been added,
+           and the return array now ends in a column indicating
+           whether any parameter in the row was clipped.
 
         Parameters
         ----------
@@ -10172,9 +10171,9 @@ class Session(NoNewAttributesAfterInit):
            the cores on the machine.
         clip : {'hard', 'soft', 'none'}, optional
            What clipping strategy should be applied to the sampled
-           parameters. The default ('hard') is to fix values at their
-           hard limits if they exceed them. A value of 'soft' uses the
-           soft limits instead, and 'none' applies no clipping.
+           parameters. The default ('none') applies no clipping,
+           'hard' uses the hard parameter limits, and 'soft' the soft
+           limits.
 
         Returns
         -------
@@ -10259,7 +10258,7 @@ class Session(NoNewAttributesAfterInit):
                        id: IdType | None = None,
                        otherids: IdTypes = (),
                        numcores: int | None = None,
-                       clip: ClipValue = "hard"
+                       clip: ClipValue = "none"
                        ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values
         from an uniform distribution.
@@ -10270,8 +10269,7 @@ class Session(NoNewAttributesAfterInit):
 
         .. versionchanged:: 4.18.0
            The random state returned by get_rng is now used for the
-           sampling. The clip parameter has been added (to match
-           earlier versions change clip to "none"), and the return
+           sampling. The clip parameter has been added, and the return
            array now ends in a column indicating whether any parameter
            in the row was clipped.
 
@@ -10291,9 +10289,9 @@ class Session(NoNewAttributesAfterInit):
            the cores on the machine.
         clip : {'hard', 'soft', 'none'}, optional
            What clipping strategy should be applied to the sampled
-           parameters. The default ('hard') is to fix values at their
-           hard limits if they exceed them. A value of 'soft' uses the
-           soft limits instead, and 'none' applies no clipping.
+           parameters. The default ('none') applies no clipping,
+           'hard' uses the hard parameter limits, and 'soft' the soft
+           limits.
 
         Returns
         -------
@@ -10337,7 +10335,7 @@ class Session(NoNewAttributesAfterInit):
                  id: IdType | None = None,
                  otherids: IdTypes = (),
                  numcores: int | None = None,
-                 clip: ClipValue = "hard"
+                 clip: ClipValue = "none"
                  ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values from
         a Student's t-distribution.
@@ -10348,8 +10346,7 @@ class Session(NoNewAttributesAfterInit):
 
         .. versionchanged:: 4.18.0
            The random state returned by get_rng is now used for the
-           sampling. The clip parameter has been added (to match
-           earlier versions change clip to "none"), and the return
+           sampling. The clip parameter has been added, and the return
            array now ends in a column indicating whether any parameter
            in the row was clipped.
 
@@ -10370,9 +10367,9 @@ class Session(NoNewAttributesAfterInit):
            the cores on the machine.
         clip : {'hard', 'soft', 'none'}, optional
            What clipping strategy should be applied to the sampled
-           parameters. The default ('hard') is to fix values at their
-           hard limits if they exceed them. A value of 'soft' uses the
-           soft limits instead, and 'none' applies no clipping.
+           parameters. The default ('none') applies no clipping,
+           'hard' uses the hard parameter limits, and 'soft' the soft
+           limits.
 
         Returns
         -------
