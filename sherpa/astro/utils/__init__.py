@@ -896,9 +896,14 @@ def calc_model_sum2d(data, model, reg=None):
 def eqwidth(data, model, combo, lo=None, hi=None) -> float:
     """Calculate the equilavent width of combo.
 
-    The `equivalent width <https://en.wikipedia.org/wiki/Equivalent_width>`_
-    is calculated for the combo model (continuum + line) compared
-    to the model expression (continuum).
+    The equivalent width (EW) is calculated following `George & Fabian
+    (1991)
+    <https://ui.adsabs.harvard.edu/abs/1991MNRAS.249..352G/abstract>`_
+    as "(combo - model) / src". As combo is assumed to be the
+    continuum model (model) combined with the source model,
+    e.g. "model + line", then this is equivalent to "line / model".
+    This means that emission lines have a positive EW and absorption
+    lines a negative EW.
 
     Parameters
     ----------
@@ -923,6 +928,12 @@ def eqwidth(data, model, combo, lo=None, hi=None) -> float:
     # This relies on only DataPHA having get_response and _get_indep
     # attributes.
     #
+    # Unfortunately this can not be done with data.eval_model_to_fit
+    # for the DataPHA case since
+    # - that would include the response, which is not wanted here
+    # - calculating the independent axis grid would still need to
+    #   call _get_indep.
+    #
     if hasattr(data, 'get_response'):
         xlo, xhi = data._get_indep(filter=False)
         my = model(xlo, xhi)
@@ -943,20 +954,20 @@ def eqwidth(data, model, combo, lo=None, hi=None) -> float:
         my = my[mask]
         cy = cy[mask]
         xlo = xlo[mask]
+        if xhi is not None:
+            xhi = xhi[mask]
 
-    num = len(xlo)
-    eqw = 0.0
-    for ebin, continuum in enumerate(my):
-        # TODO: calculate the actual bin width for integrated data sets.
-        if ebin < (num - 1):
-            eave = np.abs(xlo[ebin + 1] - xlo[ebin])
-        else:
-            eave = np.abs(xlo[ebin - 1] - xlo[ebin])
-        if my[ebin] != 0.0:
-            # TODO: shouldn't this be (continuum - cy[ebin]) / continuum? See issue #2381
-            eqw += eave * (cy[ebin] - continuum) / continuum
+    # Calculate the bin widths.
+    #
+    if xhi is not None:
+        widths = np.abs(xhi - xlo)
+    else:
+        # For the last bin duplicate the previous value.
+        widths = np.abs(xlo[1:] - xlo[:-1])
+        widths = np.append(widths, widths[-1])
 
-    return eqw
+    valid = my != 0
+    return np.sum(widths[valid] * (cy[valid] - my[valid]) / my[valid])
 
 
 def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
