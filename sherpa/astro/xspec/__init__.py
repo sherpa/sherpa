@@ -20,10 +20,10 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, 12.13.0,
-12.12.1, and 12.12.0 of XSPEC [1]_, and can be built against the model
-library or the full application.  There is no guarantee of support for
-older or newer versions of XSPEC.
+Sherpa supports versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, and
+12.13.0 of XSPEC [1]_, and can be built against the model library or
+the full application.  There is no guarantee of support for older or
+newer versions of XSPEC.
 
 To be able to use most routines from this module, the HEADAS environment
 variable must be set. The `get_xsversion` function can be used to return the
@@ -1800,8 +1800,12 @@ class XSTableModel(XSModel):
                 raise ParameterErr('edge', self.name, 'maximum', param._hard_max)
 
         tabtype = 'add' if self.addmodel else 'exp' if self.etable else 'mul'
-        return _xspec.tabint(p, *args,
-                             filename=self.filename, tabtype=tabtype)
+        if not self.addmodel:
+            return _xspec.tabint(p, *args,
+                                 filename=self.filename, tabtype=tabtype)
+
+        return p[-1] * _xspec.tabint(p[:-1], *args,
+                                     filename=self.filename, tabtype=tabtype)
 
 
 def mknorm(name: str, **kwargs) -> Parameter:
@@ -1863,50 +1867,14 @@ def mkabund(name: str,
                        hard_min=minval, hard_max=maxval, frozen=True)
 
 
-
-def eval_xspec_with_fixed_norm(func: Callable) -> Callable:
-    """Decorator to evaluate an `XSAdditiveModel` with norm=1.
-
-    The norm is then applied in Python, instead of in the XSPEC code.
-    This is a speed optimization. For a single call to an XSPEC model, there
-    is no advantage, because the XSPEC model needs to be called anyway; it is
-    just called with norm=1 instead of the actual norm and the output of the
-    XSPEC model is multiplied by the actual norm in Python.
-    The main advantage comes in fitting: Because the XSPEC model is called with
-    the same norm (1.0) every time, is is far more likely to hit a parameter
-    combination that is already cached (every time the optimizer changes only the norm).
-    This results in a much higher hit rate for the cache, speeding up the fit.
-
-    This decorator is written specifically for the `XSAdditiveModel` class where, by
-    construction, the last parameter is always the norm.
-    It is applied by wrapping the `calc` method of the class, which then on the inside
-    calls the `calc` method of the super class, which itself applies the
-    `sherpa.models.model.modelCacher1d` decorator.
-
-    See https://github.com/sherpa/sherpa/issues/767 for an extensive discussion
-    including performance benchmarks.
-    While some XSPEC models seem to have an internal cache for the norm similar to
-    this decorator, in other cases, we see 20% speed-ups in the fitting time.
-    Details depend a lot on the data and models in case. At the very least, no
-    case has been found where this decorator slows down the fitting process
-    significantly, thus it is justified to apply it broadly to all XSAdditiveModels.
-
-    For some models, there is an additional benefit: Since it is multiplied on in
-    Python, the norm retains the full precision of a float, while some XSPEC models use
-    lower precision floats internally. The higher precision can reduce the number of
-    function evaluations needed to reach the same accuracy in the fit.
-    """
-    @functools.wraps(func)
-    def cache_model(cls, pars, xlo, *args, **kwargs):
-        pars_with_norm_1 = (*pars[:-1], 1)
-        return pars[-1] * func(cls, pars_with_norm_1, xlo, *args, **kwargs)
-    return cache_model
-
-
 class XSAdditiveModel(XSModel):
     """The base class for XSPEC additive models.
 
     The XSPEC additive models are listed at [1]_.
+
+    .. versionchanged:: 4.18.0
+       The "norm" parameter is now handled in the `calc` method rather
+       than in the compiled code.
 
     .. versionchanged:: 4.16.1
        If the last parameter sent during initialization is not named
@@ -1924,7 +1892,6 @@ class XSAdditiveModel(XSModel):
             if hasattr(self, "norm"):
                 raise ParameterErr("norm is set but not included in pars")
 
-            # Add in the norm parameter if needed
             self.norm = mknorm(name)
             pars = tuple(list(pars) + [self.norm])
 
@@ -1942,9 +1909,24 @@ class XSAdditiveModel(XSModel):
         norm = get_xspec_norm(dep, self(*args))
         param_apply_limits(norm, self.norm, **kwargs)
 
-    @eval_xspec_with_fixed_norm
     def calc(self, p, *args, **kwargs):
-        return super().calc(p, *args, **kwargs)
+        # Apply the normalization here and pass the remaining
+        # parameters to the model (allowing for the possibility of
+        # caching).
+        #
+        # See https://github.com/sherpa/sherpa/issues/767 for an
+        # extensive discussion including performance benchmarks.
+        #
+        # While some XSPEC models seem to have an internal cache for
+        # the norm similar to this decorator, in other cases, we see
+        # 20% speed-ups in the fitting time.  Details depend a lot on
+        # the data and models in case. At the very least, no case has
+        # been found where this decorator slows down the fitting
+        # process significantly, thus it is justified to apply it
+        # broadly to all XSAdditiveModels.  See
+        # `sherpa/astro/xspec/tests/test_xspec_caching_performance.py`.
+        #
+        return p[-1] * super().calc(p[:-1], *args, **kwargs)
 
 
 class XSMultiplicativeModel(XSModel):
@@ -1955,7 +1937,7 @@ class XSMultiplicativeModel(XSModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Multiplivative.html
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Multiplicative.html
 
     """
 
@@ -18113,14 +18095,12 @@ class XSclumin(XSConvolutionKernel):
         XSConvolutionKernel.__init__(self, name, pars)
 
 
-@version_at_least("12.13.0")
 class XScglumin(XSConvolutionKernel):
     """The XSPEC cglumin convolution model: calculate luminosity
 
     The model is described at [1]_.
 
     .. versionadded:: 4.15.1
-       This model requires XSPEC 12.13.0 or later.
 
     Attributes
     ----------
@@ -18145,8 +18125,6 @@ class XScglumin(XSConvolutionKernel):
     See [1]_ for the meaning and restrictions, in particular the
     necessity of freezing the amplitude, or normalization, of the
     emission component (or components) at 1.
-
-    This model is only available when used with XSPEC 12.13.0 or later.
 
     References
     ----------

@@ -204,7 +204,7 @@ value) can be used. For most cases, the ``scripts/use_ciao_config``
 script can be used::
 
   % ./scripts/use_ciao_config
-  Found XSPEC version: 12.12.0
+  Found XSPEC version: 12.14.1
   Updating setup.cfg
   % git diff setup.cfg
   ...
@@ -213,7 +213,7 @@ Otherwise the file can be edited manually. First find out what
 XSPEC version is present with::
 
   % conda list xspec-modelsonly --json | grep version
-      "version": "12.12.0"
+      "version": "12.14.1"
 
 then change the ``setup.cfg`` to change the following lines, noting
 that the `${ASCDS_INSTALL}` environment variable **must** be
@@ -244,12 +244,12 @@ should be updated to match the output above::
     wcs_libraries=wcs
 
     with_xspec=True
-    xspec_version = 12.12.0
+    xspec_version = 12.14.1
     xspec_lib_dirs = ${ASCDS_INSTALL}/lib
     xspec_include_dirs = ${ASCDS_INSTALL}/include
 
 .. note::
-   The XSPEC version may include the patch level, such as ``12.12.0e``,
+   The XSPEC version may include the patch level, such as ``12.14.1d``,
    and this can be included in the configuration file.
 
 To avoid accidentally committing the modified ``setup.cfg`` into git,
@@ -345,8 +345,7 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, 12.13.0, 12.12.1,
-and 12.12.0.
+:term:`XSPEC` versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, and 12.13.0.
 It may build against newer versions, but if it does it will not provide
 access to any new models in the release. The following sections of the
 `XSPEC manual
@@ -446,15 +445,15 @@ generated::
   % ./scripts/update_xspec_functions.py 12.13.0 ~/local/heasoft-6.31/spectral/manager/model.dat
     // Start model definitions
 
-    XSPECMODELFCT_C_NORM(C_agauss, 3),               // XSagauss
-    XSPECMODELFCT_NORM(agnsed, 16),                  // XSagnsed
-    XSPECMODELFCT_NORM(agnslim, 15),                 // XSagnslim
-    XSPECMODELFCT_C_NORM(C_apec, 4),                 // XSapec
+    XSPECMODELFCT_C(C_agauss, 3),                    // XSagauss
+    XSPECMODELFCT(agnsed, 16),                       // XSagnsed
+    XSPECMODELFCT(agnslim, 15),                      // XSagnslim
+    XSPECMODELFCT_C(C_apec, 4),                      // XSapec
     ...
     XSPECMODELFCT_CON(C_zashift, 1),                 // XSzashift
     XSPECMODELFCT_CON(C_zmshift, 1),                 // XSzmshift
 
-    XSPECMODELFCT_C_NORM(beckerwolff, 13),           // XSbwcycl
+    XSPECMODELFCT_C(beckerwolff, 13),                // XSbwcycl
 
     // Emd model definitions
 
@@ -475,8 +474,6 @@ noted as not being supported::
   #include <xsTypes.h>
   #include <XSFunctions/Utilities/funcType.h>
 
-  #define XSPEC_12_12_0
-  #define XSPEC_12_12_1
   #define XSPEC_12_13_0
 
   #include "sherpa/astro/xspec_extension.hh"
@@ -491,7 +488,7 @@ noted as not being supported::
   extern "C" {
     XSCCall wDem;
     void C_wDem(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr) {
-      const size_t nPar = 8;
+      const size_t nPar = 7;
       cppModelWrapper(energy, nFlux, params, spectrumNumber, flux, fluxError, initStr, nPar, wDem);
     }
   }
@@ -499,7 +496,7 @@ noted as not being supported::
   // Wrapper
 
   static PyMethodDef Wrappers[] = {
-    XSPECMODELFCT_C_NORM(C_wDem, 8),
+    XSPECMODELFCT_C_NORM(C_wDem, 7),
     { NULL, NULL, 0, NULL }
   };
 
@@ -720,7 +717,7 @@ available.
       As an example::
 
         #ifdef XSPEC_12_12_0
-	  XSPECMODELFCT_C_NORM(C_wDem, 8),                 // XSwdem
+	  XSPECMODELFCT_C(C_wDem, 7),                      // XSwdem
         #endif
 
       adds support for the ``C_wDem`` function, but only for XSPEC
@@ -738,13 +735,13 @@ available.
       this particular example has been removed from the code)::
 
         #ifdef XSPEC_12_10_0
-          XSPECMODELFCT_C_NORM(C_nsmaxg, 6),               // XSnsmaxg
+          XSPECMODELFCT_C(C_nsmaxg, 5),                    // XSnsmaxg
         #else
-          XSPECMODELFCT_NORM(nsmaxg, 6),                   // XSnsmaxg
+          XSPECMODELFCT(nsmaxg, 5),                        // XSnsmaxg
         #endif
 
       The remaining pieces are the choice of macro
-      (e.g. ``XSPECMODELFCT_NORM`` or ``XSPECMODELFCT_C_NORM``) and
+      (e.g. ``XSPECMODELFCT`` or ``XSPECMODELFCT_C``) and
       the value for the second argument.  The macro depends on the
       model type and the name of the function (which defines the
       interface that XSPEC provides for the model, such as single- or
@@ -756,10 +753,14 @@ available.
 
       The numeric argument to the template defines the number of
       parameters supported by the model once in Sherpa, and should
-      equal the value given in the ``model.dat`` file for
-      multiplicative and convolution style models, and one larger than
-      this for additive models (i.e. those which use a macro that ends
-      in ``_NORM``).
+      equal the value given in the ``model.dat`` file for all supported
+      models.
+
+       .. note::
+
+	  Prior to Sherpa 4.18.0 the additive models needed to be sent
+	  an extra value to represent the normalization, and used a
+	  macro name that ended in ``_NORM``.
 
       As an example, the following three models from ``model.dat``::
 
@@ -769,7 +770,7 @@ available.
 
       are encoded as (ignoring any pre-processor directives)::
 
-        XSPECMODELFCT_C_NORM(C_apec, 4),                 // XSapec
+        XSPECMODELFCT_C(C_apec, 3),                      // XSapec
         XSPECMODELFCT(xsphab, 1),                        // XSphabs
         XSPECMODELFCT_CON(C_gsmooth, 2),                 // XSgsmooth
 
@@ -1093,13 +1094,6 @@ to see if they are 1D and have the correct size. Some fields may have
 extra checks, such as the `~sherpa.astro.data.DataPHA.grouping` and
 `~sherpa.astro.data.DataPHA.quality` columns for PHA data which
 are converted to integer values.
-
-One example of incomplete validation is that the
-`~sherpa.astro.data.DataPHA.bin_lo` and
-`~sherpa.astro.data.DataPHA.bin_hi` fields are not checked to ensure
-that both are set, or that they are in descending order, that the
-``bin_hi`` value is always larger than the correspondnig ``bin_lo``
-value, or that there are no overlapping bins.
 
 .. _data_design_errors:
 

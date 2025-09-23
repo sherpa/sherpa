@@ -227,7 +227,7 @@ Redshift " "    0.   -0.999  -0.999   10.       10.       -0.01
     assert model.funcname == 'apec'
     assert model.language == 'C++ style'
 
-    assert len(model.pars) == 4
+    assert len(model.pars) == 3
 
     for par in model.pars:
         assert par.paramtype == 'Basic'
@@ -258,15 +258,6 @@ Redshift " "    0.   -0.999  -0.999   10.       10.       -0.01
     assert model.pars[2].hardmin == pytest.approx(-0.999)
     assert model.pars[2].softmax == pytest.approx(10.0)
     assert model.pars[2].hardmax == pytest.approx(10.0)
-
-    assert model.pars[3].name == 'norm'
-    assert not model.pars[3].frozen
-    assert model.pars[3].units is None
-    assert model.pars[3].default == pytest.approx(1)
-    assert model.pars[3].softmin == pytest.approx(0)
-    assert model.pars[3].hardmin == pytest.approx(0)
-    assert model.pars[3].softmax == pytest.approx(1e24)
-    assert model.pars[3].hardmax == pytest.approx(1e24)
 
 
 def test_parse_multiplicative_model():
@@ -453,7 +444,7 @@ void cppModelWrapper(const double* energy, int nFlux, const double* params,
 extern "C" {
   XSCCall apec;
   void C_apec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr) {
-    const size_t nPar = 2;
+    const size_t nPar = 1;
     cppModelWrapper(energy, nFlux, params, spectrumNumber, flux, fluxError, initStr, nPar, apec);
   }
 }
@@ -461,7 +452,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C_NORM(C_apec, 2),
+  XSPECMODELFCT_C(C_apec, 1),
   { NULL, NULL, 0, NULL }
 };
 
@@ -538,7 +529,7 @@ void cppModelWrapper(const double* energy, int nFlux, const double* params,
 extern "C" {
   XSCCall fred;
   void C_fred(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr) {
-    const size_t nPar = 1;
+    const size_t nPar = 0;
     cppModelWrapper(energy, nFlux, params, spectrumNumber, flux, fluxError, initStr, nPar, fred);
   }
 }
@@ -546,7 +537,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C_NORM(C_fred, 1),
+  XSPECMODELFCT_C(C_fred, 0),
   { NULL, NULL, 0, NULL }
 };
 
@@ -910,7 +901,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C_NORM(foos, 2),
+  XSPECMODELFCT_C(foos, 1),
   { NULL, NULL, 0, NULL }
 };
 
@@ -984,7 +975,7 @@ void cppModelWrapper(const double* energy, int nFlux, const double* params,
 extern "C" {
   XSCCall foos;
   void C_foos(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr) {
-    const size_t nPar = 2;
+    const size_t nPar = 1;
     cppModelWrapper(energy, nFlux, params, spectrumNumber, flux, fluxError, initStr, nPar, foos);
   }
 }
@@ -992,7 +983,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C_NORM(C_foos, 2),
+  XSPECMODELFCT_C(C_foos, 1),
   { NULL, NULL, 0, NULL }
 };
 

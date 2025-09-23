@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018 - 2021, 2023 - 2025
+#  Copyright (C) 2015, 2016, 2018-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -26,7 +26,7 @@ from io import StringIO
 import re
 import warnings
 
-import numpy
+import numpy as np
 from numpy.testing import assert_array_equal
 
 import pytest
@@ -83,14 +83,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -109,7 +109,7 @@ set_stat("leastsq")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", 5000)
@@ -133,7 +133,7 @@ set_stat("leastsq")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", 5000)
@@ -166,18 +166,13 @@ group(1)
 
 ######### Data Spectral Responses
 
-load_arf(1, "@@/3c273.arf", resp_id=1)
-load_rmf(1, "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg(1, "@@/3c273_bg.pi", bkg_id=1)
 group(1, bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf(1, "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -198,14 +193,14 @@ set_stat("chi2datavar")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -214,10 +209,10 @@ create_model_component("xsapec", "src")
 src.integrate = True
 
 src.kT.default_val = 1.0
-src.kT.default_min = 0.0080000000000000002
+src.kT.default_min = 0.0080000000000000002  # doctest: +FLOAT_CMP
 src.kT.default_max = 64.0
 src.kT.val     = 1.0
-src.kT.min     = 0.0080000000000000002
+src.kT.min     = 0.0080000000000000002  # doctest: +FLOAT_CMP
 src.kT.max     = 64.0
 src.kT.units   = "keV"
 src.kT.frozen  = False
@@ -242,10 +237,10 @@ src.Redshift.frozen  = True
 
 src.norm.default_val = 1.0
 src.norm.default_min = 0.0
-src.norm.default_max = 9.9999999999999998e+23
+src.norm.default_max = 9.9999999999999998e+23  # doctest: +FLOAT_CMP
 src.norm.val     = 1.0
 src.norm.min     = 0.0
-src.norm.max     = 9.9999999999999998e+23
+src.norm.max     = 9.9999999999999998e+23  # doctest: +FLOAT_CMP
 src.norm.units   = ""
 src.norm.frozen  = False
 
@@ -299,6 +294,59 @@ set_source(1, xsphabs.gal * (powlaw1d.pl + xsapec.src))
 
 """
 
+_canonical_pha_basic_load = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_pha(1, "@@/3c273.pi")
+group(1)
+
+######### Data Spectral Responses
+
+load_arf(1, "@@/3c273.arf", resp_id=1)
+load_rmf(1, "@@/3c273.rmf", resp_id=1)
+
+######### Load Background Data Sets
+
+load_bkg(1, "@@/3c273_bg.pi", bkg_id=1)
+group(1, bkg_id=1)
+
+######### Background Spectral Responses
+
+load_arf(1, "@@/3c273.arf", resp_id=1, bkg_id=1)
+load_rmf(1, "@@/3c273.rmf", resp_id=1, bkg_id=1)
+
+######### Set Energy or Wave Units
+
+set_analysis(1, quantity="energy", type="rate", factor=0)
+subtract(1)
+
+######### Filter Data
+
+notice_id(1, "0.467200011015:9.869600296021")
+
+
+######### Set Statistic
+
+set_stat("chi2datavar")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+
+"""
+
 _canonical_pha_grouped = """import numpy
 from sherpa.astro.ui import *
 
@@ -317,12 +365,9 @@ group("grp")
 
 ######### Data Spectral Responses
 
-load_arf("grp", "@@/3c273.arf", resp_id=1)
-load_rmf("grp", "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg("grp", "@@/3c273_bg.pi", bkg_id=1)
 
 ######### Background grouping flags
 
@@ -335,8 +380,6 @@ group("grp", bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf("grp", "@@/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf("grp", "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -357,14 +400,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -429,12 +472,9 @@ group("bgrp")
 
 ######### Data Spectral Responses
 
-load_arf("bgrp", "@@/3c273.arf", resp_id=1)
-load_rmf("bgrp", "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg("bgrp", "@@/3c273_bg.pi", bkg_id=1)
 
 ######### Background grouping flags
 
@@ -447,8 +487,6 @@ group("bgrp", bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf("bgrp", "@@/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf("bgrp", "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -470,14 +508,14 @@ set_stat("chi2xspecvar")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -658,6 +696,49 @@ set_xsxset("NEIAPECROOT", "3.0.9")
 set_xsxset("NEIVERS", "3.0.4")
 """
 
+_canonical_pha_load_bkg = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_arrays("x",
+            [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, 80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, 100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0, 110.0, 111.0, 112.0, 113.0, 114.0, 115.0, 116.0, 117.0, 118.0, 119.0, 120.0, 121.0, 122.0, 123.0, 124.0, 125.0, 126.0, 127.0, 128.0, 129.0, 130.0, 131.0, 132.0, 133.0, 134.0, 135.0, 136.0, 137.0, 138.0, 139.0, 140.0, 141.0, 142.0, 143.0, 144.0, 145.0, 146.0, 147.0, 148.0, 149.0, 150.0, 151.0, 152.0, 153.0, 154.0, 155.0, 156.0, 157.0, 158.0, 159.0, 160.0, 161.0, 162.0, 163.0, 164.0, 165.0, 166.0, 167.0, 168.0, 169.0, 170.0, 171.0, 172.0, 173.0, 174.0, 175.0, 176.0, 177.0, 178.0, 179.0, 180.0, 181.0, 182.0, 183.0, 184.0, 185.0, 186.0, 187.0, 188.0, 189.0, 190.0, 191.0, 192.0, 193.0, 194.0, 195.0, 196.0, 197.0, 198.0, 199.0, 200.0, 201.0, 202.0, 203.0, 204.0, 205.0, 206.0, 207.0, 208.0, 209.0, 210.0, 211.0, 212.0, 213.0, 214.0, 215.0, 216.0, 217.0, 218.0, 219.0, 220.0, 221.0, 222.0, 223.0, 224.0, 225.0, 226.0, 227.0, 228.0, 229.0, 230.0, 231.0, 232.0, 233.0, 234.0, 235.0, 236.0, 237.0, 238.0, 239.0, 240.0, 241.0, 242.0, 243.0, 244.0, 245.0, 246.0, 247.0, 248.0, 249.0, 250.0, 251.0, 252.0, 253.0, 254.0, 255.0, 256.0, 257.0, 258.0, 259.0, 260.0, 261.0, 262.0, 263.0, 264.0, 265.0, 266.0, 267.0, 268.0, 269.0, 270.0, 271.0, 272.0, 273.0, 274.0, 275.0, 276.0, 277.0, 278.0, 279.0, 280.0, 281.0, 282.0, 283.0, 284.0, 285.0, 286.0, 287.0, 288.0, 289.0, 290.0, 291.0, 292.0, 293.0, 294.0, 295.0, 296.0, 297.0, 298.0, 299.0, 300.0, 301.0, 302.0, 303.0, 304.0, 305.0, 306.0, 307.0, 308.0, 309.0, 310.0, 311.0, 312.0, 313.0, 314.0, 315.0, 316.0, 317.0, 318.0, 319.0, 320.0, 321.0, 322.0, 323.0, 324.0, 325.0, 326.0, 327.0, 328.0, 329.0, 330.0, 331.0, 332.0, 333.0, 334.0, 335.0, 336.0, 337.0, 338.0, 339.0, 340.0, 341.0, 342.0, 343.0, 344.0, 345.0, 346.0, 347.0, 348.0, 349.0, 350.0, 351.0, 352.0, 353.0, 354.0, 355.0, 356.0, 357.0, 358.0, 359.0, 360.0, 361.0, 362.0, 363.0, 364.0, 365.0, 366.0, 367.0, 368.0, 369.0, 370.0, 371.0, 372.0, 373.0, 374.0, 375.0, 376.0, 377.0, 378.0, 379.0, 380.0, 381.0, 382.0, 383.0, 384.0, 385.0, 386.0, 387.0, 388.0, 389.0, 390.0, 391.0, 392.0, 393.0, 394.0, 395.0, 396.0, 397.0, 398.0, 399.0, 400.0, 401.0, 402.0, 403.0, 404.0, 405.0, 406.0, 407.0, 408.0, 409.0, 410.0, 411.0, 412.0, 413.0, 414.0, 415.0, 416.0, 417.0, 418.0, 419.0, 420.0, 421.0, 422.0, 423.0, 424.0, 425.0, 426.0, 427.0, 428.0, 429.0, 430.0, 431.0, 432.0, 433.0, 434.0, 435.0, 436.0, 437.0, 438.0, 439.0, 440.0, 441.0, 442.0, 443.0, 444.0, 445.0, 446.0, 447.0, 448.0, 449.0, 450.0, 451.0, 452.0, 453.0, 454.0, 455.0, 456.0, 457.0, 458.0, 459.0, 460.0, 461.0, 462.0, 463.0, 464.0, 465.0, 466.0, 467.0, 468.0, 469.0, 470.0, 471.0, 472.0, 473.0, 474.0, 475.0, 476.0, 477.0, 478.0, 479.0, 480.0, 481.0, 482.0, 483.0, 484.0, 485.0, 486.0, 487.0, 488.0, 489.0, 490.0, 491.0, 492.0, 493.0, 494.0, 495.0, 496.0, 497.0, 498.0, 499.0, 500.0, 501.0, 502.0, 503.0, 504.0, 505.0, 506.0, 507.0, 508.0, 509.0, 510.0, 511.0, 512.0, 513.0, 514.0, 515.0, 516.0, 517.0, 518.0, 519.0, 520.0, 521.0, 522.0, 523.0, 524.0, 525.0, 526.0, 527.0, 528.0, 529.0, 530.0, 531.0, 532.0, 533.0, 534.0, 535.0, 536.0, 537.0, 538.0, 539.0, 540.0, 541.0, 542.0, 543.0, 544.0, 545.0, 546.0, 547.0, 548.0, 549.0, 550.0, 551.0, 552.0, 553.0, 554.0, 555.0, 556.0, 557.0, 558.0, 559.0, 560.0, 561.0, 562.0, 563.0, 564.0, 565.0, 566.0, 567.0, 568.0, 569.0, 570.0, 571.0, 572.0, 573.0, 574.0, 575.0, 576.0, 577.0, 578.0, 579.0, 580.0, 581.0, 582.0, 583.0, 584.0, 585.0, 586.0, 587.0, 588.0, 589.0, 590.0, 591.0, 592.0, 593.0, 594.0, 595.0, 596.0, 597.0, 598.0, 599.0, 600.0, 601.0, 602.0, 603.0, 604.0, 605.0, 606.0, 607.0, 608.0, 609.0, 610.0, 611.0, 612.0, 613.0, 614.0, 615.0, 616.0, 617.0, 618.0, 619.0, 620.0, 621.0, 622.0, 623.0, 624.0, 625.0, 626.0, 627.0, 628.0, 629.0, 630.0, 631.0, 632.0, 633.0, 634.0, 635.0, 636.0, 637.0, 638.0, 639.0, 640.0, 641.0, 642.0, 643.0, 644.0, 645.0, 646.0, 647.0, 648.0, 649.0, 650.0, 651.0, 652.0, 653.0, 654.0, 655.0, 656.0, 657.0, 658.0, 659.0, 660.0, 661.0, 662.0, 663.0, 664.0, 665.0, 666.0, 667.0, 668.0, 669.0, 670.0, 671.0, 672.0, 673.0, 674.0, 675.0, 676.0, 677.0, 678.0, 679.0, 680.0, 681.0, 682.0, 683.0, 684.0, 685.0, 686.0, 687.0, 688.0, 689.0, 690.0, 691.0, 692.0, 693.0, 694.0, 695.0, 696.0, 697.0, 698.0, 699.0, 700.0, 701.0, 702.0, 703.0, 704.0, 705.0, 706.0, 707.0, 708.0, 709.0, 710.0, 711.0, 712.0, 713.0, 714.0, 715.0, 716.0, 717.0, 718.0, 719.0, 720.0, 721.0, 722.0, 723.0, 724.0, 725.0, 726.0, 727.0, 728.0, 729.0, 730.0, 731.0, 732.0, 733.0, 734.0, 735.0, 736.0, 737.0, 738.0, 739.0, 740.0, 741.0, 742.0, 743.0, 744.0, 745.0, 746.0, 747.0, 748.0, 749.0, 750.0, 751.0, 752.0, 753.0, 754.0, 755.0, 756.0, 757.0, 758.0, 759.0, 760.0, 761.0, 762.0, 763.0, 764.0, 765.0, 766.0, 767.0, 768.0, 769.0, 770.0, 771.0, 772.0, 773.0, 774.0, 775.0, 776.0, 777.0, 778.0, 779.0, 780.0, 781.0, 782.0, 783.0, 784.0, 785.0, 786.0, 787.0, 788.0, 789.0, 790.0, 791.0, 792.0, 793.0, 794.0, 795.0, 796.0, 797.0, 798.0, 799.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            DataPHA)
+
+######### Load Background Data Sets
+
+load_bkg("x", "@@/MNLup_2138_0670580101_EMOS1_S001_specbg.fits", bkg_id="foo", use_errors=True)
+
+######### Background Spectral Responses
+
+load_arf("x", "@@/MNLup_2138_0670580101_EMOS1_S001_spec.arf", resp_id=1, bkg_id="foo")
+load_rmf("x", "@@/MNLup_2138_0670580101_EMOS1_S001_spec.rmf", resp_id=1, bkg_id="foo")
+
+######### Set Energy or Wave Units
+
+set_analysis("x", quantity="channel", type="rate", factor=0)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("gridsearch")
+
+set_method_opt("ftol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
+set_method_opt("maxfev", None)
+set_method_opt("method", None)
+set_method_opt("num", 16)
+set_method_opt("numcores", 1)
+set_method_opt("sequence", None)
+set_method_opt("verbose", 0)
+
+"""
+
 _canonical_pha_no_response = """import numpy
 from sherpa.astro.ui import *
 
@@ -683,14 +764,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -709,7 +790,6 @@ load_rmf(1, "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg(1, "@@/3c273_bg.pi", bkg_id=1)
 group(1, bkg_id=1)
 
 ######### Background Spectral Responses
@@ -735,14 +815,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -905,7 +985,7 @@ set_stat("cash")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
@@ -938,10 +1018,10 @@ sin_model.offset.units   = ""
 sin_model.offset.frozen  = False
 
 sin_model.ampl.default_val = 1.0
-sin_model.ampl.default_min = 1.0000000000000001e-05
+sin_model.ampl.default_min = 1.0000000000000001e-05  # doctest: +FLOAT_CMP
 sin_model.ampl.default_max = 3.4028234663852886e+38
 sin_model.ampl.val     = 1.0
-sin_model.ampl.min     = 1.0000000000000001e-05
+sin_model.ampl.min     = 1.0000000000000001e-05  # doctest: +FLOAT_CMP
 sin_model.ampl.max     = 3.4028234663852886e+38
 sin_model.ampl.units   = ""
 sin_model.ampl.frozen  = False
@@ -1012,7 +1092,7 @@ set_stat("cstat")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
@@ -1050,7 +1130,7 @@ set_stat("cstat")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
@@ -1091,21 +1171,21 @@ gmdl.ypos.max     = 3.4028234663852886e+38
 gmdl.ypos.units   = ""
 gmdl.ypos.frozen  = False
 
-gmdl.ellip.default_val = 0.80000000000000004
+gmdl.ellip.default_val = 0.80000000000000004  # doctest: +FLOAT_CMP
 gmdl.ellip.default_min = 0.0
 gmdl.ellip.default_max = 0.999
-gmdl.ellip.val     = 0.80000000000000004
+gmdl.ellip.val     = 0.80000000000000004  # doctest: +FLOAT_CMP
 gmdl.ellip.min     = 0.0
 gmdl.ellip.max     = 0.999
 gmdl.ellip.units   = ""
 gmdl.ellip.frozen  = True
 
 gmdl.theta.default_val = 1.2
-gmdl.theta.default_min = -6.2831853071795862
-gmdl.theta.default_max = 6.2831853071795862
+gmdl.theta.default_min = -6.2831853071795862  # doctest: +FLOAT_CMP
+gmdl.theta.default_max = 6.2831853071795862  # doctest: +FLOAT_CMP
 gmdl.theta.val     = 1.2
-gmdl.theta.min     = -6.2831853071795862
-gmdl.theta.max     = 6.2831853071795862
+gmdl.theta.min     = -6.2831853071795862  # doctest: +FLOAT_CMP
+gmdl.theta.max     = 6.2831853071795862  # doctest: +FLOAT_CMP
 gmdl.theta.units   = "radians"
 gmdl.theta.frozen  = True
 
@@ -1168,7 +1248,7 @@ set_stat("cstat")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
@@ -1213,21 +1293,21 @@ g1.ypos.max     = 3.4028234663852886e+38
 g1.ypos.units   = ""
 g1.ypos.frozen  = False
 
-g1.ellip.default_val = 0.40000000000000002
+g1.ellip.default_val = 0.40000000000000002  # doctest: +FLOAT_CMP
 g1.ellip.default_min = 0.0
 g1.ellip.default_max = 0.999
-g1.ellip.val     = 0.40000000000000002
+g1.ellip.val     = 0.40000000000000002  # doctest: +FLOAT_CMP
 g1.ellip.min     = 0.0
 g1.ellip.max     = 0.999
 g1.ellip.units   = ""
 g1.ellip.frozen  = True
 
 g1.theta.default_val = 1.2
-g1.theta.default_min = -6.2831853071795862
-g1.theta.default_max = 6.2831853071795862
+g1.theta.default_min = -6.2831853071795862  # doctest: +FLOAT_CMP
+g1.theta.default_max = 6.2831853071795862  # doctest: +FLOAT_CMP
 g1.theta.val     = 1.2
-g1.theta.min     = -6.2831853071795862
-g1.theta.max     = 6.2831853071795862
+g1.theta.min     = -6.2831853071795862  # doctest: +FLOAT_CMP
+g1.theta.max     = 6.2831853071795862  # doctest: +FLOAT_CMP
 g1.theta.units   = "radians"
 g1.theta.frozen  = True
 
@@ -1265,14 +1345,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1305,14 +1385,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1329,10 +1409,10 @@ tbl.nh.max     = 1000.0
 tbl.nh.units   = ""
 tbl.nh.frozen  = False
 
-tbl.fract.default_val = 0.20000000000000001
+tbl.fract.default_val = 0.20000000000000001  # doctest: +FLOAT_CMP
 tbl.fract.default_min = 0.0
 tbl.fract.default_max = 1.0
-tbl.fract.val     = 0.20000000000000001
+tbl.fract.val     = 0.20000000000000001  # doctest: +FLOAT_CMP
 tbl.fract.min     = 0.0
 tbl.fract.max     = 1.0
 tbl.fract.units   = ""
@@ -1373,14 +1453,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1406,11 +1486,11 @@ pmod.g0.max     = 1.0
 pmod.g0.units   = ""
 pmod.g0.frozen  = True
 
-pmod.f.default_val = 0.94999999999999996
-pmod.f.default_min = 0.90000000000000002
+pmod.f.default_val = 0.94999999999999996  # doctest: +FLOAT_CMP
+pmod.f.default_min = 0.90000000000000002  # doctest: +FLOAT_CMP
 pmod.f.default_max = 1.0
-pmod.f.val     = 0.94999999999999996
-pmod.f.min     = 0.90000000000000002
+pmod.f.val     = 0.94999999999999996  # doctest: +FLOAT_CMP
+pmod.f.min     = 0.90000000000000002  # doctest: +FLOAT_CMP
 pmod.f.max     = 1.0
 pmod.f.units   = ""
 pmod.f.frozen  = False
@@ -1424,19 +1504,19 @@ pmod.n.max     = 100.0
 pmod.n.units   = ""
 pmod.n.frozen  = True
 
-pmod.ftime.default_val = 3.2410000000000001
+pmod.ftime.default_val = 3.2410000000000001  # doctest: +FLOAT_CMP
 pmod.ftime.default_min = 1.1754943508222875e-38
 pmod.ftime.default_max = 5.0
-pmod.ftime.val     = 3.2410000000000001
+pmod.ftime.val     = 3.2410000000000001  # doctest: +FLOAT_CMP
 pmod.ftime.min     = 1.1754943508222875e-38
 pmod.ftime.max     = 5.0
 pmod.ftime.units   = "sec"
 pmod.ftime.frozen  = True
 
-pmod.fracexp.default_val = 0.98699999999999999
+pmod.fracexp.default_val = 0.98699999999999999  # doctest: +FLOAT_CMP
 pmod.fracexp.default_min = 0.0
 pmod.fracexp.default_max = 1.0
-pmod.fracexp.val     = 0.98699999999999999
+pmod.fracexp.val     = 0.98699999999999999  # doctest: +FLOAT_CMP
 pmod.fracexp.min     = 0.0
 pmod.fracexp.max     = 1.0
 pmod.fracexp.units   = ""
@@ -1484,14 +1564,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1525,14 +1605,14 @@ set_stat("cash")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1556,14 +1636,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1603,14 +1683,66 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+
+"""
+
+_canonical_load_arrays_pha_response = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_arrays(1,
+            [1, 2, 3, 4, 5],
+            [12, 2, 1, 0, 1],
+            DataPHA)
+set_exposure(1, 100)
+set_backscal(1, 0.002)
+set_areascal(1, 0.001)
+
+######### Data grouping flags
+
+set_grouping(1, val=numpy.array([1, 1, -1, 0, 1], numpy.int16))
+
+######### Data quality flags
+
+set_quality(1, val=numpy.array([0, 0, 0, 0, 2], numpy.int16))
+group(1)
+
+######### Data Spectral Responses
+
+load_arf(1, "test-arf", resp_id=1)
+load_rmf(1, "delta-rmf", resp_id=1)
+
+######### Set Energy or Wave Units
+
+set_analysis(1, quantity="energy", type="rate", factor=0)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1636,14 +1768,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1688,7 +1820,7 @@ mdl.PhoIndex.frozen  = True
 
 mdl.norm.default_val = 1.0
 mdl.norm.default_min = 0.0
-mdl.norm.default_max = 9.9999999999999998e+23
+mdl.norm.default_max = 9.9999999999999998e+23  # doctest: +FLOAT_CMP
 mdl.norm.val     = 1.0
 mdl.norm.min     = 0.0
 mdl.norm.max     = 100.0
@@ -1739,7 +1871,7 @@ mdl.PhoIndex.frozen  = True
 
 mdl.norm.default_val = 1.0
 mdl.norm.default_min = 0.0
-mdl.norm.default_max = 9.9999999999999998e+23
+mdl.norm.default_max = 9.9999999999999998e+23  # doctest: +FLOAT_CMP
 mdl.norm.val     = 1.0
 mdl.norm.min     = 0.0
 mdl.norm.max     = 100.0
@@ -1762,14 +1894,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1832,14 +1964,14 @@ set_stat("chi2datavar")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1864,14 +1996,14 @@ set_stat("chi2")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1884,23 +2016,15 @@ load_pha(1, "@@/3c120_meg_1.pha")
 
 ######### Data Spectral Responses
 
-load_arf(1, "@@/3c120_meg_1.arf", resp_id=1)
-load_rmf(1, "@@/3c120_meg_1.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg(1, "@@/3c120_meg_1.pha", bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/3c120_meg_1.arf", resp_id=1, bkg_id=1)
-load_rmf(1, "@@/3c120_meg_1.rmf", resp_id=1, bkg_id=1)
-load_bkg(1, "@@/3c120_meg_1.pha", bkg_id=2)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/3c120_meg_1.arf", resp_id=1, bkg_id=2)
-load_rmf(1, "@@/3c120_meg_1.rmf", resp_id=1, bkg_id=2)
 
 ######### Set Energy or Wave Units
 
@@ -1908,11 +2032,11 @@ set_analysis(1, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(1, "2.000000000000:12.000000000000")
+notice_id(1, "2.000000050569:11.999999841898")
 notice_id(1, bkg_id=1)
-notice_id(1, "2.000000000000:12.000000000000", bkg_id=1)
+notice_id(1, "2.000000050569:11.999999841898", bkg_id=1)
 notice_id(1, bkg_id=2)
-notice_id(1, "2.000000000000:12.000000000000", bkg_id=2)
+notice_id(1, "2.000000050569:11.999999841898", bkg_id=2)
 
 
 ######### Set Statistic
@@ -1924,14 +2048,14 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1940,222 +2064,188 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
+# Load PHA2 into: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 load_pha(1, "@@/3c120_pha2")
 
 ######### Load Background Data Sets
 
-load_bkg(1, "@@/3c120_pha2", bkg_id=1)
-load_bkg(1, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(1, quantity="wavelength", type="rate", factor=0)
+set_analysis(1, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(1, "2.000000000000:4.000000000000")
+notice_id(1, "3793:6192")
 notice_id(1, bkg_id=1)
-notice_id(1, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(1, "3793:6192", bkg_id=1)
 notice_id(1, bkg_id=2)
-notice_id(1, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(10, "@@/3c120_pha2")
+notice_id(1, "3793:6192", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(10, "@@/3c120_pha2", bkg_id=1)
-load_bkg(10, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(10, quantity="wavelength", type="rate", factor=0)
+set_analysis(10, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(10, "2.000000000000:4.000000000000")
+notice_id(10, "7593:7992")
 notice_id(10, bkg_id=1)
-notice_id(10, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(10, "7593:7992", bkg_id=1)
 notice_id(10, bkg_id=2)
-notice_id(10, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(11, "@@/3c120_pha2")
+notice_id(10, "7593:7992", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(11, "@@/3c120_pha2", bkg_id=1)
-load_bkg(11, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(11, quantity="wavelength", type="rate", factor=0)
+set_analysis(11, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(11, "2.000000000000:4.000000000000")
+notice_id(11, "6793:7592")
 notice_id(11, bkg_id=1)
-notice_id(11, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(11, "6793:7592", bkg_id=1)
 notice_id(11, bkg_id=2)
-notice_id(11, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(12, "@@/3c120_pha2")
+notice_id(11, "6793:7592", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(12, "@@/3c120_pha2", bkg_id=1)
-load_bkg(12, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(12, quantity="wavelength", type="rate", factor=0)
+set_analysis(12, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(12, "2.000000000000:4.000000000000")
+notice_id(12, "5993:7192")
 notice_id(12, bkg_id=1)
-notice_id(12, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(12, "5993:7192", bkg_id=1)
 notice_id(12, bkg_id=2)
-notice_id(12, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(2, "@@/3c120_pha2")
+notice_id(12, "5993:7192", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(2, "@@/3c120_pha2", bkg_id=1)
-load_bkg(2, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(2, quantity="wavelength", type="rate", factor=0)
+set_analysis(2, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(2, "2.000000000000:4.000000000000")
+notice_id(2, "5393:6992")
 notice_id(2, bkg_id=1)
-notice_id(2, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(2, "5393:6992", bkg_id=1)
 notice_id(2, bkg_id=2)
-notice_id(2, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(3, "@@/3c120_pha2")
+notice_id(2, "5393:6992", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(3, "@@/3c120_pha2", bkg_id=1)
-load_bkg(3, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(3, quantity="wavelength", type="rate", factor=0)
+set_analysis(3, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(3, "2.000000000000:4.000000000000")
+notice_id(3, "6993:7792")
 notice_id(3, bkg_id=1)
-notice_id(3, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(3, "6993:7792", bkg_id=1)
 notice_id(3, bkg_id=2)
-notice_id(3, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(4, "@@/3c120_pha2")
+notice_id(3, "6993:7792", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(4, "@@/3c120_pha2", bkg_id=1)
-load_bkg(4, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(4, quantity="wavelength", type="rate", factor=0)
+set_analysis(4, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(4, "2.000000000000:4.000000000000")
+notice_id(4, "6993:7792")
 notice_id(4, bkg_id=1)
-notice_id(4, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(4, "6993:7792", bkg_id=1)
 notice_id(4, bkg_id=2)
-notice_id(4, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(5, "@@/3c120_pha2")
+notice_id(4, "6993:7792", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(5, "@@/3c120_pha2", bkg_id=1)
-load_bkg(5, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(5, quantity="wavelength", type="rate", factor=0)
+set_analysis(5, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(5, "2.000000000000:4.000000000000")
+notice_id(5, "5393:6992")
 notice_id(5, bkg_id=1)
-notice_id(5, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(5, "5393:6992", bkg_id=1)
 notice_id(5, bkg_id=2)
-notice_id(5, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(6, "@@/3c120_pha2")
+notice_id(5, "5393:6992", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(6, "@@/3c120_pha2", bkg_id=1)
-load_bkg(6, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(6, quantity="wavelength", type="rate", factor=0)
+set_analysis(6, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(6, "2.000000000000:4.000000000000")
+notice_id(6, "3793:6192")
 notice_id(6, bkg_id=1)
-notice_id(6, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(6, "3793:6192", bkg_id=1)
 notice_id(6, bkg_id=2)
-notice_id(6, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(7, "@@/3c120_pha2")
+notice_id(6, "3793:6192", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(7, "@@/3c120_pha2", bkg_id=1)
-load_bkg(7, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(7, quantity="wavelength", type="rate", factor=0)
+set_analysis(7, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(7, "2.000000000000:4.000000000000")
+notice_id(7, "5993:7192")
 notice_id(7, bkg_id=1)
-notice_id(7, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(7, "5993:7192", bkg_id=1)
 notice_id(7, bkg_id=2)
-notice_id(7, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(8, "@@/3c120_pha2")
+notice_id(7, "5993:7192", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(8, "@@/3c120_pha2", bkg_id=1)
-load_bkg(8, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(8, quantity="wavelength", type="rate", factor=0)
+set_analysis(8, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(8, "2.000000000000:4.000000000000")
+notice_id(8, "6793:7592")
 notice_id(8, bkg_id=1)
-notice_id(8, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(8, "6793:7592", bkg_id=1)
 notice_id(8, bkg_id=2)
-notice_id(8, "2.000000000000:4.000000000000", bkg_id=2)
-load_pha(9, "@@/3c120_pha2")
+notice_id(8, "6793:7592", bkg_id=2)
 
 ######### Load Background Data Sets
 
-load_bkg(9, "@@/3c120_pha2", bkg_id=1)
-load_bkg(9, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(9, quantity="wavelength", type="rate", factor=0)
+set_analysis(9, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-notice_id(9, "2.000000000000:4.000000000000")
+notice_id(9, "7593:7992")
 notice_id(9, bkg_id=1)
-notice_id(9, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(9, "7593:7992", bkg_id=1)
 notice_id(9, bkg_id=2)
-notice_id(9, "2.000000000000:4.000000000000", bkg_id=2)
+notice_id(9, "7593:7992", bkg_id=2)
 
 
 ######### Set Statistic
@@ -2167,14 +2257,131 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)
-set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+
+"""
+
+_canonical_pha2_delete = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+# Load PHA2 into: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+load_pha(1, "@@/3c120_pha2")
+delete_data(1)
+delete_data(2)
+delete_data(5)
+delete_data(6)
+delete_data(7)
+delete_data(8)
+delete_data(11)
+delete_data(12)
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(10, quantity="channel", type="rate", factor=0)
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(3, quantity="channel", type="rate", factor=0)
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(4, quantity="channel", type="rate", factor=0)
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(9, quantity="channel", type="rate", factor=0)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+
+"""
+
+_canonical_pha_hetg = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_pha(1, "@@/3c120_heg_-1.pha")
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+
+######### Background Spectral Responses
+
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(1, quantity="wavelength", type="rate", factor=0)
+
+######### Filter Data
+
+notice_id(1, "5.000000222571:10.000000445141")
+notice_id(1, bkg_id=1)
+notice_id(1, "5.000000222571:10.000000445141", bkg_id=1)
+notice_id(1, bkg_id=2)
+notice_id(1, "5.000000222571:10.000000445141", bkg_id=2)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
+set_method_opt("gtol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -2196,12 +2403,9 @@ group("csc")
 
 ######### Data Spectral Responses
 
-load_arf("csc", "@@/acisf01575_001N001_r0085_arf3.fits", resp_id=1)
-load_rmf("csc", "@@/acisf01575_001N001_r0085_rmf3.fits", resp_id=1)
 
 ######### Load Background Data Sets
 
-load_bkg("csc", "@@/acisf01575_001N001_r0085_pha3.fits", bkg_id=1)
 
 ######### Background grouping flags
 
@@ -2214,8 +2418,6 @@ group("csc", bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf("csc", "@@/acisf01575_001N001_r0085_arf3.fits", resp_id=1, bkg_id=1)
-load_rmf("csc", "@@/acisf01575_001N001_r0085_rmf3.fits", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -2238,7 +2440,7 @@ set_stat("cstat")
 set_method("neldermead")
 
 set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 set_method_opt("initsimplex", 0)
 set_method_opt("iquad", 1)
 set_method_opt("maxfev", None)
@@ -2252,10 +2454,10 @@ set_method_opt("verbose", 0)
 create_model_component("powlaw1d", "spl")
 spl.integrate = True
 
-spl.gamma.default_val = 1.6399999999999999
+spl.gamma.default_val = 1.6399999999999999  # doctest: +FLOAT_CMP
 spl.gamma.default_min = -10.0
 spl.gamma.default_max = 10.0
-spl.gamma.val     = 1.6399999999999999
+spl.gamma.val     = 1.6399999999999999  # doctest: +FLOAT_CMP
 spl.gamma.min     = -10.0
 spl.gamma.max     = 10.0
 spl.gamma.units   = ""
@@ -2270,10 +2472,10 @@ spl.ref.max     = 3.4028234663852886e+38
 spl.ref.units   = ""
 spl.ref.frozen  = True
 
-spl.ampl.default_val = 3.8999999999999999e-05
+spl.ampl.default_val = 3.8999999999999999e-05  # doctest: +FLOAT_CMP
 spl.ampl.default_min = 0.0
 spl.ampl.default_max = 3.4028234663852886e+38
-spl.ampl.val     = 3.8999999999999999e-05
+spl.ampl.val     = 3.8999999999999999e-05  # doctest: +FLOAT_CMP
 spl.ampl.min     = 0.0
 spl.ampl.max     = 3.4028234663852886e+38
 spl.ampl.units   = ""
@@ -2282,10 +2484,10 @@ spl.ampl.frozen  = False
 create_model_component("xsphabs", "gal")
 gal.integrate = True
 
-gal.nH.default_val = 0.23999999999999999
+gal.nH.default_val = 0.23999999999999999  # doctest: +FLOAT_CMP
 gal.nH.default_min = 0.0
 gal.nH.default_max = 1000000.0
-gal.nH.val     = 0.23999999999999999
+gal.nH.val     = 0.23999999999999999  # doctest: +FLOAT_CMP
 gal.nH.min     = 0.0
 gal.nH.max     = 1000000.0
 gal.nH.units   = "10^22 atoms / cm^2"
@@ -2312,10 +2514,10 @@ bpl.ref.max     = 3.4028234663852886e+38
 bpl.ref.units   = ""
 bpl.ref.frozen  = True
 
-bpl.ampl.default_val = 2.1399999999999998e-06
+bpl.ampl.default_val = 2.1399999999999998e-06  # doctest: +FLOAT_CMP
 bpl.ampl.default_min = 0.0
 bpl.ampl.default_max = 3.4028234663852886e+38
-bpl.ampl.val     = 2.1399999999999998e-06
+bpl.ampl.val     = 2.1399999999999998e-06  # doctest: +FLOAT_CMP
 bpl.ampl.min     = 0.0
 bpl.ampl.max     = 3.4028234663852886e+38
 bpl.ampl.units   = ""
@@ -2357,7 +2559,7 @@ set_xsxset("NEIVERS", "3.0.4")
 
 
 @pytest.fixture(autouse=True)
-def setup(hide_logging, old_numpy_printing, clean_astro_ui):
+def setup(hide_logging, clean_astro_ui):
     """Setup for all the tests"""
 
     if has_xspec:
@@ -2394,33 +2596,17 @@ def compileit(output):
     compile(output, "test.py", "exec")
 
 
-def compare_lines(expected, got):
-    """Check that each line in got matches that in
-    expected. This is to provide a more-readable
-    set of error messages (may prefer a diff-style
-    analysis).
-    """
-
-    elines = expected.split('\n')
-    glines = got.split('\n')
-
-    for e, g in zip(elines, glines):
-        assert e == g, f"expected='{e}' got='{g}'"
-
-    # Do the line length after checking for the file
-    # contents as it is easier to see what the difference
-    # is this way around, since a difference in the
-    # number of lines is often not very informative.
-    #
-    assert len(elines) == len(glines)
-
-
-def compare(expected):
+def compare(check_str, expected, **kwargs):
     """Run save_all and check the output (saved to a
     StringIO object) to the string value expected.
+
+    Since check_str is sent in, lines in expected can end with '#
+    doctest: +FLOAT_CMP' to allow for approximate numeric checks (but
+    limited by the check_str fixture).
+
     """
     output = StringIO()
-    ui.save_all(output)
+    ui.save_all(output, **kwargs)
     output = output.getvalue()
 
     # check the output is a valid Python program.
@@ -2428,7 +2614,7 @@ def compare(expected):
     # but ensures that the program can compile.
     #
     compileit(output)
-    compare_lines(expected, output)
+    check_str(output, expected.split("\n"))
 
 
 def restore():
@@ -2600,21 +2786,21 @@ def test_save_all_does_clobber(tmp_path):
     assert cts.startswith("import numpy\n")
 
 
-def test_canonical_empty():
+def test_canonical_empty(check_str):
     "Contents of empty state are as expected"
-    compare(_canonical_empty)
+    compare(check_str, _canonical_empty)
 
 
-def test_canonical_empty_outfile(tmp_path):
+def test_canonical_empty_outfile(tmp_path, check_str):
     "Can read in a save file"
 
     outfile = tmp_path / "save.sherpa"
     ui.save_all(str(outfile))
     output = outfile.read_text()
-    compare_lines(_canonical_empty, output)
+    check_str(output, _canonical_empty.split("\n"))
 
 
-def test_canonical_empty_stats():
+def test_canonical_empty_stats(check_str):
     "Change several settings but load no data"
 
     ui.set_stat('leastsq')
@@ -2623,10 +2809,10 @@ def test_canonical_empty_stats():
     ui.set_method_opt('maxfev', 5000)
     ui.set_method_opt('verbose', 1)
 
-    compare(_canonical_empty_stats)
+    compare(check_str, _canonical_empty_stats)
 
 
-def test_canonical_empty_iterstat():
+def test_canonical_empty_iterstat(check_str):
     "Check iterated-fit setting"
 
     ui.set_stat('leastsq')
@@ -2638,16 +2824,16 @@ def test_canonical_empty_iterstat():
     ui.set_iter_method('sigmarej')
     ui.set_iter_method_opt('grow', 1)
 
-    compare(_canonical_empty_iterstat)
+    compare(check_str, _canonical_empty_iterstat)
 
 
 @requires_data
 @requires_xspec
 @requires_fits
-def test_canonical_pha_basic(make_data_path):
+def test_canonical_pha_basic(make_data_path, check_str):
 
     _, canonical = setup_pha_basic(make_data_path)
-    compare(canonical)
+    compare(check_str, canonical)
 
 
 @requires_data
@@ -2678,10 +2864,66 @@ def test_restore_pha_basic(make_data_path):
 @requires_xspec
 @requires_fits
 @requires_group
-def test_canonical_pha_grouped(make_data_path):
+def test_canonical_pha_load(make_data_path, check_str):
+    """Do we explicitly load the ancillary files?"""
+
+    # This is setup_pha_basic but without the source model.
+    #
+    fname = make_data_path('3c273.pi')
+    ui.load_pha(1, fname)
+    ui.subtract()
+    ui.set_stat('chi2datavar')
+    ui.notice(0.5, 7)
+
+    canonical = add_datadir_path(_canonical_pha_basic_load)
+    compare(check_str, canonical, auto_load=False)
+
+
+@requires_data
+@requires_xspec
+@requires_fits
+def test_canonical_pha_basic_errors(make_data_path, check_str):
+    """Do we acknowledge the use_errors setting in load_pha?"""
+
+    fname = make_data_path('3c273.pi')
+    ui.set_default_id("sos")
+    ui.load_pha(fname, use_errors=True)
+    ui.notice(0.5, 6)
+    ui.subtract()
+
+    # Approximate fit just so the statistic isn't too large.
+    gal = ui.create_model_component("xsphabs", "gal")
+    pl = ui.create_model_component("powlaw1d", "pl")
+    ui.set_source(gal * pl)
+    gal.nh = 0.04
+    pl.gamma = 2.03
+    pl.ampl = 1.96e-4
+
+    # The assumption here is that the error values are different to
+    # those from use_errors=False. This is not explicitly tested in
+    # this set of tests.
+    #
+    statval = ui.calc_stat()
+    evals = ui.get_staterror()
+
+    restore()
+
+    assert ui.get_default_id() == "sos"
+
+    # Check the "error values" from the file are being used.
+    #
+    assert ui.calc_stat() == pytest.approx(statval)
+    assert ui.get_staterror() == pytest.approx(evals)
+
+
+@requires_data
+@requires_xspec
+@requires_fits
+@requires_group
+def test_canonical_pha_grouped(make_data_path, check_str):
 
     _, _, canonical = setup_pha_grouped(make_data_path)
-    compare(canonical)
+    compare(check_str, canonical)
 
 
 @requires_data
@@ -2702,8 +2944,8 @@ def test_restore_pha_grouped(make_data_path):
 
     g = ui.get_grouping('grp')
     q = ui.get_quality('grp')
-    assert g.dtype == numpy.int16
-    assert q.dtype == numpy.int16
+    assert g.dtype == np.int16
+    assert q.dtype == np.int16
 
     assert_array_equal(grp, g, err_msg='grouping column')
     assert_array_equal(qual, q, err_msg='grouping column')
@@ -2721,10 +2963,10 @@ def test_restore_pha_grouped(make_data_path):
 @requires_xspec
 @requires_fits
 @requires_group
-def test_canonical_pha_back(make_data_path):
+def test_canonical_pha_back(make_data_path, check_str):
 
     _, _, canonical = setup_pha_back(make_data_path)
-    compare(canonical)
+    compare(check_str, canonical)
 
 
 @requires_data
@@ -2754,18 +2996,18 @@ def test_restore_pha_back(make_data_path):
     # g = ui.get_grouping('bgrp')
     # q = ui.get_quality('bgrp')
     # The data types are '>i2' / int16
-    # assert g.dtype == numpy.int16
-    # assert q.dtype == numpy.int16
+    # assert g.dtype == np.int16
+    # assert q.dtype == np.int16
 
     # TODO set up correct grouping bins...
     # nchan = ui.get_data('bgrp').channel.size
-    # assert_array_equal(g, numpy.ones(nchan), err_msg='src grouping')
-    # assert_array_equal(q, numpy.zeros(nchan), err_msg='src quality')
+    # assert_array_equal(g, np.ones(nchan), err_msg='src grouping')
+    # assert_array_equal(q, np.zeros(nchan), err_msg='src quality')
 
     bg = ui.get_grouping('bgrp', bkg_id=1)
     bq = ui.get_quality('bgrp', bkg_id=1)
-    assert bg.dtype == numpy.int16
-    assert bq.dtype == numpy.int16
+    assert bg.dtype == np.int16
+    assert bq.dtype == np.int16
 
     assert_array_equal(bg, bgrp, err_msg='bgnd grouping')
     assert_array_equal(bq, bqual, err_msg='bgnd quality')
@@ -2796,7 +3038,86 @@ def test_restore_pha_back(make_data_path):
 
 @requires_data
 @requires_fits
-def test_pha_no_response(make_data_path):
+def test_canonical_pha_load_bkg(make_data_path, check_str):
+    """Check an explicit load_bkg call.
+
+    This is not a realistic situation, but does test the
+    load_bkg call.
+
+    """
+
+    ui.set_method("gridsearch")
+
+    ui.dataspace1d(0, 799, id="x", dstype=ui.DataPHA)
+
+    # NOTE: use_errors setting is currently ignored; for now this is
+    # treated as a regression test (i.e. _canonical_pha_load_bkg will
+    # need to be updated once this is fixed). Issue #2383.
+    #
+    BASENAME = "MNLup_2138_0670580101_EMOS1_S001_specbg.fits"
+    bgfile = make_data_path(BASENAME)
+    ui.load_bkg("x", bgfile, bkg_id="foo", use_errors=True)
+
+    # Load a response, but for the background only. These responses
+    # cause warning messages to get displayed, so hide them.
+    #
+    RMFNAME = "MNLup_2138_0670580101_EMOS1_S001_spec.rmf"
+    ARFNAME = "MNLup_2138_0670580101_EMOS1_S001_spec.arf"
+    rmffile = make_data_path(RMFNAME)
+    arffile = make_data_path(ARFNAME)
+    with warnings.catch_warnings(record=True):
+        ui.load_rmf("x", rmffile, bkg_id="foo")
+        ui.load_arf("x", arffile, bkg_id="foo")
+
+    # The name of the dataspace1d call is not saved, hence the
+    # version-specific check.
+    #
+    def check_data(name: str) -> None:
+        assert ui.list_data_ids() == ["x"]
+        data = ui.get_data("x")
+        assert data.name == name
+        assert data.channel == pytest.approx(np.arange(0, 800))
+        assert data.counts == pytest.approx([0] * 800)
+
+        assert ui.list_bkg_ids("x") == ["foo"]
+        bkg = ui.get_bkg("x", bkg_id="foo")
+        assert bkg.name.endswith(f"/{BASENAME}")
+        assert bkg.channel == pytest.approx(np.arange(0, 800))
+        # compare to the sum of the counds calculated with dmstat
+        # on the background file
+        assert bkg.counts.sum() == pytest.approx(2880)
+        assert bkg.counts.max() == pytest.approx(42)
+
+        rmf = ui.get_rmf("x", bkg_id="foo")
+        assert rmf.name.endswith(f"/{RMFNAME}")
+
+        arf = ui.get_arf("x", bkg_id="foo")
+        assert arf.name.endswith(f"/{ARFNAME}")
+
+        # The source has no response
+        #
+        with pytest.raises(IdentifierErr):
+            ui.get_rmf("x")
+
+        with pytest.raises(IdentifierErr):
+            ui.get_arf("x")
+
+    check_data(name="dataspace1d")
+
+    expected_output = add_datadir_path(_canonical_pha_load_bkg)
+    compare(check_str, expected_output)
+
+    # Need to avoid the warning messages from the ARF/RMF here too.
+    #
+    with warnings.catch_warnings(record=True):
+        restore()
+
+    check_data(name="")
+
+
+@requires_data
+@requires_fits
+def test_pha_no_response(make_data_path, check_str):
     """Check when there's no ARF / RMF or grouping, and switch to counts"""
 
     infile = make_data_path("source1.pi")
@@ -2809,7 +3130,7 @@ def test_pha_no_response(make_data_path):
     assert ui.get_dep("x", filter=True).sum() == 2904
     assert ui.get_dep("x").sum() == 3328
 
-    compare(add_datadir_path(_canonical_pha_no_response))
+    compare(check_str, add_datadir_path(_canonical_pha_no_response))
 
     restore()
 
@@ -2818,10 +3139,10 @@ def test_pha_no_response(make_data_path):
     assert ui.get_dep("x").sum() == 3328
 
 
-def test_canonical_usermodel():
+def test_canonical_usermodel(check_str):
     "Can we save a usermodel?"
     setup_usermodel()
-    compare(_canonical_usermodel)
+    compare(check_str, _canonical_usermodel)
 
 
 def test_restore_usermodel():
@@ -2850,7 +3171,7 @@ def test_restore_usermodel():
 
 @requires_data
 @requires_fits
-def test_restore_img_no_filter_no_model(make_data_path):
+def test_restore_img_no_filter_no_model(make_data_path, check_str):
     """Check issue #437"""
 
     ui.load_image(make_data_path('img.fits'))
@@ -2863,7 +3184,7 @@ def test_restore_img_no_filter_no_model(make_data_path):
     assert sorig == pytest.approx(5041.44)
     assert ui.get_filter() == ''
 
-    compare(add_datadir_path(_canonical_img_no_filter_no_model))
+    compare(check_str, add_datadir_path(_canonical_img_no_filter_no_model))
 
     restore()
     snew = ui.calc_data_sum2d()
@@ -2874,7 +3195,7 @@ def test_restore_img_no_filter_no_model(make_data_path):
 @requires_data
 @requires_fits
 @requires_region
-def test_restore_img_filter_model(make_data_path):
+def test_restore_img_filter_model(make_data_path, check_str):
     """Simple image check"""
 
     ui.load_image(make_data_path('img.fits'))
@@ -2906,7 +3227,7 @@ def test_restore_img_filter_model(make_data_path):
     assert sorig == pytest.approx(1861.978)
     assert corig == pytest.approx(7122.753868262877)
 
-    compare(add_datadir_path(_canonical_img_filter_model))
+    compare(check_str, add_datadir_path(_canonical_img_filter_model))
 
     restore()
     fnew = ui.get_filter()
@@ -2919,7 +3240,7 @@ def test_restore_img_filter_model(make_data_path):
 
 @requires_data
 @requires_fits
-def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
+def test_restore_img_no_filter_model_psf(make_data_path, recwarn, check_str):
     """Can we save a PSF setup? See issue #1873"""
 
     # This is not a great image to fit any data to!
@@ -2962,7 +3283,7 @@ def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
 
     assert ui.get_filter() == ''
 
-    compare(add_datadir_path(_canonical_img_no_filter_model_psf))
+    compare(check_str, add_datadir_path(_canonical_img_no_filter_model_psf))
 
     with pytest.warns(UserWarning, match=wmsg):
         restore()
@@ -2986,13 +3307,13 @@ def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
 
 @requires_data
 @requires_fits
-def test_restore_table_model(make_data_path):
+def test_restore_table_model(make_data_path, check_str):
     """Note: this only sets the table model"""
 
     ui.load_table_model("tbl", make_data_path('test_rmfimg.fits'))
     tbl.ampl.set(10, min=0, max=20, frozen=True)
 
-    compare(add_datadir_path(_canonical_table_model))
+    compare(check_str, add_datadir_path(_canonical_table_model))
 
     restore()
 
@@ -3010,7 +3331,7 @@ def test_restore_table_model(make_data_path):
 @requires_xspec
 @requires_data
 @requires_fits
-def test_restore_xstable_model(make_data_path):
+def test_restore_xstable_model(make_data_path, check_str):
     """Note: this only sets the table model
 
     This is a regression test as it currently does not do the right
@@ -3028,7 +3349,7 @@ def test_restore_xstable_model(make_data_path):
     #
     orig = str(tbl)
 
-    compare(add_datadir_path(_canonical_xstable_model))
+    compare(check_str, add_datadir_path(_canonical_xstable_model))
 
     restore()
 
@@ -3036,7 +3357,7 @@ def test_restore_xstable_model(make_data_path):
     assert str(tbl) == orig
 
 
-def test_restore_pileup_model():
+def test_restore_pileup_model(check_str):
     """Note: this is not a realistic pileup-model case.
 
     It is assumed that other tests check the other parts we'd have
@@ -3049,7 +3370,7 @@ def test_restore_pileup_model():
     ui.set_pileup_model(pmod)
     ui.set_pileup_model(2, pmod)
 
-    compare(_canonical_pileup_model)
+    compare(check_str, _canonical_pileup_model)
 
     restore()
 
@@ -3060,7 +3381,7 @@ def test_restore_pileup_model():
     assert isinstance(mod1, JDPileup)
 
 
-def test_restore_dataspace1d_int():
+def test_restore_dataspace1d_int(check_str):
     """Can we restore a dataspace1d case?"""
 
     ui.dataspace1d(1, 10, step=2)
@@ -3072,7 +3393,7 @@ def test_restore_dataspace1d_int():
     assert ui.get_filter() == fstr
     assert ui.get_dep(filter=True) == pytest.approx(expected)
 
-    compare(_canonical_dataspace1d_int)
+    compare(check_str, _canonical_dataspace1d_int)
 
     restore()
 
@@ -3081,7 +3402,7 @@ def test_restore_dataspace1d_int():
 
 
 @requires_region
-def test_restore_dataspace2d_img():
+def test_restore_dataspace2d_img(check_str):
     """Can we restore a dataspace2d case?"""
 
     ui.set_stat("cash")
@@ -3095,7 +3416,7 @@ def test_restore_dataspace2d_img():
     assert ui.get_filter() == fstr
     assert ui.get_dep(filter=True) == pytest.approx(expected)
 
-    compare(_canonical_dataspace2d_img)
+    compare(check_str, _canonical_dataspace2d_img)
 
     restore()
 
@@ -3103,7 +3424,7 @@ def test_restore_dataspace2d_img():
     assert ui.get_dep(filter=True) == pytest.approx(expected)
 
 
-def test_restore_load_arrays_simple():
+def test_restore_load_arrays_simple(check_str):
     """Can we re-create a load_arrays/Data1D case
 
     The test_restore_dataspace1d_int call has checked we
@@ -3112,7 +3433,7 @@ def test_restore_load_arrays_simple():
 
     ui.load_arrays("f", [-50, -20], [-2e4, 3e5])
 
-    compare(_canonical_load_arrays_simple)
+    compare(check_str, _canonical_load_arrays_simple)
 
     restore()
 
@@ -3123,7 +3444,7 @@ def test_restore_load_arrays_simple():
 
 
 @requires_group
-def test_restore_load_arrays_pha():
+def test_restore_load_arrays_pha(check_str):
     """Can we re-create a load_arrays/DataPHA case?"""
 
     dset = ui.DataPHA("ex", [1, 2, 3, 4, 5], [12, 2, 1, 0, 1])
@@ -3132,9 +3453,9 @@ def test_restore_load_arrays_pha():
     dset.areascal = 0.001
 
     ui.set_data(dset)
-    ui.group_counts(3, tabStops=numpy.asarray([0, 0, 0, 1, 0]))
+    ui.group_counts(3, tabStops=np.asarray([0, 0, 0, 1, 0]))
 
-    compare(_canonical_load_arrays_pha)
+    compare(check_str, _canonical_load_arrays_pha)
 
     restore()
 
@@ -3147,13 +3468,51 @@ def test_restore_load_arrays_pha():
     assert pha.grouping == pytest.approx([1, 1, -1, 0, 1])
     assert pha.quality == pytest.approx([0, 0, 0, 0, 2])
 
-    # This is corrected by thebin width and the areascal values
+    # This is corrected by the bin width and the areascal values
     assert ui.get_dep() == pytest.approx([12000, 1500, 0, 1000])
 
     assert pha.counts == pytest.approx([12, 2, 1, 0, 1])
 
 
-def test_restore_load_arrays_data2d():
+@requires_fits  # only needed because of incorrect serialization
+@requires_group
+def test_restore_load_arrays_pha_response(check_str):
+    """Can we re-create a load_arrays/DataPHA case?
+
+    This tests whether we can restore manually-created responses.  At
+    the moment we can not, so this is a regression test.
+
+    """
+
+    dset = ui.DataPHA("ex", [1, 2, 3, 4, 5], [12, 2, 1, 0, 1])
+    dset.exposure = 100
+    dset.backscal = 0.002
+    dset.areascal = 0.001
+
+    ui.set_data(dset)
+    ui.group_counts(3, tabStops=np.asarray([0, 0, 0, 1, 0]))
+
+    # Create an ARF and RMF
+    #
+    egrid = np.asarray([0.1, 0.2, 0.4, 0.8, 1.2, 1.6])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    ui.set_arf(ui.create_arf(elo, ehi))
+    ui.set_rmf(ui.create_rmf(elo, ehi))
+
+    compare(check_str, _canonical_load_arrays_pha_response)
+
+    # The error response likely depends on the backend, but it happens
+    # because the ARF "file name" - in this case "test-arf" - does not
+    # exist, hence the restoration fails.
+    #
+    with pytest.raises(IOErr):
+        restore()
+
+    # TODO: come up with tests once the state can be restored
+
+
+def test_restore_load_arrays_data2d(check_str):
     """Can we re-create a load_arrays/Data2D case
 
     Note that test_restore_dataspace2d_img is a basic DataIMG test.
@@ -3166,7 +3525,7 @@ def test_restore_load_arrays_data2d():
     assert ui.get_dep() == pytest.approx([3, 4, 5])
     assert ui.get_staterror() == pytest.approx([0.1, 0.1, 0.2])
 
-    compare(_canonical_load_arrays_data2d)
+    compare(check_str, _canonical_load_arrays_data2d)
 
     restore()
 
@@ -3177,7 +3536,7 @@ def test_restore_load_arrays_data2d():
 
 
 @requires_xspec
-def test_canonical_xspec_hard_limit_min():
+def test_canonical_xspec_hard_limit_min(check_str):
     "Can we save an XSPEC model with the hard limit extended: min"
 
     # Reset the optimiser parameters to make them easy to check,
@@ -3190,11 +3549,11 @@ def test_canonical_xspec_hard_limit_min():
     mdl.phoindex.set(val=-5, hard_min=-5, frozen=True)
     mdl.norm.max = 100
 
-    compare(_canonical_xspec_hard_limit_min)
+    compare(check_str, _canonical_xspec_hard_limit_min)
 
 
 @requires_xspec
-def test_canonical_xspec_hard_limit_max():
+def test_canonical_xspec_hard_limit_max(check_str):
     "Can we save an XSPEC model with the hard limit extended: max"
 
     # Reset the optimiser parameters to make them easy to check,
@@ -3207,7 +3566,7 @@ def test_canonical_xspec_hard_limit_max():
     mdl.phoindex.set(val=15, hard_max=15, frozen=True)
     mdl.norm.max = 100
 
-    compare(_canonical_xspec_hard_limit_max)
+    compare(check_str, _canonical_xspec_hard_limit_max)
 
 
 @requires_xspec
@@ -3264,12 +3623,12 @@ def test_restore_linker_parameter_with_function(clean_astro_ui):
     m1 = ui.create_model_component("gauss1d", "m1")
     m2 = ui.create_model_component("scale1d", "m2")
 
-    delta = numpy.sqrt((m2.c0 - 23)**2)
-    m1.fwhm = 2 * numpy.exp(delta / 14)
+    delta = np.sqrt((m2.c0 - 23)**2)
+    m1.fwhm = 2 * np.exp(delta / 14)
 
     m2.c0 = 30
 
-    expected = 2 * numpy.exp(0.5)
+    expected = 2 * np.exp(0.5)
 
     # safety check
     assert m1.fwhm.link is not None
@@ -3288,7 +3647,7 @@ def test_restore_linker_parameter_with_function(clean_astro_ui):
     assert mm1.fwhm.val == pytest.approx(expected)
 
 
-def test_link_par():
+def test_link_par(check_str):
     """Check we can set up a simple parameter link
 
     Similar to test_restore_linker_parameter_with_function but
@@ -3310,7 +3669,7 @@ def test_link_par():
     assert m2.c0.link is not None
     assert m2.c0.link.name == "m1.c0 + sep.c0"
 
-    compare(_canonical_link_par)
+    compare(check_str, _canonical_link_par)
 
     restore()
 
@@ -3324,7 +3683,7 @@ def test_link_par():
 @pytest.mark.xfail
 @requires_data
 @requires_fits
-def test_pha_full_model(make_data_path):
+def test_pha_full_model(make_data_path, check_str):
     """A basic set_full_model test.
 
     Related to issue #1050
@@ -3358,7 +3717,7 @@ def test_pha_full_model(make_data_path):
 
     assert ui.get_model().name == "apply_rmf(apply_arf(38564.6089269 * powlaw1d.pl)) + polynom1d.con"
 
-    compare(add_datadir_path(_canonical_pha_full_model))
+    compare(check_str, add_datadir_path(_canonical_pha_full_model))
 
     # check we get the expected error
     #
@@ -3377,7 +3736,7 @@ def test_pha_full_model(make_data_path):
 
 @requires_data
 @requires_fits
-def test_load_data(make_data_path):
+def test_load_data(make_data_path, check_str):
     """Check load_data path for Data1D case with staterror"""
 
     # Unfortunately we need to care about the backend here.
@@ -3389,7 +3748,7 @@ def test_load_data(make_data_path):
     infile = make_data_path("data1.dat")
     ui.load_data(infile, ncols=3)
 
-    expected_x = numpy.arange(0.5, 11)
+    expected_x = np.arange(0.5, 11)
     expected_y = [1.6454, 1.7236, 1.9472, 2.2348, 2.6187, 2.8642,
                   3.1263, 3.2073, 3.2852, 3.3092, 3.4496]
     expected_dy = [0.04114] * 11
@@ -3413,7 +3772,7 @@ def test_load_data(make_data_path):
         expected_output = _canonical_load_data
 
     expected_output = add_datadir_path(expected_output)
-    compare(expected_output)
+    compare(check_str, expected_output)
 
     restore()
 
@@ -3435,7 +3794,7 @@ def test_load_data(make_data_path):
 
 @requires_data
 @requires_fits
-def test_load_data_basic(make_data_path):
+def test_load_data_basic(make_data_path, check_str):
     """Check load_data path for Data1D case with no errors"""
 
     ui.set_stat("chi2")
@@ -3455,7 +3814,7 @@ def test_load_data_basic(make_data_path):
     assert len(x[0]) == 1000
     assert x[0][0] == pytest.approx(0)
     assert x[0][-1] == pytest.approx(99.9)
-    assert numpy.ptp(ui.get_dep()) == pytest.approx(ptp)
+    assert np.ptp(ui.get_dep()) == pytest.approx(ptp)
 
     with pytest.raises(StatErr,
                        match="^If you select chi2 as the statistic, all datasets must provide a staterror column$"):
@@ -3466,7 +3825,7 @@ def test_load_data_basic(make_data_path):
         ui.get_syserror()
 
     expected_output = add_datadir_path(_canonical_load_data_basic)
-    compare(expected_output)
+    compare(check_str, expected_output)
 
     restore()
 
@@ -3478,7 +3837,7 @@ def test_load_data_basic(make_data_path):
     assert len(x[0]) == 1000
     assert x[0][0] == pytest.approx(0)
     assert x[0][-1] == pytest.approx(99.9)
-    assert numpy.ptp(ui.get_dep()) == pytest.approx(ptp)
+    assert np.ptp(ui.get_dep()) == pytest.approx(ptp)
 
     with pytest.raises(StatErr,
                        match="^If you select chi2 as the statistic, all datasets must provide a staterror column$"):
@@ -3491,15 +3850,8 @@ def test_load_data_basic(make_data_path):
 
 @requires_data
 @requires_fits
-def test_restore_pha_multiple_backgrounds(make_data_path):
-    """Can we restore a grating dataset with multiple backgrounds?
-
-    See issue #320
-
-    This is a regression test so we can see as soon as things have
-    changed, rather than marking it as xfail.
-
-    """
+def test_restore_pha_multiple_backgrounds(make_data_path, check_str):
+    """Can we restore a grating dataset with multiple backgrounds?"""
 
     # Note: not including .gz for the file name
     ui.load_pha(make_data_path("3c120_meg_1.pha"))
@@ -3522,30 +3874,43 @@ def test_restore_pha_multiple_backgrounds(make_data_path):
     check_data()
 
     expected_output = add_datadir_path(_canonical_pha_multiple_backgrounds)
-    compare(expected_output)
+    compare(check_str, expected_output)
 
     restore()
 
-    assert ui.get_dep(filter=True, bkg_id=1).sum() == 31911  # TODO fix this
-    # check_data()
+    check_data()
 
 
 @requires_data
 @requires_fits
-def test_restore_pha2(make_data_path):
-    """Can we restore a pha2 file?
-
-    See issue #1882.
-
-    This is a regression test so we can see as soon as things have
-    changed, rather than marking it as xfail.
-
-    """
+def test_restore_pha2(make_data_path, check_str):
+    """Can we restore a pha2 file?"""
 
     # Note: not including .gz for the file name
     ui.load_pha(make_data_path("3c120_pha2"))
-    ui.set_analysis("wave")
-    ui.notice(2, 4)
+
+    # Before #1564 we could say
+    #
+    #    ui.set_analysis("wave")
+    #    ui.notice(2, 4)
+    #
+    for idval in [1, 6]:
+        ui.notice_id(idval, 3793, 6192)
+
+    for idval in [2, 5]:
+        ui.notice_id(idval, 5393, 6992)
+
+    for idval in [3, 4]:
+        ui.notice_id(idval, 6993, 7792)
+
+    for idval in [7, 12]:
+        ui.notice_id(idval, 5993, 7192)
+
+    for idval in [8, 11]:
+        ui.notice_id(idval, 6793, 7592)
+
+    for idval in [9, 10]:
+        ui.notice_id(idval, 7593, 7992)
 
     def check_data():
         assert ui.list_data_ids() == pytest.approx([1, 10, 11, 12, 2, 3, 4, 5, 6, 7, 8, 9])
@@ -3568,19 +3933,110 @@ def test_restore_pha2(make_data_path):
     check_data()
 
     expected_output = add_datadir_path(_canonical_pha2)
-    compare(expected_output)
+    compare(check_str, expected_output)
 
     restore()
 
-    assert len(ui.list_data_ids()) == 23   # TODO fix this
-    # check_data()
+    check_data()
+
+
+@requires_data
+@requires_fits
+def test_restore_pha2_delete(make_data_path, check_str):
+    """Can we restore a pha2 file after deleting files?
+
+    This is a regression test so we can see as soon as things have
+    changed, rather than marking it as xfail.
+
+    """
+
+    # Note: not including .gz for the file name
+    ui.load_pha(make_data_path("3c120_pha2"))
+
+    # Select just the first order (|TG_M| = 1) datasets.
+    #
+    for idval in [1, 2, 5, 6, 7, 8, 11, 12]:
+        ui.delete_data(idval)
+
+    def check_data():
+        assert ui.list_data_ids() == pytest.approx([10, 3, 4, 9])
+
+    check_data()
+
+    expected_output = add_datadir_path(_canonical_pha2_delete)
+    compare(check_str, expected_output)
+
+    restore()
+
+    check_data()
+
+
+@requires_data
+@requires_fits
+def test_restore_pha_hetg(make_data_path, check_str):
+    """Can we restore a HETG file?
+
+    See issue #320.
+
+    This is a regression test so we can see as soon as things have
+    changed, rather than marking it as xfail.
+
+    """
+
+    # Note: not including .gz for the file name
+    ui.load_pha(make_data_path("3c120_heg_-1.pha"))
+    ui.set_analysis("wave")
+    ui.notice(5, 10)
+
+    # Make sure we have a copy of the count values.
+    #
+    c = ui.get_data().counts.copy()
+    b1 = ui.get_bkg(bkg_id=1).counts.copy()
+    b2 = ui.get_bkg(bkg_id=2).counts.copy()
+
+    # Check they are different
+    assert (c != b1).any()
+    assert (c != b2).any()
+    assert (b1 != b2).any()
+
+    def check_data():
+        assert ui.list_data_ids() == pytest.approx([1])
+        data = ui.get_data(1)
+        assert data.background_ids == pytest.approx([1, 2])
+        assert data.response_ids == pytest.approx([1])
+
+        assert ui.get_arf().name.endswith("/3c120_heg_-1.arf")
+        assert ui.get_rmf().name.endswith("/3c120_heg_-1.rmf")
+
+        # Although the backgrounds do not have a response, they get
+        # automatically set to the source response.
+        #
+        for bkg_id in [1, 2]:
+            bkg = ui.get_bkg(bkg_id=bkg_id)
+            assert bkg.response_ids == [1], f"bkg_id={bkg_id}"
+
+            assert ui.get_arf(bkg_id=bkg_id).name.endswith("/3c120_heg_-1.arf")
+            assert ui.get_rmf(bkg_id=bkg_id).name.endswith("/3c120_heg_-1.rmf")
+
+        assert ui.get_data().counts == pytest.approx(c)
+        assert ui.get_bkg(bkg_id=1).counts == pytest.approx(b1)
+        assert ui.get_bkg(bkg_id=2).counts == pytest.approx(b2)
+
+    check_data()
+
+    expected_output = add_datadir_path(_canonical_pha_hetg)
+    compare(check_str, expected_output)
+
+    restore()
+
+    check_data()
 
 
 @requires_data
 @requires_group
 @requires_fits
 @requires_xspec
-def test_restore_pha_csc(make_data_path):
+def test_restore_pha_csc(make_data_path, check_str):
     """Can we restore a CSC file.
 
     This just checks that results of reading in. It doesn't
@@ -3631,7 +4087,7 @@ def test_restore_pha_csc(make_data_path):
     assert ui.calc_stat("csc") == pytest.approx(expected_stat)
 
     expected_output = add_datadir_path(_canonical_pha_csc)
-    compare(expected_output)
+    compare(check_str, expected_output)
 
     restore()
 
@@ -3727,10 +4183,10 @@ def test_fake_image_wcs():
 
     # nx=2, ny=3
     #
-    x1, x0 = numpy.mgrid[1:4, 1:3]
+    x1, x0 = np.mgrid[1:4, 1:3]
     x0 = x0.flatten()
     x1 = x1.flatten()
-    y = numpy.arange(6) * 10 + 10
+    y = np.arange(6) * 10 + 10
 
     sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
     eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.01, 0.01])
@@ -3772,10 +4228,10 @@ def test_fake_image_wcs_coord():
 
     # nx=3, ny=2
     #
-    x1, x0 = numpy.mgrid[1:3, 1:4]
+    x1, x0 = np.mgrid[1:3, 1:4]
     x0 = x0.flatten()
     x1 = x1.flatten()
-    y = numpy.arange(6) * 10 + 10
+    y = np.arange(6) * 10 + 10
 
     sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
     eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.1, 0.1])
@@ -3825,3 +4281,46 @@ def test_store_default_id(defid):
     assert d.name == ""
     assert d.x == pytest.approx(x)
     assert d.y == pytest.approx(y)
+
+
+@requires_data
+@requires_fits
+def test_copy_data_pha(make_data_path):
+    """Can we copy a PHA dataset and track it?"""
+
+    # This file does not have ANCR/BACK/RESPFILE settings.
+    #
+    ui.load_pha(make_data_path("source.pi"), use_errors=True)
+    ui.load_rmf(make_data_path("source.rmf"))
+    ui.load_arf(make_data_path("source.arf"))
+
+    # Is the filter and grouping copied over?
+    ui.notice(0.5, 7)
+    ui.group_counts(20)
+
+    # What can we easily check to see that we have the filtered and
+    # grouped dataset?
+    #
+    filter_expr = ui.get_filter()
+    dep = ui.get_dep(filter=True)
+    evals = ui.get_staterror()
+
+    ui.copy_data(1, 2)
+    ui.delete_data(1)
+
+    def check_data():
+        assert ui.list_data_ids() == [2]
+        assert ui.list_bkg_ids(2) == []
+        assert ui.get_data(2).name.endswith("/source.pi")
+        assert ui.get_arf(2).name.endswith("/source.arf")
+        assert ui.get_rmf(2).name.endswith("/source.rmf")
+
+        assert ui.get_filter(2) == filter_expr
+        assert ui.get_dep(2, filter=True) == pytest.approx(dep)
+        assert ui.get_staterror(2) == pytest.approx(evals)
+
+    check_data()
+
+    restore()
+
+    check_data()

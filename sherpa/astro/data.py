@@ -53,9 +53,7 @@ reducing the number of values in a data set - and adds an extra way
 to filter the data with the quality array. The class extends
 `~sherpa.data.Data1D`, since the primary data is channels and
 counts, but it also has to act like an integrated data set
-(`~sherpa.data.Data1DInt`) in some cases. In an extension to
-OGIP support, there is limited support for the ``BIN_LO`` and
-``BIN_HI`` fields provided with Chandra grating data.
+(`~sherpa.data.Data1DInt`) in some cases.
 
 The `DataIMG` class extends 2D support for "gridded" data, with
 multiple possible coordinate systems (e.g. ``logical``, ``physical``,
@@ -67,6 +65,10 @@ Notes
 
 Some functionality depends on the presence of the region and grouping
 Sherpa modules, which are optional components of Sherpa.
+
+Prior to 4.18.0 there was limited support for the ``BIN_LO`` and
+``BIN_HI`` fields provided with Chandra grating data, but this has now
+been removed.
 
 Notebook support
 ----------------
@@ -96,37 +98,45 @@ References
 Examples
 --------
 
-Read in a 2D dataset from the file 'image2.fits' and then filter it to
-only use those pixels that lie within 45 units from the physical
-coordinate 3150,4515:
+Read in a 2D dataset from the file 'image2.fits'.
+In this example, we use a datafile from Sherpa's test data files
+(which are large and not installed by default
+:ref:`but can be downloaded <install-sherpa-test-data>`).
 
->>> from sherpa.astro.io import read_image
->>> img = read_image(data_dir + 'image2.fits')
->>> img.set_coord('physical')
->>> img.notice2d('circle(3150,4515,45)')
+    >>> from sherpa.utils.testing import get_datadir
+    >>> data_dir = get_datadir() + '/'
+
+We filter the image to only use those pixels that lie within 45 units
+from the physical coordinate 3150,4515:
+
+    >>> from sherpa.astro.io import read_image
+    >>> img = read_image(data_dir + 'image2.fits')
+    >>> img.set_coord('physical')
+    >>> img.notice2d('circle(3150,4515,45)')
 
 Read in a PHA dataset from the file '3c273.pi', subtract the background,
 filter to only use the data 0.5 to 7 keV, and re-group the data within
 this range to have at least 20 counts per group:
 
->>> from sherpa.astro.io import read_pha
->>> pha = read_pha(data_3c273 + '3c273.pi')
->>> pha.subtract()
->>> pha.set_analysis('energy')
->>> pha.notice(0.5, 7)
->>> pha.group_counts(20)
+    >>> from sherpa.astro.io import read_pha
+    >>> pha = read_pha(data_3c273 + '3c273.pi')
+    >>> pha.subtract()
+    >>> pha.set_analysis('energy')
+    >>> pha.notice(0.5, 7)
+    >>> pha.group_counts(20)
 
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping
 import logging
 import os
-from typing import Any, Callable, Literal, Mapping, cast, overload
+from typing import Any, Literal, cast, overload, TYPE_CHECKING
 import warnings
 
 import numpy as np
+import numpy.typing as npt
 
 from sherpa.astro import hc
 from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
@@ -146,6 +156,13 @@ from sherpa.utils.types import ArrayType, IdType, IdTypes, \
 # uses the compile_energy_grid symbols.
 from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
     compile_energy_grid, do_group, expand_grouped_mask
+
+__doctest_requires__ = {
+    '.': ['sherpatest'],  # requirements for module-level doctest
+    }
+
+if TYPE_CHECKING:
+    from sherpa.astro.io.wcs import WCS
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -520,7 +537,7 @@ def html_arf(arf):
 
     # Unlike the string representation, this provides extra
     # information (e.g. energy range covered). Should it include
-    # any filters or masks? How about bin_lo/hi values?
+    # any filters or masks?
     #
     # It also assumes the units are keV/cm^2 which is not
     # guaranteed.
@@ -555,12 +572,6 @@ def html_arf(arf):
 
     erange = _calc_erange(arf.energ_lo, arf.energ_hi)
     meta.append(('Energy range', erange))
-
-    # repeat for wavelengths (without the energy threshold)
-    #
-    if arf.bin_lo is not None and arf.bin_hi is not None:
-        wrange = _calc_wrange(arf.bin_lo, arf.bin_hi)
-        meta.append(('Wavelength range', wrange))
 
     a1 = np.min(arf.specresp)
     a2 = np.max(arf.specresp)
@@ -899,6 +910,9 @@ class DataARF(DataOgipResponse):
     The ARF format is described in OGIP documents [CAL_92_002]_ and
     [CAL_92_002a]_.
 
+    .. versionchanged:: 4.18.0
+       The bin_lo and bin_hi columns are now ignored.
+
     Parameters
     ----------
     name : str
@@ -910,6 +924,7 @@ class DataARF(DataOgipResponse):
         ENERG_LO values for each bin, and the energy arrays must be
         in increasing or decreasing order.
     bin_lo, bin_hi : array or None, optional
+        These should not be set.
     exposure : number or None, optional
         The exposure time for the ARF, in seconds.
     header : dict or None, optional
@@ -931,7 +946,7 @@ class DataARF(DataOgipResponse):
 
     """
     _ui_name = "ARF"
-    _fields = ("name", "energ_lo", "energ_hi", "specresp", "bin_lo", "bin_hi")
+    _fields = ("name", "energ_lo", "energ_hi", "specresp")
     _extra_fields = ("exposure", "ethresh")
 
     def _get_specresp(self):
@@ -946,8 +961,9 @@ class DataARF(DataOgipResponse):
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
                  bin_hi=None, exposure=None, header=None, ethresh=None):
         self.specresp = specresp
-        self.bin_lo = bin_lo
-        self.bin_hi = bin_hi
+        # Keep these fields for now, but they are unused.
+        self.bin_lo = None
+        self.bin_hi = None
         self.exposure = exposure
         self.header = {} if header is None else header
         self.ethresh = ethresh
@@ -1477,6 +1493,10 @@ class DataPHA(Data1D):
     The PHA format is described in an OGIP document [OGIP_92_007]_ and
     [OGIP_92_007a]_.
 
+    .. versionchanged:: 4.18.0
+       The bin_lo and bin_hi columns are now ignored. A diagonal RMF
+       can be added to represent the mapping if needed.
+
     Parameters
     ----------
     name : str
@@ -1488,8 +1508,7 @@ class DataPHA(Data1D):
         The statistical and systematic errors for the data, if
         defined.
     bin_lo, bin_hi : array or None, optional
-        The wavelength ranges for the channels. This is intended to support
-        Chandra grating spectra.
+        These should not be set.
     grouping : array of int or None, optional
     quality : array of int or None, optional
     exposure : number or None, optional
@@ -1549,11 +1568,11 @@ class DataPHA(Data1D):
     discontinuities where the area-scaling factor changes strongly).
 
     """
-    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality')
+    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'grouping', 'quality')
     _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
                      'plot_fac', 'response_ids', 'background_ids')
 
-    _related_fields = Data1D._related_fields + ("bin_lo", "bin_hi", "counts", "grouping", "quality",
+    _related_fields = Data1D._related_fields + ("counts", "grouping", "quality",
                                                 "backscal", "areascal")
 
     def __init__(self,
@@ -1586,14 +1605,12 @@ class DataPHA(Data1D):
 
         # Assert types: is there a better way to do this?
         #
-        self._bin_lo: np.ndarray | None
-        self._bin_hi: np.ndarray | None
         self._grouping: np.ndarray | None
         self._quality: np.ndarray | None
         self._quality_filter: np.ndarray | None
 
-        self.bin_lo = _check(bin_lo)
-        self.bin_hi = _check(bin_hi)
+        self.bin_lo = None
+        self.bin_hi = None
         self.quality = _check(quality)
         self.grouping = _check(grouping)
         self.exposure = exposure
@@ -1706,8 +1723,10 @@ class DataPHA(Data1D):
 
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
-            if bkg.get_response() != (None, None) or \
-               (bkg.bin_lo is not None and bkg.bin_hi is not None):
+            # bkg is guaranteed to not be None
+            assert bkg is not None
+            barf, brmf = bkg.get_response()
+            if brmf is not None or barf is not None:
                 bkg.units = units
 
         self._units = units
@@ -1913,28 +1932,37 @@ will be removed. The identifiers can be integers or strings.
     def bin_lo(self) -> np.ndarray | None:
         """The lower edge of each channel, in Angstroms, or None.
 
-        The values are expected to be in descending order. This is
-        only expected to be set for Chandra grating data.
+        .. versionchanged:: 4.18.0
+           This field is no-longer used. A diagonal RMF can be added
+           to represent the mapping between channel and bin_lo/hi
+           values.
+
         """
-        return self._bin_lo
+        return None
 
     @bin_lo.setter
     def bin_lo(self, val: ArrayType | None) -> None:
-        self._set_related("bin_lo", val)
+        if val is None:
+            return
+
+        warnings.warn("The bin_lo/hi fields are no-longer used: a diagonal RMF can be added to represent the mapping.", FutureWarning)
 
     @property
     def bin_hi(self) -> np.ndarray | None:
         """The upper edge of each channel, in Angstroms, or None.
 
-        The values are expected to be in descending order, with the
-        bin_hi value larger than the corresponding bin_lo element.
-        This is only expected to be set for Chandra grating data.
+        .. versionchanged:: 4.18.0
+           This field is no-longer used.
+
         """
-        return self._bin_hi
+        return None
 
     @bin_hi.setter
     def bin_hi(self, val: ArrayType | None) -> None:
-        self._set_related("bin_hi", val)
+        # Assume that bin_lo will also have been set so there's no
+        # need to add a warning here.
+        #
+        pass
 
     @property
     def grouping(self) -> np.ndarray | None:
@@ -2604,13 +2632,6 @@ will be removed. The identifiers can be integers or strings.
         if self.units == 'channel':
             elo = self.channel
             ehi = self.channel + 1
-        elif (self.bin_lo is not None) and (self.bin_hi is not None):
-            # TODO: review whether bin_lo/hi should over-ride the response
-            elo = self.bin_lo
-            ehi = self.bin_hi
-            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                elo = hc / self.bin_hi
-                ehi = hc / self.bin_lo
         else:
             arf, rmf = self.get_response(response_id)
             if rmf is not None:
@@ -2716,47 +2737,36 @@ will be removed. The identifiers can be integers or strings.
 
         """
 
-        if (self.bin_lo is not None) and (self.bin_hi is not None):
-            elo = self.bin_lo
-            ehi = self.bin_hi
-            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                if self.units == 'wavelength':
-                    return (elo, ehi)
+        energylist = []
+        for resp_id in self.response_ids:
+            arf, rmf = self.get_response(resp_id)
+            lo = None
+            hi = None
 
-                elo = hc / self.bin_hi
-                ehi = hc / self.bin_lo
+            if rmf is not None:
+                lo = rmf.energ_lo
+                hi = rmf.energ_hi
+                if filter:
+                    lo, hi = rmf.get_indep()
 
+            elif arf is not None:
+                lo = arf.energ_lo
+                hi = arf.energ_hi
+                if filter:
+                    lo, hi = arf.get_indep()
+
+            energylist.append((lo, hi))
+
+        if len(energylist) > 1:
+            # TODO: This is only tested by test_eval_multi_xxx and not with
+            # actual (i.e. real world) data
+            elo, ehi, _ = compile_energy_grid(energylist)
+        elif (not energylist or
+              (len(energylist) == 1 and
+                  np.equal(energylist[0], None).any())):
+            raise DataErr('noenergybins', 'Response')
         else:
-            energylist = []
-            for resp_id in self.response_ids:
-                arf, rmf = self.get_response(resp_id)
-                lo = None
-                hi = None
-
-                if rmf is not None:
-                    lo = rmf.energ_lo
-                    hi = rmf.energ_hi
-                    if filter:
-                        lo, hi = rmf.get_indep()
-
-                elif arf is not None:
-                    lo = arf.energ_lo
-                    hi = arf.energ_hi
-                    if filter:
-                        lo, hi = arf.get_indep()
-
-                energylist.append((lo, hi))
-
-            if len(energylist) > 1:
-                # TODO: This is only tested by test_eval_multi_xxx and not with
-                # actual (i.e. real world) data
-                elo, ehi, lookuptable = compile_energy_grid(energylist)
-            elif (not energylist or
-                  (len(energylist) == 1 and
-                      np.equal(energylist[0], None).any())):
-                raise DataErr('noenergybins', 'Response')
-            else:
-                elo, ehi = energylist[0]
+            elo, ehi = energylist[0]
 
         lo, hi = elo, ehi
         if self.units == 'wavelength':
@@ -5265,8 +5275,22 @@ class DataIMG(Data2D):
     systems, such as the "logical" coordinates (pixels of the image),
     the "physical" coordinates (e.g. detector coordinates), and the "world"
     coordinates (e.g. Ra/Dec on the sky).
-    While this class can also be used for sparse data, much of the functionality
-    added over its parent class will not be useful in that case.
+
+    .. note::
+
+       In principle, this class can deal with any shape of data, even with
+       sparse data. However, the added functionality over the base class
+       is most useful for regularly gridded images. In that case, that data
+       should be ordered as in the FITS image conventions, i.e. [column, row];
+       in other words `x0` is the x-axis of the image and `x1` is the y-axis in
+       an x-y-plot.
+       (Sherpa uses `y` for the dependent variable and calls the axes `x0` and `x1`.)
+
+       Only with this convention will the routines that return a 2D
+       array (e.g. for plotting) work correctly. Fitting is done on the flattened
+       1D arrays and will work for any ordering.
+
+
 
     Parameters
     ----------
@@ -5303,22 +5327,42 @@ class DataIMG(Data2D):
     coordinate system. This means that the coordinates are expressed in
     the logical coordinates of the image, i.e. in pixels::
 
-    >>> from sherpa.astro.data import DataIMG
-    >>> import numpy as np
-    >>> x1, x0 = np.mgrid[20:30, 5:20]
-    >>> datashape = x0.shape
-    >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
-    >>> x0 = x0.flatten()
-    >>> x1 = x1.flatten()
-    >>> y = y.flatten()
-    >>> image = DataIMG("bimage", x0=x0, x1=x1, y=y, shape=datashape)
+        >>> from sherpa.astro.data import DataIMG
+        >>> import numpy as np
+        >>> # Note ordering of x1, x0 here
+        >>> x1, x0 = np.mgrid[20:30, 5:20]
+        >>> datashape = x0.shape
+        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+        >>> x0flat = x0.flatten()
+        >>> x1flat = x1.flatten()
+        >>> yflat = y.flatten()
+        >>> image = DataIMG("bimage", x0=x0flat, x1=x1flat, y=yflat, shape=datashape)
 
-    Note that in this example, we end up with a "logical" coordinate system
+    In this example, we end up with a "logical" coordinate system
     in ``image`` and no WCS system to convert it to anything else. On the other hand,
     in FITS standard terminology, the "logical" coordinate system is the
     "image", counting pixels starting at 1, while here the ``x0lo``` and ``x1lo``
     actually start at 20 and 5, respectively.
     This behavior works for now, but might be revisited.
+
+    For the common case of creating an image data set from a 2D array,
+    the `from_2d_array` class method can be used. In this case,
+    the length of ``x0`` and ``x1`` must match the shape of the 2D numpy array and
+    Sherpa will take care of transforming it from numpy [row, column] ordering
+    to the [column, row] ordering::
+
+        >>> x0 = np.arange(20, 30)
+        >>> x1 = np.arange(5, 20)
+        >>> print(y.shape, x0.shape, x1.shape)
+        (10, 15) (10,) (15,)
+        >>> image = DataIMG.from_2d_array("bimage", y=y, x0=x0, x1=x1)
+
+    It's even easier if no particular coordinate system is needed for ``x0``
+    and ``x1`` and the coordinates are simply pixel indices, which can be generated
+    automatically (starting at 1)::
+
+        >>> image = DataIMG.from_2d_array("bimage", y=y)
+
     '''
 
     _extra_fields = ("sky", "eqpos", "coord")
@@ -5383,6 +5427,114 @@ class DataIMG(Data2D):
         # special case the x-axis labels
         self._x0label = None
         self._x1label = None
+
+
+    # This could be moved up Data2D, but the inheritance pathway of the
+    # DataIMG classes makes that a bit awkward, since DataIMG and DataIMGInt
+    # both inherit from Data2D, but DataIMGInt does not inherit from Data2DInt.
+    @classmethod
+    def from_2d_array(cls,
+                     name: str,
+                     *,
+                     y: npt.NDArray[np.floating],
+                     x0: npt.NDArray[np.floating] | None = None,
+                     x1: npt.NDArray[np.floating] | None = None,
+                     staterror: npt.NDArray[np.floating] | None = None,
+                     syserror: npt.NDArray[np.floating] | None = None,
+                     header: Mapping[str, Any] | None = None
+                     ) -> "DataIMG":   # change to Self once Python 3.10 support has been dropped
+        '''Create a `DataIMG` instance from a 2-dimensional array.
+
+        Parameters
+        ----------
+        name : str
+            The name of the dataset.
+        y : ndarray with 2 dimensions
+            The dependent variable array.
+        x0, x1: ndarray, optional
+            The independent variable arrays; the length of x0 must match
+            y's first dimension, and the length of x1 must match y's second dimension.
+            If not provided, they will be generated, starting at 1.
+
+            .. note::
+
+                This does **not** follow the usual Python conventions to start
+                enumerations at 0, instead, it follows the fits conventions where the first
+                pixel has the coordinate (1, 1).
+
+        staterror : ndarray with 2 dimensions, optional
+            The statistical error array.
+        syserror : ndarray with 2 dimensions, optional
+            The systematic error array.
+        header : dict, optional
+            The header information for the data.
+
+        Returns
+        -------
+        dataimg : DataIMG
+            A DataIMG instance.
+
+        Examples
+        --------
+        Create a DataIMG instance from 2D data. Here, we first create
+        a 2-D array of values y, but in practice this might be read in
+        from a file, from the output of a simulation, or as a result of
+        some other computation.
+
+            >>> import numpy as np
+            >>> from sherpa.astro.data import DataIMG
+            >>> x1 = np.arange(20, 30, 2)
+            >>> x0 = np.arange(5, 20, 2)
+            >>> y = np.sqrt((x0[:, np.newaxis] - 10)**2 + (x1[np.newaxis, :] - 31)**2)
+            >>> reg2d = DataIMG.from_2d_array("regular2d", x0=x0, x1=x1, y=y)
+
+        '''
+        if y.ndim != 2:
+            raise ValueError(f"Expected 2D array for y, got {y.ndim}D array instead.")
+        if staterror is not None and staterror.shape != y.shape:
+            raise ValueError(f"staterror shape {staterror.shape} does not match y's shape {y.shape}")
+        if syserror is not None and syserror.shape != y.shape:
+            raise ValueError(f"syserror shape {syserror.shape} does not match y's shape {y.shape}")
+
+        if x0 is None:
+            x0 = np.arange(y.shape[0], dtype=SherpaFloat) + 1.
+        if x1 is None:
+            x1 = np.arange(y.shape[1], dtype=SherpaFloat) + 1.
+
+        if len(x0) != y.shape[0]:
+            raise ValueError(f"Length of x0 ({len(x0)}) must match y's first dimension ({y.shape[0]})")
+        if len(x1) != y.shape[1]:
+            raise ValueError(f"Length of x1 ({len(x1)}) must match y's second dimension ({y.shape[1]})")
+
+        x0, x1 = np.meshgrid(x0, x1)
+        return cls(name, x0=x0.ravel(), x1=x1.ravel(),
+                   y=y.T.ravel(), shape=y.T.shape,
+                   staterror=staterror.T.ravel() if staterror is not None else None,
+                   syserror=syserror.T.ravel() if syserror is not None else None,
+                   header=header)
+
+    @classmethod
+    def from_2d_array_with_wcs(cls,
+                     name: str,
+                     *,
+                     y: npt.NDArray[np.floating],
+                     staterror: npt.NDArray[np.floating] | None = None,
+                     syserror: npt.NDArray[np.floating] | None = None,
+                     sky: WCS,
+                     eqpos: WCS,
+                     coord: Literal["logical", "image", "physical", "world", "wcs"] = 'logical',
+                     header: Mapping[str, Any] | None = None
+                     ) -> "DataIMG":   # change to Self once Python 3.10 support has been dropped
+        '''Create a DataIMG instance from 2D data and WCS information.
+
+        '''
+        img = cls.from_2d_array(name, y=y,
+                               staterror=staterror, syserror=syserror,
+                               header=header)
+        img.sky = sky
+        img.eqpos = eqpos
+        img._set_coord(coord)
+        return img
 
     def _clear_filter(self):
         if self._region is None:
@@ -5910,11 +6062,18 @@ class DataIMGInt(DataIMG):
       ...                    x0hi=x0hi.flatten(), x1hi=x1hi.flatten(),
       ...                    y=hist.flatten(), shape=hist.shape)
 
-    Note that in this example, we end up with a "logical" coordinate system
+    In this example, we end up with a "logical" coordinate system
     in ``image`` and no WCS system to convert it to anything else. On the other hand,
     in FITS standard terminology, the "logical" coordinate system is the
     "image", counting pixels starting at 1, while here the ``x0lo``` and ``x1lo``
     actually start at -2. This behavior works for now, but might be revisited.
+
+    The `from_2d_array` method offers a simpler way to create a `DataIMGInt`, where
+    Sherpa will order and flatten the input arrays into 1D arrays automatically::
+
+        >>> image = DataIMGInt.from_2d_array("binned_image", y=hist,
+        ...                    x0_bounds=x0edges, x1_bounds=x1edges)
+
     '''
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
@@ -5934,6 +6093,123 @@ class DataIMGInt(DataIMG):
         self._ylabel = 'y'
 
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
+
+    # This could be moved up Data2D, but the inheritance pathway of the
+    # DataIMG classes makes that a bit awkward, since DataIMG and DataIMGInt
+    # both inherit from Data2D, but DataIMGInt does not inherit from Data2DInt.
+    @classmethod
+    def from_2d_array(cls,  # type: ignore[override]
+                     name: str,
+                     *,
+                     y: npt.NDArray[np.floating],
+                     # The superclass has x0, x1, but here we want
+                     # to be explicit that we are using the bounds
+                     x0_bounds: npt.NDArray[np.floating] | None = None,
+                     x1_bounds: npt.NDArray[np.floating] | None = None,
+                     staterror: npt.NDArray[np.floating] | None = None,
+                     syserror: npt.NDArray[np.floating] | None = None,
+                     header: Mapping[str, Any] | None = None,
+                     ) -> "DataIMGInt":   # change to Self once Python 3.10 support has been dropped
+        '''Create a `DataIMGInt` instance from a 2-dimensional array.
+
+        Parameters
+        ----------
+        name : str
+            The name of the dataset.
+        y : ndarray with 2 dimensions
+            The dependent variable array.
+        x0_bounds, x1_bounds: ndarray, optional
+            The boundaries of the pixel grid. The length of the arrays must
+            be one greater than the corresponding dimension of y. If not provided,
+            the boundaries will be generated from 0.5 to n + 0.5 if ``y`` has
+            n pixels in that dimension.
+
+            .. note::
+
+                This does **not** follow the usual Python conventions to start
+                enumerations at 0, instead, it follows the fits conventions where the first
+                pixel has the coordinate (1, 1), so the lower edges of that pixel
+                are at (0.5, 0.5).
+
+        staterror : ndarray with 2 dimensions, optional
+            The statistical error array.
+        syserror : ndarray with 2 dimensions, optional
+            The systematic error array.
+        header : dict, optional
+            The header information for the data.
+        Returns
+        -------
+        data : DataIMGInt
+            A DataIMGInt instance.
+
+        Examples
+        --------
+        Create a DataIMGInt instance from 2D data. Here, we first create
+        the bin boundaries and a 2-D array of values y, but in practice this might be read in
+        from a file, from the output of a simulation, or as a result of
+        some other computation.
+
+            >>> import numpy as np
+            >>> from sherpa.astro.data import DataIMGInt
+            >>> x0_boundaries = np.arange(20, 30, 2)
+            >>> x1_boundaries = np.arange(5, 20, 2)
+            >>> x0_mid = (x0_boundaries[:-1] + x0_boundaries[1:]) / 2
+            >>> x1_mid = (x1_boundaries[:-1] + x1_boundaries[1:]) / 2
+            >>> y = np.sqrt((x0_mid[:, np.newaxis] - 10)**2 + (x1_mid[np.newaxis, :] - 31)**2)
+            >>> reg2d = DataIMGInt.from_2d_array("bounded_2d",
+            ...     x0_bounds=x0_boundaries, x1_bounds=x1_boundaries, y=y)
+
+
+        '''
+        if y.ndim != 2:
+            raise ValueError(f"Expected 2D array for y, got {y.ndim}D array instead.")
+        if staterror is not None and staterror.shape != y.shape:
+            raise ValueError(f"staterror shape {staterror.shape} does not match y's shape {y.shape}")
+        if syserror is not None and syserror.shape != y.shape:
+            raise ValueError(f"syserror shape {syserror.shape} does not match y's shape {y.shape}")
+
+        if x0_bounds is None:
+            x0_bounds = np.arange(0.5, y.shape[0] + 1, dtype=SherpaFloat)
+        if x1_bounds is None:
+            x1_bounds = np.arange(0.5, y.shape[1] + 1, dtype=SherpaFloat)
+
+        if len(x0_bounds) != y.shape[0] + 1:
+            raise ValueError(f"Length of x0_bounds ({len(x0_bounds)}) must be one greater than y's first dimension ({y.shape[0]})")
+        if len(x1_bounds) != y.shape[1] + 1:
+            raise ValueError(f"Length of x1_bounds ({len(x1_bounds)}) must be one greater than y's second dimension ({y.shape[1]})")
+
+        x0, x1 = np.meshgrid(x0_bounds, x1_bounds)
+        return cls(name,
+                   x0lo=x0[:-1, :-1].ravel(), x1lo=x1[:-1, :-1].ravel(),
+                   x0hi=x0[1:, 1:].ravel(), x1hi=x1[1:, 1:].ravel(),
+                   y=y.T.ravel(), shape=y.T.shape,
+                   staterror=staterror.T.ravel() if staterror is not None else None,
+                   syserror=syserror.T.ravel() if syserror is not None else None,
+                   header=header)
+
+
+    @classmethod
+    def from_2d_array_with_wcs(cls,
+                     name: str,
+                     *,
+                     y: npt.NDArray[np.floating],
+                     staterror: npt.NDArray[np.floating] | None = None,
+                     syserror: npt.NDArray[np.floating] | None = None,
+                     sky: WCS,
+                     eqpos: WCS,
+                     coord: Literal["logical", "image", "physical", "world", "wcs"] = 'logical',
+                     header: Mapping[str, Any] | None = None
+                     ) -> "DataIMGInt":   # change to Self once Python 3.10 support has been dropped
+        '''Create a DataIMGInt instance from 2D data and WCS information.
+
+        '''
+        img = cls.from_2d_array(name, y=y,
+                               staterror=staterror, syserror=syserror,
+                               header=header)
+        img.sky = sky
+        img.eqpos = eqpos
+        img._set_coord(coord)
+        return img
 
     def _init_data_space(self, filter, *data):
         ndata = len(data)

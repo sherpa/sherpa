@@ -186,7 +186,7 @@ starting place for the MCMC analysis:
 
 .. plot::
     :include-source:
-    :context:
+    :context: close-figs
 
     >>> from sherpa import data, stats, optmethods, fit
     >>> d = data.Data2D('sim', x0, x1, msim.flatten(), shape=shape)
@@ -233,8 +233,8 @@ starting place for the MCMC analysis:
   
     >>> cmatrix = eres.extra_output
     >>> pnames = [p.split('.')[1] for p in eres.parnames]
-    >>> _= plt.imshow(cmatrix, interpolation='nearest', cmap='viridis')
-    >>> _= plt.xticks(np.arange(5), pnames)
+    >>> _ = plt.imshow(cmatrix, interpolation='nearest', cmap='viridis')
+    >>> _ = plt.xticks(np.arange(5), pnames)
     >>> _ = plt.yticks(np.arange(5), pnames)
     >>> _ = plt.colorbar()
 
@@ -258,7 +258,7 @@ Run the chain
     >>> svals, accept, pvals = draws
     >>> pvals.shape
     (5, 1001)
-    >>> accept.sum() * 1.0 / 1000
+    >>> print(accept.sum() * 1.0 / 1000)
     0.486
 
 Trace plots
@@ -354,7 +354,7 @@ Connections to ArviZ
 --------------------
 `ArviZ <https://python.arviz.org>`_ is a Python package for exploratory analysis of Bayesian models.
 It serves as a backend-agnostic tool for diagnosing and visualizing Bayesian inference and
-provides different plotting and statistical diagnostic functions for MCMC chains, that
+provides different plotting and statistical diagnostic functions for MCMC chains that
 are not implemented in Sherpa itself. If the ArviZ package is installed,
 `~sherpa.sim.mcmc_to_arviz` can be used to convert the MCMC results to an
 `arviz.data.inference_data.InferenceData` object.

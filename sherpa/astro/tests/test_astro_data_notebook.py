@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020 - 2025
+# Copyright (C) 2020-2025
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -64,12 +64,8 @@ def check(r, summary, name, label, nmeta):
 def test_arf(header, all_plot_backends):
     ebins = np.arange(0.1, 1, 0.1)
 
-    # fake wavelength conversion
-    wbins = 10 / ebins
-
     y = np.linspace(10, 80, ebins.size - 1)
     d = data.DataARF('arf 1', ebins[:-1], ebins[1:], y,
-                     bin_lo=wbins[1:], bin_hi=wbins[:-1],
                      exposure=100.1, header=header)
     r = d._repr_html_()
 
@@ -77,9 +73,7 @@ def test_arf(header, all_plot_backends):
     check(r, 'ARF', 'arf 1', 'SPECRESP', nmeta=nmeta)
 
     assert '<div class="dataname">Energy range</div>' in r
-    assert '<div class="dataname">Wavelength range</div>' in r
     assert '<div class="dataval">0.1 - 0.9 keV, bin size 0.1 keV</div>' in r
-    assert '<div class="dataval">12.5 - 50 &#8491;, bin size 1.38889 - 50 &#8491;</div>' in r
 
 
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
@@ -228,7 +222,7 @@ def test_rmf_real_bad_energy(make_data_path, all_plot_backends):
 
 
 @pytest.mark.parametrize('header', [None, {}, TEST_HEADER])
-def test_img(header, old_numpy_printing, all_plot_backends):
+def test_img(header, all_plot_backends):
     y, x = np.mgrid[1:4, 2:4]
     z = np.arange(x.size)
     d = data.DataIMG('x x', x.flatten(), y.flatten(), z,
@@ -253,7 +247,7 @@ def test_img(header, old_numpy_printing, all_plot_backends):
 @requires_fits
 @requires_wcs  # only needed for coord=physical
 @pytest.mark.parametrize('coord', ['logical', 'physical'])
-def test_img_real(coord, make_data_path, old_numpy_printing, all_plot_backends):
+def test_img_real(coord, make_data_path, all_plot_backends):
     """Use an image from a file (easy to set up)"""
     from sherpa.astro.io import read_image
     d = read_image(make_data_path('acisf07999_000N001_r0035_regevt3_srcimg.fits'))
@@ -268,8 +262,8 @@ def test_img_real(coord, make_data_path, old_numpy_printing, all_plot_backends):
     assert '<summary>Coordinates: world (6)</summary>' in r
     assert '<summary>Metadata (6)</summary>' in r
 
-    assert '<div class="dataval">[ 0.5  0.5]</div>' in r
-    assert '<div class="dataval">[ 4096.5  4096.5]</div>' in r
+    assert '<div class="dataval">[0.5 0.5]</div>' in r
+    assert '<div class="dataval">[4096.5 4096.5]</div>' in r
     assert '<div class="dataval">[-0.000137  0.000137]</div>' in r
     assert '<div class="dataval">destreak - CAT3.0.2</div>' in r
 
@@ -283,7 +277,7 @@ def test_img_real(coord, make_data_path, old_numpy_printing, all_plot_backends):
                           ("physical", "circle(3151.3 , 4524.1, 20 )")
                           ])
 def test_img_real_filtered(coord, region, make_data_path,
-                           all_plot_backends, old_numpy_printing):
+                           all_plot_backends):
     """Filter the image.
 
     There is no significant check that the filtering has worked
@@ -304,8 +298,8 @@ def test_img_real_filtered(coord, region, make_data_path,
     assert '<summary>Coordinates: world (6)</summary>' in r
     assert '<summary>Metadata (6)</summary>' in r
 
-    assert '<div class="dataval">[ 0.5  0.5]</div>' in r
-    assert '<div class="dataval">[ 4096.5  4096.5]</div>' in r
+    assert '<div class="dataval">[0.5 0.5]</div>' in r
+    assert '<div class="dataval">[4096.5 4096.5]</div>' in r
     assert '<div class="dataval">[-0.000137  0.000137]</div>' in r
     assert '<div class="dataval">destreak - CAT3.0.2</div>' in r
 

@@ -18,9 +18,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from importlib.resources import files
 import os
 import re
 import logging
+from pathlib import Path
 import time
 
 import numpy as np
@@ -341,7 +343,7 @@ def pytest_configure(config):
     try:
         path = config.getoption(TEST_DATA_OPTION)
         if path:
-            set_datadir(path)
+            set_datadir(str(Path(path).resolve()))
     except ValueError:  # option not defined from command line, no-op
         pass
 
@@ -563,29 +565,6 @@ def hide_logging():
     logger.setLevel(olvl)
 
 
-@pytest.fixture
-def old_numpy_printing():
-    """Force NumPy to use old-style printing for the test.
-
-    This is only needed whilst we still support NumPy 1.13
-    (I think). Calling this fixture will ensure we have
-    consistent printing of NumPy arrays (to some degree
-    anyway).
-
-    The original printoptions is reset after the test is
-    run.
-    """
-
-    oldopts = np.get_printoptions()
-    if 'legacy' in oldopts:
-        np.set_printoptions(legacy='1.13')
-
-    yield
-
-    if 'legacy' in oldopts:
-        np.set_printoptions(legacy=oldopts['legacy'])
-
-
 @pytest.fixture(params=PLOT_BACKENDS.keys())
 def all_plot_backends(request):
     """Override the plot backend for this test
@@ -706,7 +685,7 @@ def add_sherpa_test_data_dir(doctest_namespace):
     in the future, but it seems more important that this keeps any
     extra markup out of those files and keep them clean.
     '''
-    doctest_namespace["data_3c273"] = 'sherpa/astro/datastack/tests/data/'
+    doctest_namespace["data_3c273"] = f"{files('sherpa.astro.datastack') / 'tests' / 'data'}/"
 
     # We could error out here, but we only want the tests that
     # use it to fail.
@@ -727,9 +706,9 @@ def add_sherpa_test_data_dir(doctest_namespace):
 #
 eterm = r"(?:e[+-]?\d+)"
 term = "|".join([fr"[+-]?\d+\.\d*{eterm}?",
-                 fr"[+-]?\.\d+{eterm}?"
+                 fr"[+-]?\.\d+{eterm}?",
                  fr"[+-]?\d+{eterm}"])
-PATTERN = re.compile(fr"(.*)(?<![\d+-])({term})")
+PATTERN = re.compile(fr"(.*)(?<![\d+-\.])({term})")
 
 
 class NumberChecker:
@@ -760,16 +739,16 @@ class NumberChecker:
             The string containing a single number.
         """
 
-        match = PATTERN.match(text)
-        if match is None:
+        matches = PATTERN.match(text)
+        if matches is None:
             # Make sure that we note a case where the regexp has
             # failed to find a number.
             #
             raise ValueError(f"Error in test - no number found in '{text}'")
 
-        lhs = match[1]
-        number = float(match[2])
-        rhs = text[match.end():]
+        lhs = matches[1]
+        number = float(matches[2])
+        rhs = text[matches.end():]
 
         return lhs, number, rhs
 

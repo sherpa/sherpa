@@ -40,7 +40,8 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-  "pytest>=8.0"
+  "pytest>=8.0",
+  "pytest-doctestplus",
 ]
 
 # This is not a complete list, but that's because the doc build
@@ -56,7 +57,9 @@ doc = [
   "astropy",
   "matplotlib",
   "bokeh",
+  "scipy",
   "arviz",
+  "optimagic",
 ]
 
 [project.urls]

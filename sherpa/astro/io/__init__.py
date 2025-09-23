@@ -32,32 +32,46 @@ When this module is first imported, Sherpa tries to import the
 backends installed with Sherpa in the order listed in the
 ``.sherpa.rc`` or ``.sherpa-standalone.rc`` file. The first module that imports
 successfully is set as the active backend. The following command prints the
-name of the backend:
+name of the active backend:
 
    >>> from sherpa.astro import io
-   >>> print(io.backend.name)
+   >>> print(io.backend.name)  # doctest: +IGNORE_OUTPUT
+
+A list of available backends can be obtained with:
+
+   >>> print(io.IO_BACKENDS.keys())
+   dict_keys(['dummy'...])
 
 Change the backend
 ------------------
 
 After the initial import, the backend can be changed by loading one of the
-I/O backends shipped with sherpa (or any other module that provides the same
-interface):
+I/O backends shipped with sherpa:
 
-  >>> import sherpa.astro.io.pyfits_backend
-  >>> io.backend = sherpa.astro.io.pyfits_backend
+.. testsetup::
+
+  >>> from sherpa.astro import io
+  >>> old_backend = io.backend
+
+  >>> from sherpa.astro.io import set_io_backend
+  >>> set_io_backend('pyfits')
+
+.. testcleanup::
+
+  >>> io.backend = old_backend
 
 """
 
 from collections.abc import Callable, Sequence, Mapping
 from configparser import ConfigParser
-from contextlib import suppress
+from contextlib import suppress, AbstractContextManager
 import importlib
 import importlib.metadata
 import logging
 from pathlib import Path
 import re
-from typing import TYPE_CHECKING, Any, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, Type, TypeVar
+from types import ModuleType
 
 import numpy as np
 
@@ -68,12 +82,20 @@ from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.data import Data, Data1D, Data2D, Data2DInt
 from sherpa.io import _check_args
 from sherpa.utils import is_subclass
-from sherpa.utils.err import ArgumentErr, DataErr, IOErr
+from sherpa.utils.err import ArgumentErr, DataErr, IOErr, IdentifierErr
 from sherpa.utils.numeric_types import SherpaFloat, SherpaUInt
 
 from .types import NamesType, HdrTypeArg, HdrType, DataType, \
     Header, HeaderItem, Column, TableBlock, ImageBlock, \
     BlockList, BlockType, SpecrespBlock, MatrixBlock, EboundsBlock
+
+
+# Skip functions that need input files in their examples
+__doctest_skip__ = ['read_table', 'read_image', 'read_ascii']
+
+__doctest_requires__ = {# for some tests pycrates would also do, but the syntax does not allow for an OR
+                        '*': ['astropy'],
+                        }
 
 # Responses can often be send as the Data object or the instrument
 # version, so support it would be good to support this with types
@@ -93,12 +115,22 @@ else:
     RMFType = DataRMF
 
 
+error = logging.getLogger(__name__).error
+warning = logging.getLogger(__name__).warning
+info = logging.getLogger(__name__).info
+
+T = TypeVar('T')
+
+
+__all__ = ('backend', 'IO_BACKENDS', 'set_io_backend', 'TemporaryIOBackend',
+           'read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',
+           'read_pha', 'write_image', 'write_pha', 'write_table',
+           'write_arf', 'write_rmf',
+           'pack_table', 'pack_image', 'pack_pha', 'read_table_blocks')
+
+
 config = ConfigParser()
 config.read(get_config())
-
-# What should we use for the default package?
-io_opt = [o.strip().lower() + '_backend' for o in
-          config.get('options', 'io_pkg', fallback='dummy').split()]
 
 ogip_emin_str = config.get('ogip', 'minimum_energy', fallback='1.0e-10')
 
@@ -116,30 +148,142 @@ else:
     if ogip_emin <= 0.0:
         raise ValueError(emsg)
 
-for iotry in io_opt:
-    with suppress(ImportError):
-        backend = importlib.import_module('.' + iotry,
-                                          package='sherpa.astro.io')
+
+IO_BACKENDS: dict[str, ModuleType] = {}
+'''global list of all successfully imported I/O backends'''
+
+# IO_BACKENDS only contains backends in modules that are imported successfully
+# but modules are not discovered by itself. Entrypoints would solve this problem
+# but the current implementation does not have this capability.
+#
+for name in ["dummy", "crates", "pyfits"]:
+    try:
+        mod = importlib.import_module(f"sherpa.astro.io.{name}_backend")
+        IO_BACKENDS[name] = mod
+        # Set a more commonly used name as alias
+        if name == "pyfits":
+            IO_BACKENDS["astropy"] = mod
+    except ImportError:
+        pass
+
+
+backend : ModuleType
+'''Currently active backend module for I/O.'''
+
+# What should we use for the default package?
+io_opt = [o.strip().lower() for o in
+          config.get('options', 'io_pkg', fallback='dummy').split()]
+
+for name in io_opt:
+    if name in IO_BACKENDS:
+        backend = IO_BACKENDS[name]
         break
-
 else:
-    # None of the options in the rc file work, e.g. because it's an
-    # old file that does not have dummy listed
-    import sherpa.astro.io.dummy_backend as backend
+    backend = IO_BACKENDS['dummy']
+
+if len(IO_BACKENDS) == 1 and IO_BACKENDS.keys() == {'dummy'}:
+    warning("""Cannot import usable I/O backend.
+    If you are using CIAO, this is most likely an error and you should contact the CIAO helpdesk.
+    If you are using Standalone Sherpa, please install astropy.""")
 
 
-error = logging.getLogger(__name__).error
-warning = logging.getLogger(__name__).warning
-info = logging.getLogger(__name__).info
+def set_io_backend(new_backend: str) -> None:
+    '''Set the Sherpa IO backend.
 
-T = TypeVar('T')
+    IO backends are registered in Sherpa with a string name.
+    See the examples below for how to get a list of available backends.
+
+    Parameters
+    ----------
+    new_backend : string
+        Set a sherpa IO backend.
+
+    Examples
+    --------
+    Set the backend to use astropy for I/O operations:
+
+        >>> from sherpa.astro import io
+        >>> io.set_io_backend('astropy')
+
+    Get a list of registered backends:
+
+        >>> from sherpa.astro import io
+        >>> io.IO_BACKENDS
+        {'dummy': <module 'sherpa.astro.io.dummy_backend' ...
+
+    This list shows the names and the module for each backend.
+    Details for each backend can be found in the Sherpa documentation or by
+    inspecting the backend modules using normal Python functionality:
+
+        >>> from sherpa.astro.io import dummy_backend
+        >>> help(dummy_backend)
+        Help on module sherpa.astro.io.dummy_backend in sherpa.astro.io:
+        <BLANKLINE>
+        NAME
+            sherpa.astro.io.dummy_backend - A dummy backend for I/O.
+        <BLANKLINE>
+        DESCRIPTION
+            This backend provides no functionality and raises an error if any of
+            its functions are used. It is provided as a model for what routines
+            are needed in a backend, even if it does nothing, and to allow
+            `sherpa.astro.io` to be imported even if no usable backend is
+            available.
+        ...
+    '''
+    global backend
+
+    try:
+        backend = IO_BACKENDS[new_backend]
+    except KeyError:
+        raise IdentifierErr('noiobackend', new_backend,
+                                list(IO_BACKENDS.keys())) from None
 
 
-__all__ = ('backend',
-           'read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',
-           'read_pha', 'write_image', 'write_pha', 'write_table',
-           'write_arf', 'write_rmf',
-           'pack_table', 'pack_image', 'pack_pha', 'read_table_blocks')
+
+class TemporaryIOBackend(AbstractContextManager):
+    '''Set the Sherpa I/O backend as a context, e.g. for a single operation
+
+    Parameters
+    ----------
+    new_backend : string
+        Name of a known Sherpa IO backend.
+
+    Examples
+    --------
+    Temporarily set a different backend and print out its name. Of course,
+    for this example to be useful, we should not just print the name of
+    the backend, but use it to read or write a datafile.
+
+    >>> from sherpa.astro import io
+    >>> with io.TemporaryIOBackend('dummy'):
+    ...     print(io.backend.name)
+    dummy
+
+    Get a list of registered backends:
+
+    >>> from sherpa.astro import io
+    >>> io.IO_BACKENDS
+    {'dummy': <module 'sherpa.astro.io.dummy_backend' ...
+    '''
+
+    def __init__(self, new_backend: str) -> None:
+        self.backend = new_backend
+
+    def __enter__(self) -> 'TemporaryIOBackend':
+        global backend
+        self.old = backend
+        backend = IO_BACKENDS[self.backend]
+        return self
+
+    # As exc_type/val/tb are not used here we type them as Any, and the
+    # return value is marked as an explicit False rather than bool since
+    # it avoids warnings from mypy (as __exit__ is special).
+    #
+    def __exit__(self,
+                 exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+        global backend
+        backend = self.old
+        return False
 
 
 # Note: write_arrays is not included in __all__, so don't add to the
@@ -175,16 +319,23 @@ def read_arrays(*args) -> Data:
     arrays ``x`` and ``y`` (taken to be the independent and
     dependent axes respectively):
 
+    >>> import numpy as np
+    >>> from sherpa.astro.io import read_arrays
+    >>> x = np.arange(10)
+    >>> y = np.random.normal(size=10)
     >>> d = read_arrays(x, y)
 
     As in the previous example, but explicitly declaring the data type:
 
-    >>> d = read_arrays(x, y, sherpa.data.Data1D)
+    >>> from sherpa import data
+    >>> d = read_arrays(x, y, data.Data1D)
 
     Create a `sherpa.data.Data2D` instance with the independent
     axes ``x0`` and ``x1``, and dependent axis ``y``:
 
-    >>> d = read_arrays(x0, x1, y, sherpa.data.Data2D)
+    >>> x1, x0 = np.mgrid[20:30, 5:20]
+    >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+    >>> d = read_arrays(x0.flatten(), x1.flatten(), y.flatten(), data.Data2D)
 
     """
     largs = list(args)
@@ -204,6 +355,7 @@ def read_arrays(*args) -> Data:
     return dstype('', *dargs)
 
 
+# Doctest is skipped in __doctest_skip__ because example requires file input
 def read_table(arg,
                ncols: int = 2,
                colkeys: NamesType | None = None,
@@ -242,12 +394,14 @@ def read_table(arg,
     Create a `sherpa.data.Data1D` object from the first two
     columns in the file ``src.fits``:
 
+    >>> from sherpa.astro.io import read_table
     >>> d = read_table('src.fits')
 
     Create a `sherpa.data.Data1DInt` object from the first three
     columns in the file ``src.fits``:
 
-    >>> d = read_table('src.fits', ncols=3, dstype=Data1DInt)
+    >>> from sherpa import data
+    >>> d = read_table('src.fits', ncols=3, dstype=data.Data1DInt)
 
     Create a `sherpa.data.Data1D` data set from the specified
     columns in ``tbl.fits``, where ``WLEN`` is used for the
@@ -268,7 +422,7 @@ def read_table(arg,
 
 
 # TODO: should this be exported?
-#
+# Doctest is skipped in __doctest_skip__ because example requires file input
 def read_ascii(filename: str,
                ncols: int = 2,
                colkeys: NamesType | None = None,
@@ -307,6 +461,7 @@ def read_ascii(filename: str,
     Create a `sherpa.data.Data1D` object from the first two
     columns in the file ``src.dat``:
 
+    >>> from sherpa.astro.io import read_ascii
     >>> d = read_ascii('src.dat')
 
     Create A `sherpa.data.Data1DInt` object from the first three
@@ -319,7 +474,7 @@ def read_ascii(filename: str,
     independent axis, ``FLUX`` the dependent axis, and
     ``FLUXERR`` for the statistical error on the dependent axis:
 
-    >>> d = read_ascii('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
+    >>> d = read_ascii('tbl.txt', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
 
@@ -334,6 +489,7 @@ def read_ascii(filename: str,
 
 
 # TODO: Can this read in Data2D or only DataIMG?
+# Doctest is skipped in __doctest_skip__ because example requires file input
 def read_image(arg,
                coord: str = 'logical',
                dstype: Type[Data2D] = DataIMG) -> Data2D:
@@ -372,6 +528,7 @@ def read_image(arg,
     Create a `sherpa.astro.data.DataIMG` object from the FITS file
     ``img.fits``:
 
+    >>> from sherpa.astro.io import read_image
     >>> d = read_image('img.fits')
 
     Select the physical coordinate system from the file:
@@ -470,12 +627,6 @@ def read_arf(arg) -> DataARF:
             "exposure": exposure,
             "header": header,
             "ethresh": ogip_emin}
-
-    blo = block.get("BIN_LO")
-    bhi = block.get("BIN_HI")
-    if blo is not None and bhi is not None:
-        data["bin_lo"] = blo.values
-        data["bin_hi"] = bhi.values
 
     return DataARF(filename, **data)
 
@@ -846,8 +997,6 @@ def _process_pha_block(filename: str,
     # Do we create the backgrounds directly?
     #
     kwargs = {"channel": channel,
-              "bin_lo": get("BIN_LO"),
-              "bin_hi": get("BIN_HI"),
               # "grouping": get("GROUPING", expand=True),
               # "quality": get("QUALITY", expand=True),
               "grouping": getcol("GROUPING"),
@@ -1457,10 +1606,6 @@ def _pack_pha(dataset: DataPHA) -> BlockList:
     addfield("QUALITY", dataset.quality, np.int16,
              "Quality (0 for okay)")
 
-    if dataset.bin_lo is not None and dataset.bin_hi is not None:
-        cols.extend([Column("BIN_LO", dataset.bin_lo),
-                     Column("BIN_HI", dataset.bin_hi)])
-
     def addscal(value, name, label):
         """Add the scaling value."""
 
@@ -1573,15 +1718,6 @@ def _pack_arf(dataset: ARFType) -> BlockList:
                     values=dataset.energ_hi.astype(np.float32)),
              Column("SPECRESP", unit="cm^2", desc="Effective Area",
                     values=dataset.specresp.astype(np.float32))]
-
-    # Chandra files can have BIN_LO/HI values, so copy
-    # across if both set.
-    #
-    blo = dataset.bin_lo
-    bhi = dataset.bin_hi
-    if blo is not None and bhi is not None:
-        acols.extend([Column("BIN_LO", blo),
-                      Column("BIN_HI", bhi)])
 
     pheader = _empty_header(creator=True)
 
@@ -2226,7 +2362,9 @@ def pack_table(dataset: Data1D) -> object:
     Examples
     --------
 
-    >>> d = sherpa.data.Data1D('tmp', [1, 2, 3], [4, 10, 2])
+    >>> from sherpa.data import Data1D
+    >>> from sherpa.astro.io import pack_table
+    >>> d = Data1D('tmp', [1, 2, 3], [4, 10, 2])
     >>> tbl = pack_table(d)
 
     """
@@ -2255,10 +2393,13 @@ def pack_image(dataset: Data2D) -> Any:
     Examples
     --------
 
+    >>> import numpy as np
+    >>> import sherpa
+    >>> from sherpa.astro.io import pack_image
     >>> y, x = np.mgrid[:10, :5]
     >>> z = (x-2)**2 + (y-2)**3
     >>> d = sherpa.data.Data2D('img', x.flatten(), y.flatten(),
-                               z.flatten(), shape=z.shape)
+    ...                         z.flatten(), shape=z.shape)
     >>> img = pack_image(d)
 
     """

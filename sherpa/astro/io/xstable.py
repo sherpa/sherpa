@@ -115,6 +115,11 @@ xstablemodel.mygauss
    mygauss.pos  thawed            1            0          2.4
    mygauss.norm thawed            1            0        1e+24
 
+.. testcleanup::
+
+   >>> import os
+   >>> os.remove("example.mod")
+
 Notes
 -----
 
@@ -143,6 +148,8 @@ from .types import HeaderItem, Header, Column, TableBlock, BlockList
 __all__ = ("BaseParam", "Param", "make_xstable_model",
            "write_xstable_model")
 
+__doctest_requires__ = {'*': ['sherpa.astro.xspec._xspec'],
+                        }
 
 @dataclass
 class BaseParam:

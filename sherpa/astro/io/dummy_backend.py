@@ -54,12 +54,6 @@ name: str = "dummy"
 """The name of the I/O backend."""
 
 
-warning = logging.getLogger(__name__).warning
-warning("""Cannot import usable I/O backend.
-    If you are using CIAO, this is most likely an error and you should contact the CIAO helpdesk.
-    If you are using Standalone Sherpa, please install astropy.""")
-
-
 def get_table_data(arg,
                    ncols: int = 1,
                    colkeys: NamesType | None = None,

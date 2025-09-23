@@ -819,56 +819,55 @@ def test_show_data_datapha_no_bkg_no_response():
     s.show_data(outfile=out)
 
     toks = out.getvalue().split("\n")
-    assert toks[0] == "Data Set: 1"
-    assert toks[1] == "Filter: 1,4-5 Channel"
-    assert toks[2] == "Noticed Channels: 1,4-5"
-    assert toks[3] == "name           = "
-    assert toks[4] == "channel        = Int64[5]"
-    assert toks[5] == "counts         = Int64[5]"
-    assert toks[6] == "staterror      = None"
-    assert toks[7] == "syserror       = None"
-    assert toks[8] == "bin_lo         = None"
-    assert toks[9] == "bin_hi         = None"
-    assert toks[10] == "grouping       = None"
-    assert toks[11] == "quality        = None"
-    assert toks[12] == "exposure       = 100.0"
-    assert toks[13] == "backscal       = None"
-    assert toks[14] == "areascal       = None"
-    assert toks[15] == "grouped        = False"
-    assert toks[16] == "subtracted     = False"
-    assert toks[17] == "units          = channel"
-    assert toks[18] == "rate           = True"
-    assert toks[19] == "plot_fac       = 0"
-    assert toks[20] == "response_ids   = []"
-    assert toks[21] == "background_ids = []"
-    assert toks[22] == ""
-    assert toks[23] == "Data Set: 2"
-    assert toks[24] == "Filter: 1-5 Channel"
-    assert toks[25] == "Noticed Channels: 1-5"
-    assert toks[26] == "name           = "
-    assert toks[27] == "channel        = Int64[5]"
-    assert toks[28] == "counts         = Int64[5]"
-    assert toks[29] == "staterror      = None"
-    assert toks[30] == "syserror       = None"
-    assert toks[31] == "bin_lo         = None"
-    assert toks[32] == "bin_hi         = None"
-    assert toks[33] == "grouping       = None"
-    assert toks[34] == "quality        = None"
-    assert toks[35] == "exposure       = 200.0"
-    assert toks[36] == "backscal       = None"
-    assert toks[37] == "areascal       = None"
-    assert toks[38] == "grouped        = False"
-    assert toks[39] == "subtracted     = False"
-    assert toks[40] == "units          = channel"
-    assert toks[41] == "rate           = True"
-    assert toks[42] == "plot_fac       = 0"
-    assert toks[43] == "response_ids   = []"
-    assert toks[44] == "background_ids = []"
-    assert toks[45] == ""
-    assert toks[46] == ""
-    assert toks[47] == ""
+    def check(expected):
+        assert toks.pop(0) == expected
 
-    assert len(toks) == 48
+    check("Data Set: 1")
+    check("Filter: 1,4-5 Channel")
+    check("Noticed Channels: 1,4-5")
+    check("name           = ")
+    check("channel        = Int64[5]")
+    check("counts         = Int64[5]")
+    check("staterror      = None")
+    check("syserror       = None")
+    check("grouping       = None")
+    check("quality        = None")
+    check("exposure       = 100.0")
+    check("backscal       = None")
+    check("areascal       = None")
+    check("grouped        = False")
+    check("subtracted     = False")
+    check("units          = channel")
+    check("rate           = True")
+    check("plot_fac       = 0")
+    check("response_ids   = []")
+    check("background_ids = []")
+    check("")
+    check("Data Set: 2")
+    check("Filter: 1-5 Channel")
+    check("Noticed Channels: 1-5")
+    check("name           = ")
+    check("channel        = Int64[5]")
+    check("counts         = Int64[5]")
+    check("staterror      = None")
+    check("syserror       = None")
+    check("grouping       = None")
+    check("quality        = None")
+    check("exposure       = 200.0")
+    check("backscal       = None")
+    check("areascal       = None")
+    check("grouped        = False")
+    check("subtracted     = False")
+    check("units          = channel")
+    check("rate           = True")
+    check("plot_fac       = 0")
+    check("response_ids   = []")
+    check("background_ids = []")
+    check("")
+    check("")
+    check("")
+
+    assert len(toks) == 0
 
 
 def test_show_data_datapha_bkg_no_response():
@@ -897,80 +896,78 @@ def test_show_data_datapha_bkg_no_response():
     s.show_data(outfile=out)
 
     toks = out.getvalue().split("\n")
-    assert toks[0] == "Data Set: 1"
-    assert toks[1] == "Filter: 1-5 Channel"
-    assert toks[2] == "Bkg Scale 1: 1"  # TODO: what are these meant to be?
-    assert toks[3] == "Bkg Scale 2: 2"  # TODO: what are these meant to be?
-    assert toks[4] == "Noticed Channels: 1-5"
-    assert toks[5] == "name           = src"
-    assert toks[6] == "channel        = Int64[5]"
-    assert toks[7] == "counts         = Int64[5]"
-    assert toks[8] == "staterror      = None"
-    assert toks[9] == "syserror       = None"
-    assert toks[10] == "bin_lo         = None"
-    assert toks[11] == "bin_hi         = None"
-    assert toks[12] == "grouping       = None"
-    assert toks[13] == "quality        = None"
-    assert toks[14] == "exposure       = 400.0"
-    assert toks[15] == "backscal       = None"
-    assert toks[16] == "areascal       = None"
-    assert toks[17] == "grouped        = False"
-    assert toks[18] == "subtracted     = False"
-    assert toks[19] == "units          = channel"
-    assert toks[20] == "rate           = True"
-    assert toks[21] == "plot_fac       = 0"
-    assert toks[22] == "response_ids   = []"
-    assert toks[23] == "background_ids = [1, 2]"
-    assert toks[24] == ""
-    assert toks[25] == "Background Data Set: 1:1"
-    assert toks[26] == "Filter: 1,4-5 Channel"
-    assert toks[27] == "Noticed Channels: 1,4-5"
-    assert toks[28] == "name           = down"
-    assert toks[29] == "channel        = Int64[5]"
-    assert toks[30] == "counts         = Int64[5]"
-    assert toks[31] == "staterror      = None"
-    assert toks[32] == "syserror       = None"
-    assert toks[33] == "bin_lo         = None"
-    assert toks[34] == "bin_hi         = None"
-    assert toks[35] == "grouping       = None"
-    assert toks[36] == "quality        = None"
-    assert toks[37] == "exposure       = 200.0"
-    assert toks[38] == "backscal       = None"
-    assert toks[39] == "areascal       = None"
-    assert toks[40] == "grouped        = False"
-    assert toks[41] == "subtracted     = False"
-    assert toks[42] == "units          = channel"
-    assert toks[43] == "rate           = True"
-    assert toks[44] == "plot_fac       = 0"
-    assert toks[45] == "response_ids   = []"
-    assert toks[46] == "background_ids = []"
-    assert toks[47] == ""
-    assert toks[48] == "Background Data Set: 1:2"
-    assert toks[49] == "Filter: 1-5 Channel"
-    assert toks[50] == "Noticed Channels: 1-5"
-    assert toks[51] == "name           = up"
-    assert toks[52] == "channel        = Int64[5]"
-    assert toks[53] == "counts         = Int64[5]"
-    assert toks[54] == "staterror      = None"
-    assert toks[55] == "syserror       = None"
-    assert toks[56] == "bin_lo         = None"
-    assert toks[57] == "bin_hi         = None"
-    assert toks[58] == "grouping       = None"
-    assert toks[59] == "quality        = None"
-    assert toks[60] == "exposure       = 100.0"
-    assert toks[61] == "backscal       = None"
-    assert toks[62] == "areascal       = None"
-    assert toks[63] == "grouped        = False"
-    assert toks[64] == "subtracted     = False"
-    assert toks[65] == "units          = channel"
-    assert toks[66] == "rate           = True"
-    assert toks[67] == "plot_fac       = 0"
-    assert toks[68] == "response_ids   = []"
-    assert toks[69] == "background_ids = []"
-    assert toks[70] == ""
-    assert toks[71] == ""
-    assert toks[72] == ""
-    assert len(toks) == 73
+    def check(expected):
+        assert toks.pop(0) == expected
+
+    check("Data Set: 1")
+    check("Filter: 1-5 Channel")
+    check("Bkg Scale 1: 1")  # TODO: what are these meant to be?
+    check("Bkg Scale 2: 2")  # TODO: what are these meant to be?
+    check("Noticed Channels: 1-5")
+    check("name           = src")
+    check("channel        = Int64[5]")
+    check("counts         = Int64[5]")
+    check("staterror      = None")
+    check("syserror       = None")
+    check("grouping       = None")
+    check("quality        = None")
+    check("exposure       = 400.0")
+    check("backscal       = None")
+    check("areascal       = None")
+    check("grouped        = False")
+    check("subtracted     = False")
+    check("units          = channel")
+    check("rate           = True")
+    check("plot_fac       = 0")
+    check("response_ids   = []")
+    check("background_ids = [1, 2]")
+    check("")
+    check("Background Data Set: 1:1")
+    check("Filter: 1,4-5 Channel")
+    check("Noticed Channels: 1,4-5")
+    check("name           = down")
+    check("channel        = Int64[5]")
+    check("counts         = Int64[5]")
+    check("staterror      = None")
+    check("syserror       = None")
+    check("grouping       = None")
+    check("quality        = None")
+    check("exposure       = 200.0")
+    check("backscal       = None")
+    check("areascal       = None")
+    check("grouped        = False")
+    check("subtracted     = False")
+    check("units          = channel")
+    check("rate           = True")
+    check("plot_fac       = 0")
+    check("response_ids   = []")
+    check("background_ids = []")
+    check("")
+    check("Background Data Set: 1:2")
+    check("Filter: 1-5 Channel")
+    check("Noticed Channels: 1-5")
+    check("name           = up")
+    check("channel        = Int64[5]")
+    check("counts         = Int64[5]")
+    check("staterror      = None")
+    check("syserror       = None")
+    check("grouping       = None")
+    check("quality        = None")
+    check("exposure       = 100.0")
+    check("backscal       = None")
+    check("areascal       = None")
+    check("grouped        = False")
+    check("subtracted     = False")
+    check("units          = channel")
+    check("rate           = True")
+    check("plot_fac       = 0")
+    check("response_ids   = []")
+    check("background_ids = []")
+    check("")
+    check("")
+    check("")
+
+    assert len(toks) == 0
 
 
 def test_show_bkg_datapha_no_response():
@@ -996,33 +993,34 @@ def test_show_bkg_datapha_no_response():
     s.show_bkg(outfile=out)
 
     toks = out.getvalue().split("\n")
-    assert toks[0] == "Background Data Set: 1:1"
-    assert toks[1] == "Filter: 1,4-5 Channel"
-    assert toks[2] == "Noticed Channels: 1,4-5"
-    assert toks[3] == "name           = down"
-    assert toks[4] == "channel        = Int64[5]"
-    assert toks[5] == "counts         = Int64[5]"
-    assert toks[6] == "staterror      = None"
-    assert toks[7] == "syserror       = None"
-    assert toks[8] == "bin_lo         = None"
-    assert toks[9] == "bin_hi         = None"
-    assert toks[10] == "grouping       = None"
-    assert toks[11] == "quality        = None"
-    assert toks[12] == "exposure       = 200.0"
-    assert toks[13] == "backscal       = None"
-    assert toks[14] == "areascal       = None"
-    assert toks[15] == "grouped        = False"
-    assert toks[16] == "subtracted     = False"
-    assert toks[17] == "units          = channel"
-    assert toks[18] == "rate           = True"
-    assert toks[19] == "plot_fac       = 0"
-    assert toks[20] == "response_ids   = []"
-    assert toks[21] == "background_ids = []"
-    assert toks[22] == ""
-    assert toks[23] == ""
-    assert toks[24] == ""
+    def check(expected):
+        assert toks.pop(0) == expected
 
-    assert len(toks) == 25
+    check("Background Data Set: 1:1")
+    check("Filter: 1,4-5 Channel")
+    check("Noticed Channels: 1,4-5")
+    check("name           = down")
+    check("channel        = Int64[5]")
+    check("counts         = Int64[5]")
+    check("staterror      = None")
+    check("syserror       = None")
+    check("grouping       = None")
+    check("quality        = None")
+    check("exposure       = 200.0")
+    check("backscal       = None")
+    check("areascal       = None")
+    check("grouped        = False")
+    check("subtracted     = False")
+    check("units          = channel")
+    check("rate           = True")
+    check("plot_fac       = 0")
+    check("response_ids   = []")
+    check("background_ids = []")
+    check("")
+    check("")
+    check("")
+
+    assert len(toks) == 0
 
 
 def test_show_data_datapha_bkg():
@@ -1056,85 +1054,84 @@ def test_show_data_datapha_bkg():
     s.show_data(outfile=out)
 
     toks = out.getvalue().split("\n")
-    assert toks[0] == "Data Set: 1"
-    assert toks[1] == "Filter: 0.1000-1.5000 Energy (keV)"
-    assert toks[2] == "Bkg Scale: 2"
-    assert toks[3] == "Noticed Channels: 1-5"
-    assert toks[4] == "name           = src"
-    assert toks[5] == "channel        = Int64[5]"
-    assert toks[6] == "counts         = Int64[5]"
-    assert toks[7] == "staterror      = None"
-    assert toks[8] == "syserror       = None"
-    assert toks[9] == "bin_lo         = None"
-    assert toks[10] == "bin_hi         = None"
-    assert toks[11] == "grouping       = None"
-    assert toks[12] == "quality        = None"
-    assert toks[13] == "exposure       = 400.0"
-    assert toks[14] == "backscal       = None"
-    assert toks[15] == "areascal       = None"
-    assert toks[16] == "grouped        = False"
-    assert toks[17] == "subtracted     = False"
-    assert toks[18] == "units          = energy"
-    assert toks[19] == "rate           = True"
-    assert toks[20] == "plot_fac       = 0"
-    assert toks[21] == "response_ids   = [1]"
-    assert toks[22] == "background_ids = [1]"
-    assert toks[23] == ""
-    assert toks[24] == "RMF Data Set: 1:1"
-    assert toks[25] == "name     = srmf"
-    assert toks[26] == "energ_lo = Float64[5]"
-    assert toks[27] == "energ_hi = Float64[5]"
-    assert toks[28] == "n_grp    = Int16[5]"
-    assert toks[29] == "f_chan   = Int16[5]"
-    assert toks[30] == "n_chan   = Int16[5]"
-    assert toks[31] == "matrix   = Float32[5]"
-    assert toks[32] == "e_min    = Float64[5]"
-    assert toks[33] == "e_max    = Float64[5]"
-    assert toks[34] == "detchans = 5"
-    assert toks[35] == "offset   = 1"
-    assert toks[36] == "ethresh  = None"
-    assert toks[37] == ""
-    assert toks[38] == "Background Data Set: 1:1"
-    assert toks[39] == "Filter: 0.1000-1.5000 Energy (keV)"
-    assert toks[40] == "Noticed Channels: 1-5"
-    assert toks[41] == "name           = bkg"
-    assert toks[42] == "channel        = Int64[5]"
-    assert toks[43] == "counts         = Int64[5]"
-    assert toks[44] == "staterror      = None"
-    assert toks[45] == "syserror       = None"
-    assert toks[46] == "bin_lo         = None"
-    assert toks[47] == "bin_hi         = None"
-    assert toks[48] == "grouping       = None"
-    assert toks[49] == "quality        = None"
-    assert toks[50] == "exposure       = 200.0"
-    assert toks[51] == "backscal       = None"
-    assert toks[52] == "areascal       = None"
-    assert toks[53] == "grouped        = False"
-    assert toks[54] == "subtracted     = False"
-    assert toks[55] == "units          = energy"
-    assert toks[56] == "rate           = True"
-    assert toks[57] == "plot_fac       = 0"
-    assert toks[58] == "response_ids   = [1]"
-    assert toks[59] == "background_ids = []"
-    assert toks[60] == ""
-    assert toks[61] == "Background RMF Data Set: 1:1"
-    assert toks[62] == "name     = brmf"
-    assert toks[63] == "energ_lo = Float64[5]"
-    assert toks[64] == "energ_hi = Float64[5]"
-    assert toks[65] == "n_grp    = Int16[5]"
-    assert toks[66] == "f_chan   = Int16[5]"
-    assert toks[67] == "n_chan   = Int16[5]"
-    assert toks[68] == "matrix   = Float32[5]"
-    assert toks[69] == "e_min    = Float64[5]"
-    assert toks[70] == "e_max    = Float64[5]"
-    assert toks[71] == "detchans = 5"
-    assert toks[72] == "offset   = 1"
-    assert toks[73] == "ethresh  = None"
-    assert toks[74] == ""
-    assert toks[75] == ""
-    assert toks[76] == ""
+    def check(expected):
+        assert toks.pop(0) == expected
 
-    assert len(toks) == 77
+    check("Data Set: 1")
+    check("Filter: 0.1000-1.5000 Energy (keV)")
+    check("Bkg Scale: 2")
+    check("Noticed Channels: 1-5")
+    check("name           = src")
+    check("channel        = Int64[5]")
+    check("counts         = Int64[5]")
+    check("staterror      = None")
+    check("syserror       = None")
+    check("grouping       = None")
+    check("quality        = None")
+    check("exposure       = 400.0")
+    check("backscal       = None")
+    check("areascal       = None")
+    check("grouped        = False")
+    check("subtracted     = False")
+    check("units          = energy")
+    check("rate           = True")
+    check("plot_fac       = 0")
+    check("response_ids   = [1]")
+    check("background_ids = [1]")
+    check("")
+    check("RMF Data Set: 1:1")
+    check("name     = srmf")
+    check("energ_lo = Float64[5]")
+    check("energ_hi = Float64[5]")
+    check("n_grp    = Int16[5]")
+    check("f_chan   = Int16[5]")
+    check("n_chan   = Int16[5]")
+    check("matrix   = Float32[5]")
+    check("e_min    = Float64[5]")
+    check("e_max    = Float64[5]")
+    check("detchans = 5")
+    check("offset   = 1")
+    check("ethresh  = None")
+    check("")
+    check("Background Data Set: 1:1")
+    check("Filter: 0.1000-1.5000 Energy (keV)")
+    check("Noticed Channels: 1-5")
+    check("name           = bkg")
+    check("channel        = Int64[5]")
+    check("counts         = Int64[5]")
+    check("staterror      = None")
+    check("syserror       = None")
+    check("grouping       = None")
+    check("quality        = None")
+    check("exposure       = 200.0")
+    check("backscal       = None")
+    check("areascal       = None")
+    check("grouped        = False")
+    check("subtracted     = False")
+    check("units          = energy")
+    check("rate           = True")
+    check("plot_fac       = 0")
+    check("response_ids   = [1]")
+    check("background_ids = []")
+    check("")
+    check("Background RMF Data Set: 1:1")
+    check("name     = brmf")
+    check("energ_lo = Float64[5]")
+    check("energ_hi = Float64[5]")
+    check("n_grp    = Int16[5]")
+    check("f_chan   = Int16[5]")
+    check("n_chan   = Int16[5]")
+    check("matrix   = Float32[5]")
+    check("e_min    = Float64[5]")
+    check("e_max    = Float64[5]")
+    check("detchans = 5")
+    check("offset   = 1")
+    check("ethresh  = None")
+    check("")
+    check("")
+    check("")
+
+    assert len(toks) == 0
 
 
 def test_show_bkg_source_output():
@@ -3705,17 +3702,18 @@ def test_fit_ignores_repeated_otherid(session, caplog):
 
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
 def test_get_draws_wants_errors(session):
+    """This test was changed in #2374 but the test name kept as is."""
 
     s = session()
     s._add_model_types(sherpa.models.basic)
 
     s.load_arrays(1, [1, 2], [2, 5])
     s.set_source(1, "const1d.foo")
+    s.set_stat("cash")
     s.fit()
 
-    with pytest.raises(SessionErr,
-                       match="covariance has not been performed"):
-        s.get_draws(niter=1)
+    # Prior to #2374 this would error out. Now just check it passes.
+    _ = s.get_draws(niter=1)
 
 
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])

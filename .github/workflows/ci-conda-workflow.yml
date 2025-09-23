@@ -16,8 +16,10 @@ concurrency:
 
 env:
   xspec_channel: "https://cxc.cfa.harvard.edu/conda/xspec"
-  CONDA_BUILD_SYSROOT: ${{ github.workspace }}/11.0SDK/MacOSX11.0.sdk
-  conda_loc: ${{ github.workspace }}/conda_loc
+  # ensure conda environment is built outside the repository (to
+  # avoid errors from meson)
+  CONDA_BUILD_SYSROOT: ${{ github.workspace }}/../11.0SDK/MacOSX11.0.sdk
+  conda_loc: ${{ github.workspace }}/../conda_loc
 
 jobs:
   tests:

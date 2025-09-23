@@ -139,8 +139,54 @@ class MyNcores:
         raise NotImplementedError("my_worker has not been implemented")
 
 
+class InfinitePotential:
+    """Ensure the parameter values stay within bounds.
+
+    The idea is that if sent a value outside the parameter limits we
+    return "infinity" (here defined to be the maximum value we'd
+    expect rather than inf, to avoid causing problems to the
+    optimizer).
+
+    .. versionadded:: 4.18.0
+
+    See Also
+    --------
+    sherpa.optmethods.optfcts.InfinitePotential
+
+    Notes
+    -----
+
+    Two differences to the optfcts version:
+      - the func argument return type is different
+      - the bounds here check that they lie within
+            minval <= pars <= maxval
+        and there is no check for NaN values
+
+    """
+
+    __slots__ = ("func", "minval", "maxval")
+
+    def __init__(self,
+                 func: OptimizerFunc,
+                 minval: np.ndarray,
+                 maxval: np.ndarray
+                 ) -> None:
+        self.func = func
+        self.minval = minval
+        self.maxval = maxval
+
+    def __call__(self, x: np.ndarray) -> float:
+        if np.any(x < self.minval) or np.any(x > self.maxval):
+            return FUNC_MAX
+
+        return self.func(x)
+
+
 class Opt:
     """Base optimisation class.
+
+    .. versionchanged:: 4.18.0
+       The `func_bounds` field has been removed.
 
     .. versionchanged:: 4.17.0
        The class structure has been changed (e.g. `nfev` is now a
@@ -174,8 +220,8 @@ class Opt:
         # of bounds.
         #
         self.func_count = FuncCounter(func)
-        self.func = self.func_bounds(self.func_count, self.npar,
-                                     self.xmin, self.xmax)
+        self.func = InfinitePotential(self.func_count, self.xmin,
+                                      self.xmax)
 
     # The sub-classes have different arguments, but do have maxnfev
     # and ftol as common values.
@@ -196,54 +242,6 @@ class Opt:
 
         """
         return self.func_count.nfev
-
-    def _outside_limits(self,
-                        x: np.ndarray,
-                        xmin: np.ndarray,
-                        xmax: np.ndarray
-                        ) -> bool:
-        return bool(np.any(x < xmin) or np.any(x > xmax))
-
-    # We should be able to take these parameters from the class, or
-    # re-write this logic.
-    #
-    def func_bounds(self,
-                    func: OptimizerFunc,
-                    npar: int,
-                    xmin: ArrayType | None = None,
-                    xmax: ArrayType | None = None
-                    ) -> OptimizerFunc:
-        """In order to keep the current number of function evaluations:
-        func_counter should be called before func_bounds. For example,
-        the following code
-          x0 = [-1.2, 1.0]
-          xmin = [-10.0, -10.0]
-          xmax = [10.0, 10.0]
-          nfev, rosen = func_counter(Rosenbrock)
-          rosenbrock = func_bounds(rosen, xmin, xmax)
-          print rosenbrock([-15.0, 1.0]), nfev[0]
-        should output:
-        inf 0"""
-        if xmin is not None and xmax is not None:
-            xmin = np.asarray(xmin)
-            xmax = np.asarray(xmax)
-        elif xmin is not None:
-            xmin = np.asarray(xmin)
-            xmax = np.asarray([np.inf for ii in xmin])
-        elif xmax is not None:
-            xmax = np.asarray(xmax)
-            xmin = np.asarray([- np.inf for ii in xmax])
-        else:
-            xmin = np.asarray([- np.inf for ii in range(npar)])
-            xmax = np.asarray([np.inf for ii in range(npar)])
-
-        def func_bounds_wrapper(x):
-            if self._outside_limits(x, xmin, xmax):
-                return FUNC_MAX
-
-            return func(x)
-
-        return func_bounds_wrapper
 
 
 # The simplex field is a npop by (npar + 1) array, where each row

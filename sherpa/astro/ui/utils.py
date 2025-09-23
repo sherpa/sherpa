@@ -21,11 +21,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 import logging
 import os
 import sys
-import warnings
 
 import numpy as np
 
@@ -58,20 +58,18 @@ import sherpa.io
 from sherpa.models.basic import TableModel, UserModel
 from sherpa.models.model import Model
 import sherpa.plot
-from sherpa.plot import get_per_plot_kwargs
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     ReSampleData
 from sherpa.stats import Cash, CStat, WStat
 
 import sherpa.ui.utils
-from sherpa.ui.utils import _check_type, _check_str_type, _is_str, \
-    get_plot_prefs
+from sherpa.ui.utils import _check_type, _check_str_type, _is_str
 
 import sherpa.utils
 from sherpa.utils import bool_cast, get_error_estimates, is_subclass, \
     sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
-    IdentifierErr, ImportErr, IOErr, ModelErr, SessionErr
+    IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.types import IdType, IdTypes
 
@@ -331,9 +329,9 @@ class Session(sherpa.ui.utils.Session):
             data = self._get_pha_data(id)
             return data.default_background_id
 
-            # return self._default_id
-
-        # We rely on the validation made by _fix_id
+        # We rely on the validation made by _fix_id. This is not
+        # expected to change the value (as bkg_id is not None).
+        #
         return self._fix_id(bkg_id)
 
     def __setstate__(self, state):
@@ -359,6 +357,27 @@ class Session(sherpa.ui.utils.Session):
 
         self._energyfluxplot = sherpa.astro.plot.EnergyFluxHistogram()
         self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
+
+        # Used to identify PHA datasets.
+        #
+        # These dictionaries are always cleared by set_data/bkg for
+        # the IdType value, and a few other commands
+        # (e.g. delete_data, delete_bkg, copy_data). Data is stored by
+        # the relevant load_pha/data/bkg commands after they call
+        # set_data/bkg.  This information is used by
+        # .serialize.save_all to re-create the relevant load_xxx
+        # command. At present this is restricted to PHA data but could
+        # be extended for the other types (e.g. tables, images).  The
+        # value type of "dict[str, Any]" could have better typing, but
+        # leave as this generic form for now.
+        #
+        # Note that the automatically-loaded ancillary data for PHA
+        # files (background, ARF, RMF) are included in this store so
+        # that save_all knows that these files do not need to be
+        # explicitly loaded.
+        #
+        self._load_data_store: dict[IdType, dict[str, Any]] = {}
+        self._load_bkg_store: dict[IdType, dict[IdType, dict[str, Any]]] = {}
 
         # This is a new dictionary of XSPEC module settings.  It
         # is meant only to be populated by the save function, so
@@ -1015,10 +1034,65 @@ class Session(sherpa.ui.utils.Session):
         output.append(statinfo)
         return output
 
-
     ###########################################################################
     # Data
     ###########################################################################
+
+    def delete_data(self, id: IdType | None = None) -> None:
+        idval = self._fix_id(id)
+        super().delete_data(idval)
+
+        # Ensure the load-bkg/data stores are cleared.
+        #
+        with suppress(KeyError):
+            del self._load_bkg_store[idval]
+
+        with suppress(KeyError):
+            del self._load_data_store[idval]
+
+    delete_data.__doc__ = sherpa.ui.utils.Session.delete_data.__doc__
+
+    def set_data(self, id, data=None) -> None:
+        if data is None:
+            idval = self.get_default_id()
+            data = id
+        else:
+            idval = self._fix_id(id)
+
+        super().set_data(idval, data=data)
+
+        # Ensure the load-bkg/data stores are cleared.
+        #
+        with suppress(KeyError):
+            del self._load_bkg_store[idval]
+
+        with suppress(KeyError):
+            del self._load_data_store[idval]
+
+    set_data.__doc__ = sherpa.ui.utils.Session.set_data.__doc__
+
+    def copy_data(self, fromid: IdType, toid: IdType) -> None:
+        super().copy_data(fromid, toid)
+
+        # Copy over the load-data information if it exists, otherwise
+        # ensure it is cleared out.
+        #
+        try:
+            old = self._load_data_store[fromid]
+
+            # Copy the dict rather than share a reference.
+            #
+            self._load_data_store[toid] = {k: v for k, v in old.items()}
+            self._load_data_store[toid]["id"] = toid
+
+        except KeyError:
+            with suppress(KeyError):
+                del self._load_bkg_store[toid]
+
+            with suppress(KeyError):
+                del self._load_data_store[toid]
+
+    copy_data.__doc__ = sherpa.ui.utils.Session.copy_data.__doc__
 
     # DOC-NOTE: also in sherpa.utils
     def dataspace1d(self, start, stop, step=1, numbins=None,
@@ -1349,7 +1423,6 @@ class Session(sherpa.ui.utils.Session):
         +------------+-----------------+--------------------+
         | DataPHA    | channel, counts | statistical error, |
         |            |                 | systematic error,  |
-        |            |                 | bin_lo, bin_hi,    |
         |            |                 | grouping, quality  |
         +------------+-----------------+--------------------+
         | DataIMG    | x0, x1, y       | shape,             |
@@ -1965,7 +2038,9 @@ class Session(sherpa.ui.utils.Session):
 
     def _load_data(self,
                    id: IdType | None,
-                   datasets: Data | Sequence[Data]
+                   datasets: Data | Sequence[Data],
+                   filename: str,
+                   kwargs: dict[str, Any]
                    ) -> None:
         """Load one or more datasets.
 
@@ -1983,11 +2058,74 @@ class Session(sherpa.ui.utils.Session):
         datasets : Data instance or iterable of Data instances
            The data to load, either as a single item or, for
            multiple-dataset files, an iterable of them.
+        filename : str
+           The name of the file used to load the data (only used
+           when datasets is a sequence, which implies a PHA2 file).
+        kwargs : dict
+           The keyword arguments used in the load call (only used
+           for PHA2 data).
 
         """
 
+        if id is None:
+            idval = self.get_default_id()
+        else:
+            idval = self._fix_id(id)
+
+        def mk_pha_store(data: DataPHA) -> dict[str, Any]:
+            """The basic storage information for a PHA file."""
+
+            store = {"id": idval,
+                     "filename": filename,
+                     "kwargs": kwargs}
+
+            # What files were automatically loaded? Track the
+            # identifier and file name in case the user loads
+            # something different. If the code tracks the load
+            # commands then this logic could be removed.
+            #
+            # The responses can be None, so strip them out.
+            #
+            store["arf_ids"] = {}
+            store["rmf_ids"] = {}
+            for resp_id in data.response_ids:
+                arf, rmf = data.get_response(resp_id)
+                if arf is not None:
+                    store["arf_ids"][resp_id] = arf.name
+                if rmf is not None:
+                    store["rmf_ids"][resp_id] = rmf.name
+
+            store["bkg_ids"] = {
+                bkg_id: data.get_background(bkg_id).name
+                for bkg_id in data.background_ids
+            }
+
+            # The backgrounds can have responses.
+            #
+            store["bkg_arf_ids"] = {}
+            store["bkg_rmf_ids"] = {}
+            for bkg_id in data.background_ids:
+                bkg = data.get_background(bkg_id)
+                bkg_arfs = {}
+                bkg_rmfs = {}
+                for resp_id in bkg.response_ids:
+                    barf, brmf = bkg.get_response(resp_id)
+                    if barf is not None:
+                        bkg_arfs[resp_id] = barf.name
+                    if brmf is not None:
+                        bkg_rmfs[resp_id] = brmf.name
+
+                store["bkg_arf_ids"][bkg_id] = bkg_arfs
+                store["bkg_rmf_ids"][bkg_id] = bkg_rmfs
+
+            return store
+
         if not np.iterable(datasets):
-            self.set_data(id, datasets)
+            # set_data clears _load_data_store
+            self.set_data(idval, datasets)
+            if isinstance(datasets, DataPHA):
+                self._load_data_store[idval] = mk_pha_store(datasets)
+
             return
 
         # One issue with the following is that if there's
@@ -1995,20 +2133,26 @@ class Session(sherpa.ui.utils.Session):
         # output will be "foo1" rather than "foo" (when
         # id="foo").  DJB thinks we can live with this.
         #
-        if id is None:
-            id = self.get_default_id()
-
         num = len(datasets)
         ids = []
         for ctr, data in enumerate(datasets):
             try:
-                idval = id + ctr
+                id_ = idval + ctr
             except TypeError:
                 # id is assumed to be a string
-                idval = id + str(ctr + 1)
+                id_ = idval + str(ctr + 1)
 
-            self.set_data(idval, data)
-            ids.append(idval)
+            self.set_data(id_, data)
+            ids.append(id_)
+
+            store = mk_pha_store(data)
+
+            # Note that since ids is a mutable argument, the final
+            # value stored in idvals will list all related
+            # identifiers.
+            #
+            store["idvals"] = ids
+            self._load_data_store[id_] = store
 
         if num > 1:
             info("Multiple data sets have been input: %s-%s",
@@ -2091,7 +2235,7 @@ class Session(sherpa.ui.utils.Session):
             id, filename = filename, id
 
         datasets = self.unpack_data(filename, *args, **kwargs)
-        self._load_data(id, datasets)
+        self._load_data(id, datasets, filename=filename, kwargs=kwargs)
 
     def unpack_image(self, arg, coord='logical',
                      dstype=DataIMG):
@@ -2270,10 +2414,10 @@ class Session(sherpa.ui.utils.Session):
 
         """
         use_errors = bool_cast(use_errors)
-        return sherpa.astro.io.read_pha(arg, use_errors)
+        return sherpa.astro.io.read_pha(arg, use_errors=use_errors)
 
     # DOC-TODO: what does this return when given a PHA2 file?
-    def unpack_bkg(self, arg, use_errors=False):
+    def unpack_bkg(self, arg, use_errors: bool = False):
         """Create a PHA data structure for a background data set.
 
         Any instrument information referenced in the header of the PHA
@@ -2322,11 +2466,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
         use_errors = bool_cast(use_errors)
-        return sherpa.astro.io.read_pha(arg, use_errors, True)
+        return sherpa.astro.io.read_pha(arg, use_errors=use_errors,
+                                        use_background=True)
 
     # DOC-TODO: how best to include datastack support?
     def load_pha(self, id, arg=None,
-                 use_errors=False) -> None:
+                 use_errors: bool = False) -> None:
         """Load a PHA data set.
 
         This will load the PHA data and any related information, such
@@ -2480,10 +2625,20 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
 
         phasets = self.unpack_pha(arg, use_errors)
-        self._load_data(id, phasets)
+
+        # Only store the use_errors call if set (i.e. not the default).
+        #
+        kwargs = {}
+        if use_errors:
+            kwargs["use_errors"] = True
+
+        self._load_data(idval, phasets, filename=arg, kwargs=kwargs)
 
     def _get_pha_data(self,
                       id: IdType | None,
@@ -5627,7 +5782,6 @@ class Session(sherpa.ui.utils.Session):
                                      clobber=clobber)
 
     # DOC-TODO: setting ascii=True is not supported for crates
-    # and in pyfits it seems to just be a 1D array (needs thinking about)
     def save_image(self, id, filename=None, ascii=False,
                    clobber=False) -> None:
         """Save the pixel values of a 2D data set to a file.
@@ -7149,10 +7303,23 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if bkg is None:
-            id, bkg = bkg, id
-        data = self._get_pha_data(id)
+            idval = self.get_default_id()
+            bkg = id
+        else:
+            idval = self._fix_id(id)
+
+        # Ensure we have PHA data (for source and background).
+        data = self._get_pha_data(idval)
         _check_type(bkg, DataPHA, 'bkg', 'a PHA data set')
-        data.set_background(bkg, bkg_id)
+
+        bkg_idval = self._fix_background_id(idval, bkg_id)
+        data.set_background(bkg, bkg_idval)
+
+        # Ensure the load-bkg store is cleared.
+        with suppress(KeyError):
+            del self._load_bkg_store[idval][bkg_idval]
+            if len(self._load_bkg_store[idval]) == 0:
+                del self._load_bkg_store[idval]
 
     def list_bkg_ids(self,
                      id: IdType | None = None
@@ -8158,7 +8325,8 @@ class Session(sherpa.ui.utils.Session):
             self.ignore2d_id(idval, regions)
 
     # DOC-TODO: how best to include datastack support? How is it handled here?
-    def load_bkg(self, id, arg=None, use_errors=False,
+    def load_bkg(self, id, arg=None,
+                 use_errors: bool = False,
                  bkg_id: IdType | None = None
                  ) -> None:
         """Load the background from a file and add it to a PHA data set.
@@ -8224,15 +8392,78 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
 
         bkgsets = self.unpack_bkg(arg, use_errors)
 
+        def mk_pha_store(data: DataPHA) -> dict[str, Any]:
+            """The basic storage information for a PHA file."""
+
+            store = {"id": idval,
+                     "filename": arg,
+                     }
+            if use_errors:
+                store["use_errors"] = use_errors
+
+            # What files were automatically loaded? Track the
+            # identifier and file name in case the user loads
+            # something different. If the code tracks the load
+            # commands then this logic could be removed.
+            #
+            # The responses can be None, so strip them out.
+            #
+            store["arf_ids"] = {}
+            store["rmf_ids"] = {}
+            for resp_id in data.response_ids:
+                arf, rmf = data.get_response(resp_id)
+                if arf is not None:
+                    store["arf_ids"][resp_id] = arf.name
+                if rmf is not None:
+                    store["rmf_ids"][resp_id] = rmf.name
+
+            # Unlike the load_pha/data case, there is no need
+            # to track background information here (as this is
+            # the background).
+            #
+            return store
+
+        # Store values for each bkg_id value, hence the idval is a
+        # dict of dicts, unlike the _load_data_store, which is just a
+        # dict.
+        #
+        fullstore = {}
+        self._load_bkg_store[idval] = fullstore
+
         if np.iterable(bkgsets):
-            for bkgid, bkg in enumerate(bkgsets):
-                self.set_bkg(id, bkg, bkgid + 1)
+            # QUS: do we support PHA2 background files? Technically
+            # we do, but in reality we do not have files like this.
+            #
+            # NOTE: this ignores the bkg_id argument.
+            #
+            bkgids = []
+            for bkgid, bkg in enumerate(bkgsets, 1):
+                self.set_bkg(idval, bkg, bkgid)
+                bkgids.append(bkgid)
+
+                store = mk_pha_store(bkg)
+                store["bkg_id"] = bkgid
+
+                # Note that since bkgids is a mutable argument, the
+                # final value stored in bkgidvals will list all
+                # related identifiers.
+                #
+                fullstore[bkg_id] = store
+
         else:
-            self.set_bkg(id, bkgsets, bkg_id)
+            bkg_idval = self._fix_background_id(idval, bkg_id)
+            self.set_bkg(idval, bkgsets, bkg_idval)
+
+            store = mk_pha_store(bkgsets)
+            store["bkg_id"] = bkg_idval
+            fullstore[bkg_idval] = store
 
     def group(self,
               id: IdType | None = None,
@@ -9779,7 +10010,9 @@ class Session(sherpa.ui.utils.Session):
            If None, the default, then the data is simulated using the
            `sherpa.utils.poisson_noise` routine. If set, it must be a
            callable that takes a ndarray of the predicted values and
-           returns a ndarray of the same size with the simulated data.
+           an optional rng argument that takes a NumPy random
+           generator, and returns a ndarray of the same size with the
+           simulated data.
 
         Raises
         ------
@@ -13113,8 +13346,10 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
+    # TODO: should resp_id allow multiple values?
+    #
     def plot_arf(self,
-                 id: IdType | None = None,
+                 id: IdType | IdTypes | None = None,
                  resp_id: IdType | None = None,
                  replot: bool = False,
                  overplot: bool = False,
@@ -13125,9 +13360,14 @@ class Session(sherpa.ui.utils.Session):
         Display the effective area curve from the ARF
         component of a PHA data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set with an ARF. If not given then the default
            identifier is used, as returned by `get_default_id`.
         resp_id : int, str, or None, optional
@@ -13184,13 +13424,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_arf_plot(id, resp_id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot,
-                   clearwindow=clearwindow, **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_arf_plot,
+                                         resp_id=resp_id,
+                                         recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
-
+    # TODO: should resp_id allow multiple values?
+    #
     def plot_rmf(self,
-                 id: IdType | None = None,
+                 id: IdType | IdTypes | None = None,
                  resp_id: IdType | None = None,
                  replot: bool = False,
                  overplot: bool = False,
@@ -13203,11 +13446,16 @@ class Session(sherpa.ui.utils.Session):
         and generates a plot with several histograms that show the energy
         redistribution for those specific energies.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionadded:: 4.16.0
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set with a RMF. If not given then the default
            identifier is used, as returned by `get_default_id`.
         resp_id : int, str, or None, optional
@@ -13263,14 +13511,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_rmf_plot(id, resp_id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_rmf_plot,
+                                         resp_id=resp_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self,
-                    id: IdType | None = None,
+                    id: IdType | IdTypes | None = None,
                     lo: float | None = None,
                     hi: float | None = None,
                     replot: bool = False,
@@ -13284,9 +13533,14 @@ class Session(sherpa.ui.utils.Session):
         created by `set_psf` or ARF and RMF automatically created for
         a PHA data set).
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         lo : number, optional
@@ -13327,6 +13581,11 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_source(1)
         >>> plot_source(2, overplot=True)
 
+        Overplot the source model for data set 2 in blue on data set 1
+        in green:
+
+        >>> plot_source([1, 2], color=["green", "blue"])
+
         Restrict the plot to values between 0.5 and 7 for the
         independent axis:
 
@@ -13342,22 +13601,24 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        data = self.get_data(id)
-        if isinstance(data, DataPHA):
-            # Note: lo/hi arguments mean we can not just rely on superclass
-            recalc = not replot
-            plotobj = self.get_source_plot(id, lo=lo, hi=hi,
-                                           recalc=recalc)
-            self._plot(plotobj, overplot=overplot,
-                       clearwindow=clearwindow, **kwargs)
-            return
+        def get(id, recalc=False):
+            data = self.get_data(id)
+            if isinstance(data, DataPHA):
+                kwargs = {"lo": lo, "hi": hi}
+            else:
+                kwargs = {}
 
-        super().plot_source(id=id, replot=replot, overplot=overplot,
-                            clearwindow=clearwindow, **kwargs)
+            return self.get_source_plot(id, recalc=recalc,
+                                        **kwargs)
 
-    # DOC-TODO: is orders the same as resp_id?
+        plotobj = self._get_plot_objects(id, get, recalc=not replot)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
+
+    # TODO: should orders allow multiple values (i.e. per identifier)?
+    #
     def plot_order(self,
-                   id: IdType | None = None,
+                   id: IdType | IdTypes | None = None,
                    orders=None,
                    replot: bool = False,
                    overplot: bool = False,
@@ -13370,9 +13631,14 @@ class Session(sherpa.ui.utils.Session):
         in that it displays the model after passing through a
         response, but allows the user to select which response to use.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         orders : optional
@@ -13416,13 +13682,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_order_plot(id, orders=orders,
-                                      recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_order_plot,
+                                         orders=orders,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg(self,
-                 id: IdType | None = None,
+                 id: IdType | IdTypes | None = None,
                  bkg_id: IdType | None = None,
                  replot: bool = False,
                  overplot: bool = False,
@@ -13430,9 +13697,14 @@ class Session(sherpa.ui.utils.Session):
                  **kwargs) -> None:
         """Plot the background values for a PHA data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13485,14 +13757,20 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_bkg(1, 1)
         >>> plot_bkg(1, 2, overplot=True)
 
+        Plot background components for datasets "flare" and "quiet":
+
+        >>> plot_bkg(["flare", "quiet"], alpha=0.5)
+
         """
 
-        plotobj = self.get_bkg_plot(id, bkg_id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_model(self,
-                       id: IdType | None = None,
+                       id: IdType | IdTypes | None = None,
                        bkg_id: IdType | None = None,
                        replot: bool = False,
                        overplot: bool = False,
@@ -13504,9 +13782,14 @@ class Session(sherpa.ui.utils.Session):
         set, which includes any instrument response (the
         ARF and RMF).
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13549,13 +13832,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_model_plot(id, bkg_id,
-                                          recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_model_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
+
     def plot_bkg_resid(self,
-                       id: IdType | None = None,
+                       id: IdType | IdTypes | None = None,
                        bkg_id: IdType | None = None,
                        replot: bool = False,
                        overplot: bool = False,
@@ -13566,12 +13851,17 @@ class Session(sherpa.ui.utils.Session):
         Display the residuals for the background of a PHA data set
         when it is being fit, rather than subtracted from the source.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13621,13 +13911,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_resid_plot(id, bkg_id,
-                                          recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_resid_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_ratio(self,
-                       id: IdType | None = None,
+                       id: IdType | IdTypes | None = None,
                        bkg_id: IdType | None = None,
                        replot: bool = False,
                        overplot: bool = False,
@@ -13639,12 +13930,17 @@ class Session(sherpa.ui.utils.Session):
         of a PHA data set when it is being fit, rather than subtracted
         from the source.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13693,13 +13989,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_ratio_plot(id, bkg_id,
-                                          recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_ratio_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_delchi(self,
-                        id: IdType | None = None,
+                        id: IdType | IdTypes | None = None,
                         bkg_id: IdType | None = None,
                         replot: bool = False,
                         overplot: bool = False,
@@ -13711,12 +14008,17 @@ class Session(sherpa.ui.utils.Session):
         values for the background of a PHA data set when it is being
         fit, rather than subtracted from the source.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13765,13 +14067,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_delchi_plot(id, bkg_id,
-                                           recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_delchi_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_chisqr(self,
-                        id: IdType | None = None,
+                        id: IdType | IdTypes | None = None,
                         bkg_id: IdType | None = None,
                         replot: bool = False,
                         overplot: bool = False,
@@ -13783,9 +14086,14 @@ class Session(sherpa.ui.utils.Session):
         the error values for the background of a PHA data set when it
         is being fit, rather than subtracted from the source.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13829,13 +14137,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_chisqr_plot(id, bkg_id,
-                                           recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_chisqr_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit(self,
-                     id: IdType | None = None,
+                     id: IdType | IdTypes | None = None,
                      bkg_id: IdType | None = None,
                      replot: bool = False,
                      overplot: bool = False,
@@ -13843,9 +14152,14 @@ class Session(sherpa.ui.utils.Session):
                      **kwargs) -> None:
         """Plot the fit results (data, model) for the background of a PHA data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13892,12 +14206,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_fit_plot(id, bkg_id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_fit_plot,
+                                         bkg_id=bkg_id,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_source(self,
-                        id: IdType | None = None,
+                        id: IdType | IdTypes | None = None,
                         lo: float | None = None,
                         hi: float | None = None,
                         bkg_id: IdType | None = None,
@@ -13911,9 +14227,14 @@ class Session(sherpa.ui.utils.Session):
         set. It does not include the instrument response (the ARF and
         RMF).
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         lo : number, optional
@@ -13959,11 +14280,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_source_plot(id, bkg_id=bkg_id, lo=lo,
-                                           hi=hi, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_bkg_source_plot,
+                                         bkg_id=bkg_id, lo=lo, hi=hi,
+                                         recalc=not replot)
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
+    # For now do not try to support multiple identifiers.
+    #
     def plot_energy_flux(self,
                          lo: float | None = None,
                          hi: float | None = None,
@@ -14134,6 +14458,8 @@ class Session(sherpa.ui.utils.Session):
         self._plot(efplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
+    # For now do not try to support multiple identifiers.
+    #
     def plot_photon_flux(self,
                          lo: float | None = None,
                          hi: float | None = None,
@@ -14305,7 +14631,7 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def plot_bkg_fit_ratio(self,
-                           id: IdType | None = None,
+                           id: IdType | IdTypes | None = None,
                            bkg_id: IdType | None = None,
                            replot: bool = False,
                            overplot: bool = False,
@@ -14317,6 +14643,11 @@ class Session(sherpa.ui.utils.Session):
         This creates two plots - the first from `plot_bkg_fit` and the
         second from `plot_bkg_ratio` - for a data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
 
@@ -14324,7 +14655,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -14380,13 +14711,15 @@ class Session(sherpa.ui.utils.Session):
         """
 
         recalc = not replot
-        plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
-        plot2obj = self.get_bkg_ratio_plot(id, bkg_id, recalc=recalc)
+        plot1obj = self._get_plot_objects(id, self.get_bkg_fit_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_bkg_ratio_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
         self._jointplot2(plot1obj, plot2obj, overplot=overplot,
                          clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit_resid(self,
-                           id: IdType | None = None,
+                           id: IdType | IdTypes | None = None,
                            bkg_id: IdType | None = None,
                            replot: bool = False,
                            overplot: bool = False,
@@ -14398,6 +14731,11 @@ class Session(sherpa.ui.utils.Session):
         This creates two plots - the first from `plot_bkg_fit` and the
         second from `plot_bkg_resid` - for a data set.
 
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
+
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
 
@@ -14407,7 +14745,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -14462,13 +14800,15 @@ class Session(sherpa.ui.utils.Session):
         """
 
         recalc = not replot
-        plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
-        plot2obj = self.get_bkg_resid_plot(id, bkg_id, recalc=recalc)
+        plot1obj = self._get_plot_objects(id, self.get_bkg_fit_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_bkg_resid_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
         self._jointplot2(plot1obj, plot2obj, overplot=overplot,
                          clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_fit_delchi(self,
-                            id: IdType | None = None,
+                            id: IdType | IdTypes | None = None,
                             bkg_id: IdType | None = None,
                             replot: bool = False,
                             overplot: bool = False,
@@ -14479,6 +14819,11 @@ class Session(sherpa.ui.utils.Session):
 
         This creates two plots - the first from `plot_bkg_fit` and the
         second from `plot_bkg_delchi` - for a data set.
+
+        .. versionchanged:: 4.18.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Per-plot options can now be given by using a
+           list of values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -14545,8 +14890,10 @@ class Session(sherpa.ui.utils.Session):
         """
 
         recalc = not replot
-        plot1obj = self.get_bkg_fit_plot(id, bkg_id, recalc=recalc)
-        plot2obj = self.get_bkg_delchi_plot(id, bkg_id, recalc=recalc)
+        plot1obj = self._get_plot_objects(id, self.get_bkg_fit_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_bkg_delchi_plot,
+                                          bkg_id=bkg_id, recalc=recalc)
         self._jointplot2(plot1obj, plot2obj, overplot=overplot,
                          clearwindow=clearwindow, **kwargs)
 
@@ -15379,15 +15726,23 @@ class Session(sherpa.ui.utils.Session):
                 id: IdType | None = None,
                 lo=None, hi=None,
                 bkg_id: IdType | None = None,
-                error=False, params=None,
+                error: bool = False,
+                params: np.ndarray | None = None,
                 otherids: IdTypes = (),
-                niter=1000,
-                covar_matrix=None):
+                niter: int = 1000,
+                covar_matrix: np.ndarray | None = None):
         """Calculate the equivalent width of an emission or absorption line.
 
         The `equivalent width <https://en.wikipedia.org/wiki/Equivalent_width>`_
         is calculated in the selected units
         for the data set (which can be retrieved with `get_analysis`).
+
+        .. versionchanged:: 4.18.0
+           If ``covar_matrix`` is left unset then the covariance
+           matrix is now always re-calculated. This means that `covar`
+           is no-longer needed to be called before this routine. The
+           error analysis now correctly handles the case when
+           ``otherids`` is not empty.
 
         .. versionchanged:: 4.16.0
            The random number generation is now controlled by the
@@ -15432,8 +15787,8 @@ class Session(sherpa.ui.utils.Session):
         niter : int, optional
            The number of draws to use. The default is ``1000``.
         covar_matrix : 2D array, optional
-           The covariance matrix to use. If ``None`` then the
-           result from `get_covar_results().extra_output` is used.
+           The covariance matrix to use. If ``None`` then the matrix
+           is calculated for the dataset given by the ``id`` argument.
 
         Returns
         -------
@@ -15465,7 +15820,7 @@ class Session(sherpa.ui.utils.Session):
         >>> eqwidth(cont, cont+line)
         2.1001988282497308
 
-        The calculation is restricted to the range 20 to 20
+        The calculation is restricted to the range 20 to 24
         Angstroms.
 
         >>> eqwidth(cont, cont+line, lo=20, hi=24)
@@ -15481,7 +15836,8 @@ class Session(sherpa.ui.utils.Session):
 
         With the `error` flag set to `True`, the return value is
         enhanced with extra information, such as the median and
-        one-sigma ranges on the equivalent width::
+        one-sigma ranges on the equivalent width. These values can be
+        displayed with Sherpa plotting commands.
 
         >>> res = eqwidth(p1, p1 + g1, error=True)
         >>> ewidth = res[0]  # the median equivalent width
@@ -15489,86 +15845,102 @@ class Session(sherpa.ui.utils.Session):
         >>> errhi = res[2]   # the one-sigma upper limit
         >>> pars = res[3]    # the parameter values used
         >>> ews = res[4]     # array of eq. width values
+        >>> plot_pdf(ews)    # probability density
+        >>> plot_cdf(ews)    # cumalitive distribution
 
-        which can be used to display the probability density or
-        cumulative distribution function of the equivalent widths::
+        Fit dataset 2, assumed to contain components ``p2`` and
+        ``g2``, calculate the covariance matrix, and then send this
+        matrix to the eqwidth call:
 
-        >>> plot_pdf(ews)
-        >>> plot_cdf(ews)
+        >>> fit(2)
+        >>> covar(2)
+        >>> cmat = get_covar_results().extra_output
+        >>> res2 = eqwidth(p2, p2 + g2, id=2, covar_matrix=cmat, error=True)
+
+        Evaluate the equivalent-width distributions using datasets 1,
+        2, and 3:
+
+        >>> res = eqwidth(p, p+g, id=1, otherids=[2,3], error=True)
 
         """
+
+        # The dataset is only used to define the grid for the model
+        # evaluation, so just use the "default" version and do not
+        # bother about multiple datasets. This could be an issue if
+        # the model evaluation should be used on an extension of the
+        # grid in this default dataset.
+        #
         data = self._get_data_or_bkg(id, bkg_id)
 
-        ####################################################
-        if error:
+        if not error:
+            return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
-            def is_numpy_ndarray(arg, name, npars, dim1=None):
-                if not isinstance(arg, np.ndarray):
-                    msg = name + ' must be of type numpy.ndarray'
-                    raise IOErr(msg)
-                shape = arg.shape
-                if len(shape) != 2:
-                    msg = name + ' must be 2d numpy.ndarray'
-                    raise IOErr(msg)
-                if shape[0] != npars:
-                    msg = name + f' must be of dimension ({npars}, x)'
-                    raise IOErr(msg)
-                if dim1 is not None:
-                    if shape[1] != npars:
-                        msg = name + f' must be of dimension ({npars}, {npars})'
-                        raise IOErr(msg)
+        def is_numpy_ndarray2d(arg, name, npars, square=False):
+            if not isinstance(arg, np.ndarray):
+                msg = name + ' must be of type numpy.ndarray'
+                raise IOErr(msg)
+            shape = arg.shape
+            if len(shape) != 2:
+                msg = name + ' must be 2d numpy.ndarray'
+                raise IOErr(msg)
+            if shape[0] != npars:
+                msg = name + f' must be of dimension ({npars}, x)'
+                raise IOErr(msg)
+            if square and shape[1] != npars:
+                msg = name + f' must be of dimension ({npars}, {npars})'
+                raise IOErr(msg)
 
-            _, fit = self._get_fit(id)
-            fit_results = self.get_fit_results()
-            parnames = fit_results.parnames
-            npar = len(parnames)
-            orig_par_vals = np.array(fit_results.parvals)
+        # Since estmethod is not set it defaults to Covariance.
+        _, fit = self._get_fit(id, otherids=otherids)
+        fit_results = self.get_fit_results()
+        parnames = fit_results.parnames
+        npar = len(parnames)
+        orig_par_vals = np.array(fit_results.parvals)
 
-            if params is None:
-                # run get_draws or normal distribution depending on fit stat
-                if covar_matrix is None:
-                    try:
-                        # check just in case usr has run covar()
-                        covar_results = self.get_covar_results()
-                        covar_matrix = covar_results.extra_output
-                    except SessionErr:
-                        # usr has not run covar, will have to run it
-                        covar_matrix = fit.est_errors().extra_output
-                is_numpy_ndarray(covar_matrix, 'covar_matrix', npar, npar)
+        if params is None:
+            # run get_draws or normal distribution depending on fit stat
+            if covar_matrix is None:
+                # Calculate the covariance matrix.
+                covar_matrix = fit.est_errors().extra_output
 
-                # Have enough stuff to generate samples
-                if isinstance(self._current_stat, (Cash, CStat, WStat)):
-                    _, _, params = \
-                        self.get_draws(id, otherids=otherids, niter=niter,
-                                       covar_matrix=covar_matrix)
-                else:
-                    sampler = NormalParameterSampleFromScaleMatrix()
-                    tmp = sampler.get_sample(fit, mycov=covar_matrix,
-                                             num=niter + 1, rng=self.get_rng())
-                    params = tmp.transpose()
+            is_numpy_ndarray2d(covar_matrix, 'covar_matrix', npar, True)
 
+            # Have enough stuff to generate samples
+            if isinstance(self._current_stat, (Cash, CStat, WStat)):
+                _, _, params = \
+                    self.get_draws(id, otherids=otherids, niter=niter,
+                                   covar_matrix=covar_matrix)
             else:
-                is_numpy_ndarray(params, 'params', npar)
+                sampler = NormalParameterSampleFromScaleMatrix()
+                tmp = sampler.get_sample(fit, mycov=covar_matrix,
+                                         num=niter + 1, rng=self.get_rng())
+                params = tmp.transpose()
 
-            mins = fit.model._get_thawed_par_mins()
-            maxs = fit.model._get_thawed_par_maxes()
-            eqw = np.zeros_like(params[0, :])
-            for params_index in range(len(params[0, :])):
-                for parnames_index, parname in enumerate(parnames):
-                    val = params[parnames_index, params_index]
-                    # Note: the normal dist does not respect the soft limits
-                    mymin = mins[parnames_index]
-                    mymax = maxs[parnames_index]
-                    val = max(mymin, min(val, mymax))
-                    self.set_par(parname, val)
-                eqw[params_index] = \
-                    sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
-            median, lower, upper = get_error_estimates(eqw)
-            fit.model.thawedpars = orig_par_vals
-            return median, lower, upper, params, eqw
+        else:
+            is_numpy_ndarray2d(params, 'params', npar)
 
-        ####################################################
-        return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+        thawed = fit.model.get_thawed_pars()
+        mins = [p.min for p in thawed]
+        maxs = [p.max for p in thawed]
+        eqw = np.zeros_like(params[0, :])
+        for params_index in range(len(params[0, :])):
+            # If #2335 gets fixed then we should just be able to set
+            # fit.model.thawedpars to params[:, params_index],
+            # although is the draws data guaranteed to be restricted
+            # to the soft limits?
+            #
+            for parnames_index, parname in enumerate(parnames):
+                val = params[parnames_index, params_index]
+                mymin = mins[parnames_index]
+                mymax = maxs[parnames_index]
+                self.set_par(parname, np.clip(val, mymin, mymax))
+
+            eqw[params_index] = \
+                sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+
+        median, lower, upper = get_error_estimates(eqw)
+        fit.model.thawedpars = orig_par_vals
+        return median, lower, upper, params, eqw
 
     def calc_photon_flux(self, lo=None, hi=None,
                          id: IdType | None = None,
@@ -16787,9 +17159,7 @@ class Session(sherpa.ui.utils.Session):
             warning("XSPEC support is not available")
             return
 
-        # Very similar to the XSPEC "show abund" format, except that
-        # we do not have the "documentation" for the abundance table.
-        # This can be added but needs changes to the _xspec module.
+        # Very similar to the XSPEC "show abund" format.
         #
         lines = ["Solar Abundance Table:",
                  f"{xspec.get_xsabund():4s}  {xspec.get_xsabund_doc()}",
@@ -16811,7 +17181,11 @@ class Session(sherpa.ui.utils.Session):
     # Session Text Save Function
     ###########################################################################
 
-    def save_all(self, outfile=None, clobber=False) -> None:
+    def save_all(self,
+                 outfile=None,
+                 clobber: bool = False,
+                 auto_load: bool = True
+                 ) -> None:
         """Save the information about the current session to a text file.
 
         This differs to the `save` command in that the output is human
@@ -16823,6 +17197,13 @@ class Session(sherpa.ui.utils.Session):
 
          3. some settings and values may not be recorded (such as
             header information).
+
+        .. versionchanged:: 4.18.0
+           Handling of PHA data has been improved, and the output now
+           defaults to not including automatically-loaded ancillary
+           files (such as background and responses). Set the
+           ``auto_load`` flag to False to add these commands back to
+           the save file (and match previous versions).
 
         .. versionchanged:: 4.17.0
            The file will now contain a `set_default_id` call if the
@@ -16848,8 +17229,13 @@ class Session(sherpa.ui.utils.Session):
         clobber : bool, optional
            If `outfile` is a filename, then this flag controls
            whether an existing file can be overwritten (``True``)
-           or if it raises an exception (``False``, the default
+           orysif it raises an exception (``False``, the default
            setting).
+        auto_load : bool, optional
+           If set to ``False`` then automatically-loaded PHA files,
+           such as backgrounds, ARFS, and RMFs, will be included in
+           the output with `load_arf`, `load_rmf`, and `load_bkg`
+           calls.
 
         Raises
         ------
@@ -16865,21 +17251,37 @@ class Session(sherpa.ui.utils.Session):
         -----
 
         This command will create a series of commands that restores
-        the current Sherpa set up. It does not save the set of commands
-        used. Not all Sherpa settings are saved. Items not fully restored
-        include:
-
-        - grating data is not guaranteed to be restored correctly,
+        the current Sherpa set up. It does not save the original set
+        of commands used, and not all Sherpa settings are saved. Items
+        not fully restored include:
 
         - data changed from the version on disk - e.g. by calls to
           `set_counts` - will not be restored correctly,
 
-        - any optional keywords to commands such as `load_data`
-          or `load_pha`,
+        - any optional keywords to commands such as `load_data`,
 
         - user models may not be restored correctly,
 
         - and only a subset of Sherpa commands are saved.
+
+        The `save` command can also be used for storing a Sherpa
+        session and avoids some of these issues. However, it is not
+        recommended if the session is likely to be restored with newer
+        versions of Sherpa. It is suggested that the output of both
+        should be checked when the output may be used long term.
+
+        Using the output of `save_all` depends on what interpreter is
+        being used. If it is IPython then the ``%run`` `command
+        <https://ipython.org/ipython-doc/3/interactive/magics.html#magic-run>`_
+        can be used. So, if ``save_all("save.out")`` was used then the
+        output file can be loaded with:
+
+            %run -i save.out
+
+        When using the Python interactive environment the following
+        can be used:
+
+            exec(open("save.out").read())
 
         Examples
         --------
@@ -16903,6 +17305,14 @@ class Session(sherpa.ui.utils.Session):
         from sherpa.astro.ui import *
         ...
 
+        The two files should re-create the same session but
+        restore2.py will include lines such as load_arf and load_bkg
+        that are not necessary, as Sherpa will load them due to the
+        ANCRFILE, BACKFILE, and RESPFILE keywords in the PHA file(s).
+
+        >>> save_all("restore1.py")
+        >>> save_all("restore2.py", auto_load=False)
+
         """
 
         if _is_str(outfile):
@@ -16913,7 +17323,7 @@ class Session(sherpa.ui.utils.Session):
                     raise IOErr('filefound', outfile)
 
             with open(outfile, 'w', encoding="UTF-8") as fh:
-                serialize.save_all(self, fh)
+                serialize.save_all(self, fh, auto_load=auto_load)
 
         else:
             if outfile is not None:
@@ -16921,4 +17331,4 @@ class Session(sherpa.ui.utils.Session):
             else:
                 fh = sys.stdout
 
-            serialize.save_all(self, fh)
+            serialize.save_all(self, fh, auto_load=auto_load)

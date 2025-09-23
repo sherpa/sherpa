@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2017, 2019 - 2024
+#  Copyright (C) 2010, 2015, 2017, 2019-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -253,6 +253,7 @@ class PylabBackend(BasicBackend):
               label=None,
               linewidth=None,
               linecolor=None,
+              **kargs
               ):
         """Draw histogram data.
 
@@ -294,6 +295,7 @@ class PylabBackend(BasicBackend):
                          linestyle=linestyle, linewidth=linewidth,
                          drawstyle=drawstyle,
                          color=color, marker=None, alpha=alpha,
+                         **kargs
                          )
 
         # Draw points and error bars at the mid-point of the bins.
@@ -344,7 +346,7 @@ class PylabBackend(BasicBackend):
     # This is called from methods like plot, histo, etc.
     # so the arguments passed to this method are already translated and we do
     # not want to apply the translation a second time.
-    def _set_line(self, line, linecolor=None, linestyle=None, linewidth=None):
+    def _set_line(self, line, linecolor=None, linestyle=None, linewidth=None, **kwargs):
         """Apply the line attributes, if set.
 
         Parameters
@@ -364,6 +366,8 @@ class PylabBackend(BasicBackend):
         setf('color', linecolor)
         setf('linestyle', linestyle)
         setf('linewidth', linewidth)
+        for k, v in kwargs.items():
+            setf(k, v)
 
     # There is no support for alpha in the Plot.vline class
     @add_kwargs_to_doc(kwargs_doc)
@@ -373,7 +377,8 @@ class PylabBackend(BasicBackend):
               linecolor=None,
               linestyle=None,
               linewidth=None,
-              overplot=False, clearwindow=True):
+              overplot=False, clearwindow=True,
+              **kwargs):
         """Draw a vertical line
 
         Parameters
@@ -386,7 +391,7 @@ class PylabBackend(BasicBackend):
 
         line = axes.axvline(x, ymin, ymax)
         self._set_line(line, linecolor=linecolor, linestyle=linestyle,
-                       linewidth=linewidth)
+                       linewidth=linewidth, **kwargs)
 
     # There is no support for alpha in the Plot.hline class
 
@@ -397,7 +402,7 @@ class PylabBackend(BasicBackend):
               linecolor=None,
               linestyle=None,
               linewidth=None,
-              overplot=False, clearwindow=True):
+              overplot=False, clearwindow=True, **kwargs):
         """Draw a horizontal line
 
         Parameters
@@ -410,7 +415,7 @@ class PylabBackend(BasicBackend):
 
         line = axes.axhline(y, xmin, xmax)
         self._set_line(line, linecolor=linecolor, linestyle=linestyle,
-                       linewidth=linewidth)
+                       linewidth=linewidth, **kwargs)
 
     @add_kwargs_to_doc(kwargs_doc)
     @translate_args
@@ -436,6 +441,7 @@ class PylabBackend(BasicBackend):
              linewidth=None,
              linecolor=None,
              xaxis=None, ratioline=None,
+             **kwargs
              ):
         """Draw x, y data.
 
@@ -507,7 +513,9 @@ class PylabBackend(BasicBackend):
                                  ecolor=ecolor,
                                  capsize=capsize,
                                  barsabove=barsabove,
-                                 zorder=zorder)
+                                 zorder=zorder,
+                                 **kwargs
+                                 )
 
         else:
             obj = axes.plot(x, y,
@@ -520,7 +528,9 @@ class PylabBackend(BasicBackend):
                             marker=marker,
                             markersize=markersize,
                             markerfacecolor=markerfacecolor,
-                            zorder=zorder)
+                            zorder=zorder,
+                            **kwargs
+                            )
         handles, _ = axes.get_legend_handles_labels()
         if len(handles) > 0:
             axes.legend()
@@ -539,7 +549,11 @@ class PylabBackend(BasicBackend):
                 linewidths=None,
                 linestyles='solid',
                 colors=None,
-                label=None,
+                label=None,  # label is not used by axes.contour
+                             # so we want to make sure it's not part of the kwargs
+                             # because it's set by default to '_nolegend_' in the chain that
+                             # calls this method from sherpa.plot.Contour
+                **kwargs
                 ):
         """Draw 2D contour data.
 
@@ -572,12 +586,16 @@ class PylabBackend(BasicBackend):
             axes.contour(x0, x1, y, alpha=alpha,
                          colors=colors,
                          linewidths=linewidths,
-                         linestyles=linestyles)
+                         linestyles=linestyles,
+                         **kwargs
+                         )
         else:
             axes.contour(x0, x1, y, levels, alpha=alpha,
                          colors=colors,
                          linewidths=linewidths,
-                         linestyles=linestyles)
+                         linestyles=linestyles,
+                         **kwargs
+                         )
         handles, _ = axes.get_legend_handles_labels()
         if len(handles) > 0:
             axes.legend()
@@ -615,7 +633,7 @@ class PylabBackend(BasicBackend):
             self.setup_plot(axes, title, xlabel, ylabel)
 
         extent = (x0[0], x0[-1], x1[0], x1[-1])
-        im = axes.imshow(y, origin='lower', extent=extent, aspect=aspect)
+        im = axes.imshow(y, origin='lower', extent=extent, aspect=aspect, **kwargs)
 
         # TODO: This should be optional and have parameters.
         # but, for now, it's only used in _repr_html_ for DataIMG,

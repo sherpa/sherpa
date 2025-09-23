@@ -25,34 +25,35 @@ intended for public use. The API and semantics of the
 routines in this module are subject to change.
 """
 
+from collections.abc import Callable
+from contextlib import suppress
 import inspect
 import logging
 import os
 import sys
+import textwrap
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
-    TextIO, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Mapping, TextIO, TypedDict
 
 import numpy
 
 from sherpa.astro.data import DataIMG, DataPHA, DataARF, DataRMF
 from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
+
+from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
+from sherpa.models.basic import UserModel
+from sherpa.utils.types import IdType
+
 if TYPE_CHECKING:
     # Avoid an import cycle
     from sherpa.astro.ui.utils import Session
 
-xspec: Optional[ModuleType]
+xspec: ModuleType | None
 try:
     from sherpa.astro import xspec
 except ImportError:
     xspec = None
-
-from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
-from sherpa.models.basic import UserModel
-import sherpa.utils
-from sherpa.utils.err import ArgumentErr
-from sherpa.utils.types import IdType
 
 
 logger = logging.getLogger(__name__)
@@ -65,8 +66,8 @@ string_types = (str, )
 #
 
 OutType = TypedDict("OutType", {"imports": set[str], "main": list[str]})
-MaybeIdType = Optional[IdType]
-DataType = Union[Data1D, Data2D]
+MaybeIdType = IdType | None
+DataType = Data1D | Data2D
 
 # Typing the state argument is awkward since it causes an import
 # error, so for runtime we default to Any and only when run under a
@@ -77,8 +78,8 @@ if TYPE_CHECKING:
 else:
     SessionType = Any
 
-# The par parameter is hard to type as it's Union[Parameter,
-# XSBaseParameter] but the latter is only defined if XSPEC support is
+# The par parameter is hard to type as it's Parameter |
+# XSBaseParameter but the latter is only defined if XSPEC support is
 # enabled. One way around this is to create a Protocol for defining
 # the parameter interface rather than have it be based on a class.
 #
@@ -92,7 +93,7 @@ ParameterType = Any
 def _output(out: OutType, msg: str, indent: int = 0) -> None:
     """Output the line"""
     space = ' ' * (indent * 4)
-    out["main"].append(f"{space}{msg}")
+    out["main"].append(textwrap.indent(msg, space))
 
 
 def _output_nl(out: OutType) -> None:
@@ -237,7 +238,7 @@ def _save_response(out: OutType,
 
 
 def _save_arf_response(out: OutType,
-                       state: SessionType,
+                       state: SessionType,  # currently unused
                        pha: DataPHA,
                        id: IdType,
                        rid: IdType,
@@ -273,7 +274,7 @@ def _save_arf_response(out: OutType,
 
 
 def _save_rmf_response(out: OutType,
-                       state: SessionType,
+                       state: SessionType,  # currently unused
                        pha: DataPHA,
                        id: IdType,
                        rid: IdType,
@@ -461,7 +462,7 @@ def _add_bkg_filter(out: OutType,
 
 
 def _handle_filter(out: OutType,
-                   state: SessionType,
+                   state: SessionType,  # currently unused
                    data: DataType,
                    id: IdType) -> None:
     """Set any filter expressions for source and background
@@ -517,37 +518,90 @@ def _handle_filter(out: OutType,
 def _save_dataset_settings_pha(out: OutType,
                                state: SessionType,
                                pha: DataType,
-                               id: IdType) -> None:
+                               idval: IdType,
+                               auto_load: bool
+                               ) -> None:
     """What settings need to be set for DataPHA"""
 
     if not isinstance(pha, DataPHA):
         return
 
-    cmd_id = _id_to_str(id)
+    cmd_id = _id_to_str(idval)
 
     # Only store group flags and quality flags if they were changed
     # from flags in the file.
     #
     if not pha._original_groups:
-        _save_pha_grouping(out, state, pha, id)
-        _save_pha_quality(out, state, pha, id)
+        _save_pha_grouping(out, state, pha, idval)
+        _save_pha_quality(out, state, pha, idval)
 
     if pha.grouped:
         _output(out, f"group({cmd_id})")
+
+    # Check if this data set has associated data that is automatically
+    # loaded by Sherpa, so does not need to be included in the
+    # serialization.
+    #
+    try:
+        store = state._load_data_store[idval]
+    except KeyError:
+        store = None
+
+    if store is None:
+        store_arfs = {}
+        store_rmfs = {}
+    else:
+        store_arfs = store["arf_ids"]
+        store_rmfs = store["rmf_ids"]
+
+    if not auto_load:
+        store_arfs = {}
+        store_rmfs = {}
 
     # Add responses and ARFs, if any.
     #
     rids = pha.response_ids
     if len(rids) > 0:
         _output_banner(out, "Data Spectral Responses")
-        for rid in rids:
-            _save_arf_response(out, state, pha, id, rid)
-            _save_rmf_response(out, state, pha, id, rid)
 
-    # Check if this data set has associated backgrounds.
-    #
+        for rid in rids:
+
+            arf, rmf = pha.get_response(rid)
+
+            # Display the load command if:
+            #
+            # - the response exists
+            # - its name does not match the version that was
+            #   automatically loaded with the source dataset
+            #
+            want = False
+            if arf is not None:
+                try:
+                    want = arf.name != store_arfs[rid]
+                except KeyError:
+                    want = True
+
+            if want:
+                _save_arf_response(out, state, pha, idval, rid)
+
+            want = False
+            if rmf is not None:
+                try:
+                    want = rmf.name != store_rmfs[rid]
+                except KeyError:
+                    want = True
+
+            if want:
+                _save_rmf_response(out, state, pha, idval, rid)
+
     bids = pha.background_ids
     if len(bids) > 0:
+
+        # Only try to load the background if we have information in
+        # _load_bkg_store. Although there is support for PHA2
+        # background files, do not make use of this knowledge here as
+        # we do not have any such files to test on.
+        #
         _output_banner(out, "Load Background Data Sets")
         for bid in bids:
             cmd_bkg_id = _id_to_str(bid)
@@ -556,27 +610,94 @@ def _save_dataset_settings_pha(out: OutType,
             if TYPE_CHECKING:
                 assert isinstance(bpha, DataPHA)
 
+            try:
+                bstore = state._load_bkg_store[idval][bid]
+            except KeyError:
+                bstore = None
+
+            # How are we checking for response files? It depends on
+            # whether the background was loaded with load_bkg,
+            # load_pha/data, or some other way?
+            #
+            if bstore is not None:
+                store_arfs = bstore.get("arf_ids", {})
+                store_rmfs = bstore.get("rmf_ids", {})
+            elif store is not None and "bkg_arf_ids" in store:
+                store_arfs = store["bkg_arf_ids"][bid]
+                store_rmfs = store["bkg_rmf_ids"][bid]
+            else:
+                store_arfs = {}
+                store_rmfs = {}
+
+            if not auto_load:
+                store_arfs = {}
+                store_rmfs = {}
+
+            # Was this explicitly loaded?
+            #
             bname = bpha.name
-            cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
-            _output(out, cmd)
+            want = not auto_load or (bstore is not None and
+                                     bstore["filename"] == bname)
+            if want:
+                cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id}'
+                if bstore is not None and "use_errors" in bstore:
+                    cmd += f", use_errors={bstore['use_errors']}"
+                cmd += ')'
+                _output(out, cmd)
 
             # Only store group flags and quality flags if they were
             # changed from flags in the file
             #
             if not bpha._original_groups:
-                _save_pha_grouping(out, state, bpha, id, bid=bid)
-                _save_pha_quality(out, state, bpha, id, bid=bid)
+                _save_pha_grouping(out, state, bpha, idval, bid=bid)
+                _save_pha_quality(out, state, bpha, idval, bid=bid)
 
             if bpha.grouped:
                 _output(out, f"group({cmd_id}, bkg_id={cmd_bkg_id})")
 
-            # Load background response, ARFs if any
+            # Load background response, ARFs if any.
+            #
             rids = bpha.response_ids
             if len(rids) > 0:
+                # Can we only print this banner when we need to load
+                # the response?
+                #
                 _output_banner(out, "Background Spectral Responses")
                 for rid in rids:
-                    _save_arf_response(out, state, bpha, id, rid, bid=bid)
-                    _save_rmf_response(out, state, bpha, id, rid, bid=bid)
+                    bkg_arf, bkg_rmf = bpha.get_response(rid)
+
+                    # Display the load command if:
+                    #
+                    # - the response exists
+                    # - its name does not match the version that was
+                    #   automatically loaded with the dataset
+                    #
+                    # The latter is hard to check because the
+                    # background could have been loaded implicitly (so
+                    # use store as the check) or explicitly (use
+                    # bstore).
+                    #
+                    want = False
+                    if bkg_arf is not None:
+                        try:
+                            want = bkg_arf.name != store_arfs[rid]
+                        except KeyError:
+                            want = True
+
+                    if want:
+                        _save_arf_response(out, state, bpha, idval,
+                                           rid, bid=bid)
+
+                    want = False
+                    if bkg_rmf is not None:
+                        try:
+                            want = bkg_rmf.name != store_rmfs[rid]
+                        except KeyError:
+                            want = True
+
+                    if want:
+                        _save_rmf_response(out, state, bpha, idval,
+                                           rid, bid=bid)
 
     # Set energy units if applicable
     #
@@ -591,7 +712,7 @@ def _save_dataset_settings_pha(out: OutType,
 
 
 def _save_dataset_settings_2d(out: OutType,
-                              state: SessionType,
+                              state: SessionType,  # currently unused
                               data: DataType,
                               id: IdType) -> None:
     """What settings need to be set for Data2D/IMG?"""
@@ -603,7 +724,10 @@ def _save_dataset_settings_2d(out: OutType,
     _output(out, f"set_coord({_id_to_str(id)}, '{data.coord}')")
 
 
-def _save_data(out: OutType, state: SessionType) -> None:
+def _save_data(out: OutType,
+               state: SessionType,
+               auto_load: bool
+               ) -> None:
     """Save the data.
 
     This can just be references to files, or serialization of
@@ -614,6 +738,9 @@ def _save_data(out: OutType, state: SessionType) -> None:
     out : dict
        The output state
     state
+    auto_load : bool
+       If ``False`` then the output will contain `load_arf`,
+       `load_rmf`, and `load_bkg` calls for ancillary PHA files.
 
     Notes
     -----
@@ -631,26 +758,48 @@ def _save_data(out: OutType, state: SessionType) -> None:
     #
     _output_banner(out, "Load Data Sets")
 
-    cmd_id = ""
-    cmd_bkg_id = ""
+    # Special case PHA2 files, as
+    # - they create multiple ids in one go
+    # - some of those ids may get deleted or over-written
+    # So process them first.
+    #
+    seen = set()
+    for idval, store in state._load_data_store.items():
+        if "idvals" not in store:
+            continue
 
-    for id in ids:
-        # But if id is a string, then quote as a string
-        # But what about the rest of any possible load_data() options;
-        # how do we replicate the optional keywords that were possibly
-        # used?  Store them with data object?
-        cmd_id = _id_to_str(id)
+        # Only bother processing the first version of this PHA2
+        # dataset, although note that the idval may no-longer be
+        # present (e.g.  delete_data) or over-written with a different
+        # dataset. Fortunately we can use the idvals array to find out
+        # what datasets were originally created.
+        #
+        if idval in seen:
+            continue
 
-        data = state.get_data(id)
+        _save_dataset_pha2(out, store)
+        seen = seen.union(store["idvals"])
+
+        # Add any delete_data calls for this dataset.
+        #
+        for delid in store["idvals"]:
+            if delid in state._load_data_store:
+                continue
+
+            _output(out, f"delete_data({_id_to_str(delid)})")
+
+    for idval in ids:
+        data = state.get_data(idval)
         if TYPE_CHECKING:
             # Assert an actual type rather than the base type of Data
             assert isinstance(data, (Data1D, Data2D))
 
-        _save_dataset(out, state, data, id)
-        _save_dataset_settings_pha(out, state, data, id)
-        _save_dataset_settings_2d(out, state, data, id)
+        _save_dataset(out, state, data, idval)
+        _save_dataset_settings_pha(out, state, data, idval,
+                                   auto_load=auto_load)
+        _save_dataset_settings_2d(out, state, data, idval)
 
-        _handle_filter(out, state, data, id)
+        _handle_filter(out, state, data, idval)
 
 
 def _print_par(par: ParameterType) -> tuple[str, str]:
@@ -685,22 +834,22 @@ def _print_par(par: ParameterType) -> tuple[str, str]:
     parstrs = []
     try:
         if par.hard_min_changed():
-            parstrs.append(f'{par.fullname}.hard_min    = {repr(par.hard_min)}')
+            parstrs.append(f'{par.fullname}.hard_min    = {par.hard_min}')
     except AttributeError:
         pass
 
     try:
         if par.hard_max_changed():
-            parstrs.append(f'{par.fullname}.hard_max    = {repr(par.hard_max)}')
+            parstrs.append(f'{par.fullname}.hard_max    = {par.hard_max}')
     except AttributeError:
         pass
 
-    parstrs.extend([f'{par.fullname}.default_val = {repr(par.default_val)}',
-                    f'{par.fullname}.default_min = {repr(par.default_min)}',
-                    f'{par.fullname}.default_max = {repr(par.default_max)}',
-                    f'{par.fullname}.val     = {repr(par.val)}',
-                    f'{par.fullname}.min     = {repr(par.min)}',
-                    f'{par.fullname}.max     = {repr(par.max)}',
+    parstrs.extend([f'{par.fullname}.default_val = {par.default_val}',
+                    f'{par.fullname}.default_min = {par.default_min}',
+                    f'{par.fullname}.default_max = {par.default_max}',
+                    f'{par.fullname}.val     = {par.val}',
+                    f'{par.fullname}.min     = {par.min}',
+                    f'{par.fullname}.max     = {par.max}',
                     f'{par.fullname}.units   = {unitstr}',
                     f'{par.fullname}.frozen  = {par.frozen}'])
     parstr = '\n'.join(parstrs) + '\n'
@@ -779,27 +928,6 @@ def _save_iter_method(out: OutType, state: SessionType) -> None:
     _output_nl(out)
 
 
-# Is there something in the standard libraries that does this?
-def _reindent(code: str) -> str:
-    """Try to remove leading spaces. Somewhat hacky."""
-
-    # Assume the first line is 'def func()'
-    nspaces = code.find('def')
-    if nspaces < 1:
-        return code
-
-    # minimal safety checks (e.g. if there was an indented
-    # comment line).
-    out = []
-    for line in code.split("\n"):
-        if line[:nspaces].isspace():
-            out.append(line[nspaces:])
-        else:
-            out.append(line)
-
-    return "\n".join(out)
-
-
 # for user models, try to access the function definition via
 # the inspect module and then re-create it in the script.
 # An alternative would be to use the marshal module, and
@@ -842,24 +970,23 @@ def _handle_usermodel(out: OutType,
     # Ensure the message is also seen if the script is run.
     _output(out, f'print("{msg}")')
 
-    _output(out, _reindent(pycode))
+    _output(out, textwrap.dedent(pycode))
     cmd = f'load_user_model({mod.calc.__name__}, "{modelname}")'
     _output(out, cmd)
 
-    # Work out the add_user_pars call; this is explicit, i.e.
-    # it does not include logic to work out what arguments
-    # are not needed.
+    # Work out the add_user_pars call; this is explicit, i.e.  it does
+    # not include logic to work out what arguments are not needed.
     #
-    # Some of these values are over-written later on, but
-    # needed to set up the number of parameters, and good
-    # documentation (hopefully).
+    # Some of these values are over-written later on, but needed to
+    # set up the number of parameters, and good documentation
+    # (hopefully).
+    #
+    # Explicitly cast to float to avoid "np.float64(...)" output.
     #
     parnames = [p.name for p in mod.pars]
-    parvals = [p.default_val for p in mod.pars]
-    # parmins = [p.default_min for p in mod.pars]
-    # parmaxs = [p.default_max for p in mod.pars]
-    parmins = [p.min for p in mod.pars]
-    parmaxs = [p.max for p in mod.pars]
+    parvals = [float(p.default_val) for p in mod.pars]
+    parmins = [float(p.min) for p in mod.pars]
+    parmaxs = [float(p.max) for p in mod.pars]
     parunits = [p.units for p in mod.pars]
     parfrozen = [p.frozen for p in mod.pars]
 
@@ -1185,6 +1312,7 @@ def _save_dataset_file(out: OutType, idstr: str, dset: Data) -> None:
     #
     ncols = None
     if isinstance(dset, DataPHA):
+        # This path should no-longer be used, but leave in for now.
         dtype = 'pha'
     elif isinstance(dset, DataIMG):
         dtype = 'image'
@@ -1202,6 +1330,39 @@ def _save_dataset_file(out: OutType, idstr: str, dset: Data) -> None:
     cmd = f'load_{dtype}({idstr}, "{dset.name}"'
     if ncols is not None:
         cmd += f", ncols={ncols}"
+
+    cmd += ")"
+    _output(out, cmd)
+
+
+def _save_dataset_pha(out: OutType, store: dict[str, Any]) -> None:
+    """The data can be read in from a PHA file."""
+
+    idval = store["id"]
+    filename = store["filename"]
+    idstr = _id_to_str(idval)
+
+    cmd = f'load_pha({idstr}, "{filename}"'
+    with suppress(KeyError):
+        cmd += f', use_errors={store["kwargs"]["use_errors"]}'
+
+    cmd += ")"
+    _output(out, cmd)
+
+
+def _save_dataset_pha2(out: OutType, store: dict[str, Any]) -> None:
+    """The data can be read in from a PHA2 file."""
+
+    idval = store["id"]
+    idvals = store["idvals"]
+    filename = store["filename"]
+    idstr = _id_to_str(idval)
+
+    _output(out, f"# Load PHA2 into: {idvals}")
+
+    cmd = f'load_pha({idstr}, "{filename}"'
+    with suppress(KeyError):
+        cmd += f', use_errors={store["kwargs"]["use_errors"]}'
 
     cmd += ")"
     _output(out, cmd)
@@ -1237,7 +1398,7 @@ def _output_add_wcs(out: OutType,
         _output(out, f"crota={wcs.crota}, epoch={wcs.epoch}, equinox={wcs.equinox})", indent=1)
 
 
-def _save_dataset_pha(out: OutType, idstr: str, pha: DataPHA) -> None:
+def _save_dataset_pha_manual(out: OutType, idstr: str, pha: DataPHA) -> None:
     """Try to recreate the PHA"""
 
     spacer = "            "
@@ -1272,12 +1433,6 @@ def _save_dataset_pha(out: OutType, idstr: str, pha: DataPHA) -> None:
     # setarray("quality")
     # setarray("grouping")
 
-    if pha.bin_lo is not None and pha.bin_hi is not None:
-        # no use restoring only one of these
-        #
-        _output(out, f"get_data({idstr}).bin_lo = {pha.bin_lo.tolist()}")
-        _output(out, f"get_data({idstr}).bin_hi = {pha.bin_hi.tolist()}")
-
 
 def _save_dataset(out: OutType,
                   state: SessionType,
@@ -1296,9 +1451,30 @@ def _save_dataset(out: OutType,
 
     - if in the correct directory (so paths may be wrong)
 
+    The state._load_data_store dictionary is used to indicate PHA2
+    files.
+
     """
 
-    idstr = _id_to_str(id)
+    # Do we have direct information on how this dataset was loaded?
+    # Note that identifiers associated with a PHA2 dataset have
+    # already been loaded.
+    #
+    try:
+        store = state._load_data_store[id]
+
+        # Is this a PHA2 dataset?
+        #
+        if "idvals" in store:
+            return
+
+        _save_dataset_pha(out, store)
+        return
+
+    except KeyError:
+        idval = id
+
+    idstr = _id_to_str(idval)
 
     # If the name of the object is a file then we assume that the data
     # was read in from that location, otherwise we recreate the data
@@ -1359,7 +1535,7 @@ def _save_dataset(out: OutType,
     # class is poorly tested, documented, or used.
     #
     if isinstance(data, DataPHA):
-        _save_dataset_pha(out, idstr, data)
+        _save_dataset_pha_manual(out, idstr, data)
         return
 
     if isinstance(data, DataIMG):
@@ -1398,7 +1574,7 @@ def _save_dataset(out: OutType,
         _output(out, f"{spacer}{xs[1].tolist()},")
         _output(out, f"{spacer}{ys},")
         if data.shape is not None:
-            _output(out, f"{spacer}{tuple(data.shape)},")
+            _output(out, f"{spacer}({data.shape[0]}, {data.shape[1]}),")
 
         _output(out, f"{spacer}DataIMG)")
 
@@ -1410,7 +1586,7 @@ def _save_dataset(out: OutType,
             _output_add_wcs(out, idstr, "eqpos", data.eqpos)
 
     elif isinstance(data, Data2DInt):
-        msg = f"Unable to re-create Data2DInt data set '{id}'"
+        msg = f"Unable to re-create Data2DInt data set '{idval}'"
         warning(msg)
         _output(out, f'print("{msg}")')
 
@@ -1425,7 +1601,7 @@ def _save_dataset(out: OutType,
         _output(out, f"{spacer}Data2D)")
 
     else:
-        msg = f"Unable to re-create {data.__class__} data set '{id}'"
+        msg = f"Unable to re-create {data.__class__} data set '{idval}'"
         warning(msg)
         _output(out, f'print("{msg}")')
         return
@@ -1452,7 +1628,11 @@ def _save_id(out: OutType, state: SessionType) -> None:
     _output_nl(out)
 
 
-def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
+def save_all(state: SessionType,
+             fh: TextIO | None = None,
+             *,
+             auto_load: bool = True
+             ) -> None:
     """Save the information about the current session to a file handle.
 
     This differs to the `save` command in that the output is human
@@ -1464,12 +1644,22 @@ def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
 
      3. some settings and values may not be recorded.
 
+     .. versionchanged:: 4.18.0
+        Handling of PHA data has been improved, and the output now
+        defaults to not including automatically-loaded ancillary files
+        (such as background and responses). Set the ``auto_load``
+        flag to False to add these commands back to the save file (and
+        match previous versions of Sherpa).
+
     Parameters
     ----------
     state : sherpa.astro.ui.utils.Session
     fh : file_like, optional
        If not given the results are displayed to standard out,
        otherwise they are written to this file handle.
+    auto_load : bool, optional
+       If ``False`` then the output will contain `load_arf`,
+       `load_rmf`, and `load_bkg` calls for ancillary PHA files.
 
     See Also
     --------
@@ -1488,7 +1678,6 @@ def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
       `sherpa.astro.ui.set_counts`
 
     - any optional keywords to commands such as `load_data`
-      or `load_pha`
 
     - user models may not be restored correctly
 
@@ -1516,7 +1705,7 @@ def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
             "main": []
            }
 
-    _save_data(out, state)
+    _save_data(out, state, auto_load=auto_load)
     _output_nl(out)
     _save_statistic(out, state)
     _save_fit_method(out, state)
