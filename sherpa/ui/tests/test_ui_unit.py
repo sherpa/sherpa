@@ -2347,3 +2347,260 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
 
     check_ratio(d16t, d1t, 0.5592601537154354, 2.3835120525988995)
     check_ratio(d2t, d1t, 0.6046847674045083, 3.9596727215871725)
+
+
+def setup_multiple_datasets():
+    """Two datasets with the same model to test ordering."""
+
+    ui.load_arrays(1, [10, 12, 14, 16, 18],
+                   [34, 38, 40, 41, 39])
+    ui.load_arrays(2, [20, 22, 24, 26],
+                   [54, 51, 37, 64])
+
+    ui.set_stat("cash")
+
+    # Fit y = mx + c to the two datasets, with m = 2, c = 10
+    #
+    pol = ui.create_model_component("polynom1d", "pol")
+    pol.c1.thaw()
+
+    ui.set_source(1, pol)
+    ui.set_source(2, pol)
+
+
+def setup_multiple_datasets_linked():
+    """Two datasets with linked parameters to test ordering."""
+
+    ui.load_arrays(1, [10, 12, 14, 16, 18],
+                   [41, 42, 37, 56, 52])
+    ui.load_arrays(2, [20, 22, 24, 26],
+                   [28, 22, 28, 38])
+
+    ui.set_stat("cash")
+
+    # Fit y = mx + c to the two datasets, with m being the same but c
+    # different for the two datasets: m = 2, c_1 = 20, c_2 = -20.
+    # However, the exact values do not matter for this test, as long
+    # as they are separate enough that generating values for them
+    # results in obviously-different values.
+    #
+    # The c_1 parameter is set via a link so that the thawed parameters
+    # are in a different order for dataset 1 and 2.
+    #
+    # >>> ui.get_source(1).get_thawed_pars()
+    # [<Parameter 'c1' of model 'pol1'>, <Parameter 'c0' of model 'scale'>]
+    # >>> ui.get_source(2).get_thawed_pars()
+    # [<Parameter 'c0' of model 'pol2'>, <Parameter 'c1' of model 'pol1'>]
+    #
+    pol1 = ui.create_model_component("polynom1d", "pol1")
+    pol2 = ui.create_model_component("polynom1d", "pol2")
+    scale = ui.create_model_component("scale1d", "scale")
+    pol1.c0 = scale.c0
+    pol1.c1.thaw()
+    pol2.c1 = pol1.c1
+
+    ui.set_source(1, pol1)
+    ui.set_source(2, pol2)
+
+
+@pytest.mark.parametrize("order", [(1, 2), (2, 1)])
+def test_fit_multiple_datasets(order, clean_ui):
+    """Check fit works with multiple datasets."""
+
+    setup_multiple_datasets()
+
+    ui.fit(*order)
+    fres = ui.get_fit_results()
+    assert fres.datasets == order
+    assert fres.parnames == ("pol.c0", "pol.c1")
+
+    # Note if the fit finds a different solution (the exact values are
+    # not the point of this test).
+    #
+    assert fres.parvals == pytest.approx([21.756126722384383,
+                                          1.248116121054563])
+
+
+@pytest.mark.parametrize("order,parnames",
+                         [((1, 2), ('pol1.c1', 'pol2.c0', 'scale.c0')),
+                          ((2, 1), ('pol2.c0', 'pol1.c1', 'scale.c0'))
+                          ])
+def test_fit_multiple_datasets_linked(order, parnames, clean_ui):
+    """Check fit works with multiple datasets."""
+
+    setup_multiple_datasets_linked()
+
+    ui.fit(*order)
+    fres = ui.get_fit_results()
+    assert fres.datasets == order
+    assert fres.parnames == parnames
+
+    # Note if the fit finds a different solution (the exact values are
+    # not the point of this test).
+    #
+    vals = {"scale.c0": 22.002871808482844,
+            "pol1.c1": 1.6842614178514361,
+            "pol2.c0": -9.716190831799699}
+
+    assert fres.parvals[0] == pytest.approx(vals[parnames[0]])
+    assert fres.parvals[1] == pytest.approx(vals[parnames[1]])
+    assert fres.parvals[2] == pytest.approx(vals[parnames[2]])
+
+
+@pytest.mark.parametrize("order", [(1, 2), (2, 1)])
+def test_covar_multiple_datasets(order, clean_ui):
+    """Check covar works with multiple datasets."""
+
+    setup_multiple_datasets()
+    pol = ui.get_model_component("pol")
+
+    ui.fit(*order)
+    ui.covar(*order)
+    cres = ui.get_covar_results()
+    assert cres.datasets == order
+    assert cres.parnames == ("pol.c0", "pol.c1")
+    assert cres.parmaxes == pytest.approx([7.613218314229104,
+                                           0.42324434548533496])
+
+    # What happens if only a single parameter is asked for?
+    #
+    ui.covar(*order, pol.c1)
+    cres_s = ui.get_covar_results()
+    assert cres_s.datasets == order
+    assert cres_s.parnames == ("pol.c1", )
+    assert cres_s.parmaxes[0] == pytest.approx(0.42324434548533496)
+
+    # The covariance matrix does not know about the parameter restriction.
+    #
+    assert cres_s.extra_output == pytest.approx(cres.extra_output)
+
+
+@pytest.mark.parametrize("order,parnames",
+                         [((1, 2), ('pol1.c1', 'pol2.c0', 'scale.c0')),
+                          ((2, 1), ('pol2.c0', 'pol1.c1', 'scale.c0'))
+                          ])
+def test_covar_multiple_datasets_linked(order, parnames, clean_ui):
+    """Check covar works with multiple datasets."""
+
+    setup_multiple_datasets_linked()
+    scale = ui.get_model_component("scale")
+
+    ui.fit(*order)
+    ui.covar(*order)
+    cres = ui.get_covar_results()
+    assert cres.datasets == order
+    assert cres.parnames == parnames
+
+    # Just check the maxes are in order
+    maxes = {"scale.c0": 10.996504758773307,
+             "pol1.c1": 0.7720581246708447,
+             "pol2.c0": 17.6988390328967
+             }
+
+    assert cres.parmaxes[0] == pytest.approx(maxes[parnames[0]])
+    assert cres.parmaxes[1] == pytest.approx(maxes[parnames[1]])
+    assert cres.parmaxes[2] == pytest.approx(maxes[parnames[2]])
+
+    # What happens if only a single parameter is asked for?
+    #
+    ui.covar(*order, scale.c0)
+    cres_s = ui.get_covar_results()
+    assert cres_s.datasets == order
+    assert cres_s.parnames == ("scale.c0", )
+    assert cres_s.parmaxes[0] == pytest.approx(maxes["scale.c0"])
+
+    # The covariance matrix does not know about the parameter restriction.
+    #
+    assert cres_s.extra_output == pytest.approx(cres.extra_output)
+
+
+@pytest.mark.parametrize("order", [(1, 2), (2, 1)])
+def test_get_draws_multiple_datasets(order, clean_ui):
+    """Check get_draws works with multiple datasets."""
+
+    setup_multiple_datasets()
+
+    ui.fit(*order)
+    # ui.covar(*order)  as of 4.18.0 this is not needed
+
+    # Ensure repeatability (unlike the _linked version the covariance
+    # matrix is the same, so this is repeatable).
+    #
+    ui.set_rng(np.random.RandomState(3287))
+    stats, accept, params = ui.get_draws(order[0], [order[1]], niter=100)
+
+    # Although this is repeatable, just check with the mean value
+    # rather than a per-iteration check. This is partly to be similar
+    # to the _linked tests.
+    #
+    means = params.mean(axis=1)
+    assert len(means) == 2
+    assert means[0] == pytest.approx(21.219479992931166)
+    assert means[1] == pytest.approx(1.3153808885552025)
+
+
+@pytest.mark.parametrize("order,parnames",
+                         [((1, 2), ('pol1.c1', 'pol2.c0', 'scale.c0')),
+                          ((2, 1), ('pol2.c0', 'pol1.c1', 'scale.c0'))
+                          ])
+def test_get_draws_multiple_datasets_linked(order, parnames, clean_ui):
+    """Check get_draws works with multiple datasets."""
+
+    setup_multiple_datasets_linked()
+
+    ui.fit(*order)
+    # ui.covar(*order)  as of 4.18.0 this is not needed
+
+    # Ensure repeatability. However, unlike the fit and covar results,
+    # we do not get the same results.
+    #
+    ui.set_rng(np.random.RandomState(3287))
+    stats, accept, params = ui.get_draws(order[0], [order[1]], niter=100)
+
+    # Check the mean values of the parameters, as we assume they will
+    # be "close" to the best-fit values as long as niter is large
+    # enough.
+    #
+    # Convert to a dict to make the tests easier to read.
+    means = dict(zip(parnames, params.mean(axis=1)))
+    assert means['scale.c0'] == pytest.approx(22, abs=1)
+    assert means['pol1.c1'] == pytest.approx(1.7, abs=0.1)
+    assert means['pol2.c0'] == pytest.approx(-10, abs=1)
+
+
+def test_get_draws_mismatched_covar_linked(clean_ui, caplog):
+    """What happens when the covar call doesn't match the fit?"""
+
+    setup_multiple_datasets_linked()
+    scale = ui.get_model_component("scale")
+
+    # Not only are the datasets swapped in the covar call, only one
+    # component is asked for, and not all of them. This does not
+    # actually matter since get_draws recalculates the covariance
+    # matrix.
+    #
+    ui.fit(1, 2)
+    ui.covar(2, 1, scale.c0)
+
+    ui.set_rng(np.random.RandomState(3287))
+    n1 = len(caplog.records)
+    stats, accept, params = ui.get_draws(1, [2], niter=100)
+    n2 = len(caplog.records)
+
+    # Check the expected extra messages.
+    #
+    assert n2 == (n1 + 3)
+    assert caplog.records[n1].getMessage() == "Using Priors:"
+    assert caplog.records[n1 + 1].getMessage().startswith("pol1.c1: ")
+    assert caplog.records[n1 + 2].getMessage().startswith("pol2.c0: ")
+
+    # Unlike test_get_draws_multiple_datasets_linked we know the
+    # ordering and can be much more precise in the tests.
+    #
+    means = params.mean(axis=1)
+    assert means[0] == pytest.approx(1.73371932)
+    assert means[1] == pytest.approx(-10.46427734)
+    assert means[2] == pytest.approx(22.00661571)
+
+    # There's at least one accept.
+    assert any(accept)

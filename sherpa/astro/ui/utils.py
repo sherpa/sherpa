@@ -26,7 +26,6 @@ from dataclasses import dataclass
 import logging
 import os
 import sys
-import warnings
 
 import numpy as np
 
@@ -59,20 +58,18 @@ import sherpa.io
 from sherpa.models.basic import TableModel, UserModel
 from sherpa.models.model import Model
 import sherpa.plot
-from sherpa.plot import get_per_plot_kwargs
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     ReSampleData
 from sherpa.stats import Cash, CStat, WStat
 
 import sherpa.ui.utils
-from sherpa.ui.utils import _check_type, _check_str_type, _is_str, \
-    get_plot_prefs
+from sherpa.ui.utils import _check_type, _check_str_type, _is_str
 
 import sherpa.utils
 from sherpa.utils import bool_cast, get_error_estimates, is_subclass, \
     sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
-    IdentifierErr, ImportErr, IOErr, ModelErr, SessionErr
+    IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.types import IdType, IdTypes
 
@@ -10013,7 +10010,9 @@ class Session(sherpa.ui.utils.Session):
            If None, the default, then the data is simulated using the
            `sherpa.utils.poisson_noise` routine. If set, it must be a
            callable that takes a ndarray of the predicted values and
-           returns a ndarray of the same size with the simulated data.
+           an optional rng argument that takes a NumPy random
+           generator, and returns a ndarray of the same size with the
+           simulated data.
 
         Raises
         ------
@@ -15727,15 +15726,23 @@ class Session(sherpa.ui.utils.Session):
                 id: IdType | None = None,
                 lo=None, hi=None,
                 bkg_id: IdType | None = None,
-                error=False, params=None,
+                error: bool = False,
+                params: np.ndarray | None = None,
                 otherids: IdTypes = (),
-                niter=1000,
-                covar_matrix=None):
+                niter: int = 1000,
+                covar_matrix: np.ndarray | None = None):
         """Calculate the equivalent width of an emission or absorption line.
 
         The `equivalent width <https://en.wikipedia.org/wiki/Equivalent_width>`_
         is calculated in the selected units
         for the data set (which can be retrieved with `get_analysis`).
+
+        .. versionchanged:: 4.18.0
+           If ``covar_matrix`` is left unset then the covariance
+           matrix is now always re-calculated. This means that `covar`
+           is no-longer needed to be called before this routine. The
+           error analysis now correctly handles the case when
+           ``otherids`` is not empty.
 
         .. versionchanged:: 4.16.0
            The random number generation is now controlled by the
@@ -15780,8 +15787,8 @@ class Session(sherpa.ui.utils.Session):
         niter : int, optional
            The number of draws to use. The default is ``1000``.
         covar_matrix : 2D array, optional
-           The covariance matrix to use. If ``None`` then the
-           result from `get_covar_results().extra_output` is used.
+           The covariance matrix to use. If ``None`` then the matrix
+           is calculated for the dataset given by the ``id`` argument.
 
         Returns
         -------
@@ -15813,7 +15820,7 @@ class Session(sherpa.ui.utils.Session):
         >>> eqwidth(cont, cont+line)
         2.1001988282497308
 
-        The calculation is restricted to the range 20 to 20
+        The calculation is restricted to the range 20 to 24
         Angstroms.
 
         >>> eqwidth(cont, cont+line, lo=20, hi=24)
@@ -15829,7 +15836,8 @@ class Session(sherpa.ui.utils.Session):
 
         With the `error` flag set to `True`, the return value is
         enhanced with extra information, such as the median and
-        one-sigma ranges on the equivalent width::
+        one-sigma ranges on the equivalent width. These values can be
+        displayed with Sherpa plotting commands.
 
         >>> res = eqwidth(p1, p1 + g1, error=True)
         >>> ewidth = res[0]  # the median equivalent width
@@ -15837,86 +15845,102 @@ class Session(sherpa.ui.utils.Session):
         >>> errhi = res[2]   # the one-sigma upper limit
         >>> pars = res[3]    # the parameter values used
         >>> ews = res[4]     # array of eq. width values
+        >>> plot_pdf(ews)    # probability density
+        >>> plot_cdf(ews)    # cumalitive distribution
 
-        which can be used to display the probability density or
-        cumulative distribution function of the equivalent widths::
+        Fit dataset 2, assumed to contain components ``p2`` and
+        ``g2``, calculate the covariance matrix, and then send this
+        matrix to the eqwidth call:
 
-        >>> plot_pdf(ews)
-        >>> plot_cdf(ews)
+        >>> fit(2)
+        >>> covar(2)
+        >>> cmat = get_covar_results().extra_output
+        >>> res2 = eqwidth(p2, p2 + g2, id=2, covar_matrix=cmat, error=True)
+
+        Evaluate the equivalent-width distributions using datasets 1,
+        2, and 3:
+
+        >>> res = eqwidth(p, p+g, id=1, otherids=[2,3], error=True)
 
         """
+
+        # The dataset is only used to define the grid for the model
+        # evaluation, so just use the "default" version and do not
+        # bother about multiple datasets. This could be an issue if
+        # the model evaluation should be used on an extension of the
+        # grid in this default dataset.
+        #
         data = self._get_data_or_bkg(id, bkg_id)
 
-        ####################################################
-        if error:
+        if not error:
+            return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
-            def is_numpy_ndarray(arg, name, npars, dim1=None):
-                if not isinstance(arg, np.ndarray):
-                    msg = name + ' must be of type numpy.ndarray'
-                    raise IOErr(msg)
-                shape = arg.shape
-                if len(shape) != 2:
-                    msg = name + ' must be 2d numpy.ndarray'
-                    raise IOErr(msg)
-                if shape[0] != npars:
-                    msg = name + f' must be of dimension ({npars}, x)'
-                    raise IOErr(msg)
-                if dim1 is not None:
-                    if shape[1] != npars:
-                        msg = name + f' must be of dimension ({npars}, {npars})'
-                        raise IOErr(msg)
+        def is_numpy_ndarray2d(arg, name, npars, square=False):
+            if not isinstance(arg, np.ndarray):
+                msg = name + ' must be of type numpy.ndarray'
+                raise IOErr(msg)
+            shape = arg.shape
+            if len(shape) != 2:
+                msg = name + ' must be 2d numpy.ndarray'
+                raise IOErr(msg)
+            if shape[0] != npars:
+                msg = name + f' must be of dimension ({npars}, x)'
+                raise IOErr(msg)
+            if square and shape[1] != npars:
+                msg = name + f' must be of dimension ({npars}, {npars})'
+                raise IOErr(msg)
 
-            _, fit = self._get_fit(id)
-            fit_results = self.get_fit_results()
-            parnames = fit_results.parnames
-            npar = len(parnames)
-            orig_par_vals = np.array(fit_results.parvals)
+        # Since estmethod is not set it defaults to Covariance.
+        _, fit = self._get_fit(id, otherids=otherids)
+        fit_results = self.get_fit_results()
+        parnames = fit_results.parnames
+        npar = len(parnames)
+        orig_par_vals = np.array(fit_results.parvals)
 
-            if params is None:
-                # run get_draws or normal distribution depending on fit stat
-                if covar_matrix is None:
-                    try:
-                        # check just in case usr has run covar()
-                        covar_results = self.get_covar_results()
-                        covar_matrix = covar_results.extra_output
-                    except SessionErr:
-                        # usr has not run covar, will have to run it
-                        covar_matrix = fit.est_errors().extra_output
-                is_numpy_ndarray(covar_matrix, 'covar_matrix', npar, npar)
+        if params is None:
+            # run get_draws or normal distribution depending on fit stat
+            if covar_matrix is None:
+                # Calculate the covariance matrix.
+                covar_matrix = fit.est_errors().extra_output
 
-                # Have enough stuff to generate samples
-                if isinstance(self._current_stat, (Cash, CStat, WStat)):
-                    _, _, params = \
-                        self.get_draws(id, otherids=otherids, niter=niter,
-                                       covar_matrix=covar_matrix)
-                else:
-                    sampler = NormalParameterSampleFromScaleMatrix()
-                    tmp = sampler.get_sample(fit, mycov=covar_matrix,
-                                             num=niter + 1, rng=self.get_rng())
-                    params = tmp.transpose()
+            is_numpy_ndarray2d(covar_matrix, 'covar_matrix', npar, True)
 
+            # Have enough stuff to generate samples
+            if isinstance(self._current_stat, (Cash, CStat, WStat)):
+                _, _, params = \
+                    self.get_draws(id, otherids=otherids, niter=niter,
+                                   covar_matrix=covar_matrix)
             else:
-                is_numpy_ndarray(params, 'params', npar)
+                sampler = NormalParameterSampleFromScaleMatrix()
+                tmp = sampler.get_sample(fit, mycov=covar_matrix,
+                                         num=niter + 1, rng=self.get_rng())
+                params = tmp.transpose()
 
-            mins = fit.model._get_thawed_par_mins()
-            maxs = fit.model._get_thawed_par_maxes()
-            eqw = np.zeros_like(params[0, :])
-            for params_index in range(len(params[0, :])):
-                for parnames_index, parname in enumerate(parnames):
-                    val = params[parnames_index, params_index]
-                    # Note: the normal dist does not respect the soft limits
-                    mymin = mins[parnames_index]
-                    mymax = maxs[parnames_index]
-                    val = max(mymin, min(val, mymax))
-                    self.set_par(parname, val)
-                eqw[params_index] = \
-                    sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
-            median, lower, upper = get_error_estimates(eqw)
-            fit.model.thawedpars = orig_par_vals
-            return median, lower, upper, params, eqw
+        else:
+            is_numpy_ndarray2d(params, 'params', npar)
 
-        ####################################################
-        return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+        thawed = fit.model.get_thawed_pars()
+        mins = [p.min for p in thawed]
+        maxs = [p.max for p in thawed]
+        eqw = np.zeros_like(params[0, :])
+        for params_index in range(len(params[0, :])):
+            # If #2335 gets fixed then we should just be able to set
+            # fit.model.thawedpars to params[:, params_index],
+            # although is the draws data guaranteed to be restricted
+            # to the soft limits?
+            #
+            for parnames_index, parname in enumerate(parnames):
+                val = params[parnames_index, params_index]
+                mymin = mins[parnames_index]
+                mymax = maxs[parnames_index]
+                self.set_par(parname, np.clip(val, mymin, mymax))
+
+            eqw[params_index] = \
+                sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
+
+        median, lower, upper = get_error_estimates(eqw)
+        fit.model.thawedpars = orig_par_vals
+        return median, lower, upper, params, eqw
 
     def calc_photon_flux(self, lo=None, hi=None,
                          id: IdType | None = None,

@@ -72,6 +72,7 @@ from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.random import RandomType
 from sherpa.utils.types import ArrayType, IdType, IdTypes, PrefsType
@@ -4494,9 +4495,13 @@ class Session(NoNewAttributesAfterInit):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        method : func
-           The function used to create a random realisation of
-           a data set.
+        method : callable or None, optional
+           If None (the default) then the data is simulated using the
+           `sherpa.utils.poisson_noise` routine. If set, it must be a
+           callable that takes an ndarray of the predicted values and
+           an optional rng argument that takes a NumPy random
+           generator, and returns an ndarray of the same size with the
+           simulated data.
 
         See Also
         --------
@@ -8935,7 +8940,8 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_fit_obj(self,
                      store: Sequence[FitStore],
-                     estmethod, numcores=1
+                     estmethod: EstMethod | None,
+                     numcores: int = 1
                      ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object given the data and models.
 
@@ -8993,8 +8999,10 @@ class Session(NoNewAttributesAfterInit):
             if idval not in idvals:
                 idvals.append(idval)
 
-        return tuple(idvals), Fit(d, m, self._current_stat, self._current_method,
-                                  estmethod, self._current_itermethod)
+        return tuple(idvals), Fit(d, m, stat=self._current_stat,
+                                  method=self._current_method,
+                                  estmethod=estmethod,
+                                  itermethod_opts=self._current_itermethod)
 
     def _prepare_fit(self,
                      id: IdType | None,
@@ -9052,7 +9060,8 @@ class Session(NoNewAttributesAfterInit):
     def _get_fit(self,
                  id: IdType | None,
                  otherids: IdTypes = (),
-                 estmethod=None, numcores=1
+                 estmethod: EstMethod | None = None,
+                 numcores: int = 1
                  ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object for the given identifiers.
 
@@ -10972,7 +10981,7 @@ class Session(NoNewAttributesAfterInit):
         matrix is just the variance of the parameter:
 
         >>> res.extra_output
-        array([[ 6.19847635]])
+        array([[6.19847635]])
 
         """
         if self._covariance_results is None:
@@ -12055,21 +12064,28 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.list_samplers()
 
-    # DOC-TODO: add pointers on what to do with the return values
     def get_draws(self,
                   id: IdType | None = None,
                   otherids: IdTypes = (),
-                  niter=1000, covar_matrix=None):
+                  niter: int = 1000,
+                  covar_matrix: np.ndarray | None = None
+                  ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Run the pyBLoCXS MCMC algorithm.
 
         The function runs a Markov Chain Monte Carlo (MCMC) algorithm
         designed to carry out Bayesian Low-Count X-ray Spectral
         (BLoCXS) analysis. It explores the model parameter space at
-        the suspected statistic minimum (i.e.  after using `fit`). The return
-        values include the statistic value, parameter values, and an
-        acceptance flag indicating whether the row represents a jump from the
-        current location or not. For more information see the
-        `sherpa.sim` module and the reference given below.
+        the suspected statistic minimum (i.e.  after using `fit`). The
+        return values include the statistic value, parameter values,
+        and an acceptance flag indicating whether the row represents a
+        jump from the current location or not. For more information
+        see the `sherpa.sim` module and the reference given below.
+
+        .. versionchanged:: 4.18.0
+           If ``covar_matrix`` is left unset then the covariance
+           matrix is now always re-calculated. This means that
+           `covar` is no-longer needed to be called before this
+           routine.
 
         Parameters
         ----------
@@ -12081,8 +12097,9 @@ class Session(NoNewAttributesAfterInit):
         niter : int, optional
            The number of draws to use. The default is ``1000``.
         covar_matrix : 2D array, optional
-           The covariance matrix to use. If ``None`` then the
-           result from `get_covar_results().extra_output` is used.
+           The covariance matrix to use. If ``None`` then the matrix
+           is calculated for the dataset given by the ``id`` and
+           ``otherids`` arguments.
 
         Returns
         -------
@@ -12141,10 +12158,9 @@ class Session(NoNewAttributesAfterInit):
         results.
 
         >>> fit()
-        >>> covar()
         >>> stats, accept, params = get_draws(1, niter=1e4)
         >>> plot_trace(stats, name='stat')
-        >>> names = [p.fullname for p in get_source().pars if not p.frozen]
+        >>> names = [p.fullname for p in get_source().get_thawed_pars()]
         >>> plot_cdf(params[0,:], name=names[0], xlabel=names[0])
         >>> plot_pdf(params[1,:], name=names[1], xlabel=names[1])
         >>> accept[:-1].sum() * 1.0 / len(accept - 1)
@@ -12153,23 +12169,31 @@ class Session(NoNewAttributesAfterInit):
         The following runs the chain on multiple data sets, with
         identifiers 'core', 'jet1', and 'jet2':
 
-        >>> stats, accept, params = get_draws('core', ['jet1', 'jet2'], niter=1e4)
+        >>> res = get_draws('core', ['jet1', 'jet2'], niter=1e4)
+        >>> stats, accept, params = res
+
+        Fit models to datasets 3 and 4, then calculate the covariance
+        matrix (stored in the extra_output field) and pass it through
+        to get_draws (which also evaluates the models for datasets 3
+        and 4):
+
+        >>> fit(3, 4)
+        >>> covar(3, 4)
+        >>> cmat = get_covar_results().extra_output
+        >>> res = get_draws(id=3, otherids=[4], covar_matrix=cmat)
 
         """
 
         ids, fit = self._get_fit(id, otherids)
 
-        # Allow the user to jump from a user defined point in parameter space?
-        # Meaning let the user set up parameter space without fitting first.
-
-        # fit_results = self.get_fit_results()
-        # if fit_results is None:
-        #    raise TypeError("Fit has not been run")
-
         if covar_matrix is None:
-            covar_results = self.get_covar_results()
-            if covar_results is None:
-                raise TypeError("Covariance has not been calculated")
+            # Always recalculate the covariance matrix, even if covar
+            # has just been called, but hide the screen output. This
+            # data is not stored so as to not confuse users about what
+            # data get_covar_results() is returning.
+            #
+            with SherpaVerbosity("ERROR"):
+                covar_results = self._est_errors(ids, 'covariance')
 
             covar_matrix = covar_results.extra_output
 
