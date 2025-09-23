@@ -346,6 +346,15 @@ of the `CIAO analysis system <https://cxc.harvard.edu/ciao/>`_. Please
 see the comments in the ``setup.cfg`` file for more information on
 these options.
 
+Several libraries are optional, and support can be turned off with the
+relevant disable options::
+
+    disable_group=True
+    disable_region=True
+    disable_stk=True
+    disable_wcs=True
+
+
 Installing all dependencies with conda
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2022
+#  Copyright (C) 2022, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -44,7 +44,7 @@ from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.astro.data import DataIMG
 
 from sherpa.utils.err import ArgumentTypeErr
-from sherpa.utils.testing import requires_ds9
+from sherpa.utils.testing import requires_ds9, requires_region
 
 
 def example_data():
@@ -104,6 +104,7 @@ def test_image_xxx2d_not_sent_an_image(funcname, idval):
             func(idval)
 
 
+@requires_region
 @requires_ds9
 @pytest.mark.parametrize("funcname", ["notice", "ignore"])
 def test_xxx2d_image_no_region(funcname):
@@ -139,6 +140,7 @@ FILTER_A = "Circle(10,0,3)"
 FILTER_B = "RotBox(8,4,8,6,30)"
 
 
+@requires_region
 @requires_ds9
 def test_notice2d_image():
     """A valid region"""
@@ -165,6 +167,7 @@ def test_notice2d_image():
     assert d.mask.sum() == FILTER_NSET
 
 
+@requires_region
 @requires_ds9
 def test_ignore2d_image():
     """A valid region
