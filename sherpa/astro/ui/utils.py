@@ -15502,7 +15502,7 @@ class Session(sherpa.ui.utils.Session):
         >>> pars = res[3]    # the parameter values used
         >>> ews = res[4]     # array of eq. width values
         >>> plot_pdf(ews)    # probability density
-        >>> plot_cdf(ews)    # cumalitive distribution
+        >>> plot_cdf(ews)    # cumulative distribution
 
         Fit dataset 2, assumed to contain components ``p2`` and
         ``g2``, calculate the covariance matrix, and then send this

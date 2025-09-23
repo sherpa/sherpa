@@ -885,7 +885,7 @@ POS_GAUSS.fwhm = 1
 def setup_eqwidth_datapha() -> DataPHA:
     """Create a PHA datastet for use with eqwidth tests"""
 
-    # Pick an energy grid that encomposes the line emission of
+    # Pick an energy grid that encompasses the line emission of
     # POS_GAUSS.
     #
     egrid = np.arange(0.1, 10, 0.01)
@@ -937,7 +937,7 @@ def test_eqwidth_datapha_absolute(lmodel):
     #
     # For combined == continuum - line then we get -4/10
     #
-    # (although the George & Fabian paper do not talk about absorption
+    # (although the George & Fabian paper does not talk about absorption
     # features).
     #
     # So |expected equivalent width| == 0.4
