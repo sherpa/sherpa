@@ -2952,7 +2952,9 @@ class Session(NoNewAttributesAfterInit):
          'chi2modvar',
          'chi2xspecvar',
          'cstat',
+         'cstatnegativepenalty',
          'leastsq',
+         'userstat',
          'wstat']
 
         """
