@@ -64,6 +64,7 @@ import sherpa.plot
 from sherpa.plot import Plot, HistogramPlot, MultiPlot, \
     set_backend, get_per_plot_kwargs
 import sherpa.sim
+from sherpa.sim.sample import ClipValue
 import sherpa.stats
 from sherpa.stats import Stat, UserStat
 import sherpa.utils
@@ -10131,7 +10132,8 @@ class Session(NoNewAttributesAfterInit):
                       correlate: bool = True,
                       id: IdType | None = None,
                       otherids: IdTypes = (),
-                      numcores: int | None = None
+                      numcores: int | None = None,
+                      clip: ClipValue = "none"
                       ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values
         from a normal distribution.
@@ -10144,7 +10146,9 @@ class Session(NoNewAttributesAfterInit):
            The sigma parameter has been renamed to scale, and the code
            has been updated so that changing it will change the
            sampled values. The random state returned by get_rng is now
-           used for the sampling.
+           used for the sampling. The clip parameter has been added,
+           and the return array now ends in a column indicating
+           whether any parameter in the row was clipped.
 
         Parameters
         ----------
@@ -10165,13 +10169,19 @@ class Session(NoNewAttributesAfterInit):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('none') applies no clipping,
+           'hard' uses the hard parameter limits, and 'soft' the soft
+           limits.
 
         Returns
         -------
         samples
-           A 2D NumPy array table with the first column representing
-           the statistic and later columns the parameters used. The
-           number of rows is given by the num argument.
+           A NumPy array table with the first column representing the
+           statistic, the later columns the parameters used, and the
+           last column indicating whether any parameter in the row was
+           clipped. The number of rows is given by the num argument.
 
         See Also
         --------
@@ -10204,7 +10214,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> ans = normal_sample(num=10000)
         >>> ans.shape
-        (1000, 4)
+        (1000, 5)
         >>> np.median(ans[:,0])
         119.82959326927781
 
@@ -10238,7 +10248,8 @@ class Session(NoNewAttributesAfterInit):
         rng = self.get_rng()
         return sherpa.sim.normal_sample(fit, num=num, scale=scale,
                                         correlate=correlate,
-                                        numcores=numcores, rng=rng)
+                                        numcores=numcores, rng=rng,
+                                        clip=clip)
 
     # DOC-TODO: improve the description of factor parameter
     def uniform_sample(self,
@@ -10246,7 +10257,8 @@ class Session(NoNewAttributesAfterInit):
                        factor: float = 4,
                        id: IdType | None = None,
                        otherids: IdTypes = (),
-                       numcores: int | None = None
+                       numcores: int | None = None,
+                       clip: ClipValue = "none"
                        ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values
         from an uniform distribution.
@@ -10257,7 +10269,9 @@ class Session(NoNewAttributesAfterInit):
 
         .. versionchanged:: 4.18.0
            The random state returned by get_rng is now used for the
-           sampling.
+           sampling. The clip parameter has been added, and the return
+           array now ends in a column indicating whether any parameter
+           in the row was clipped.
 
         Parameters
         ----------
@@ -10273,12 +10287,19 @@ class Session(NoNewAttributesAfterInit):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('none') applies no clipping,
+           'hard' uses the hard parameter limits, and 'soft' the soft
+           limits.
 
         Returns
         -------
         samples
            A NumPy array table with the first column representing the
-           statistic and later columns the parameters used.
+           statistic, the later columns the parameters used, and the
+           last column indicating whether any parameter in the row was
+           clipped.  The number of rows is given by the num argument.
 
         See Also
         --------
@@ -10297,7 +10318,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> ans = uniform_sample(num=1000)
         >>> ans.shape
-        (1000, 4)
+        (1000, 5)
         >>> np.median(ans[:,0])
         284.66534775948134
 
@@ -10305,14 +10326,16 @@ class Session(NoNewAttributesAfterInit):
         ids, fit = self._get_fit(id, otherids)
         rng = self.get_rng()
         return sherpa.sim.uniform_sample(fit, num=num, factor=factor,
-                                         numcores=numcores, rng=rng)
+                                         numcores=numcores, rng=rng,
+                                         clip=clip)
 
     def t_sample(self,
                  num: int = 1,
                  dof: int | None = None,
                  id: IdType | None = None,
                  otherids: IdTypes = (),
-                 numcores: int | None = None
+                 numcores: int | None = None,
+                 clip: ClipValue = "none"
                  ) -> np.ndarray:
         """Sample the fit statistic by taking the parameter values from
         a Student's t-distribution.
@@ -10323,7 +10346,9 @@ class Session(NoNewAttributesAfterInit):
 
         .. versionchanged:: 4.18.0
            The random state returned by get_rng is now used for the
-           sampling.
+           sampling. The clip parameter has been added, and the return
+           array now ends in a column indicating whether any parameter
+           in the row was clipped.
 
         Parameters
         ----------
@@ -10340,12 +10365,19 @@ class Session(NoNewAttributesAfterInit):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
+        clip : {'hard', 'soft', 'none'}, optional
+           What clipping strategy should be applied to the sampled
+           parameters. The default ('none') applies no clipping,
+           'hard' uses the hard parameter limits, and 'soft' the soft
+           limits.
 
         Returns
         -------
         samples
            A NumPy array table with the first column representing the
-           statistic and later columns the parameters used.
+           statistic, the later columns the parameters used, and the
+           last column indicating whether any parameter in the row was
+           clipped.  The number of rows is given by the num argument.
 
         See Also
         --------
@@ -10364,7 +10396,7 @@ class Session(NoNewAttributesAfterInit):
 
         >>> ans = t_sample(num=1000)
         >>> ans.shape
-        (1000, 4)
+        (1000, 5)
         >>> np.median(ans[:,0])
         119.9764357725326
 
@@ -10376,7 +10408,8 @@ class Session(NoNewAttributesAfterInit):
 
         rng = self.get_rng()
         return sherpa.sim.t_sample(fit, num=num, dof=dof,
-                                   numcores=numcores, rng=rng)
+                                   numcores=numcores, rng=rng,
+                                   clip=clip)
 
     ###########################################################################
     # Error estimation
