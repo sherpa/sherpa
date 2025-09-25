@@ -159,6 +159,7 @@ from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
 
 __doctest_requires__ = {
     '.': ['sherpatest'],  # requirements for module-level doctest
+    'DataPHA.group_counts': ['group']
     }
 
 if TYPE_CHECKING:
