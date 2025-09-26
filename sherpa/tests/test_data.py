@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2022, 2024
+#  Copyright (C) 2019-2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -606,19 +606,21 @@ def test_data_1d_int_eval_model_to_fit_filter(data):
     numpy.testing.assert_array_equal(evaluated_data, MULTIPLIER * X_ARRAY[:X_THRESHOLD + 1])
 
 
-@pytest.mark.parametrize("data", (Data1D, Data), indirect=True)
+@pytest.mark.parametrize("data", (Data1D, pytest.param(Data, marks=pytest.mark.xfail)), indirect=True)
 def test_data_to_guess(data):
-    actual = data.to_guess()
-    expected = [Y_ARRAY, X_ARRAY]
-    numpy.testing.assert_array_equal(actual, expected)
+    dep, indep = data.to_guess()
+    assert dep == pytest.approx(Y_ARRAY)
+    assert len(indep.axes) == 1
+    assert indep.axes[0].x == pytest.approx(X_ARRAY)
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
 def test_data_1d_int_to_guess(data):
-    actual = data.to_guess()
-    expected = [Y_ARRAY, X_ARRAY-0.5]
-    numpy.testing.assert_array_equal(actual[0], expected[0])
-    numpy.testing.assert_array_equal(actual[1], expected[1])
+    dep, indep = data.to_guess()
+    assert dep == pytest.approx(Y_ARRAY)
+    assert len(indep.axes) == 1
+    assert indep.axes[0].lo == pytest.approx(X_ARRAY - 0.5)
+    assert indep.axes[0].hi == pytest.approx(X_ARRAY + 0.5)
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
@@ -2698,21 +2700,10 @@ def test_eval_model_to_fit_when_all_ignored_2d(data_copy):
 def test_to_guess_when_empty(data_class, args):
     """This is a regression test."""
 
-    if data_class == Data1DInt:
-        # Error is
-        # TypeError: IntegratedDataSpace1D.__init__() missing 1 required positional argument: 'xhi'
-        #
-        pytest.xfail("test known to fail with Data1DInt")
-
     data = data_class("empty", *args)
-    resp = data.to_guess()
-
-    # Ensure there are n None values, where n is the number of
-    # independent + dependent axes - ie len(args)
-    #
-    assert len(resp) == len(args)
-    for r in resp:
-        assert r is None
+    with pytest.raises(DataErr,
+                       match="^The dependent axis of 'empty' has not been set$"):
+        _ = data.to_guess()
 
 
 @pytest.mark.parametrize("data_copy", ALL_DATA_CLASSES, indirect=True)
