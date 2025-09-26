@@ -4496,8 +4496,7 @@ It is an integer or string.
     def get_y(self,
               filter: bool,
               yfunc: None,
-              response_id: IdType | None = None,
-              use_evaluation_space: bool = False
+              response_id: IdType | None = None
               ) -> np.ndarray:
         ...
 
@@ -4505,15 +4504,11 @@ It is an integer or string.
     def get_y(self,
               filter: bool,
               yfunc: ModelFunc,
-              response_id: IdType | None = None,
-              use_evaluation_space: bool = False
+              response_id: IdType | None = None
               ) -> tuple[np.ndarray, np.ndarray]:
         ...
 
-    # Note that use_evaluation_space is unused.
-    #
-    def get_y(self, filter=False, yfunc=None, response_id=None,
-              use_evaluation_space=False):
+    def get_y(self, filter=False, yfunc=None, response_id=None):
 
         vals = Data.get_y(self, yfunc=yfunc)
         vallist = (vals,) if yfunc is None else vals
@@ -5422,7 +5417,8 @@ class DataIMG(Data2D):
         #
         self._orig_indep_axis = (self.coord, x0, x1)
 
-        super().__init__(name, x0, x1, y, shape, staterror, syserror)
+        super().__init__(name, x0, x1, y,
+                         shape=shape, staterror=staterror, syserror=syserror)
 
         # special case the x-axis labels
         self._x0label = None
@@ -6080,19 +6076,19 @@ class DataIMGInt(DataIMG):
                  staterror=None, syserror=None, sky=None, eqpos=None,
                  coord='logical', header=None):
 
-        # Note: we do not call the superclass here.
         self._region = None
         self.sky = sky
         self.eqpos = eqpos
         self._set_coord(coord)
         self.header = {} if header is None else header
-        self.shape = shape
 
         self._x0label = 'x0'
         self._x1label = 'x1'
         self._ylabel = 'y'
 
-        Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
+        # Note that we are not calling the direct superclass here
+        Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror,
+                      integrated=True, shape=shape)
 
     # This could be moved up Data2D, but the inheritance pathway of the
     # DataIMG classes makes that a bit awkward, since DataIMG and DataIMGInt
