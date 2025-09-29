@@ -1,5 +1,291 @@
 Release Notes
 
+Sherpa 4.18.0
+=============
+This release of Sherpa includes various enhancements, documentation updates,  bug fixes, and infrastructure changes. Key changes for this release include:
+
+* new features
+    * Added support for using optimizers from SciPy and Optimagic (#2303)
+    * Add a version of the CStat statistic (“cstatnegativepenalty”) that can be used if a model can predict negative values (#2294)
+    * Allow multiple datasets to be plotted with a single call (#1712, #2328)
+
+* enhancements
+    * Provide easy access to the parameter values tried during a fit (#2315)
+    * Add support for XSPEC 12.14.1 and 12.15.0 (#2116, #2252)
+    * The interface to the XSPEC models has been simplified to make it more 
+      closely resemble XSPEC for additive models (#2275)
+
+* bug fixes
+    * Always calculate the covariance matrix when using get_draws and eqwidth,
+      and ensure the correct dataset identifiers are used (#2374)
+    * Improve the output of save_all for PHA data, in particular when using PHA2
+      data (#2377, #2382)
+    * Ensure backend-specific (e.g. matplotlib or bokeh) plotting options can 
+      be used (#2371)
+    * The sampling routines has seen updates related to the choice of the Random
+      Number Generator (#2331), handling of linked parameters (#2333), the
+      clipping of parameters (#2336)
+
+* deprecations
+    * The sigma parameter has been renamed to scale for normal_sample (#2211)
+    * XSPEC table models must now be loaded via load_xstable_model and not 
+      load_table_model (#2352)
+    * Remove support for XSPEC 12.12.0 and 12.12.1 (#2329)
+
+
+Details
+
+#1712 - UI: plot multiple datasets at once
+    Allow multiple datasets to be plotted in a single call. Fix #1654.
+
+#2211 - Rename the normal sample sigma parameter to scale
+    Rename the normal_sample sigma parameter to scale, to avoid confusion, and
+    ensure that it works. Fix #2210. Fix #1736.
+
+#2232 - TESTS: mark more that require the group module #2232
+    Mark several recently-added tests with the requires_group decorator. There
+    is no functional change.
+
+#2237 - BUILD: tweak conda installation environment
+    Change the installation location of parts of the build environment in the
+    conda GitHub runs. There is no functional change.
+
+#2259 - Add typing statements to the optimization code
+    Add typing statements to the optimization code. As part of this some of the
+    classes and routines have seen changes in behaviour: use of keyword-only
+    arguments, dropping the incomplete support for statargs and statkwargs, and
+    removal of some optimization code not used by Sherpa. This is only visible
+    to users calling the optimization routines directly.
+
+#2271 - improve test coverage of the optimization code 
+    Improve test coverage for the optimization code. There is no functional 
+    change to Sherpa.
+
+#2275 - Internal change to additive XSPEC models
+    Internal changes to how Sherpa handles the normalization parameter for XSPEC
+    additive models. Users of XSPEC user models will have to regenerate the code
+    needed to build the Python interface code, but general use of Sherpa should\    not be impacted.
+
+#2278 - Use `modelCacher1D` (now aliased to `modelCacher`) for 2D models
+    Set up caching for 2D models
+
+#2283 - Improve the typing of plot and contour preferences
+    Be more-explicit about the preferences from plots and contours in typing
+    statements and add or update some typing statements to use Python 3.10 
+    syntax. There is no functional change to the code.
+
+#2292 - Docs for Cash and CStat are wrong about truncate_value
+    Updated incorrect text to reflect that truncate_value is applied to model
+
+#2293 - Improve docs for hard and soft limits
+    Hard and soft limits are already explained in the docs, but some details 
+    that might be useful for developers extending or building on Sherpa have 
+    been added. Since the audience of the added information are developers, and
+    this is not typically an area that users need ot care about, the information
+    has been added to a module docstring
+
+#2294 - Add penalty for negative models to cstat
+    Add a version of the CStat statistic that provides a variable penalty if 
+    the model prediction is negative, rather than use a constant term. Fix #836.
+
+#2298 - Allow building Sherpa without the region or wcssubs libraries
+    Allow Sherpa to be built without support for the region or wcssubs libraries
+
+#2302 - update zenodo DOI link for Sherpa 4.17.1
+    Update Release History entry for new Zenodo DOI number for 4.17.1 release
+
+#2303 - Adding optimizers, options, and docs
+    Add optional dependencies to Scipy and optimagic and warp those as 
+    optimizers. Also adding docs on how to solve common fitting problems.
+
+#2305 - Update `pyproject.toml` for PEP 639
+    Update license specification in pyproject.toml for PEP 639
+
+#2306 - Allow restoring of BinaryOpModels
+    Fix #2301 (can't read saved sessions which contain composite models)
+
+#2307 - Fix GCC version to 14.* for conda recipes
+    Explicitly sets the version of compiler used. closes #2304
+
+#2308 -Remove pyds9
+    Remove pyds9 module.
+
+#2309 - Support non-fork methods for multiprocessing
+    Allow the setting of the multiprocessing_start_method to spawn or 
+    forkserver. Note that this can degrade the performance of the code enough
+    that it is then not worth using multiprocessing. Fix #2007
+
+#2315 - Allow fit to be called with the record_steps argument
+    Allow the record_steps argument, added in #2280, to be used in the 
+    sherpa.astro.ui fit call. Fix #2318
+
+#2316 - TESTS: add a test used by the Chandra Source Catalog
+    Add a test from the CSC code to exercise #2201. There are no functional
+    changes.
+
+#2319 - Allow Sherpa to be built with lib64 or free-threading
+    Allow Sherpa to be built with the free-threading build or on a platform 
+    that uses the lib64 rather than lib as a directory name (e.g. Fedora 42).
+    There is no promise at this time that the free-threaded build is correct.
+
+#2321 - Minor simplification of the extension code
+    Minor clean up of the extension code. There should be no functional changes.
+
+#2325 - Update docstring for get_xsabundances
+    Correct the docstring for get_xsabundances so that it uses the term 
+    "Parameters" rather than "Parameter".
+
+#2326 - CI: improve the test coverage (handle multiprocessing and add a ncores=1 run)
+    Update the coverage tests to better-handle the multiprocessing code. Add an
+    explicit test with the ncores=1 option for the sherpa.rc file (rather than
+    the default "ncores: None") for the pip CI runs (this changes an existing
+    run rather than adding a new test). The coverage test reports should now
+    include more lines covered. There is no functional change to Sherpa.
+
+#2328 - Allow plot_fit_xxx to be sent multiple values for an argument to match plot
+    Allow the plot_fit_xxx and plot_bkg_fit_xxx calls to behave the same as
+    plot("fit", xxx) and plot_model/source_components when sent a plot option
+    as a sequence.
+
+#2329 - XSPEC: drop support for XSPEC 12.12.0 and 12.12.1
+    Drop support for XSPEC 12.12.0 and 12.12.1.
+
+#2330 - Ensure `Fit.method` gives the same answer as `Fit._iterfit.method`
+    Ensure Fit.method gives the same answer as Fit._iterfit.method. FIxes #2296
+
+#2331 - Ensure the sample/normal/t_sample ui routines use the local RNG if set
+    Ensure that local generators sent to set_rng are used in the normal_sample,
+    uniform_sample, and t_sample routines. Fix #2314.
+
+#2333 - Ensure that sampling routines work when the model contains linked parameters
+    Ensure sampling routines will work with models with one or more linked
+    parameters. Fix #2332. Fix #2337.
+
+#2336 - Clip the samples returned by normal/uniform/t_sample. Fix #2335.
+    The normal_sample, uniform_sample, and t_sample routines did not clip the
+    parameter selections to the hard limits of the model (the returned values;
+    the statistic value is calculated with the clipped values). Add a clip
+    argument to allow this option to be selected. The return array has gained
+    an extra column, which indicates whether any parameter in the row was
+    clipped. Fix #2335.
+
+#2342 - Improve documentation on parallel and thread support
+    Add minimal documentation about parallel and thread support.
+
+#2345 - Make doctests pass again
+    work on docs for readthedocs
+
+#2347 - Install sherpa-test-data in pip if requested
+    Fix bug in pip workflow on CI
+
+#2348 - Address documentation errors in normal/uniform/t_sample
+    Fix up a typo in the docstrings for the normal_sample, uniform_sample, and
+    t_sample routines.
+
+#2350 - Add simple typing statements for plot-related commands
+    Add typing-related statements to the ui code for plot-related code.
+    Simplify the internal code slightly.
+
+#2352 - UI: remove XSPEC table support from load_table_model
+    Remove support for XSPEC table models from load_table_model as this has
+    long been deprecated. Users must use load_xstable_model with XSPEC table
+    models. Fix #902.
+
+#2353 - Remove unwanted additions from #2347
+    Remove files accidentally added in #2347
+
+#2354 - Fix annotation typo
+    Fix a typo in an annotation introduced in #2350.
+
+#2355 - Simple DataIMG(Int) creation from 2D arrays
+    Add convenience methods to generalt DataIMG and DataIMGInt from 2d arrays
+    with or without WCS information.
+
+#2358 - No longer use bin_lo/hi values from PHA or ARF. Fix #1564
+    Do not use the BIN_LO/HI columns from Chandra grating PHA/ARF files. A
+    response must now be added before changing the analysis setting of PHA type
+    2 data. Fix #1564.
+
+#2361 - Ensure that save_all output is consistent with NumPy 1 and 2
+    Ensure that the string serialization (e.g. from save_all) is not affected
+    by changes to numeric output in NumPy 2. Fix #1373.
+
+#2362 - Move caching tests into dedicated file
+    The test_model.py simply had gotten so big that it was hard to read in an
+    editor, so moved some files over. Fixes #2277
+
+#2363 - conftest: ensure data path is absolute not relative
+    Ensure that the path for the Sherpa test data is an absolute and not
+    relative path to improve testing. Fix #2163.
+
+#2364 - BUILD: remove commented line from xspec_libraries. Fix #2253.
+    Internal tweak to the setup.cfg file to support building with clang. Fix
+    #2253.
+
+#2365 - SERIALIZE: use textwrap module. Fix #1910
+    Use the textwrap when creating the save_all output. There should be no
+    change in behaviour. Fix #1910.
+
+#2366 - Add a  convenience method to set the IO backend and a context manager to set the IO backend temporarily
+    Add a convenience method to set the IO backend and a context manager to set
+    the IO backend temporarily.
+
+#2368 - TEST: upate test to run with crates backend
+    Update a test to run correctly with the crates backend (thanks to changes
+    in #2352). There is no functional change in Sherpa.
+
+#2369 - Allow "dummy" as an alias for BasicBackend in plotting
+    Allow "dummy" as an alias for BasicBackend in plotting
+
+#2370 - Update docs still claiming there is only one plotting backend
+    Doc updates to note plotting backend options- matplotlib and bokeh
+
+#2371 - Pass backend-specific options through to pylab and bokeh
+    Pass backend-specific options through to pylab and bokeh
+
+#2372 - DOCS: note that Python 3.13 support is no-longer experimental
+    Note that Python 3.13 is supported (but not the free-threaded build)
+
+#2373 - Set requirements for doctests in `sherpa.astro.io.__init__.py`
+    cleanup rebasing issue caused issues in CI tests
+
+#2374 - Always re-calculate covariance matrix when needed (get_draws/eqwidth)
+    Catch cases where the covariance information was out of date (get_draws and
+    eqwidth). Improve the handling of the otherids argument for eqwidth. Fix
+    #556. Fix #1788. Fix #2379.
+
+#2377 - UI: save_all improvements for PHA2 files. Fix #1882
+    Improve the save_all output when using PHA2 files. Fix #1882.
+
+#2378 - DOCTEST: change some examples to pass with NumPy 2 rules
+    Update the documentation so that the doctests pass with NumPy 2 string
+    output rules
+
+#2380 - Update out-dated comments in utils.py
+    Remove an outdated comment. There is no functional change.
+
+#2382 - Improve save_all for certain PHA situations
+    The save_all output for PHA data now avoids loading in files it does not
+    need to do (e.g. a background file set in the BACKFILE keyword), which
+    fixes handling of grating data with BACKGROUND_UP and BACKGROUND_DOWN
+    columns. The use_errors flag is now correctly recorded for load_pha calls.
+    The auto_load flag has been added to save_all to allow the output to
+    include these files, to match the output from previous versions. Fix #320.
+    Fix #2383.
+
+#2384 - stack, region, and group extern changes from CIAO 4.18beta
+    folds in recent changes to the CIAO region, group, and stack library
+    including changes that were released in CIAO 4.17 as well as changes in the
+    CIAO 4.18 beta such as numpy 2 support changes. Changes were primarily made
+    to support issues reported in other tools are included to keep the baseline
+    consistent.
+
+#2385 - Better documentation for eqwidth
+    Change the documentation for eqwidth to point out this calculates the
+    definition from George & Fabian (1991) and not that from the wikipedia page
+    (the only difference is the sign of the result).
+
+
 Sherpa 4.17.1
 =============
 
