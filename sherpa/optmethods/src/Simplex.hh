@@ -2,7 +2,8 @@
 #define Simplex_hh
 
 //
-//  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2021, 2024
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -24,7 +25,7 @@
 
 namespace sherpa {
 
-  template <typename T> class ParVal : public Array1D<T> {
+  template <typename T> class ParVal final : public Array1D<T> {
 
     friend std::ostream &operator<<(std::ostream &s, const ParVal<T> &P) {
       return P.print(s);
@@ -47,6 +48,9 @@ namespace sherpa {
       return *this;
     }
 
+    // We overload the parent operator with a different signature
+    using Array1D<T>::operator<;
+    
     bool operator<(const ParVal<T> &rhs) const {
       int n = rhs.size() - 1;
       return this->vec[n] < rhs[n];
