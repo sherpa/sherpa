@@ -100,7 +100,8 @@ def test_chatter_default():
 
 
 @requires_xspec
-def test_version():
+@pytest.mark.parametrize("name", [None, "atomdb", "nei"])
+def test_version(name):
     """Can we get at the XSPEC version?
 
     There is limited testing of the return value.
@@ -108,12 +109,68 @@ def test_version():
 
     from sherpa.astro import xspec
 
-    v = xspec.get_xsversion()
+    v = xspec.get_xsversion(name)
     assert isinstance(v, (str, ))
     assert len(v) > 0
 
-    # Could check it's of the form a.b.c[optional] but leave that for
-    # now.
+
+@requires_xspec
+@pytest.mark.parametrize("name", ["ATOMDB", "", "foo"])
+def test_version_error(name):
+    """Does this error out?
+
+    At the moment we are case sensitive when checking the name.
+
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match=f"^name must be one of None, 'atomdb', or 'nei', not '{name}'$"):
+        xspec.get_xsversion(name)
+
+
+@requires_xspec
+@pytest.mark.parametrize("name", ["atomdb", "nei"])
+def test_set_version(name):
+    """Can we set the XSPEC version?
+
+    This is just to check we can call the routine - we don't really do
+    much with it.
+
+    """
+
+    from sherpa.astro import xspec
+
+    old = xspec.get_xsversion(name)
+
+    # pick a value that is "realistic" but old, and should not
+    # appear with any supported XSPEC version.
+    #
+    new = '3.0.0'
+    assert old != new
+
+    try:
+        xspec.set_xsversion(name, new)
+        assert xspec.get_xsversion(name) == new
+    finally:
+        xspec.set_xsversion(name, old)
+
+
+@requires_xspec
+@pytest.mark.parametrize("name", ["ATOMDB", "", "foo"])
+def test_set_version_error(name):
+    """Does this error out?
+
+    At the moment we are case sensitive when checking the name.
+
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match=f"^name must be 'atomdb' or 'nei', not '{name}'$"):
+        xspec.set_xsversion(name, "1.2.3")
 
 
 @requires_xspec
@@ -569,7 +626,13 @@ def validate_xspec_setting(getfunc, setfunc, newval, altval):
     finally:
         setfunc(oval)
 
-    assert xval == nval
+    # If nval is a Path we need to convert it to a str since we
+    # (currently) do not return a Path but a str.
+    #
+    if isinstance(nval, Path):
+        assert xval == str(nval)
+    else:
+        assert xval == nval
 
     # As a sanity check ensure we are back at the starting point
     assert getfunc() == oval
@@ -853,16 +916,30 @@ def test_cosmo_change():
 
 
 @requires_xspec
-def test_path_manager_change(tmp_path):
-    """Can we change the manager-path setting?
+@pytest.mark.parametrize("name", ["manager", "model"])
+@pytest.mark.parametrize("usepath", [True, False])
+def test_path_change(name, usepath, tmp_path):
+    """Can we change the path setting?
+
+    We allow string or Path objects to be sent in, which is what the
+    usepath boolean checks. It would be nice to send in the actual
+    arguments, but that would be very complicated to set up, as it
+    involves the tmp_path setting).
+
     """
 
     from sherpa.astro import xspec
 
-    validate_xspec_setting(xspec.get_xspath_manager,
-                           xspec.set_xspath_manager,
-                           '/dev/null',
-                           str(tmp_path))
+    if usepath:
+        newval = Path('/dev/null')
+        altval = tmp_path
+    else:
+        newval = '/dev/null'
+        altval = str(tmp_path)
+
+    getfn = getattr(xspec, f"get_xspath_{name}")
+    setfn = getattr(xspec, f"set_xspath_{name}")
+    validate_xspec_setting(getfn, setfn, newval, altval)
 
 
 # Note that the XSPEC state is used in test_xspec.py, but only
@@ -936,7 +1013,7 @@ def test_set_xsstate_missing_key(miss_key):
             'chatter': 10,
             'cosmo': (50, 0.1, 0.4),
             'modelstrings': {'foo': '2'},
-            'paths': {'manager': '/dev/null'}}
+            'paths': {'manager': '/dev/null', 'model': '/dev/null'}}
 
     del fake[miss_key]
 
