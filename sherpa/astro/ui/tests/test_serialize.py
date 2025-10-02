@@ -4285,6 +4285,7 @@ def test_store_default_id(defid):
 
 @requires_data
 @requires_fits
+@requires_group
 def test_copy_data_pha(make_data_path):
     """Can we copy a PHA dataset and track it?"""
 
