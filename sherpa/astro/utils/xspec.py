@@ -1174,7 +1174,7 @@ def models_to_compiled(mdls: list[ModelDefinition],
     SUPPORTED_VERSIONS = [(12, 12, 0), (12, 12, 1),
                           (12, 13, 0), (12, 13, 1),
                           (12, 14, 0), (12, 14, 1),
-                          (12, 15, 0)]
+                          (12, 15, 0), (12, 15, 1)]
 
     xspec_version = (int(match[1]), int(match[2]), int(match[3]))
     for version in SUPPORTED_VERSIONS:

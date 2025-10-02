@@ -20,7 +20,7 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, and
+Sherpa supports versions 12.15.1, 12.15.0, 12.14.1, 12.14.0, 12.13.1, and
 12.13.0 of XSPEC [1]_, and can be built against the model library or
 the full application.  There is no guarantee of support for older or
 newer versions of XSPEC.
@@ -795,6 +795,10 @@ def get_xsxset(name: str) -> str:
 
 def get_xsxset(name: str | None = None) -> str | dict[str, str]:
     """Return the X-Spec model setting or settings.
+
+    .. versionchanged:: 4.18.1
+       The model settings now include the "APECROOT", "NEIAPECROOT",
+       and "SPEXROOT" keywords when XSPEC 12.15.1 is used.
 
     .. versionchanged:: 4.17.1
        This routine can now be called with no argument, which means
@@ -9041,7 +9045,7 @@ class XSkerrdisk(XSAdditiveModel):
 
     """
 
-    __function__ = "C_spin"
+    __function__ = "dospin" if equal_or_greater_than("12.15.1") else "C_spin"
 
     def __init__(self, name='kerrdisk'):
         self.lineE = XSParameter(name, 'lineE', 6.4, 0.1, 100., 0.1, 100, units='keV', frozen=True)
@@ -10087,7 +10091,7 @@ class XSnthComp(XSAdditiveModel):
 
     """
 
-    __function__ = "C_nthcomp"
+    __function__ = "donthcomp" if equal_or_greater_than("12.15.1") else "C_nthcomp"
 
     def __init__(self, name='nthcomp'):
         self.Gamma = XSParameter(name, 'Gamma', 1.7, 1.001, 5., 1.001, 10.)
@@ -15824,7 +15828,7 @@ class XSpwab(XSMultiplicativeModel):
 
     """
 
-    __function__ = "C_xspwab"
+    __function__ = "xspwab" if equal_or_greater_than("12.15.1") else "C_xspwab"
 
     def __init__(self, name='pwab'):
         self.nHmin = XSParameter(name, 'nHmin', 1., 1.e-7, 1.e5, 1e-7, 1e6, units='10^22 atoms / cm^2')
