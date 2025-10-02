@@ -235,18 +235,23 @@ def test_manager_path_default():
     tests of XSPEC are made (i.e. any XSPEC code is called).
     """
 
-    # Is this always going to be correct?
-    default_path = os.path.join(os.environ['HEADAS'],
-                                '../spectral/manager')
-
     from sherpa.astro import xspec
 
-    oval = xspec.get_xspath_manager()
+    oval = Path(xspec.get_xspath_manager()).resolve()
+    got = str(oval)
 
     # Normalize the paths to remove double / - e.g. if HEADAS is
     # set to /a/b/c/ rather than /a/b/c.
     #
-    assert os.path.normpath(oval) == os.path.normpath(default_path)
+    # The expected path depends on how XSPEC has been installed,
+    # since the CIAO-related environments do things a little
+    # differently to HEASARC ones, for historical reasons.
+    #
+    headas = Path(os.environ['HEADAS'])
+    heasarc_path = (headas / 'spectral/manager').resolve()
+    ciao_path = (headas / '../spectral/manager').resolve()
+
+    assert got in [str(heasarc_path), str(ciao_path)]
 
 
 @requires_xspec
@@ -259,20 +264,29 @@ def test_model_path_default():
 
     from sherpa.astro import xspec
 
-    # Is this always going to be correct?
-    #
-    try:
-        default_path = os.environ['XSPEC_MDATA_DIR']
-    except KeyError:
-        default_path = os.path.join(os.environ['HEADAS'],
-                                    '../spectral/modelData/')
-
-    oval = xspec.get_xspath_model()
-
     # Normalize the paths to remove double / - e.g. if HEADAS is
     # set to /a/b/c/ rather than /a/b/c.
     #
-    assert os.path.normpath(oval) == os.path.normpath(default_path)
+    oval = Path(xspec.get_xspath_model()).resolve()
+    got = str(oval)
+
+    # What is the best way to check the expected value?
+    #
+    # The expected path depends on how XSPEC has been installed,
+    # since the CIAO-related environments do things a little
+    # differently to HEASARC ones, for historical reasons.
+    #
+    key = 'XSPEC_MDATA_DIR'
+    if key in os.environ:
+        default_path = Path(os.environ[key]).resolve()
+        assert got == str(default_path)
+        return
+
+    headas = Path(os.environ['HEADAS'])
+    heasarc_path = (headas / 'spectral/modelData').resolve()
+    ciao_path = (headas / '../spectral/modelData').resolve()
+
+    assert got in [str(heasarc_path), str(ciao_path)]
 
 
 @requires_xspec
