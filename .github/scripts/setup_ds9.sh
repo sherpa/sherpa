@@ -24,7 +24,13 @@ else
     sudo apt-get install -qq libx11-dev libsm-dev libxrender-dev
 
     # set os-specific variables
-    ds9_os=ubuntu20
+    base=ubuntu22
+    if [ "`uname -m`" == "x86_64" ] ; then
+      ds9_os=${base}x86
+    else
+      # Assume this is aarch64 for now
+      ds9_os=${base}arm64
+    fi
 fi
 
 echo "* ds9_os=$ds9_os"
