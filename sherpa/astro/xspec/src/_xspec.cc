@@ -602,6 +602,12 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_bcph, 5),                      // XSbcph
   XSPECMODELFCT_C(C_bequil, 4),                    // XSbequil
   XSPECMODELFCT_C(C_bexpcheb6, 11),                // XSbexpcheb6
+#endif
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT_C(C_bFeKbetafromFourLorentzians, 1), // XSbfekblor
+  XSPECMODELFCT_C(C_bFeKfromSevenLorentzians, 1),  // XSbfeklor
+#endif
+#ifdef XSPEC_12_14_0
   XSPECMODELFCT_C(C_bgaussDem, 7),                 // XSbgadem
   XSPECMODELFCT_C(C_bgnei, 6),                     // XSbgnei
   XSPECMODELFCT_C(C_bnei, 5),                      // XSbnei
@@ -716,6 +722,9 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_expcheb6, 10),                 // XSexpcheb6
 #endif
   XSPECMODELFCT(ezdiskbb, 1),                      // XSezdiskbb
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT_C(C_FeKbetafromFourLorentzians, 0), // XSfekblor
+#endif
 #ifdef XSPEC_12_15_0
   XSPECMODELFCT_C(C_FeKfromSevenLorentzians, 0),   // XSfeklor
 #endif
@@ -730,7 +739,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT(jet, 15),                          // XSjet
   XSPECMODELFCT_C(C_kerrbb, 9),                    // XSkerrbb
   XSPECMODELFCT_C(C_kerrd, 7),                     // XSkerrd
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT(dospin, 9),                        // XSkerrdisk
+#else
   XSPECMODELFCT_C(C_spin, 9),                      // XSkerrdisk
+#endif
 
   XSPECMODELFCT_CON_F77(kyconv, 12),               // XSkyconv
 
@@ -752,7 +765,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_nsmaxg, 5),                    // XSnsmaxg
   XSPECMODELFCT_C(C_nsx, 5),                       // XSnsx
   XSPECMODELFCT_C(C_xsnteea, 15),                  // XSnteea
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT(donthcomp, 5),                     // XSnthComp
+#else
   XSPECMODELFCT_C(C_nthcomp, 5),                   // XSnthComp
+#endif
   XSPECMODELFCT(optxagn, 13),                      // XSoptxagn
   XSPECMODELFCT(optxagnf, 11),                     // XSoptxagnf
   XSPECMODELFCT(xspegp, 3),                        // XSpegpwrlw
@@ -777,6 +794,15 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON_F77(rgsxsrc, 1),               // XSrgsxsrc
 #endif
 
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT_C(C_rsapec, 5),                    // XSrsapec
+  XSPECMODELFCT_C(C_rsgaussianLine, 3),            // XSrsgaussian
+  XSPECMODELFCT_C(C_rsrnei, 7),                    // XSrsrnei
+  XSPECMODELFCT_C(C_rsvapec, 17),                  // XSrsvapec
+  XSPECMODELFCT_C(C_rsvrnei, 19),                  // XSrsvrnei
+  XSPECMODELFCT_C(C_rsvvapec, 34),                 // XSrsvvapec
+  XSPECMODELFCT_C(C_rsvvrnei, 36),                 // XSrsvvrnei
+#endif
   XSPECMODELFCT_C(C_rnei, 5),                      // XSrnei
   XSPECMODELFCT_C(C_sedov, 5),                     // XSsedov
   XSPECMODELFCT_C(C_sirf, 9),                      // XSsirf
@@ -845,9 +871,16 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_wDem, 7),                      // XSwdem
   XSPECMODELFCT_C(C_zagauss, 3),                   // XSzagauss
   XSPECMODELFCT(xszbod, 2),                        // XSzbbody
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT_C(C_zbFeKbetafromFourLorentzians, 2), // XSzbfekblor
+  XSPECMODELFCT_C(C_zbFeKfromSevenLorentzians, 2), // XSzbfeklor
+#endif
   XSPECMODELFCT_C(C_zBrokenPowerLaw, 4),           // XSzbknpower
   XSPECMODELFCT(xszbrm, 2),                        // XSzbremss
   XSPECMODELFCT_C(C_zcutoffPowerLaw, 3),           // XSzcutoffpl
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT_C(C_zFeKbetafromFourLorentzians, 1), // XSzfekblor
+#endif
 #ifdef XSPEC_12_15_0
   XSPECMODELFCT_C(C_zFeKfromSevenLorentzians, 1),  // XSzfeklor
 #endif
@@ -890,7 +923,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT(xsabsp, 2),                        // XSpcfabs
   XSPECMODELFCT(xsphab, 1),                        // XSphabs
   XSPECMODELFCT(xsplab, 2),                        // XSplabs
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT(xspwab, 3),                        // XSpwab
+#else
   XSPECMODELFCT_C(C_xspwab, 3),                    // XSpwab
+#endif
   XSPECMODELFCT(xscred, 1),                        // XSredden
   XSPECMODELFCT(xssmdg, 4),                        // XSsmedge
   XSPECMODELFCT_C(C_superExpCutoff, 2),            // XSspexpcut
