@@ -1,0 +1,193 @@
+name: Weekly cron (WSL)
+
+on:
+  schedule:
+    # when is a good time?
+    - cron: '0 23 * * THU'
+  pull_request:
+    # We also want this workflow triggered if the 'CI wsl' label is added
+    # or present when PR is updated
+    types: [synchronize, labeled]
+
+#Reduces GH Action duplication:
+# Cancels the previous pipeline for this ref it is still running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DISTRO: Ubuntu-24.04
+
+jobs:
+  build-pip:
+    name: Build with Pip
+    runs-on: windows-2025
+    if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI wsl')))
+
+    steps:
+    # See
+    # https://github.com/actions/checkout/issues/226#issuecomment-854736025
+    - name: Prepare git
+      run: |-
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'True'
+
+    - name: Setup WSL
+      shell: pwsh
+      run: |-
+        wsl --install -d $env:DISTRO
+        Write-Output '# What is /etc/os-release ?'
+        wsl -d $env:DISTRO cat /etc/os-release
+        # add the wsl-run wrapper script; this is taken wholesale
+        # from vedantmgoyal9/setup-wsl2@main
+        @'
+        @echo off
+        FOR /F "usebackq tokens=*" %%F IN (`wsl wslpath '%~1'`) DO SET wslpath=%%F
+        wsl -d ${{ env.DISTRO }} sed -i 's/\r$//' %wslpath%
+        wsl -d ${{ env.DISTRO }} --cd %GITHUB_WORKSPACE% bash --noprofile --norc -eo pipefail %wslpath%
+        '@ | Out-File -FilePath $env:RUNNER_TEMP\wsl-run.bat -Encoding utf8
+        $env:RUNNER_TEMP >> $env:GITHUB_PATH
+
+    - name: Setup apt
+      shell: wsl-run {0}
+      run: |
+        apt update
+        apt upgrade -y
+        apt-get install -q -y git \
+                              g++ \
+                              gfortran \
+                              flex \
+                              bison \
+                              make \
+                              file \
+                              pkg-config \
+                              python3 \
+                              python3-dev \
+                              python3-configobj \
+                              python3-venv
+
+    - name: Setup python
+      shell: wsl-run {0}
+      run: |
+        cd $HOME
+        python3 -m venv --system-site-packages --upgrade-deps tests
+        source tests/bin/activate
+
+    - name: Setup environment
+      shell: wsl-run {0}
+      run: |
+        source $HOME/tests/bin/activate
+        pip3 install astropy matplotlib bokeh
+
+    - name: Build and Install
+      shell: wsl-run {0}
+      run: |
+        source $HOME/tests/bin/activate
+        pip3 install . --verbose
+
+    - name: Test
+      shell: wsl-run {0}
+      run: |
+        cd $HOME
+        source tests/bin/activate
+        sherpa_test
+
+  build-conda:
+    name: Build with conda
+    runs-on: windows-2025
+    if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI wsl')))
+
+    steps:
+    # See
+    # https://github.com/actions/checkout/issues/226#issuecomment-854736025
+    - name: Prepare git
+      run: |-
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'True'
+
+    - name: Setup WSL
+      shell: pwsh
+      run: |-
+        wsl --install -d $env:DISTRO
+        Write-Output '# What is /etc/os-release ?'
+        wsl -d $env:DISTRO cat /etc/os-release
+        # add the wsl-run wrapper script; this is taken wholesale
+        # from vedantmgoyal9/setup-wsl2@main
+        @'
+        @echo off
+        FOR /F "usebackq tokens=*" %%F IN (`wsl wslpath '%~1'`) DO SET wslpath=%%F
+        wsl -d ${{ env.DISTRO }} sed -i 's/\r$//' %wslpath%
+        wsl -d ${{ env.DISTRO }} --cd %GITHUB_WORKSPACE% bash --noprofile --norc -eo pipefail %wslpath%
+        '@ | Out-File -FilePath $env:RUNNER_TEMP\wsl-run.bat -Encoding utf8
+        $env:RUNNER_TEMP >> $env:GITHUB_PATH
+
+    - name: Conda Setup
+      shell: wsl-run {0}
+      run: |
+        # sending in pwsh env vars seemed complicated, so hard-code them
+        export PYTHONVER="3.12"
+        export NUMPYVER=
+        export FITSBUILD=astropy
+        export MATPLOTLIBVER=3
+        export BOKEHVER=3
+        export XSPECVER="12.14.0i"
+        export xspec_channel="https://cxc.cfa.harvard.edu/conda/xspec"
+
+        curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -o conda-installer.sh
+        bash conda-installer.sh -b -p $HOME/conda
+        source ${HOME}/conda/etc/profile.d/conda.sh
+        source .github/scripts/setup_conda.sh
+
+        # Ensure we have all the tools we need
+        conda install make flex bison file
+
+        # We do not install DS9, unlike the standard conda runs.
+        source .github/scripts/setup_xspec.sh
+
+    - name: Build Sherpa
+      shell: wsl-run {0}
+      run: |
+        source ${HOME}/conda/etc/profile.d/conda.sh
+        conda activate build
+        pip install .[test] --verbose
+
+    # install the test data (via pip so it can be found easily
+    # by the test suite)
+    - name: Install the test data
+      shell: wsl-run {0}
+      run: |
+        source ${HOME}/conda/etc/profile.d/conda.sh
+        conda activate build
+        pip install ./sherpa-test-data
+        git submodule deinit -f .
+        
+    # run the smoke test first as it's small/quick to do
+    - name: Smoke Tests
+      shell: wsl-run {0}
+      run: |
+        XSPECTEST="-x"
+        FITSTEST="-f astropy"
+        smokevars="${XSPECTEST} ${FITSTEST} -v 3"
+        echo "** smoke test: ${smokevars}"
+        source ${HOME}/conda/etc/profile.d/conda.sh
+        conda activate build
+        cd $HOME
+        sherpa_smoke ${smokevars}
+
+    - name: sherpa_test Tests
+      shell: wsl-run {0}
+      run: |
+        source ${HOME}/conda/etc/profile.d/conda.sh
+        conda activate build
+        cd $HOME
+        sherpa_test
