@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 - 2024
+#  Copyright (C) 2017-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -36,11 +36,12 @@ from sherpa.data import Data1D, Data1DInt
 from sherpa.astro import ui
 
 from sherpa.utils import linear_interp
+from sherpa.utils.axes import IntegratedAxis, PointAxis
 from sherpa.utils.err import DataErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
 
-from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, \
-    EvaluationSpace2D, PointAxis, IntegratedAxis
+from sherpa.models.regrid import ModelDomainRegridder1D, \
+    EvaluationSpace1D, EvaluationSpace2D
 
 
 @pytest.fixture(params=[True, False])

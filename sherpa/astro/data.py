@@ -145,9 +145,9 @@ from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
 from sherpa.utils import pad_bounding_box, interpolate, \
     create_expr, create_expr_integrated, parse_expr, bool_cast, \
-    rebin, filter_bins
+    rebin, filter_bins, formatting
+from sherpa.utils.axes import Axes, IntegratedAxis
 from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
-from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.types import ArrayType, IdType, IdTypes, \
     ModelFunc, StatErrFunc
@@ -5163,7 +5163,23 @@ It is an integer or string.
                                        (elo, ehi), ignore=ignore,
                                        integrated=True)
 
-    def to_guess(self):
+    def to_guess(self) -> tuple[np.ndarray, Axes]:
+        """Return the dependent and independent axes for guessing.
+
+        .. versionchanged:: 4.18.0
+           It is now an error to call this with either the independent
+           or dependent axes unset. The return type has changed.
+
+        Return
+        ------
+        axes
+           The dependent axis and then the independent axes, including
+           any data filtering, grouping, and analysis setting. The
+           dependent axis is a rate if the exposure is set, and
+           corrected by the ARF if set.
+
+        """
+
         elo, ehi = self._get_ebins(group=False)
         elo = self.apply_filter(elo, self._min)
         ehi = self.apply_filter(ehi, self._max)
@@ -5173,6 +5189,10 @@ It is an integer or string.
             elo = lo
             ehi = hi
         cnt = self.get_dep(True)
+        if cnt is None:
+            raise DataErr("The dependent axis of "
+                          f"'{self.name}' has not been set")
+
         arf = self.get_specresp(filter=True)
 
         y = cnt / (ehi - elo)
@@ -5181,14 +5201,23 @@ It is an integer or string.
         # y = cnt/arf/self.exposure
         if arf is not None:
             y /= arf  # photons/keV/cm^2/sec or photons/Ang/cm^2/sec
-        return (y, elo, ehi)
 
-    def to_fit(self, staterrfunc=None):
+        return (y, Axes(axes=[IntegratedAxis(elo, ehi)]))
+
+    def to_fit(self,
+               staterrfunc: StatErrFunc | None = None
+               ) -> tuple[np.ndarray | None,
+                          np.ndarray | None,
+                          np.ndarray | None]:
         return (self.get_dep(True),
                 self.get_staterror(True, staterrfunc),
                 self.get_syserror(True))
 
-    def to_plot(self, yfunc=None, staterrfunc=None, response_id=None):
+    def to_plot(self,
+                yfunc: ModelFunc | None = None,
+                staterrfunc: StatErrFunc | None = None,
+                response_id: IdType | None = None
+                ):
         return (self.apply_filter(self.get_x(response_id=response_id),
                                   self._middle),
                 self.get_y(True, yfunc, response_id=response_id),

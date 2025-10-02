@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018, 2020 - 2025
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -3905,12 +3905,19 @@ def test_eval_model_to_fit_when_all_ignored_dataimg():
         _ = data.eval_model_to_fit(Gauss2D())
 
 
-def test_to_guess_when_empty_datapha():
+@pytest.mark.parametrize("chans,counts,emsg",
+                         [(None, None,
+                           "The size of 'empty' has not been set"),
+                          (None, np.asarray([1, 2, 3]),
+                           "data set 'empty' has no channel information"),
+                          (np.asarray([1, 2, 3]), None,
+                           "The dependent axis of 'empty' has not been set")
+                          ])
+def test_to_guess_when_empty_datapha(chans, counts, emsg):
     """This is a regression test."""
 
-    data = DataPHA("empty", None, None)
-    with pytest.raises(DataErr,
-                       match="The size of 'empty' has not been set"):
+    data = DataPHA("empty", chans, counts)
+    with pytest.raises(DataErr, match=f"^{emsg}$"):
         _ = data.to_guess()
 
 
@@ -3919,14 +3926,9 @@ def test_to_guess_when_empty_2d(data_class, args):
     """This is a regression test."""
 
     data = data_class("empty", *args)
-    resp = data.to_guess()
-
-    # Ensure there are n None values, where n is the number of
-    # independent + dependent axes - ie len(args)
-    #
-    assert len(resp) == len(args)
-    for r in resp:
-        assert r is None
+    with pytest.raises(DataErr,
+                       match="^The dependent axis of 'empty' has not been set$"):
+        _ = data.to_guess()
 
 
 def test_to_guess_when_all_ignored_datapha():
@@ -4002,10 +4004,11 @@ def test_datapha_to_guess(units, lo, hi, y):
 
     pha = make_pha_for_guess()
     pha.set_analysis(units)
-    a, b, c = pha.to_guess()
-    assert a == pytest.approx(y)
-    assert b == pytest.approx(lo)
-    assert c == pytest.approx(hi)
+    dep, indep = pha.to_guess()
+    assert dep == pytest.approx(y)
+    assert len(indep.axes) == 1
+    assert indep.axes[0].lo == pytest.approx(lo)
+    assert indep.axes[0].hi == pytest.approx(hi)
 
 
 def test_get_x_when_empty_datapha():

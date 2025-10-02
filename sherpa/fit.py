@@ -1350,7 +1350,7 @@ class Fit(NoNewAttributesAfterInit):
         is called with the data values (the dependent axis of the
         data set) and the ``kwargs`` arguments.
         """
-        self.model.guess(*self.data.to_guess(), **kwargs)
+        self.model.guess_axes(*self.data.to_guess(), **kwargs)
 
     # QUS: should this have an @evaluates_model decorator?
     def _calc_stat(self) -> StatResults:
