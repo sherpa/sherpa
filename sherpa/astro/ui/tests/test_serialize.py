@@ -63,10 +63,12 @@ has_xspec = has_package_from_list("sherpa.astro.xspec")
 # that are available).
 
 # Note that the XSPEC defaults changed in XSPEC 12.10.1 (xsxsect is
-# now vern rather than bcmc, but it can depend on what files a
-# user has - e.g. ~/.xspec/Xspec.init will over-ride it), so there
-# are explicit statements to set the values before the tests so
-# that we have a "known" state.
+# now vern rather than bcmc, but it can depend on what files a user
+# has - e.g. ~/.xspec/Xspec.init will over-ride it), so there are
+# explicit statements to set the values before the tests so that we
+# have a "known" state. There are also changes in XSPEC 12.15.1, with
+# model strings now being set for 'APECROOT', 'NEIAPECROOT', and
+# 'SPEXROOT'.
 #
 
 # A representation of the default Sherpa state
@@ -2541,6 +2543,33 @@ set_xsabund("angr")
 set_xscosmo(70, 0, 0.73)
 set_xsxsect("bcmc")
 """
+
+    # Split the version into a tuple of major, minor, micro, patch
+    # where patch='' if there is none. This assumes that the patch
+    # level can only be a single-character.
+    #
+    verstr = xspec.get_xsversion()
+    if verstr[-1].isdecimal():
+        toks = verstr.split('.')
+        patch = ''
+    else:
+        toks = verstr[:-1].split('.')
+        patch = verstr[-1]
+
+    xsver = tuple([int(t) for t in toks] + [patch])
+
+    # Add in the XSET settings, but only for XSPEC 12.15.1 and
+    # later. Since the versions can be uptated, take advantage of the
+    # ellipsis support to avoid explicit checks.
+    #
+    if xsver >= (12, 15, 1, ''):
+        _extra = """set_xsxset("APECROOT", "...  # doctest: +ELLIPSIS
+set_xsxset("NEIAPECROOT", "...  # doctest: +ELLIPSIS
+set_xsxset("SPEXROOT", "...  # doctest: +ELLIPSIS
+"""
+        _canonical_extra += _extra
+        _canonical_pha_back += _extra
+        del _extra
 
     _canonical_pha_basic += _canonical_extra
     _canonical_pha_grouped += _canonical_extra
