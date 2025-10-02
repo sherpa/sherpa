@@ -1,0 +1,103 @@
+name: Conda+CIAO CI
+
+on:
+  push:
+    branches:
+    - main
+    tags:
+    - '*'
+  pull_request:
+
+#Reduces GH Action duplication:
+# Cancels the previous pipeline for this ref it is still running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  conda_loc: ${{ github.workspace }}/conda_loc
+
+jobs:
+  tests:
+    defaults:
+      run:
+        shell: bash
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: Linux + Python 3.11
+            os: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4.1.1
+      with:
+        submodules: 'True'
+
+    - name: Conda Install
+      run: |
+        curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -o conda-installer.sh
+        bash conda-installer.sh -b -p ${conda_loc}
+
+    - name: Conda Setup
+      run: |
+        source ${conda_loc}/etc/profile.d/conda.sh
+
+        # We install xspec-modelsonly, not sherpa, so that we don't have to
+        # worry about collision between the CIAO version of Sherpa and this
+        # build.
+        #
+        compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
+        downloads="ciao pyciao xspec-modelsonly ds9"
+        channels="-c conda-forge -c https://cxc.cfa.harvard.edu/conda/ciao"
+        conda create --yes -n build $channels $downloads $compilers python=3.11
+
+    # This is not an editable build
+    - name: Install Sherpa
+      env:
+        PYTHON_LDFLAGS: " "
+      run: |
+        source ${conda_loc}/etc/profile.d/conda.sh
+        conda activate build
+
+        # Tweak the configuration to build against CIAO
+        source scripts/use_ciao_config
+
+        pip install . --verbose
+
+    - name: Activate CIAO configuration
+      run: |
+        source ${conda_loc}/etc/profile.d/conda.sh
+        conda activate build
+
+        cp sherpa/sherpa.rc $HOME/.sherpa-standalone.rc
+        echo "Sherpa is using the configuration file:"
+        python -c 'import sherpa; print(sherpa.get_config());'
+
+    - name: Smoke Tests
+      run: |
+        source ${conda_loc}/etc/profile.d/conda.sh
+        conda activate build
+
+        cd $HOME
+        sherpa_smoke --require-xspec --require-ds9 --fits-module=pycrates
+
+    - name: Tests
+      run: |
+        source ${conda_loc}/etc/profile.d/conda.sh
+        conda activate build
+
+        datadir=`pwd`
+        cd $HOME
+        pip install pytest-xvfb pytest-cov
+        sherpa_test --cov sherpa --cov-report xml --test-data=${datadir}/sherpa-test-data/sherpatest
+
+    - name: upload coverage
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ${{ github.workspace }}/coverage.xml
+        verbose: true
