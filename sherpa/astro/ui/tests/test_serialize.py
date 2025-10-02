@@ -63,10 +63,12 @@ has_xspec = has_package_from_list("sherpa.astro.xspec")
 # that are available).
 
 # Note that the XSPEC defaults changed in XSPEC 12.10.1 (xsxsect is
-# now vern rather than bcmc, but it can depend on what files a
-# user has - e.g. ~/.xspec/Xspec.init will over-ride it), so there
-# are explicit statements to set the values before the tests so
-# that we have a "known" state.
+# now vern rather than bcmc, but it can depend on what files a user
+# has - e.g. ~/.xspec/Xspec.init will over-ride it), so there are
+# explicit statements to set the values before the tests so that we
+# have a "known" state. There are also changes in XSPEC 12.15.1, with
+# model strings now being set for 'APECROOT', 'NEIAPECROOT', and
+# 'SPEXROOT'.
 #
 
 # A representation of the default Sherpa state
@@ -684,16 +686,6 @@ set_source("bgrp", xsphabs.ggal * powlaw1d.gpl)
 
 set_bkg_source("bgrp", steplo1d.bstep + polynom1d.bpoly, bkg_id=1)
 
-
-######### XSPEC Module Settings
-
-set_xschatter(0)
-set_xsabund("lodd")
-set_xscosmo(72, 0.02, 0.71)
-set_xsxsect("vern")
-set_xsxset("APECROOT", "3.0.9")
-set_xsxset("NEIAPECROOT", "3.0.9")
-set_xsxset("NEIVERS", "3.0.4")
 """
 
 _canonical_pha_load_bkg = """import numpy
@@ -2548,12 +2540,41 @@ set_xsxset("NEIAPECROOT", "3.0.9")
 set_xsxset("NEIVERS", "3.0.4")
 """
 
+    # XSPEC 12.15.1 changed some settings, so try to support
+    # it without too much version-specific hand-holding.
+    #
+    for key, value in xspec.get_xsxset().items():
+        if key in ["APECROOT", "NEIAPECROOT", "NEIVERS"]:
+            continue
+        _canonical_extra += f'set_xsxset("{key}", "{value}")\n'
+
     _canonical_pha_basic += _canonical_extra
     _canonical_pha_grouped += _canonical_extra
     _canonical_xstable_model += _canonical_extra
     _canonical_xspec_hard_limit_min += _canonical_extra
     _canonical_xspec_hard_limit_max += _canonical_extra
     _canonical_pha_csc += _canonical_extra
+
+    # _canonical_pha_back has slightly-different values.
+    #
+    _canonical_extra = """
+######### XSPEC Module Settings
+
+set_xschatter(0)
+set_xsabund("lodd")
+set_xscosmo(72, 0.02, 0.71)
+set_xsxsect("vern")
+set_xsxset("APECROOT", "3.0.9")
+set_xsxset("NEIAPECROOT", "3.0.9")
+set_xsxset("NEIVERS", "3.0.4")
+"""
+
+    for key, value in xspec.get_xsxset().items():
+        if key in ["APECROOT", "NEIAPECROOT", "NEIVERS"]:
+            continue
+        _canonical_extra += f'set_xsxset("{key}", "{value}")\n'
+
+    _canonical_pha_back += _canonical_extra
 
     del _canonical_extra
 
