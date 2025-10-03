@@ -414,7 +414,7 @@ kT      keV     1.    0.008   0.008   64.0      64.0      .01
 class XSapec(XSAdditiveModel):
     """XSPEC AdditiveModel: apec
 
-    Parameters
+    Attributes
     ----------
     kT
     norm
@@ -496,7 +496,7 @@ class XSonlynorm(XSAdditiveModel):
     .. versionadded:: ???
        This model requires XSPEC 9.2.34 or later.
 
-    Parameters
+    Attributes
     ----------
     norm
 
@@ -576,7 +576,7 @@ nH      cm^-3   1.0   1.e-6  1.e-5  1.e19  1.e20   -0.01
 class XSabcd(XSMultiplicativeModel):
     """XSPEC MultiplicativeModel: abcd
 
-    Parameters
+    Attributes
     ----------
     nH
 
@@ -648,7 +648,7 @@ class XSabcd(XSMultiplicativeModel):
     .. versionadded:: ???
        This model requires XSPEC 3.4.0 or later.
 
-    Parameters
+    Attributes
     ----------
     nH
 
@@ -722,7 +722,7 @@ order    " "  -1.   -3.    -3.      -1.       -1.       -1
 class XSrgsxsrc(XSConvolutionKernel):
     """XSPEC ConvolutionKernel: rgsxsrc
 
-    Parameters
+    Attributes
     ----------
     order
 
@@ -797,7 +797,7 @@ class XSrgsxsrc(XSConvolutionKernel):
     .. versionadded:: ???
        This model requires XSPEC 11.0.4 or later.
 
-    Parameters
+    Attributes
     ----------
     order
 
@@ -869,7 +869,7 @@ xs   ""    10    1 2  20 30  0.01
 class XSabcd(XSAdditiveModel):
     """XSPEC AdditiveModel: abcd
 
-    Parameters
+    Attributes
     ----------
     xs
     norm
@@ -944,7 +944,7 @@ xs   ""    10    1 2  20 30  0.01
 class XSabcd(XSAdditiveModel):
     """XSPEC AdditiveModel: abcd
 
-    Parameters
+    Attributes
     ----------
     xs
     norm

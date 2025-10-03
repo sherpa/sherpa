@@ -528,7 +528,7 @@ noted as not being supported::
       .. versionadded: ???
          This model requires XSPEC 12.13.0 or later.
 
-      Parameters
+      Attributes
       ----------
       Tmax
       beta
