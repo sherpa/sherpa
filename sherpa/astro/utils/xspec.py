@@ -855,7 +855,11 @@ def simple_wrap(modelname: str,
         out += f'{t1}   This model requires XSPEC ' + \
             f'{internal[0]}.{internal[1]}.{internal[2]} or later.\n\n'
 
-    out += f'{t1}Parameters\n'
+    # These are not parameters to __init__ but attributes, so label
+    # them as such (using Parameters leads to subtly-different output
+    # from sphinx).
+    #
+    out += f'{t1}Attributes\n'
     out += f'{t1}----------\n'
     for par in mdl.pars:
         out += f'{t1}{par.name}\n'
@@ -867,6 +871,9 @@ def simple_wrap(modelname: str,
     if internal is not None:
         # This may not be the correct URL, such as the redshift variant, but
         # but it should be close.
+        #
+        # This code could try to access the URL to note ones where the
+        # name is not right.
         cname = mdl.name.capitalize()
 
         out += '\n'
