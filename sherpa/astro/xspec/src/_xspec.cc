@@ -1,4 +1,4 @@
-//  Copyright (C) 2007, 2015 - 2025
+//  Copyright (C) 2007, 2015-2025
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -39,6 +39,145 @@
 //
 #include <XSFunctions/funcWrappers.h>
 #include <XSFunctions/functionMap.h>
+
+
+// C++20 support is not guaranteed.
+//
+inline bool ends_with(const std::string &value,
+		      const std::string &suffix)
+{
+  return value.size() >= suffix.size() &&
+    std::equal(suffix.rbegin(),
+	       suffix.rend(),
+	       value.rbegin());
+}
+
+// Case-insensitive search.
+//
+static bool is_latest(const std::string &value)
+{
+  std::string check = value;
+  std::transform(check.begin(), check.end(), check.begin(),
+		 [](unsigned char c) { return std::tolower(c); });
+  return (check == "latest");
+}
+
+
+template <const std::string &getfunc(),
+          void setfunc(const std::string&)>
+static void set_if_latest(const std::map<std::string, std::string> versionMap,
+                          const std::string &key,
+                          const std::string &def)
+{
+
+  if (!is_latest(getfunc())) {
+    return;
+  }
+
+  std::map<std::string, std::string>::const_iterator it =
+    versionMap.find(key);
+  if (it == versionMap.end()) {
+    setfunc(def);
+  } else {
+    setfunc(it->second);
+  }
+}
+
+
+// As of XSPEC 12.15.1 the APEC/ATOMDB, NEI, and SPEX versions can be
+// set to "latest" and then converted to a value by the XSPEC
+// initialization code.
+//
+// The "latest" string is converted to a version by
+//
+// - checking for $HEADAS/spectral/modelData/latest.txt file
+//
+// - if not present, use a hard-coded value (for XSPEC 12.15.1 these
+//   values are different depending on if the XSPEC program or
+//   model libraries are in use).
+//
+// The "latest.txt" file is a text key-value file (with no apparent
+// error checking) with lines like
+//
+//     ATOMDB_VERSION: 3.1.3
+//     SPEX_VERSION: 3.0.8
+//     NEI_VERSION: 3.1.3
+//
+// Note that the file may not be present because, for instance, the
+// "XSPEC data" conda package has not been installed from the HEASOFT
+// conda channel.
+//
+// Note that these "versions" map to
+//
+//      FunctionUtility::atomdbVersion()
+//      FunctionUtility::neiVersion()
+//      FunctionUtility::spexVersion()
+//
+// and to the following "string model" keywords
+//
+//      APECROOT
+//      NEIAPECROOT
+//      SPEXROOT
+//
+// It appears that setting one of these will set the other, at least
+// for XSPEC 12.15.1.
+//
+static void validateVersions()
+{
+
+  // Are any keywords set to "latest"?
+  //
+  bool foundLatest = false;
+  foundLatest |= is_latest(FunctionUtility::atomdbVersion());
+  foundLatest |= is_latest(FunctionUtility::neiVersion());
+#ifdef XSPEC_12_15_0
+  foundLatest |= is_latest(FunctionUtility::spexVersion());
+#endif
+  if (!foundLatest) {
+    return;
+  }
+
+  // Read in the versions from the latest file.
+  // There appears to be no validity check, and
+  // the lines are expected to be
+  //    <key>_VERSION: <version_str>
+  //
+  const std::string versionPath(FunctionUtility::modelDataPath() +
+				"latest.txt");
+  std::map<std::string, std::string> versionMap;
+
+  std::ifstream versionFile(versionPath.c_str());
+  if (versionFile) {
+    const std::string suffix = "_VERSION:";
+    std::string lKey, lVersion;
+    while (versionFile >> lKey >> lVersion) {
+      if (ends_with(lKey, suffix)) {
+	const std::string lName = lKey.substr(0, lKey.size() - suffix.size());
+	versionMap[lName] = lVersion;
+      }
+    }
+  }
+
+  // It is not obvious what to use as the default value (if the above
+  // has no match) since this code supports multiple XSPEC versions.
+  // Use the defaults from XSPEC 12.15.0 Global.cxx file as this is
+  // the last version before XSPEC added support for "latest" as a
+  // valid version.
+  //
+  set_if_latest<FunctionUtility::atomdbVersion,
+                FunctionUtility::atomdbVersion>
+    (versionMap, "ATOMDB", "3.1.2");
+  set_if_latest<FunctionUtility::neiVersion,
+                FunctionUtility::neiVersion>
+    (versionMap, "NEI", "3.1.2");
+#ifdef XSPEC_12_15_0
+  set_if_latest<FunctionUtility::spexVersion,
+                FunctionUtility::spexVersion>
+    (versionMap, "SPEX", "3.08");
+#endif
+
+}
+
 
 // The XSPEC initialization used to be done lazily - that is, only
 // when the first routine from XSPEC was about to be called - but
@@ -105,6 +244,16 @@ static int _sherpa_init_xspec_library()
   FunctionUtility::setH0( 70.0 );
   FunctionUtility::setq0( 0.0 );
   FunctionUtility::setlambda0( 0.73 );
+
+  // Convert "latest" version numbers. Ideally this would only be done
+  // if XSPEC 12.15.1 or later were in use, but users can have a XSPEC
+  // 12.15.1 ~/.xspec/Xspec.init file - e.g. with lines like
+  //
+  //      ATOMDB_VERSION:  latest
+  //
+  // but still be building against XSPEC 12.15.0 (or earlier).
+  //
+  validateVersions();
 
   init = true;
   return EXIT_SUCCESS;
