@@ -109,7 +109,7 @@ import functools
 import logging
 from pathlib import Path
 import string
-from typing import Any, overload
+from typing import Any, Literal, overload
 import warnings
 
 import numpy as np
@@ -474,27 +474,133 @@ def get_xscosmo() -> tuple[float, float, float]:
     return _xspec.get_xscosmo()
 
 
-def get_xsversion() -> str:
+VersionType = Literal["atomdb"] | Literal["nei"] | Literal["spex"]
+"""Versions that can be retrieved (get_xsversion) or set (set_xsversion).
+
+Support for a particular database depends on the XSPEC model library
+version.
+"""
+
+
+def get_xsversion(name: VersionType | None = None) -> str:
     """Return the version of the X-Spec model library in use.
+
+    .. versionchanged:: 4.18.1
+       If called with an argument then the version for the name
+       argument is returned.
+
+    Parameters
+    ----------
+    name : {"atomdb", "nei", "spex"}, optional
+       If not set then the X-Spec version is returned, otherwise the
+       specific database version is returned.
 
     Returns
     -------
     version : str
-       The version of the X-Spec model library used by Sherpa [1]_.
+       The version of the X-Spec model library or database.
 
-    References
-    ----------
+    See Also
+    --------
+    get_xsxset, set_xsversion
 
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/
+    Notes
+    -----
+
+    Support for querying the spex version is only available with XSPEC
+    12.15.0 and later.
 
     Examples
     --------
 
     >>> get_xsversion()
-    '12.11.0m'
+    '12.15.1'
+
+    >>> get_xsversion("atomdb")
+    '3.1.3'
+
+    >>> get_xsversion("spex")
+    '3.08'
+
     """
 
-    return _xspec.get_xsversion()
+    match name:
+        case None:
+            getfn = _xspec.get_xsversion
+
+        case "atomdb":
+            getfn = _xspec.get_xsversion_atomdb
+
+        case "nei":
+            getfn = _xspec.get_xsversion_nei
+
+        case "spex":
+            try:
+                getfn = _xspec.get_xsversion_spex
+            except AttributeError as ae:
+                raise ValueError("spex support requires XSPEC 12.15.0 or later") from ae
+
+        case _:
+            raise ValueError(f"Unsupported option: name='{name}'")
+
+    return getfn()
+
+
+def set_xsversion(name: VersionType,
+                  version: str) -> None:
+    """Set the version of the X-Spec database library.
+
+    .. versionadded:: 4.18.1
+
+    Parameters
+    ----------
+    name : {"atomdb", "nei", "spex"}
+       The database version to set.
+    version : str
+       The new version of the library.
+
+    See Also
+    --------
+    get_xsversion, set_xsxset
+
+    Notes
+    -----
+
+    There is no validation that the version is valid. Changes to the
+    version may not be correctly handled if the XSPEC version is older
+    than 12.15.1.
+
+    Support for setting the spex version is only available with XSPEC
+    12.15.0 and later.
+
+    The "APECROOT", "NEIAPECROOT", and "SPEXROOT" xset settings are
+    automatically updated when the corresonding database version is
+    changed (XSPEC 12.15.1 and later).
+
+    Examples
+    --------
+
+    >>> set_xsversion("atomdb", "3.0.9")
+
+    """
+
+    match name:
+        case "atomdb":
+            setfn = _xspec.set_xsversion_atomdb
+
+        case "nei":
+            setfn = _xspec.set_xsversion_nei
+
+        case "spex":
+            try:
+                setfn = _xspec.set_xsversion_spex
+            except AttributeError as ae:
+                raise ValueError("spex support requires XSPEC 12.15.0 or later") from ae
+
+        case _:
+            raise ValueError(f"Unsupported option: name='{name}'")
+
+    setfn(version)
 
 
 def get_xsxsect() -> str:
@@ -797,6 +903,10 @@ def get_xsxset(name: str) -> str:
 
 def get_xsxset(name: str | None = None) -> str | dict[str, str]:
     """Return the X-Spec model setting or settings.
+
+    .. versionchanged:: 4.18.1
+       The model settings now include the "APECROOT", "NEIAPECROOT",
+       and "SPEXROOT" keywords when XSPEC 12.15.1 is used.
 
     .. versionchanged:: 4.17.1
        This routine can now be called with no argument, which means
