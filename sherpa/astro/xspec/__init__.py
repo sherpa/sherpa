@@ -2668,7 +2668,7 @@ class XSbcie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -2726,7 +2726,7 @@ class XSbcoolflow(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     lowT
         The low temperature in keV.
@@ -2786,7 +2786,7 @@ class XSbcph(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     peakT
         The peak temperature in keV.
@@ -2840,7 +2840,7 @@ class XSbequil(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The temperature in keV.
@@ -4086,7 +4086,7 @@ class XSbvcie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -4154,7 +4154,7 @@ class XSbvcoolflow(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     lowT
         The low temperature in keV.
@@ -4229,7 +4229,7 @@ class XSbvcph(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     peakT
         The peak temperature in keV.
@@ -4298,7 +4298,7 @@ class XSbvequil(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The temperature in keV.
@@ -5095,7 +5095,7 @@ class XSbvvcie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -6760,7 +6760,7 @@ class XScie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -8308,7 +8308,7 @@ class XSfeklor(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     norm
        The total emission (in photom/cm^2/s) in the line.
@@ -11492,7 +11492,7 @@ class XSvagauss(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.14.1 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line wavelength in Angstrom.
@@ -11775,7 +11775,7 @@ class XSvcie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -12310,7 +12310,7 @@ class XSvlorentz(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        Line energy in keV
@@ -13098,7 +13098,7 @@ class XSvvcie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -13541,7 +13541,7 @@ class XSvvoigt(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        Line energy in keV.
@@ -14351,7 +14351,7 @@ class XSzfeklor(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     Redshift
     norm
@@ -14551,7 +14551,7 @@ class XSzlorentz(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
         The line energy, in keV.
@@ -14633,7 +14633,7 @@ class XSzvagauss(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.14.1 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line wavelength in Angstrom.
@@ -14724,7 +14724,7 @@ class XSzvlorentz(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        Line energy in keV
@@ -14771,7 +14771,7 @@ class XSzvoigt(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy, in keV.
@@ -14821,7 +14821,7 @@ class XSzvvoigt(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        Line energy in keV.
@@ -15561,7 +15561,7 @@ class XSlorabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -16567,7 +16567,7 @@ class XSvgabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.14.1 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -16614,7 +16614,7 @@ class XSvlorabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -16654,7 +16654,7 @@ class XSvoigtabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -16754,7 +16754,7 @@ class XSvvoigtabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17088,7 +17088,7 @@ class XSzgabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.14.1 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17138,7 +17138,7 @@ class XSzvgabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.14.1 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17262,7 +17262,7 @@ class XSzlorabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17380,7 +17380,7 @@ class XSzvlorabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17427,7 +17427,7 @@ class XSzvoigtabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17478,7 +17478,7 @@ class XSzvvoigtabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -18802,7 +18802,7 @@ class XSrgsext(XSConvolutionKernel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     order
         The order, which must be -1 to -3 inclusive.
