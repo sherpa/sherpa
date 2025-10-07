@@ -680,16 +680,16 @@ static PyObject* get_xspec_string( PyObject *self ) {
   return Py_BuildValue( (char*)"s", get().c_str() );
 }
 
-static PyObject* set_manager_data_path( PyObject *self, PyObject *args )
+template <void set(const std::string&)>
+static PyObject* set_xspec_string( PyObject *self, PyObject *args )
 {
 
-  char* path = NULL;
-  if ( !PyArg_ParseTuple( args, (char*)"s", &path ) )
+  char* strval = NULL;
+  if ( !PyArg_ParseTuple( args, (char*)"s", &strval ) )
     return NULL;
 
-  FunctionUtility::managerPath(string(path));
+  set(std::string(strval));
   Py_RETURN_NONE;
-
 }
 
 #define NOARGSPEC(name, func) \
@@ -734,7 +734,26 @@ static PyMethodDef XSpecMethods[] = {
 
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
   NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
-  FCTSPEC(set_xspath_manager, set_manager_data_path),
+  FCTSPEC(set_xspath_manager,
+	  set_xspec_string<FunctionUtility::managerPath>),
+
+  NOARGSPEC(get_xsversion_atomdb,
+	    get_xspec_string<FunctionUtility::atomdbVersion>),
+  NOARGSPEC(get_xsversion_nei,
+	    get_xspec_string<FunctionUtility::neiVersion>),
+#ifdef XSPEC_12_15_0
+  NOARGSPEC(get_xsversion_spex,
+	    get_xspec_string<FunctionUtility::spexVersion>),
+#endif
+
+  FCTSPEC(set_xsversion_atomdb,
+	  set_xspec_string<FunctionUtility::atomdbVersion>),
+  FCTSPEC(set_xsversion_nei,
+	  set_xspec_string<FunctionUtility::neiVersion>),
+#ifdef XSPEC_12_15_0
+  FCTSPEC(set_xsversion_spex,
+	  set_xspec_string<FunctionUtility::spexVersion>),
+#endif
 
   // Start model definitions
 
