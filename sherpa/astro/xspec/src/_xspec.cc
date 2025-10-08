@@ -755,6 +755,9 @@ static PyMethodDef XSpecMethods[] = {
 	  set_xspec_string<FunctionUtility::spexVersion>),
 #endif
 
+  NOARGSPEC(get_missing_key,
+	    get_xspec_string<FunctionUtility::NOT_A_KEY>),
+
   // Start model definitions
 
   XSPECMODELFCT_C(C_agauss, 2),                    // XSagauss

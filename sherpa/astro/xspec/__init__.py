@@ -543,7 +543,14 @@ def get_xsversion(name: VersionType | None = None) -> str:
         case _:
             raise ValueError(f"Unsupported option: name='{name}'")
 
-    return getfn()
+    # Check the unlikely case that the user has somehow cleared-out
+    # the version.
+    #
+    out = getfn()
+    if out == _xspec.get_missing_key():
+        raise KeyError(f"Missing data for name='{name}'")
+
+    return out
 
 
 def set_xsversion(name: VersionType,
@@ -599,6 +606,14 @@ def set_xsversion(name: VersionType,
 
         case _:
             raise ValueError(f"Unsupported option: name='{name}'")
+
+    # Error out if version is empty, as this causes the string
+    # database to remove the key. If a user really wants to remove the
+    # setting then they will have to call _xspec.set_xsversion_xxx
+    # directly.
+    #
+    if version == "":
+        raise KeyError(f"version can not be empty for name='{name}'")
 
     setfn(version)
 
