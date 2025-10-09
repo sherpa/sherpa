@@ -1,4 +1,4 @@
-//  Copyright (C) 2007, 2015 - 2025
+//  Copyright (C) 2007, 2015-2025
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -40,6 +40,23 @@
 #include <XSFunctions/funcWrappers.h>
 #include <XSFunctions/functionMap.h>
 
+#ifdef Py_GIL_DISABLED
+
+// Assume that XSPEC is not thread safe, so apply a global mutex.
+//
+// TODO: How can this be used when evaluating the model functions?
+//
+/* not marked static as referenced in xspec_extension.hh */
+PyMutex mutex = {0};
+#define LOCK()    PyMutex_Lock(&mutex)
+#define UNLOCK()  PyMutex_Unlock(&mutex)
+
+#else
+#define LOCK()
+#define UNLOCK()
+
+#endif
+
 // The XSPEC initialization used to be done lazily - that is, only
 // when the first routine from XSPEC was about to be called - but
 // the module is now set up so that we need to know the version
@@ -50,6 +67,9 @@
 // So we no-longer need to support the lazy loading.
 //
 
+// The LOCK/UNLOCK calls should not be needed here, but leave in in
+// case the code is switched to use multi-phase initialization.
+//
 static int _sherpa_init_xspec_library()
 {
 
@@ -66,7 +86,8 @@ static int _sherpa_init_xspec_library()
   }
 
   // Redirect the stdout channel for the duration of the FNINIT call.
-  //
+  // Are the locks needed?
+  LOCK();
   std::ostream* outStream = IosHolder::outHolder();
   std::ostringstream tmpStream;
   IosHolder::setStreams(IosHolder::inHolder(),
@@ -81,6 +102,8 @@ static int _sherpa_init_xspec_library()
     IosHolder::setStreams(IosHolder::inHolder(),
 			  outStream,
 			  IosHolder::errHolder());
+
+    UNLOCK();
 
     // The contents of tmpStream could be inspected to see if it
     // contains useful information for the user, but at this point of
@@ -106,6 +129,8 @@ static int _sherpa_init_xspec_library()
   FunctionUtility::setq0( 0.0 );
   FunctionUtility::setlambda0( 0.73 );
 
+  UNLOCK();
+
   init = true;
   return EXIT_SUCCESS;
 
@@ -113,7 +138,10 @@ static int _sherpa_init_xspec_library()
 
 static PyObject* get_chatter( PyObject *self )
 {
-  return Py_BuildValue( (char*)"i", FunctionUtility::xwriteChatter() );
+  LOCK();
+  int val = FunctionUtility::xwriteChatter();
+  UNLOCK();
+  return Py_BuildValue( (char*)"i", val );
 }
 
 
@@ -133,13 +161,17 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
 
   // Not asked for an element so return the table name
   if ( !element ) {
-    return (PyObject*) Py_BuildValue( (char*)"s", FunctionUtility::ABUND().c_str() );
+    LOCK();
+    const std::string tname = FunctionUtility::ABUND().c_str();
+    UNLOCK();
+    return (PyObject*) Py_BuildValue( (char*)"s", tname.c_str() );
   }
 
   // Get the specific abundance. Unfortunately getAbundance reports an
   // error to stderr when an invalid element is used, so we need to
   // hide this.
   //
+  LOCK();
   std::ostream* errStream = IosHolder::errHolder();
   std::ostringstream tmpStream;
   IosHolder::setStreams(IosHolder::inHolder(),
@@ -151,6 +183,7 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
   IosHolder::setStreams(IosHolder::inHolder(),
 			IosHolder::outHolder(),
 			errStream);
+  UNLOCK();
 
   // Was there an error?
   //
@@ -183,6 +216,7 @@ static PyObject* get_abund_from_table( PyObject *self, PyObject *args )
   // error to stderr when an invalid element is used, so we need to
   // hide this. However it does throw an error if the table is unknown.
   //
+  LOCK();
   std::ostream* errStream = IosHolder::errHolder();
   std::ostringstream tmpStream;
   IosHolder::setStreams(IosHolder::inHolder(),
@@ -198,6 +232,7 @@ static PyObject* get_abund_from_table( PyObject *self, PyObject *args )
     IosHolder::setStreams(IosHolder::inHolder(),
 			  IosHolder::outHolder(),
 			  errStream);
+    UNLOCK();
 
     return PyErr_Format( PyExc_ValueError,
 			 "Unknown abundance table '%s'",
@@ -207,6 +242,7 @@ static PyObject* get_abund_from_table( PyObject *self, PyObject *args )
   IosHolder::setStreams(IosHolder::inHolder(),
 			IosHolder::outHolder(),
 			errStream);
+  UNLOCK();
 
   // Was there an error?
   //
@@ -235,7 +271,9 @@ static PyObject* get_abund_doc( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"s", &name ) )
     return NULL;
 
-  std::string doc = FunctionUtility::abundDoc(std::string(name));
+  LOCK();
+  const std::string doc = FunctionUtility::abundDoc(std::string(name));
+  UNLOCK();
 
   return Py_BuildValue( (char*)"s", doc.c_str() );
 }
@@ -244,9 +282,11 @@ static PyObject* get_abund_doc( PyObject *self, PyObject *args )
 static PyObject* get_cosmo( PyObject *self )
 {
   // Assume these can not throw errors
+  LOCK();
   float h0 = FunctionUtility::getH0();
   float l0 = FunctionUtility::getlambda0();
   float q0 = FunctionUtility::getq0();
+  UNLOCK();
 
   return Py_BuildValue( (char*)"fff", h0, q0, l0 );
 
@@ -261,7 +301,10 @@ static PyObject* set_chatter( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"i", &chatter ) )
     return NULL;
 
+  LOCK();
   FunctionUtility::xwriteChatter(chatter);
+  UNLOCK();
+
   Py_RETURN_NONE;
 
 }
@@ -276,6 +319,7 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"s", &table ) )
     return NULL;
 
+  // Assume lowerCase is thread safe.
   string tableName = string(table);
   tableName = XSutility::lowerCase(tableName);
 
@@ -289,12 +333,16 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
       return NULL;
     }
 
+    LOCK();
     FunctionUtility::ABUND(tableName);
+    UNLOCK();
     Py_RETURN_NONE;
   }
 
   if (FunctionUtility::checkAbund(tableName)) {
+    LOCK();
     FunctionUtility::ABUND(tableName);
+    UNLOCK();
     Py_RETURN_NONE;
   }
 
@@ -340,9 +388,11 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
     }
   }
 
+  LOCK();
   FunctionUtility::ABUND("file");
   FunctionUtility::abundanceVectors("file", vals);
   FunctionUtility::abundChanged(true);
+  UNLOCK();
 
   Py_RETURN_NONE;
 
@@ -386,6 +436,7 @@ static PyObject* set_abund_vector( PyObject *self, PyObject *args )
 
   // Hide the screen output from this call.
   //
+  LOCK();
   std::ostream* outStream = IosHolder::outHolder();
   std::ostringstream tmpStream;
   IosHolder::setStreams(IosHolder::inHolder(),
@@ -400,6 +451,7 @@ static PyObject* set_abund_vector( PyObject *self, PyObject *args )
 
   FunctionUtility::abundanceVectors("file", vals);
   FunctionUtility::abundChanged(true);
+  UNLOCK();
 
   Py_RETURN_NONE;
 }
@@ -415,9 +467,12 @@ static PyObject* set_cosmo( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"fff", &h0, &q0, &l0 ) )
     return NULL;
 
+  LOCK();
   FunctionUtility::setH0(h0);
   FunctionUtility::setq0(q0);
   FunctionUtility::setlambda0(l0);
+  UNLOCK();
+
   Py_RETURN_NONE;
 
 }
@@ -437,6 +492,7 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
   // On failure, checkXsect catches a YellowAlert which creates output
   // to the error channel, so we over-ride it for this call.
   //
+  LOCK();
   std::ostream* errStream = IosHolder::errHolder();
   std::ostringstream tmpStream;
   IosHolder::setStreams(IosHolder::inHolder(),
@@ -448,6 +504,7 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
 			errStream);
 
   if (!known) {
+    UNLOCK();
     return PyErr_Format( PyExc_ValueError,
 			 (char*)"could not set XSPEC photoelectric "
 			 "cross-section to '%s'",
@@ -455,6 +512,8 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
   }
 
   FunctionUtility::XSECT(tableName);
+  UNLOCK();
+
   Py_RETURN_NONE;
 
 }
@@ -462,7 +521,9 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
 
 static PyObject* clear_xset( PyObject *self )
 {
+  LOCK();
   FunctionUtility::eraseModelStringDataBase();
+  UNLOCK();
   Py_RETURN_NONE;
 }
 
@@ -481,11 +542,14 @@ static PyObject* set_xset( PyObject *self, PyObject *args )
   //   4.17.1
   //
   string name = XSutility::upperCase(string(str_name));
+  LOCK();
   if (name == "INITIALIZE") {
     FunctionUtility::eraseModelStringDataBase();
   } else {
     FunctionUtility::setModelString(name, string(str_value));
   }
+  UNLOCK();
+
   Py_RETURN_NONE;
 
 }
@@ -503,12 +567,15 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
   //
   if ( str_name == NULL ) {
 
+    // TODO: review the PyDict calls for the free-threaded case
+    LOCK();
     PyObject *d = PyDict_New();
     for (const auto& item : FunctionUtility::modelStringDataBase()) {
       PyObject *value = PyUnicode_FromString(item.second.c_str());
       PyDict_SetItemString(d, item.first.c_str(), value);
       Py_DECREF(value);
     }
+    UNLOCK();
 
     return d;
   }
@@ -516,7 +583,9 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
   // Treat an unknown key as an error.
   //
   static string value;
+  LOCK();
   value = FunctionUtility::getModelString(string(str_name));
+  UNLOCK();
   if (value == FunctionUtility::NOT_A_KEY()) {
     PyErr_SetString( PyExc_KeyError, str_name );
     return NULL;
@@ -528,7 +597,10 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 
 template <const std::string& get()>
 static PyObject* get_xspec_string( PyObject *self ) {
-  return Py_BuildValue( (char*)"s", get().c_str() );
+  LOCK();
+  const std::string val = get();
+  UNLOCK();
+  return Py_BuildValue( (char*)"s", val.c_str() );
 }
 
 static PyObject* set_manager_data_path( PyObject *self, PyObject *args )
@@ -538,7 +610,9 @@ static PyObject* set_manager_data_path( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"s", &path ) )
     return NULL;
 
+  LOCK();
   FunctionUtility::managerPath(string(path));
+  UNLOCK();
   Py_RETURN_NONE;
 
 }
@@ -1010,5 +1084,13 @@ PyMODINIT_FUNC PyInit__xspec(void) {
     return NULL;
 
   import_array();
-  return PyModule_Create(&xspec_module);
+
+  PyObject *m = PyModule_Create(&xspec_module);
+  if (m == NULL) { return NULL; }
+
+#ifdef Py_GIL_DISABLED
+  PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED);
+#endif
+
+  return m;
 }

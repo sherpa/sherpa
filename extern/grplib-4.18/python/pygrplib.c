@@ -34,39 +34,12 @@
  * ----------       -----
  * 0.1              April2007 	File Created
  *                  July 2016   Python3 compatibility
+ *                  Jume 2025   Remove Python 2 Compatability
+ *                              Allow for free-threading support
  ***************************************************************** */
 #include "pygrplib.h"
 #include "grplib.h"
 #include "grp_priv.h"
-
-/** 
- * For supporting both python 2 and 3, we include macros that abstract out
- * differences in module initialization and other issues described in:
- * 
- * http://python3porting.com/cextensions.html
- */
-#if PY_MAJOR_VERSION >= 3
-#define MOD_ERROR_VAL NULL
-#define MOD_SUCCESS_VAL(val) val
-#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
-#define MOD_DEF(ob, name, doc, methods) \
-        static struct PyModuleDef moduledef = { \
-          PyModuleDef_HEAD_INIT, name, doc, -1, methods, NULL, NULL, NULL, NULL }; \
-        ob = PyModule_Create(&moduledef);
-#define MOD_NEWOBJ(newval, val) newval = PyCapsule_New((void *)val, NULL, NULL);
-
-#define PyString_AsString PyUnicode_AsUTF8
-#define PyString_FromString PyUnicode_FromString
-#define PyString_Check PyUnicode_Check
-
-#else
-#define MOD_ERROR_VAL
-#define MOD_SUCCESS_VAL(val)
-#define MOD_INIT(name) PyMODINIT_FUNC init##name(void)
-#define MOD_DEF(ob, name, doc, methods) \
-        ob = Py_InitModule3(name, methods, doc);
-#define MOD_NEWOBJ(newval, val) newval = PyCObject_FromVoidPtr((void*)val, NULL);
-#endif
 
 /* * * * * * * * * * * * * * * * * * * * * * * *
  * Utilities for Python Interaction
@@ -168,15 +141,15 @@ static PyMethodDef
 /*
  * Initialize the module
  * */
-MOD_INIT(group);
+PyMODINIT_FUNC PyInit_group(void) {
 
-MOD_INIT(group)
-{
-  PyObject *mod = NULL;
-  MOD_DEF(mod, "group", "group", groupMethods)
+  static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT, "group", "group", -1, groupMethods };
+
+  PyObject *mod = PyModule_Create(&moduledef);
   if ( mod == NULL )
   {
-    return MOD_ERROR_VAL;
+    return NULL;
   }
 
   // if module created then add version info
@@ -199,7 +172,11 @@ MOD_INIT(group)
   
   import_array(); /* Must be present for NumPy.  Called first after above line. */
 
-  return MOD_SUCCESS_VAL(mod);
+#ifdef Py_GIL_DISABLED
+  PyUnstable_Module_SetGIL(mod, Py_MOD_GIL_NOT_USED);
+#endif
+
+  return mod;
 }
 
 /* Error Message Format Strings */
