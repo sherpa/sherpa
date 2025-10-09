@@ -103,9 +103,7 @@ References
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from contextlib import suppress
-import functools
 import logging
 from pathlib import Path
 import string
