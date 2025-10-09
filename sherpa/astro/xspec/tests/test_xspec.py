@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015-2025
+#  Copyright (C) 2007, 2015-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -17,8 +17,6 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-import inspect
-import types
 
 import numpy
 
@@ -206,8 +204,6 @@ def make_grid_noncontig2():
 #
 def assert_is_finite(vals, modelcls, label):
     """modelcls is the model class (e.g. xspec.XSphabs)"""
-
-    import sherpa.astro.xspec as xs
 
     emsg = f"model {modelcls} is finite [{label}]"
     assert numpy.isfinite(vals).all(), emsg
