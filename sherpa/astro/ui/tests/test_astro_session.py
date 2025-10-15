@@ -3011,7 +3011,7 @@ def test_add_model_types_simple(session):
     s._add_model_types(sherpa.models.basic)
 
     # This will need updating if models are added to basic
-    assert len(s.list_models()) == 31
+    assert len(s.list_models()) == 33
 
 
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
@@ -3023,7 +3023,7 @@ def test_add_model_types_scalar(session):
                        baselist=ArithmeticModel)
 
     # This will need updating if models are added to basic
-    assert len(s.list_models()) == 31
+    assert len(s.list_models()) == 33
 
 
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
