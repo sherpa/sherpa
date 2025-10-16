@@ -33,7 +33,7 @@ jobs:
       matrix:
         include:
           - name: MacOS Intel Full Build (Python 3.11)
-            os: macos-13
+            os: macos-15-intel
             python-version: "3.11"
             install-type: develop
             fits: astropy
