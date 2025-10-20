@@ -21,6 +21,7 @@
 from abc import ABCMeta
 from collections.abc import Callable, Sequence
 import logging
+from warnings import warn
 
 import numpy
 
@@ -2020,6 +2021,10 @@ class TableModel(ArithmeticModel):
         self._method = linear_interp
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.ampl,))
+        warn("TableModel is deprecated and will be removed in a future version. "
+             "Use FixedTableModel (if only setting y values) "
+             "or InterpolatedTableModel1D (if setting both x and y values).",
+             category=DeprecationWarning)
 
     def load(self, x, y):
         """Set the model values.
