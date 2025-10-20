@@ -209,6 +209,20 @@ def _get_citation_hardcoded(version: str) -> str | None:
         cite[version] = dict(**kwargs)
         cite[version]['version'] = version
 
+    add(version='4.18.0', title='sherpa/sherpa: Sherpa 4.18.0',
+        date=todate(2025, 10, 7),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'luzpaz', 'Christoph Deil', 'Brigitta Sipőcz', 'nplee', 'Johannes Buchner', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
+        idval='17288983')
+
+    add(version='4.17.1', title='sherpa/sherpa: Sherpa 4.17.1',
+        date=todate(2025, 5, 13),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'luzpaz', 'Christoph Deil', 'Brigitta Sipőcz', 'nplee', 'Johannes Buchner', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
+        idval='15397764')
+    add(version='4.17.0', title='sherpa/sherpa: Sherpa 4.17.0',
+        date=todate(2024, 10, 9),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'luzpaz', 'Christoph Deil', 'Brigitta Sipőcz', 'Johannes Buchner', 'nplee', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
+        idval='13909532')
+
     add(version='4.16.1', title='sherpa/sherpa: Sherpa 4.16.1',
         date=todate(2024, 5, 21),
         authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'luzpaz', 'Christoph Deil', 'Brigitta Sipőcz', 'Johannes Buchner', 'nplee', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
