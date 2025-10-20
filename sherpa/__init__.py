@@ -40,7 +40,7 @@ import os
 import os.path
 import subprocess
 import sys
-from typing import Any, Optional
+from typing import Any
 
 from . import _version
 __version__ = _version.get_versions()['version']
@@ -178,7 +178,7 @@ def _make_citation(version: str,
     return out
 
 
-def _get_citation_hardcoded(version: str) -> Optional[str]:
+def _get_citation_hardcoded(version: str) -> str | None:
     """Retrieve the citation information.
 
     Parameters
@@ -871,7 +871,7 @@ def get_config() -> str:
 
 def smoke(verbosity: int = 0,
           require_failure: bool = False,
-          fits: Optional[str] = None,
+          fits: str | None = None,
           xspec: bool = False,
           ds9: bool = False) -> None:
     """Run Sherpa's "smoke" test.
