@@ -99,8 +99,10 @@ def test_chatter_default():
     assert oval == DEFAULT_CHATTER
 
 
+# We do not test name="spex" since that requires XSPEC 12.15.0 or later
 @requires_xspec
-def test_version():
+@pytest.mark.parametrize("name", [None, "atomdb", "nei"])
+def test_version(name):
     """Can we get at the XSPEC version?
 
     There is limited testing of the return value.
@@ -108,12 +110,62 @@ def test_version():
 
     from sherpa.astro import xspec
 
-    v = xspec.get_xsversion()
+    v = xspec.get_xsversion(name)
     assert isinstance(v, (str, ))
     assert len(v) > 0
+    # This could check the version matches a number-dotted string,
+    # but it is not worth it.
 
-    # Could check it's of the form a.b.c[optional] but leave that for
-    # now.
+
+@requires_xspec
+@pytest.mark.parametrize("name", ["", "ATOMDB", "", "not-a-library"])
+def test_version_error(name):
+    """Does this error out?"""
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match=f"^Unsupported option: name='{name}'$"):
+        xspec.get_xsversion(name)
+
+
+# We do not test name="spex" since that requires XSPEC 12.15.0 or later
+@requires_xspec
+@pytest.mark.parametrize("name", ["atomdb", "nei"])
+def test_set_version(name):
+    """Can we set the XSPEC database version?"""
+
+    from sherpa.astro import xspec
+
+    # Hopefully changing the version will not cause problems
+    # (e.g. with XSPEC prior to 12.15.1).
+    #
+    old = xspec.get_xsversion(name)
+
+    # Guess a version. At present there is no validation of the value,
+    # so it should not matter if it is not valid.
+    #
+    new= '3.0.0'
+    assert old != new  # no point in running if they are equal
+
+    try:
+        xspec.set_xsversion(name, new)
+        assert xspec.get_xsversion(name) == new
+
+    finally:
+        xspec.set_xsversion(name, old)
+
+
+@requires_xspec
+@pytest.mark.parametrize("name", ["", "ATOMDB", "", "not-a-library"])
+def test_set_version_error(name):
+    """Does this error out?"""
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match=f"^Unsupported option: name='{name}'$"):
+        xspec.set_xsversion(name, "1.2.3")
 
 
 @requires_xspec
@@ -235,18 +287,23 @@ def test_manager_path_default():
     tests of XSPEC are made (i.e. any XSPEC code is called).
     """
 
-    # Is this always going to be correct?
-    default_path = os.path.join(os.environ['HEADAS'],
-                                '../spectral/manager')
-
     from sherpa.astro import xspec
 
-    oval = xspec.get_xspath_manager()
+    oval = Path(xspec.get_xspath_manager()).resolve()
+    got = str(oval)
 
     # Normalize the paths to remove double / - e.g. if HEADAS is
     # set to /a/b/c/ rather than /a/b/c.
     #
-    assert os.path.normpath(oval) == os.path.normpath(default_path)
+    # The expected path depends on how XSPEC has been installed,
+    # since the CIAO-related environments do things a little
+    # differently to HEASARC ones, for historical reasons.
+    #
+    headas = Path(os.environ['HEADAS'])
+    heasarc_path = (headas / 'spectral/manager').resolve()
+    ciao_path = (headas / '../spectral/manager').resolve()
+
+    assert got in [str(heasarc_path), str(ciao_path)]
 
 
 @requires_xspec
@@ -259,20 +316,29 @@ def test_model_path_default():
 
     from sherpa.astro import xspec
 
-    # Is this always going to be correct?
-    #
-    try:
-        default_path = os.environ['XSPEC_MDATA_DIR']
-    except KeyError:
-        default_path = os.path.join(os.environ['HEADAS'],
-                                    '../spectral/modelData/')
-
-    oval = xspec.get_xspath_model()
-
     # Normalize the paths to remove double / - e.g. if HEADAS is
     # set to /a/b/c/ rather than /a/b/c.
     #
-    assert os.path.normpath(oval) == os.path.normpath(default_path)
+    oval = Path(xspec.get_xspath_model()).resolve()
+    got = str(oval)
+
+    # What is the best way to check the expected value?
+    #
+    # The expected path depends on how XSPEC has been installed,
+    # since the CIAO-related environments do things a little
+    # differently to HEASARC ones, for historical reasons.
+    #
+    key = 'XSPEC_MDATA_DIR'
+    if key in os.environ:
+        default_path = Path(os.environ[key]).resolve()
+        assert got == str(default_path)
+        return
+
+    headas = Path(os.environ['HEADAS'])
+    heasarc_path = (headas / 'spectral/modelData').resolve()
+    ciao_path = (headas / '../spectral/modelData').resolve()
+
+    assert got in [str(heasarc_path), str(ciao_path)]
 
 
 @requires_xspec
