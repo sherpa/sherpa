@@ -156,6 +156,7 @@ known_warnings = {
             r"unorderable dtypes.*",
             r"Non-string object detected for the array ordering.*",
             r"Use load_xstable_model to load XSPEC table models",
+            r"TableModel is deprecated and will be removed in a future version. Use FixedTableModel \(if only setting y values\) or InterpolatedTableModel1D \(if setting both x and y values\).",
 
             # NumPy 1.25 warnings that are raised by (mid-2023) crates code.
             # Hopefully this can be removed by December 2023.
@@ -174,7 +175,8 @@ known_warnings = {
             #
             # For now we hide them.
             #
-            r".* is multi-threaded, use of fork\(\) may lead to deadlocks in the child\."
+            r".* is multi-threaded, use of fork\(\) may lead to deadlocks in the child\.",
+
 
         ],
     UserWarning:

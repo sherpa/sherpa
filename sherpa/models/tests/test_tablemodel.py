@@ -770,3 +770,14 @@ def test_pickle_interpolation(cls, tmp_path):
     assert nmdl.method is nearest_interp
 
     assert nmdl(xtest) == pytest.approx(ytest)
+
+
+def test_TableModel_deprecation_warning():
+    """Check that TableModel raises a deprecation warning upon instantiation."""
+
+    with pytest.warns(DeprecationWarning,
+                      match="TableModel is deprecated and will be removed in a future version. "
+                      "Use FixedTableModel "
+                      r"\(if only setting y values\) or InterpolatedTableModel1D "
+                      r"\(if setting both x and y values\)\."):
+        _ = TableModel()
