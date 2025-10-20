@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 - 2024
+#  Copyright (C) 2017-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -39,7 +39,7 @@ from sherpa.utils import linear_interp
 from sherpa.utils.err import DataErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
 
-from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, \
+from sherpa.models.regrid import EmptyIntegratedAxis, EmptyPointAxis, ModelDomainRegridder1D, EvaluationSpace1D, \
     EvaluationSpace2D, PointAxis, IntegratedAxis
 
 
@@ -1140,45 +1140,60 @@ def test_axis_check_not_multidim():
         PointAxis(np.arange(12).reshape(3, 4))
 
 
-def test_pointaxis_not_integrated():
+def test_emptypointaxis_not_integrated():
     """Check for the empty case"""
 
-    assert not PointAxis([]).is_integrated
+    assert not EmptyPointAxis().is_integrated
 
 
-def test_integratedaxis_is_integrated():
+def test_emptyintegratedaxis_is_integrated():
     """Check for the empty case"""
 
-    assert IntegratedAxis([], []).is_integrated
+    assert EmptyIntegratedAxis().is_integrated
+
+
+def test_cannot_create_pointaxis_if_not_using_empty_subtype():
+    """Check for the empty case"""
+
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        PointAxis([])
+
+def test_cannot_create_integratedaxis_if_not_using_empty_subtype():
+    """Check for the empty case"""
+
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        IntegratedAxis([], [])
 
 
 def test_pointaxis_size():
     """Pick a descending axis for fun"""
-    assert PointAxis([4, 3, 2]).size == 3
+    assert PointAxis(np.array([4, 3, 2])).size == 3
 
 
 def test_integratedaxis_size():
-    assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).size == 3
+    assert IntegratedAxis(np.array([4, 3, 2]), np.array([4.5, 3.5, 3])).size == 3
 
 
 def test_pointaxis_start():
     """Pick a descending axis for fun"""
-    assert PointAxis([4, 3, 2]).start == 2
+    assert PointAxis(np.array([4, 3, 2])).start == 2
 
 
 def test_pointaxis_end():
     """Pick a descending axis for fun"""
-    assert PointAxis([4, 3, 2]).end == 4
+    assert PointAxis(np.array([4, 3, 2])).end == 4
 
 
 def test_integratedaxis_start():
     """Pick a descending axis for fun"""
-    assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).start == 2
+    assert IntegratedAxis(np.array([4, 3, 2]), np.array([4.5, 3.5, 3])).start == 2
 
 
 def test_integratedaxis_end():
     """Pick a descending axis for fun"""
-    assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).end == pytest.approx(4.5)
+    assert IntegratedAxis(np.array([4, 3, 2]), np.array([4.5, 3.5, 3])).end == pytest.approx(4.5)
 
 
 def test_evaluationspace1d_zeros_like_empty():
@@ -1563,7 +1578,7 @@ def test_evaluationspace_empty_range(cls, meth):
 
 @pytest.mark.parametrize("cls,expected",
                          [(EvaluationSpace1D, (None, )),
-                          (EvaluationSpace2D, ([None], [None]))
+                          (EvaluationSpace2D, (None, None))
                           ])
 def test_evaluationspace_empty_grid(cls, expected):
     """Simple check.

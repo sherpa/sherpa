@@ -119,7 +119,7 @@ dependent axis (``y``) then filter to select only those values between
 from abc import ABCMeta
 from collections.abc import Sequence
 import logging
-from typing import Any, Literal, overload
+from typing import Any, Literal, overload, Self
 import warnings
 
 import numpy as np
@@ -217,6 +217,270 @@ def _check_dep(array):
     return _check(array), True
 
 
+# NOTE:
+#
+# Although this is labelled as supporting N-D datasets, the
+# implementation assumes that the data has been flattened to 1D arrays
+# - in particular the notice method. It is likely that we can document
+# this - i.e. that the mask is going to be 1D.
+#
+class Filter:
+    """A class for representing filters of N-Dimensional datasets.
+
+    The filter does not know the size of the dataset or the values of
+    the independent axes.
+
+    """
+    def __init__(self) -> None:
+        self._mask: np.ndarray | bool = True
+
+    @property
+    def mask(self) -> np.ndarray | bool:
+        """Mask array for dependent variable
+
+        Returns
+        -------
+        mask : bool or numpy.ndarray
+        """
+        return self._mask
+
+    @mask.setter
+    def mask(self, val: ArrayType | bool) -> None:
+        if val is None:
+            raise DataErr('ismask')
+
+        # The code below has to deal with bool-like values, such as
+        # numpy.ma.nomask (this evaluates to False but is not a bool),
+        # and numpy.bool_ values. The following code is intended to
+        # catch these "special" values. Note that we explicitly check
+        # for boolean values ('val is True' and 'val is False') rather
+        # than just whether val behaves like a boolean - for example
+        # 'if val or not val: ...'.
+        #
+        if not np.isscalar(val):
+            # Is it possible for the following to throw a conversion
+            # error? If so, we could catch it and convert it into a
+            # DataErr, but it does not seem worth it (as it's not
+            # obvious what the error to catch would be).
+            #
+            self._mask = np.asarray(val, bool)
+
+        elif val is np.ma.nomask:
+            self._mask = True
+
+        elif (val is True) or (val is False):
+            self._mask = val
+
+        elif isinstance(val, np.bool_):
+            # are there other types we could be looking for here?
+            self._mask = bool(val)
+
+        else:
+            # Note that setting mask to 2.0 will fail, but an array
+            # of 2.0's will get converted to booleans.
+            #
+            raise DataErr('ismask')
+
+    @overload
+    def apply(self, array: None) -> None:
+        ...
+
+    @overload
+    def apply(self, array: ArrayType) -> np.ndarray:
+        ...
+
+    def apply(self, array):
+        """Apply this filter to an array
+
+        Parameters
+        ----------
+        array : array_like or None
+            Array to be filtered
+
+        Returns
+        -------
+        array_like : ndarray or None
+
+        Raises
+        ------
+        sherpa.utils.err.DataErr
+            The filter has removed all elements or there is a
+            mismatch between the `mask` and the ``array`` argument.
+
+        See Also
+        --------
+        notice
+
+        """
+        if array is None:
+            return None
+
+        # Note that mask may not be a boolean but an array.
+        if self.mask is False:
+            raise DataErr('notmask')
+
+        # Ensure we always return a ndarray.
+        #
+        array = _check(array)
+        if self.mask is True:
+            return array
+
+        if array.size != self.mask.size:
+            raise DataErr("mismatchn", "mask", "data array", self.mask.size, array.size)
+
+        return array[self.mask]
+
+    def notice(self,
+               mins: ArrayType,
+               maxes: ArrayType,
+               axislist: Sequence[ArrayType],
+               ignore: bool = False,
+               integrated: bool = False
+               ) -> None:
+        """Select a range to notice or ignore (remove).
+
+        The ``axislist`` argument is expected to be sent the
+        independent axis of a `Data` object - so ``(x, )`` for
+        one-dimensional data, ``(xlo, xhi)`` for integrated
+        one-dimensional data, ``(x0, x1)`` for two-dimensional data,
+        and ``(x0lo, x1lo, x0hi, x1hi)`` for integrated two-dimensional
+        data. The ``mins`` and ``maxes`` must then be set to match
+        this ordering.
+
+        Parameters
+        ----------
+        mins : sequence of values
+           The minimum value of the valid range (elements may be None
+           to indicate no lower bound). When not None, it is treated
+           as an inclusive limit, so points >= min are included.
+        maxes : sequence of values
+           The maximum value of the valid range (elements may be None
+           to indicate no upper bound). It is treated as an inclusive
+           limit (points <= max) when integrated is False, and an
+           exclusive limit (points < max) when integrated is True.
+        axislist: sequence of arrays
+           The axis to apply the range to. There must be the same
+           number of elements in mins, maxes, and axislist.  The
+           number of elements of each element of axislist must also
+           agree (the cell values do not need to match).
+        ignore : bool, optional
+           If True the range is to be ignored, otherwise it is
+           included.  The default is to include the range.
+        integrated : bool, optional
+           Is the data integrated (we have low and high bin edges)?  The
+           default is False. When True it is expected that axislist
+           contains a even number of rows, where the odd values are the
+           low edges and the even values the upper edges, and that the
+           mins and maxes only ever contain a single value, given in
+           (None, hi) and (lo, None) ordering.
+
+        See Also
+        --------
+        apply
+
+        Examples
+        --------
+
+        Select points in xs which are in the range 1.5 <= x <= 4:
+
+        >>> f = Filter()
+        >>> f.mask
+        True
+        >>> xs = [1, 2, 3, 4, 5]
+        >>> f.notice([1.5], [4], (xs, ))
+        >>> f.mask
+        array([False,  True,  True,  True, False])
+
+        Filter the data to select all points with x0 >= 1.5 and x1 <= 4:
+
+        >>> f = Filter()
+        >>> x0 = [1, 1.4, 1.6, 2, 3]
+        >>> x1 = [2, 2, 4, 4, 6]
+        >>> f.notice([1.5, None], [None, 4], (x0, x1))
+        >>> f.mask
+        array([False, False,  True,  True, False])
+
+        For integrated data sets the lower and upper edges should be
+        sent separately with the max and min limits, along with
+        setting the integrated flag. The following selects the bins
+        that cover the range 2 to 4 and 1.5 to 3.5:
+
+        >>> xlo = [1, 2, 3, 4, 5]
+        >>> xhi = [2, 3, 4, 5, 6]
+        >>> f = Filter()
+        >>> f.notice([None, 2], [4, None], (xlo, xhi), integrated=True)
+        >>> f.mask
+        array([False,  True,  True,  False, False])
+        >>> f.notice([None, 1.5], [3.5, None], (xlo, xhi), integrated=True)
+        >>> f.mask
+        array([ True,  True,  True, False, False])
+
+        """
+
+        # If integrated is True then we should have an even number
+        # of axislist elements, but we do not require this.
+        #
+        ignore = bool_cast(ignore)
+        for vals, label in zip([mins, maxes, axislist],
+                               ['lower bound', 'upper bound', 'grid']):
+            if any(isinstance(val, str) for val in vals):
+                raise DataErr('typecheck', label)
+
+        mask = filter_bins(mins, maxes, axislist, integrated=integrated)
+
+        if mask is None:
+            self.mask = not ignore
+        elif not ignore:
+            if self.mask is True:
+                self.mask = mask
+            else:
+                self.mask |= mask
+        else:
+            mask = ~mask
+            if self.mask is False:
+                self.mask = mask
+            else:
+                self.mask &= mask
+
+
+
+class DataSpaceMixIn():
+    def __init__(self, filter: Filter, *args, **kwargs) -> None:
+        """
+        Parameters
+        ----------
+        filter : Filter
+            a filter object that initialized this data space
+        x : array_like
+            the x axis of this data space
+        """
+        self.filter = filter
+        for axis in args + tuple(kwargs.values()):
+            _check_nomask(axis)
+        super().__init__(*args, **kwargs)
+
+    def get(self, filter: bool = False) -> Self:
+        """
+        Get a filtered representation of this data set. If `filter` is `False` this object is returned.
+
+        Parameters
+        ----------
+        filter : bool
+            whether the data set should be filtered before being returned
+
+        Returns
+        -------
+        DataSpaceMixIn
+        """
+
+        if not bool_cast(filter):
+            return self
+
+        data = tuple(self.filter.apply(axis) for axis in self.grid)
+        return type(self)(self.filter, *data)
+
+
+
 class DataSpace1D(EvaluationSpace1D):
     """
     Class for representing 1-D Data Space. Data Spaces are spaces that describe the data domain. As models can be
@@ -257,29 +521,6 @@ class DataSpace1D(EvaluationSpace1D):
         data = self.filter.apply(data)
         return DataSpace1D(self.filter, data)
 
-    def for_model(self, model):
-        """
-        Models can be defined over arbitrary evaluation spaces. However,
-        at evaluation time during a fit, the model's evaluation space shall
-        be done at the user's request space only and set to 0 every where else.
-
-        Parameters
-        ----------
-        model : The model whose evaluation space needs to be joined with the dataset's data space.
-
-        Returns
-        -------
-        DataSpace1D
-            A data space that joins this data space with the model's evaluation space. if the model does not have an
-            evaluation space assigned to itself then `self` is returned.
-        """
-        evaluation_space = None
-
-        if model is not None and hasattr(model, "evaluation_space") \
-           and self not in model.evaluation_space:
-            evaluation_space = self
-
-        return self if evaluation_space is None else evaluation_space
 
 
 class IntegratedDataSpace1D(EvaluationSpace1D):
@@ -332,30 +573,6 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         data = tuple(self.filter.apply(axis) for axis in data)
         return IntegratedDataSpace1D(self.filter, *data)
 
-    def for_model(self, model):
-        """
-        Models can be defined over arbitrary evaluation spaces. However, at evaluation time during a fit, the model's
-        evaluation space and the data space will be joined together and the model will be evaluated over the joined
-        domain. This makes sure that when the models are rebinned back to the data space the evaluation does not have
-        to be extrapolated from the model's evaluation space alone.
-
-        Parameters
-        ----------
-        model : The model whose evaluation space needs to be joined with the dataset's data space.
-
-        Returns
-        -------
-        IntegratedDataSpace1D
-            A data space that joins this data space with the model's evaluation space. if the model does not have an
-            evaluation space assigned to itself then `self` is returned.
-        """
-        evaluation_space = None
-
-        if model is not None and hasattr(model, "evaluation_space") \
-           and self not in model.evaluation_space:
-            evaluation_space = self
-
-        return self if evaluation_space is None else evaluation_space
 
 
 # We do not inherit from EvaluationSpace2D because that would require
@@ -575,233 +792,6 @@ class DataSpaceND:
         """
         return self.indep
 
-
-# NOTE:
-#
-# Although this is labelled as supporting N-D datasets, the
-# implementation assumes that the data has been flattened to 1D arrays
-# - in particular the notice method. It is likely that we can document
-# this - i.e. that the mask is going to be 1D.
-#
-class Filter:
-    """A class for representing filters of N-Dimensional datasets.
-
-    The filter does not know the size of the dataset or the values of
-    the independent axes.
-
-    """
-    def __init__(self) -> None:
-        self._mask: np.ndarray | bool = True
-
-    @property
-    def mask(self) -> np.ndarray | bool:
-        """Mask array for dependent variable
-
-        Returns
-        -------
-        mask : bool or numpy.ndarray
-        """
-        return self._mask
-
-    @mask.setter
-    def mask(self, val: ArrayType | bool) -> None:
-        if val is None:
-            raise DataErr('ismask')
-
-        # The code below has to deal with bool-like values, such as
-        # numpy.ma.nomask (this evaluates to False but is not a bool),
-        # and numpy.bool_ values. The following code is intended to
-        # catch these "special" values. Note that we explicitly check
-        # for boolean values ('val is True' and 'val is False') rather
-        # than just whether val behaves like a boolean - for example
-        # 'if val or not val: ...'.
-        #
-        if not np.isscalar(val):
-            # Is it possible for the following to throw a conversion
-            # error? If so, we could catch it and convert it into a
-            # DataErr, but it does not seem worth it (as it's not
-            # obvious what the error to catch would be).
-            #
-            self._mask = np.asarray(val, bool)
-
-        elif val is np.ma.nomask:
-            self._mask = True
-
-        elif (val is True) or (val is False):
-            self._mask = val
-
-        elif isinstance(val, np.bool_):
-            # are there other types we could be looking for here?
-            self._mask = bool(val)
-
-        else:
-            # Note that setting mask to 2.0 will fail, but an array
-            # of 2.0's will get converted to booleans.
-            #
-            raise DataErr('ismask')
-
-    @overload
-    def apply(self, array: None) -> None:
-        ...
-
-    @overload
-    def apply(self, array: ArrayType) -> np.ndarray:
-        ...
-
-    def apply(self, array):
-        """Apply this filter to an array
-
-        Parameters
-        ----------
-        array : array_like or None
-            Array to be filtered
-
-        Returns
-        -------
-        array_like : ndarray or None
-
-        Raises
-        ------
-        sherpa.utils.err.DataErr
-            The filter has removed all elements or there is a
-            mismatch between the `mask` and the ``array`` argument.
-
-        See Also
-        --------
-        notice
-
-        """
-        if array is None:
-            return None
-
-        # Note that mask may not be a boolean but an array.
-        if self.mask is False:
-            raise DataErr('notmask')
-
-        # Ensure we always return a ndarray.
-        #
-        array = _check(array)
-        if self.mask is True:
-            return array
-
-        if array.size != self.mask.size:
-            raise DataErr("mismatchn", "mask", "data array", self.mask.size, array.size)
-
-        return array[self.mask]
-
-    def notice(self,
-               mins: ArrayType,
-               maxes: ArrayType,
-               axislist: Sequence[ArrayType],
-               ignore: bool = False,
-               integrated: bool = False
-               ) -> None:
-        """Select a range to notice or ignore (remove).
-
-        The ``axislist`` argument is expected to be sent the
-        independent axis of a `Data` object - so ``(x, )`` for
-        one-dimensional data, ``(xlo, xhi)`` for integrated
-        one-dimensional data, ``(x0, x1)`` for two-dimensional data,
-        and ``(x0lo, x1lo, x0hi, x1hi)`` for integrated two-dimensinal
-        data. The ``mins`` and ``maxes`` must then be set to match
-        this ordering.
-
-        Parameters
-        ----------
-        mins : sequence of values
-           The minimum value of the valid range (elements may be None
-           to indicate no lower bound). When not None, it is treated
-           as an inclusive limit, so points >= min are included.
-        maxes : sequence of values
-           The maximum value of the valid range (elements may be None
-           to indicate no upper bound). It is treated as an inclusive
-           limit (points <= max) when integrated is False, and an
-           exclusive limit (points < max) when integrated is True.
-        axislist: sequence of arrays
-           The axis to apply the range to. There must be the same
-           number of elements in mins, maxes, and axislist.  The
-           number of elements of each element of axislist must also
-           agree (the cell values do not need to match).
-        ignore : bool, optional
-           If True the range is to be ignored, otherwise it is
-           included.  The default is to include the range.
-        integrated : bool, optional
-           Is the data integrated (we have low and high bin edges)?  The
-           default is False. When True it is expected that axislist
-           contains a even number of rows, where the odd values are the
-           low edges and the even values the upper edges, and that the
-           mins and maxes only ever contain a single value, given in
-           (None, hi) and (lo, None) ordering.
-
-        See Also
-        --------
-        apply
-
-        Examples
-        --------
-
-        Select points in xs which are in the range 1.5 <= x <= 4:
-
-        >>> f = Filter()
-        >>> f.mask
-        True
-        >>> xs = [1, 2, 3, 4, 5]
-        >>> f.notice([1.5], [4], (xs, ))
-        >>> f.mask
-        array([False,  True,  True,  True, False])
-
-        Filter the data to select all points with x0 >= 1.5 and x1 <= 4:
-
-        >>> f = Filter()
-        >>> x0 = [1, 1.4, 1.6, 2, 3]
-        >>> x1 = [2, 2, 4, 4, 6]
-        >>> f.notice([1.5, None], [None, 4], (x0, x1))
-        >>> f.mask
-        array([False, False,  True,  True, False])
-
-        For integrated data sets the lower and upper edges should be
-        sent separately with the max and min limits, along with
-        setting the integrated flag. The following selects the bins
-        that cover the range 2 to 4 and 1.5 to 3.5:
-
-        >>> xlo = [1, 2, 3, 4, 5]
-        >>> xhi = [2, 3, 4, 5, 6]
-        >>> f = Filter()
-        >>> f.notice([None, 2], [4, None], (xlo, xhi), integrated=True)
-        >>> f.mask
-        array([False,  True,  True,  False, False])
-        >>> f.notice([None, 1.5], [3.5, None], (xlo, xhi), integrated=True)
-        >>> f.mask
-        array([ True,  True,  True, False, False])
-
-        """
-
-        # If integrated is True then we should have an even number
-        # of axislist elements, but we do not require this.
-        #
-        ignore = bool_cast(ignore)
-        for vals, label in zip([mins, maxes, axislist],
-                               ['lower bound', 'upper bound', 'grid']):
-            if any(isinstance(val, str) for val in vals):
-                raise DataErr('typecheck', label)
-
-        mask = filter_bins(mins, maxes, axislist, integrated=integrated)
-
-        if mask is None:
-            self.mask = not ignore
-        elif not ignore:
-            if self.mask is True:
-                self.mask = mask
-            else:
-                self.mask |= mask
-        else:
-            mask = ~mask
-            if self.mask is False:
-                self.mask = mask
-            else:
-                self.mask &= mask
-
-
 class BaseData(metaclass=ABCMeta):
     """
     Base class for all data classes. Left for compatibility with older versions.
@@ -861,7 +851,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
     field. Other fields are listed in _extra_fields.
     """
 
-    _extra_fields: FieldsType = ()
+    _extra_fields: FieldsType = ('integrated',)
     """Any extra fields that should be displayed by str(object)."""
 
     _related_fields: FieldsType = ("y", "staterror", "syserror")
@@ -875,25 +865,46 @@ class Data(NoNewAttributesAfterInit, BaseData):
     _size: int | None = None
     _staterror: np.ndarray | None = None
     _syserror: np.ndarray | None = None
+    _integrated: bool = False
 
     ndim: int | None = None
     "The dimensionality of the dataset, if defined, or None."
+
+    shape: tuple | None = None
 
     def __init__(self,
                  name: str,
                  indep: Sequence[ArrayType] | Sequence[None],
                  y: ArrayType | None,
                  staterror: ArrayType | None = None,
-                 syserror: ArrayType | None = None
+                 syserror: ArrayType | None = None,
+                 shape: tuple[int, int] | None = None,
+                 integrated: bool = False,
                  ) -> None:
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
         self.y, self.mask = _check_dep(y)
         self.staterror = staterror
         self.syserror = syserror
+        self._integrated = integrated
 
         self._ylabel = 'y'
+        if integrated and len(indep) % 2 != 0:
+            raise ValueError("In integrated mode, independent variables must be pairs of x0lo, x1lo, ... x0hi, x1hi... .")
+        self.ndim = len(indep) // {False: 1, True: 2}[integrated]
+        if shape is not None and len(shape) != self.ndim:
+            raise ValueError(f"Shape {shape} does not match data dimensionality {self.ndim}.")
+        else:
+            self.shape = shape
         NoNewAttributesAfterInit.__init__(self)
+
+    @property
+    def integrated(self) -> bool:
+        """Return whether the data is integrated.
+
+        This property cannot be changed after the class is created.
+        """
+        return self._integrated
 
     def _check_data_space(self, dataspace):
         """Check that the data space has the correct size.
@@ -1234,27 +1245,24 @@ class Data(NoNewAttributesAfterInit, BaseData):
     @overload
     def get_y(self,
               filter: bool,
-              yfunc: None,
-              use_evaluation_space: bool = False
+              yfunc: None
               ) -> np.ndarray:
         ...
 
     @overload
     def get_y(self,
               filter: bool,
-              yfunc: ModelFunc,
-              use_evaluation_space: bool = False
+              yfunc: ModelFunc
               ) -> tuple[np.ndarray, ArrayType]:
         ...
 
-    def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
+    def get_y(self, filter=False, yfunc=None):
         """Return dependent axis in N-D view of dependent variable
 
         Parameters
         ----------
         filter
         yfunc
-        use_evaluation_space
 
         Returns
         -------
@@ -1692,7 +1700,6 @@ class Data1D(Data):
         the systematic error associated with the data
     '''
     _fields: FieldsType = ("name", "x", "y", "staterror", "syserror")
-    ndim = 1
 
     def __init__(self,
                  name: str,
@@ -1723,8 +1730,7 @@ class Data1D(Data):
 
     def get_x(self,
               filter: bool = False,
-              model: ModelFunc | None = None,
-              use_evaluation_space: bool = False
+              model: ModelFunc | None = None
               ) -> np.ndarray | None:
 
         if model is not None:
@@ -1732,7 +1738,7 @@ class Data1D(Data):
             if mdim is not None and mdim != 1:
                 raise DataErr(f"Data and model dimensionality do not match: 1D and {mdim}D")
 
-        return self.get_evaluation_indep(filter, model, use_evaluation_space)[0]
+        return self.get_indep(filter)[0]
 
     def get_xerr(self,
                  filter: bool = False,
@@ -1795,28 +1801,24 @@ class Data1D(Data):
     @overload
     def get_y(self,
               filter: bool,
-              yfunc: None = None,
-              use_evaluation_space: bool = False
+              yfunc: None = None
               ) -> np.ndarray:
         ...
 
     @overload
     def get_y(self,
               filter: bool,
-              yfunc: ModelFunc,
-              use_evaluation_space: bool = False
+              yfunc: ModelFunc
               ) -> tuple[np.ndarray, ArrayType]:
         ...
 
-    def get_y(self, filter=False, yfunc=None,
-              use_evaluation_space=False):
+    def get_y(self, filter=False, yfunc=None):
         """Return the dependent axis.
 
         Parameters
         ----------
         filter
         yfunc
-        use_evaluation_space
 
         Returns
         -------
@@ -1834,7 +1836,7 @@ class Data1D(Data):
         if mdim is not None and mdim != 1:
             raise DataErr(f"Data and model dimensionality do not match: 1D and {mdim}D")
 
-        model_evaluation = yfunc(*self.get_evaluation_indep(filter, yfunc, use_evaluation_space))
+        model_evaluation = yfunc(*self.get_indep(filter))
         return (y, model_evaluation)
 
     @overload
@@ -1983,23 +1985,12 @@ class Data1D(Data):
                           staterrfunc: StatErrFunc | None = None):
         # As we introduced models defined on arbitrary grids, the x array can also depend on the
         # model function, at least in principle.
-        return (self.get_x(True, yfunc, use_evaluation_space=True),
-                self.get_y(True, yfunc, use_evaluation_space=True),
+        return (self.get_x(True, yfunc),
+                self.get_y(True, yfunc),
                 self.get_yerr(True, staterrfunc),
                 self.get_xerr(True, yfunc),
                 self.get_xlabel(),
                 self.get_ylabel())
-
-    def get_evaluation_indep(self,
-                             filter: bool = False,
-                             model: ModelFunc | None = None,
-                             use_evaluation_space: bool = False
-                             ) -> np.ndarray | None:
-        data_space = self._data_space.get(filter)
-        if use_evaluation_space:
-            return data_space.for_model(model).grid
-
-        return data_space.grid
 
     def notice(self,
                xlo: float | None = None,
@@ -2144,7 +2135,8 @@ class Data1DInt(Data1D):
 
         # Note: we do not call the superclass here.
         self._xlabel = 'x'
-        Data.__init__(self, name, (xlo, xhi), y, staterror, syserror)
+        Data.__init__(self, name, (xlo, xhi), y, staterror, syserror,
+                      integrated=True)
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the data
@@ -2165,10 +2157,9 @@ class Data1DInt(Data1D):
 
     def get_x(self,
               filter: bool = False,
-              model: ModelFunc | None = None,
-              use_evaluation_space: bool = False
+              model: ModelFunc | None = None
               ) -> np.ndarray:
-        indep = self.get_evaluation_indep(filter, model, use_evaluation_space)
+        indep = self.get_indep(filter)
         if len(indep) == 1:
             # assume all data has been filtered out
             return np.asarray([])
@@ -2201,7 +2192,7 @@ class Data1DInt(Data1D):
            can be None, it will always be an array, even if empty.
 
         """
-        indep = self.get_evaluation_indep(filter, model)
+        indep = self.get_indep(filter)
         if len(indep) == 1:
             # assume all data has been filtered out
             return np.asarray([])
@@ -2261,7 +2252,7 @@ class Data1DInt(Data1D):
         # would happen if we didn't over-ride Data1D.filter) but let's
         # use the start and end values for each selected bin.
         #
-        indep = self.get_evaluation_indep(filter=True)
+        indep = self.get_indep(filter=True)
         if len(indep) == 1:
             # assume all data has been filtered out
             return ''
@@ -2343,124 +2334,56 @@ class Data1DInt(Data1D):
         """
         Property kept for compatibility
         """
-        return self._data_space.x_axis.lo
+        return self._data_space.axes[0].lo
 
     @property
     def xhi(self) -> np.ndarray | None:
         """
         Property kept for compatibility
         """
-        return self._data_space.x_axis.hi
+        return self._data_space.axes[0].hi
 
+class BaseData2D(Data):
+    """Base class for all data classes."""
+    def notice(self,
+               x0lo: float | None = None,
+               x0hi: float | None = None,
+               x1lo: float | None = None,
+               x1hi: float | None = None,
+               ignore: bool = False
+               ) -> None:
+        xlo = (x0lo, x1lo)
+        xhi = (x0hi, x1hi)
+        if self.integrated:
+            xlo = (None, None) + xlo
+            xhi = xhi + (None, None)
+        super().notice(xlo, xhi,
+                       ignore=ignore, integrated=self.integrated)
 
-class Data2D(Data):
-    '''2D data set
+    # Why have the "self.integrated" check in here instead of just defining
+    # in two separate classes?
+    # I want to be able to inherit in a common tree, e.g. DataIMG and DataIMGInt
+    # without having to worry if they inherit from an integrated or a
+    # non-integrated set.
 
-    This class represents a 2D data set. It is desigend to work with flattened
-    arrays for coordinates and independent variables, which makes it easy to
-    deal with filters and sparse or irregularly-placed grids.
-
-    Of course, the same structure can also be used for regularly-gridded data,
-    it just has to be passed in as a flattened array. However, in this case
-    the more specialized `~sherpa.astro.data.DataIMG` class might be more appropriate.
-
-    Parameters
-    ----------
-    name : string
-        name of this dataset
-    x0 : array-like
-        Independent coordinate values for the first dimension
-    x1 : array-like
-        Independent coordinate values for the second dimension
-    y : array-like
-        The values of the dependent observable. If this is a numpy masked
-        array, the mask will be used to initialize a mask.
-    shape : tuple
-        Shape of the data grid for regularly gridded data (optional). This is
-        used to return the data as an image e.g. for display,
-        but it not needed for fitting and modelling.
-        For irregularly gridded data, shape must be `None`.
-    staterror : array-like
-        the statistical error associated with the data
-    syserror : array-like
-        the systematic error associated with the data
-
-    Examples
-    --------
-    An irregularly-gridded 2D dataset, with points at (-200, -200),
-    (-200, 0), (0, 0), (200, -100), and (200, 150) can be created
-    with:
-
-        >>> irreg2d = Data2D("irregular2d",
-        ...                  [-200, -200, 0, 200, 200],
-        ...                  [-200, 0, 0, -100, 150],
-        ...                  [12, 15, 23, 45, -2])
-
-    A regularly-gridded 2D dataset can be created, but the
-    arguments must be flattened::
-
-        >>> import numpy as np
-        >>> x1, x0 = np.mgrid[20:30:2, 5:20:2]
-        >>> datashape = x0.shape
-        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
-        >>> x0 = x0.flatten()
-        >>> x1 = x1.flatten()
-        >>> y = y.flatten()
-        >>> reg2d = Data2D("regular2d", x0, x1, y, shape=datashape)
-
-    .. note::
-        Sherpa provides the `~sherpa.astro.data.DataIMG` class to handle
-        regularly-gridded data more easily.
-    '''
-    _fields: FieldsType = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
-    ndim = 2
-
-    # Why should we add shape to extra-fields instead? See #1359 to
-    # fix #47.
-    #
-    # It would change the notebook output slightly so we don't change
-    # for now.
-    #
-    # _extra_fields = ("shape", )
-
-    def __init__(self,
-                 name: str,
-                 x0: ArrayType | None,
-                 x1: ArrayType | None,
-                 y: ArrayType | None,
-                 shape: tuple[int, int] | None = None,
-                 staterror: ArrayType | None = None,
-                 syserror: ArrayType | None = None
-                 ) -> None:
-        self.shape = shape
-
-        self._x0label = 'x0'
-        self._x1label = 'x1'
-
-        super().__init__(name, (x0, x1), y, staterror, syserror)
-
-    def _repr_html_(self) -> str:
-        """Return a HTML (string) representation of the data
-        """
-        return html_data2d(self)
-
-    def _init_data_space(self,
-                         filter: Filter,
-                         *data: ArrayType
-                         ) -> DataSpace2D:
-        ndata = len(data)
-        if ndata != 2:
-            raise DataErr("wrongaxiscount", self.name, 2, ndata)
-
-        ds = DataSpace2D(filter, *data)
-        self._check_data_space(ds)
-        return ds
-
+    # This somewhat duplicates midpoint_grid in the dataspace
+    # When the dataspace is set correctly, can call that instead.
+    # instad of implementing here again.
     def get_x0(self, filter: bool = False) -> np.ndarray | None:
-        return self._data_space.get(filter).x0
+        if self.size is None:
+            return None
+        indep = self._data_space.get(filter)
+        if self.integrated:
+            return (indep.x0lo + indep.x0hi) / 2.0
+        return indep.x0
 
-    def get_x1(self, filter: bool = False) -> np.ndarray | None:
-        return self._data_space.get(filter).x1
+    def get_x1(self, filter=False) -> np.ndarray | None:
+        if self.size is None:
+            return None
+        indep = self._data_space.get(filter)
+        if self.integrated:
+            return (indep.x1lo + indep.x1hi) / 2.0
+        return indep.x1
 
     def get_x0label(self) -> str:
         """Return label for first dimension in 2-D view of independent axis/axes.
@@ -2630,6 +2553,109 @@ class Data2D(Data):
         if self.shape is None:
             raise DataErr('shape', self.name)
 
+
+class Data2D(BaseData2D):
+    '''2D data set
+
+    This class represents a 2D data set. It is desigend to work with flattened
+    arrays for coordinates and independent variables, which makes it easy to
+    deal with filters and sparse or irregularly-placed grids.
+
+    Of course, the same structure can also be used for regularly-gridded data,
+    it just has to be passed in as a flattened array. However, in this case
+    the more specialized `~sherpa.astro.data.DataIMG` class might be more appropriate.
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    x0 : array-like
+        Independent coordinate values for the first dimension
+    x1 : array-like
+        Independent coordinate values for the second dimension
+    y : array-like
+        The values of the dependent observable. If this is a numpy masked
+        array, the mask will be used to initialize a mask.
+    shape : tuple
+        Shape of the data grid for regularly gridded data (optional). This is
+        used to return the data as an image e.g. for display,
+        but it not needed for fitting and modelling.
+        For irregularly gridded data, shape must be `None`.
+    staterror : array-like
+        the statistical error associated with the data
+    syserror : array-like
+        the systematic error associated with the data
+
+    Examples
+    --------
+    An irregularly-gridded 2D dataset, with points at (-200, -200),
+    (-200, 0), (0, 0), (200, -100), and (200, 150) can be created
+    with:
+
+        >>> irreg2d = Data2D("irregular2d",
+        ...                  [-200, -200, 0, 200, 200],
+        ...                  [-200, 0, 0, -100, 150],
+        ...                  [12, 15, 23, 45, -2])
+
+    A regularly-gridded 2D dataset can be created, but the
+    arguments must be flattened::
+
+        >>> import numpy as np
+        >>> x1, x0 = np.mgrid[20:30:2, 5:20:2]
+        >>> datashape = x0.shape
+        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+        >>> x0 = x0.flatten()
+        >>> x1 = x1.flatten()
+        >>> y = y.flatten()
+        >>> reg2d = Data2D("regular2d", x0, x1, y, shape=datashape)
+
+    .. note::
+        Sherpa provides the `~sherpa.astro.data.DataIMG` class to handle
+        regularly-gridded data more easily.
+    '''
+    _fields: FieldsType = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
+
+    # Why should we add shape to extra-fields instead? See #1359 to
+    # fix #47.
+    #
+    # It would change the notebook output slightly so we don't change
+    # for now.
+    #
+    # _extra_fields = ("shape", )
+
+    def __init__(self,
+                 name: str,
+                 x0: ArrayType | None,
+                 x1: ArrayType | None,
+                 y: ArrayType | None,
+                 shape: Sequence[int] | None = None,
+                 staterror: ArrayType | None = None,
+                 syserror: ArrayType | None = None
+                 ) -> None:
+
+        self._x0label = 'x0'
+        self._x1label = 'x1'
+
+        super().__init__(name, (x0, x1), y, staterror, syserror,
+                         integrated=False, shape=shape)
+
+    def _repr_html_(self) -> str:
+        """Return a HTML (string) representation of the data
+        """
+        return html_data2d(self)
+
+    def _init_data_space(self,
+                         filter: Filter,
+                         *data: ArrayType
+                         ) -> DataSpace2D:
+        ndata = len(data)
+        if ndata != 2:
+            raise DataErr("wrongaxiscount", self.name, 2, ndata)
+
+        ds = DataSpace2D(filter, *data)
+        self._check_data_space(ds)
+        return ds
+
     @property
     def x0(self) -> np.ndarray | None:
         """
@@ -2644,18 +2670,8 @@ class Data2D(Data):
         """
         return self.get_x1()
 
-    def notice(self,
-               x0lo: float | None = None,
-               x0hi: float | None = None,
-               x1lo: float | None = None,
-               x1hi: float | None = None,
-               ignore: bool = False
-               ) -> None:
-        Data.notice(self, (x0lo, x1lo), (x0hi, x1hi),
-                    ignore=ignore)
 
-
-class Data2DInt(Data2D):
+class Data2DInt(BaseData2D):
     '''2-D integrated data set
 
     This class represents a 2D data set. It is desigend to work with flattened
@@ -2744,7 +2760,8 @@ class Data2DInt(Data2D):
         self._x0label = 'x0'
         self._x1label = 'x1'
         self._ylabel = 'y'
-        Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
+        super().__init__(name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror,
+                         integrated=True, shape=shape)
 
     def _init_data_space(self,
                          filter: Filter,
@@ -2758,27 +2775,7 @@ class Data2DInt(Data2D):
         self._check_data_space(ds)
         return ds
 
-    def get_x0(self, filter: bool = False) -> np.ndarray | None:
-        if self.size is None:
-            return None
-        indep = self._data_space.get(filter)
-        return (indep.x0lo + indep.x0hi) / 2.0
 
-    def get_x1(self, filter=False) -> np.ndarray | None:
-        if self.size is None:
-            return None
-        indep = self._data_space.get(filter)
-        return (indep.x1lo + indep.x1hi) / 2.0
-
-    def notice(self,
-               x0lo: float | None = None,
-               x0hi: float | None = None,
-               x1lo: float | None = None,
-               x1hi: float | None = None,
-               ignore: bool = False
-               ) -> None:
-        Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None),
-                    ignore=ignore, integrated=True)
 
     @property
     def x0lo(self) -> np.ndarray | None:
@@ -2807,6 +2804,26 @@ class Data2DInt(Data2D):
         Property kept for compatibility
         """
         return self._data_space.x1hi
+
+    @property
+    def x0(self) -> np.ndarray | None:
+        """
+        kept for compatibility:
+        Is this really needed?
+        Only used in a single test that says
+        "Result is presumably autogenerated"
+        """
+        return self.get_x0()
+
+    @property
+    def x1(self) -> np.ndarray | None:
+        """
+        kept for compatibility
+        Is this really needed?
+        Only used in a single test that says
+        "Result is presumably autogenerated"
+        """
+        return self.get_x1()
 
 
 # Notebook representations
