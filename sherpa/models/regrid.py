@@ -93,7 +93,7 @@ class Axis(metaclass=ABCMeta):
         checked, and it is assumed that the elements are sorted.
         """
         if self.is_empty:
-            raise DataErr("Axis is empty or has a size of 0")
+            raise DataErr("emptyaxis")
 
         return self._is_ascending
 
