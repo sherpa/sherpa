@@ -286,7 +286,7 @@ class IntegratedAxis(Axis):
         return self.lo.size
 
 
-class EvaluationSpace1D():
+class EvaluationSpace1D:
     """Class for 1D Evaluation Spaces.
 
     An Evaluation Space is a set of data axes representing the data
@@ -332,17 +332,15 @@ class EvaluationSpace1D():
             A tuple representing the x axis. The tuple will contain
             two arrays if the dataset is integrated, one otherwise.
         """
-        # We can not just rely on the is_integrated setting since
-        # an integrated axis can have is_integrated set to False
-        #
-        # TODO: should we fix this? It only affects a few corner-case tests
-        #       so maybe it's something we can address upstream? Or work out
-        #       why we want is_integrated to be False when the axis size is 0?
-        #
-        if self.x_axis.is_integrated:
-            return self.x_axis.lo, self.x_axis.hi
 
         if isinstance(self.x_axis, IntegratedAxis):
+            if self.x_axis.is_integrated:
+                return self.x_axis.lo, self.x_axis.hi
+
+            # Note: at present it should not be possible to create an
+            # IntegratedAxis object that has is_integrated set to
+            # False. Leave this code in just in case this changes.
+            #
             return self.x_axis.lo,
 
         return self.x_axis.x,
@@ -419,7 +417,7 @@ class EvaluationSpace1D():
         return self.start <= other.start and self.end >= other.end
 
 
-class EvaluationSpace2D():
+class EvaluationSpace2D:
     """Class for 2D Evaluation Spaces.
 
     An Evaluation Space is a set of data axes representing the data
@@ -571,7 +569,7 @@ class EvaluationSpace2D():
         return np.zeros(size)
 
 
-class ModelDomainRegridder1D():
+class ModelDomainRegridder1D:
     """Allow 1D models to be evaluated on a different grid.
 
     This class is not used directly in a model expression;
@@ -613,7 +611,10 @@ class ModelDomainRegridder1D():
     def __init__(self, evaluation_space=None, name='regrid1d', **kwargs):
         self.name = name
         self.integrate = True
-        self.evaluation_space = evaluation_space if evaluation_space is not None else EvaluationSpace1D()
+        if evaluation_space is None:
+            self.evaluation_space = EvaluationSpace1D()
+        else:
+            self.evaluation_space = evaluation_space
 
         self.method = kwargs.get("interp", akima)
 
@@ -650,7 +651,7 @@ class ModelDomainRegridder1D():
     def apply_to(self, model):
         """Evaluate a model on a different grid."""
         from sherpa.models.model import RegridWrappedModel
-        return RegridWrappedModel(model, self)
+        return RegridWrappedModel(model, wrapper=self)
 
     def calc(self, pars, modelfunc, *args, **kwargs):
         """Evaluate and regrid a model
@@ -856,7 +857,7 @@ class ModelDomainRegridder1D():
                                         **kwargs)
 
 
-class ModelDomainRegridder2D():
+class ModelDomainRegridder2D:
     """Allow 2D models to be evaluated on a different grid.
 
     This class is not used directly in a model expression;
@@ -899,8 +900,10 @@ class ModelDomainRegridder2D():
 
     def __init__(self, evaluation_space=None, name='regrid2d'):
         self.name = name
-        self.evaluation_space = evaluation_space\
-            if evaluation_space is not None else EvaluationSpace2D()
+        if evaluation_space is None:
+            self.evaluation_space = EvaluationSpace2D()
+        else:
+            self.evaluation_space = evaluation_space
 
     @property
     def grid(self):
@@ -913,7 +916,7 @@ class ModelDomainRegridder2D():
     def apply_to(self, model):
         """Evaluate a model on a different grid."""
         from sherpa.models.model import RegridWrappedModel
-        return RegridWrappedModel(model, self)
+        return RegridWrappedModel(model, wrapper=self)
 
     def calc(self, pars, modelfunc, *args, **kwargs):
         """Evaluate and regrid a model
