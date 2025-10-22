@@ -58,7 +58,7 @@ from sherpa.data import Data, Data1D, Data1DAsymmetricErrs, Data2D, \
     Data2DInt
 from sherpa.fit import Fit
 import sherpa.io
-from sherpa.models.basic import TableModel, UserModel
+from sherpa.models.basic import UserModel
 from sherpa.models.model import Model
 import sherpa.plot
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \

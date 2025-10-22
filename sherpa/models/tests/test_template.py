@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2021, 2022, 2023
+#  Copyright (C) 2011, 2015-2016, 2018, 2021-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,7 +22,7 @@ import numpy
 
 import pytest
 
-from sherpa.models import TableModel, Gauss1D
+from sherpa.models import InterpolatedTableModel1D, Gauss1D
 from sherpa.models.template import create_template_model
 from sherpa.utils.testing import requires_data
 from sherpa.utils.err import ModelErr
@@ -124,7 +124,7 @@ def setUp():
 
     templates = []
     for ii in range(ntemplates):
-        t = TableModel()
+        t = InterpolatedTableModel1D()
         g1.fwhm = rng.uniform(0.5, 2.0)
         g1.pos = rng.uniform(1.0, 4.5)
         g1.ampl = rng.uniform(1.0, 50.)

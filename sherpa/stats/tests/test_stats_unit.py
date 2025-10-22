@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2021, 2022, 2023
+#  Copyright (C) 2016-2017, 2021-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -50,7 +50,7 @@ from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.data import Data1D, Data1DInt, Data2D, DataSimulFit
 from sherpa.models.model import SimulFitModel
-from sherpa.models.basic import Const1D, Polynom1D, TableModel
+from sherpa.models.basic import Const1D, Polynom1D, FixedTableModel
 from sherpa.astro.models import Lorentz2D
 from sherpa.utils.err import DataErr, FitErr, StatErr
 
@@ -1351,8 +1351,8 @@ def test_cstat_negative_model(stat, expected):
     # value. Match the data except for the discrepant point.
     #
     data = Data1D("x", [1, 2, 3], [1, 0.1, 3])
-    model = TableModel()
-    model.load(None, [1, -ZERODELT, 3])
+    model = FixedTableModel()
+    model.load([1, -ZERODELT, 3])
 
     statobj = stat()
     answer, _ = statobj.calc_stat(data, model)

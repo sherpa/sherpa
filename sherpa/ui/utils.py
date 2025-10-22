@@ -52,7 +52,7 @@ import sherpa.instrument
 import sherpa.io
 import sherpa.image
 import sherpa.models
-from sherpa.models.basic import TableModel
+from sherpa.models.basic import FixedTableModel, InterpolatedTableModel1D
 import sherpa.models.model
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.parameter import Parameter
@@ -523,7 +523,7 @@ def read_template_model(modelname, templatefile,
         if ntcols != 2:
             raise IOErr("wrongnumcols", 2, ntcols)
 
-        tm = TableModel(filename)
+        tm = InterpolatedTableModel1D(filename)
         tm.method = method  # interpolation method
         tm.load(*tcols)
         tm.ampl.freeze()
@@ -7836,10 +7836,13 @@ class Session(NoNewAttributesAfterInit):
 
         x, y = self._read_user_model(filename, *args, **kwargs)
 
-        tablemodel = TableModel(modelname)
-        tablemodel.method = method
+        if x is None:
+            tablemodel = FixedTableModel(name=modelname, y=y)
+        else:
+            tablemodel = InterpolatedTableModel1D(name=modelname,
+            x=x, y=y)
+            tablemodel.method = method
         tablemodel.filename = filename
-        tablemodel.load(x, y)
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 

@@ -360,8 +360,8 @@ def test_ui_table_model_1d_testfile(clean_astro_ui, comment, ncols):
         f.write(f'{comment}\n1\n2\n3\n')
         f.seek(0)
         ui.load_table_model('tbl', f.name, comment=comment, ncols=ncols)
-        assert tbl.get_x() is None
         assert tbl.get_y() == pytest.approx([1, 2, 3])
+        assert not hasattr(tbl, 'get_x')
 
 
 def test_ui_table_model_1d_testfile_fails(clean_astro_ui):
