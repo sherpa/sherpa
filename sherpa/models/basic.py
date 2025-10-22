@@ -1930,7 +1930,7 @@ class TableModel(ArithmeticModel):
 
     The model can be used for data when the independent axis is either
     not useful - such as for an image mask - or the data does not have
-    a meaningful independent axis, as in the the independent variable
+    a meaningful independent axis, as in the independent variable
     being an index for a star and the dependent axis is a property of
     each star. In this case the x argument to `load` is set to `None`,
     which means that no interpolation is used and that the `fold`

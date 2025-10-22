@@ -26,7 +26,7 @@ import pytest
 
 from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.data import Data1D
-from sherpa.models.basic import TableModel, Gauss1D
+from sherpa.models.basic import FixedTableModel, InterpolatedTableModel1D, Gauss1D
 from sherpa.models.parameter import Parameter
 from sherpa.models.template import Template, TemplateModel, \
     create_template_model
@@ -89,36 +89,39 @@ def test_309(session, make_data_path, skip_if_no_io):
     s.fit(idval)
 
 
-def test_create_template_model_parnames_does_not_match():
+@pytest.mark.parametrize("cls", [InterpolatedTableModel1D, FixedTableModel])
+def test_create_template_model_parnames_does_not_match(cls):
     """What happens if we send in too many parnames?"""
 
-    templates = [TableModel("foo")]
+    templates = [cls("foo")]
     parvals = np.asarray([[2.3]])
     with pytest.raises(ValueError,
                        match="number of parvals and names do not match: 1 vs 2"):
         create_template_model("foo", ["a", "b"], parvals, templates)
 
 
-def test_create_template_model_parvals_not_2d():
+@pytest.mark.parametrize("cls", [InterpolatedTableModel1D, FixedTableModel])
+def test_create_template_model_parvals_not_2d(cls):
     """What happens if we send parvals not 2D"""
 
     # These arguments do not really make sense. They are enough to
     # check the code.
     #
-    templates = [TableModel("foo")]
+    templates = [cls("foo")]
     parvals = np.asarray([2.3])
     with pytest.raises(ValueError,
                        match="parvals must be 2D, sent 1D"):
         create_template_model("foo", ["a"], parvals, templates)
 
 
-def test_create_template_model_parvals_wrong_size():
+@pytest.mark.parametrize("cls", [InterpolatedTableModel1D, FixedTableModel])
+def test_create_template_model_parvals_wrong_size(cls):
     """What happens if we send parvals not the right size"""
 
     # These arguments do not really make sense. They are enough to
     # check the code.
     #
-    templates = [TableModel("foo")]
+    templates = [cls("foo")]
     parvals = np.arange(12).reshape(3, 4)
     with pytest.raises(ValueError,
                        match="number of parvals and names do not match: 4 vs 1"):
@@ -131,7 +134,8 @@ def test_create_template_model_unknown_interpolator():
     # These arguments do not really make sense. They are enough to
     # check the code.
     #
-    templates = [TableModel("foo"), TableModel("bar")]
+    templates = [InterpolatedTableModel1D("foo"),
+                 InterpolatedTableModel1D("bar")]
     parvals = np.asarray([[12], [13]])
     with pytest.raises(ModelErr,
                        match="Unknown template_interpolator_name=made_up"):
@@ -142,7 +146,8 @@ def test_create_template_model_unknown_interpolator():
 def test_templatemodel_wrong_number_of_pars():
     """Check we error out"""
 
-    templates = [TableModel("foo"), TableModel("bar")]
+    templates = [InterpolatedTableModel1D("foo"),
+                 InterpolatedTableModel1D("bar")]
     with pytest.raises(ModelErr,
                        match="Number of parameter values and templates do not match"):
         TemplateModel(templates=templates)
@@ -151,7 +156,8 @@ def test_templatemodel_wrong_number_of_pars():
 def test_templatemodel_wrong_parvals_element():
     """Check we error out"""
 
-    templates = [TableModel("foo"), TableModel("bar")]
+    templates = [InterpolatedTableModel1D("foo"),
+                 InterpolatedTableModel1D("bar")]
     pars = [Parameter("fooy", "x", 1), Parameter("fooy", "y", 2)]
     parvals = [[2, 3], [1], [4, 5, 54]]
     with pytest.raises(ModelErr,
@@ -177,23 +183,19 @@ def test_templatemodel_pars_no_templates():
         TemplateModel("empty", pars=pars)
 
 
-def test_templatemodel_templates_not_tablemodel():
-    """What happens if we send in templates that are not TableModels?"""
+def test_templatemodel_templates_not_interpolatedtablemodel():
+    """What happens if we send in templates that are not InterpolatedTableModel1D's?
+
+    Answer: It works just fine. While we don't advertize that, any model works,
+    not just a table model.
+    """
 
     templates = [Gauss1D("m1"), Gauss1D("m2")]
     woop = create_template_model("woop", ["woop"], np.asarray([[5], [10]]),
                                  templates)
 
-    with pytest.raises(AttributeError,
-                       match="'Gauss1D' object has no attribute 'fold'"):
-        woop.fold(Data1D("x", [1, 2, 3], [1, 2, 3]))
-
-    # Not sure why this actually fails. Ideally the error would be clearer,
-    # but really this should have been caught at object creation.
-    #
-    with pytest.raises(TypeError,
-                       match="1D model evaluation input array sizes do not match, xlo: 3 vs xhi: 1"):
-        woop([1, 2, 3])
+    woop.fold(Data1D("x", [1, 2, 3], [1, 2, 3]))
+    woop([1, 2, 3])
 
 
 def setup_basic(iname=None, no_x=False):
@@ -204,8 +206,10 @@ def setup_basic(iname=None, no_x=False):
 
     templates = []
     for scale, name in enumerate(["m1", "m2", "m3"], 1):
-        template = TableModel(name)
-        template.load(xdata, x * scale)
+        if xdata is None:
+            template = FixedTableModel(name, y=x * scale)
+        else:
+            template = InterpolatedTableModel1D(name, x=xdata, y=x * scale)
         templates.append(template)
 
     return create_template_model("bob", ["pa"], np.asarray([[10], [20], [30]]),
@@ -261,7 +265,7 @@ def test_templatemodel_basic_can_query(iname, pval, pname):
 
     tmpl = setup_basic(iname)
     tbl = tmpl.query([pval])
-    assert isinstance(tbl, TableModel)
+    assert isinstance(tbl, InterpolatedTableModel1D)
     assert tbl.name == pname
 
 
@@ -411,7 +415,7 @@ def test_interpolate_par1(order, k, pval, expected):
     x = np.asarray([2, 4, 6])
     templates = []
     for scale, name in zip([5, 15, 20, 40, 44], ["m1", "m2", "m3", "m4", "m5"]):
-        template = TableModel(name)
+        template = InterpolatedTableModel1D(name)
         template.load(x, np.ones_like(x) * scale)
         templates.append(template)
 
@@ -479,7 +483,7 @@ def test_interpolate_par3(order, k, pval1, pval2, pval3, expected):
     for p3 in pvals3:
         for p2 in pvals2:
             for p1 in pvals1:
-                template = TableModel()
+                template = InterpolatedTableModel1D()
                 template.load(x, p1 * x * x + p2 * x + p3)
                 templates.append(template)
                 pvals.append([p1, p2, p3])
@@ -509,10 +513,10 @@ def test_interpolate_par3(order, k, pval1, pval2, pval3, expected):
 def test_template_with_different_independent_axes(pa, expected):
     """Check we can have different x values."""
 
-    t1 = TableModel("m1")
+    t1 = InterpolatedTableModel1D("m1")
     t1.load([10, 20, 30], [4, 6, 8])
 
-    t2 = TableModel("m2")
+    t2 = InterpolatedTableModel1D("m2")
     t2.load([12, 20, 32], [16, 16, 30])
 
     templates = [t1, t2]
