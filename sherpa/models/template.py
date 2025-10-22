@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2019 - 2021, 2023, 2024
+#  Copyright (C) 2011, 2016, 2019-2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -70,12 +70,12 @@ alpha values
 
 >>> import numpy as np
 >>> from sherpa.models.template import create_template_model
->>> from sherpa.models.basic import TableModel
+>>> from sherpa.models.basic import InterpolatedTableModel1D
 >>> parnames = ["alpha"]
 >>> parvals = np.asarray([[5], [17], [25]])
->>> m1 = TableModel("m1")
->>> m2 = TableModel("m2")
->>> m3 = TableModel("m3")
+>>> m1 = InterpolatedTableModel1D("m1")
+>>> m2 = InterpolatedTableModel1D("m2")
+>>> m3 = InterpolatedTableModel1D("m3")
 >>> x = [50, 100, 150, 250]
 >>> m1.load(x, [1, 2, 3, 4])
 >>> m2.load(x, [3, 7, 4, 8])
@@ -117,7 +117,7 @@ from sherpa.utils.err import ModelErr
 
 from .parameter import Parameter
 from .model import ArithmeticModel, modelCacher1d
-from .basic import TableModel
+from .basic import FixedTableModel, TableModelBase, InterpolatedTableModel1D
 
 __all__ = ('TemplateModel', 'InterpolatingTemplateModel',
            'KNNInterpolator', 'Template', 'add_interpolator',
@@ -126,73 +126,6 @@ __all__ = ('TemplateModel', 'InterpolatingTemplateModel',
 
 # This is reset by reset_interpolators below.
 interpolators: dict[str, tuple[Callable, dict]] = {}
-
-
-def create_template_model(modelname, names, parvals, templates,
-                          template_interpolator_name='default'):
-    """Create a TemplateModel model class.
-
-    Parameters
-    ----------
-    modelname : str
-        The name of the template model.
-    names : sequence of str
-        The parameters names.
-    parvals : ndarray
-        The parameter values, organised as a 2D ndarray of shape
-        (nelem, npars), where nelem is the number of parameter values
-        and npars the number of parameters (which must match the names
-        parameter).
-    templates : sequence of TableModel instances
-        The model for each set of parameters (each row of parvals).
-        It must match the first dimension of parvals.
-    template_interpolator_name : str or None, optional
-        The interpolator name. If None then there is no interpolation
-        between templates.
-
-    Returns
-    -------
-    model : TemplateModel instance
-        The template model (may be a subclass of TemplateModel if
-        temlpate_interpolater_name is not None).
-
-    """
-
-    if parvals.ndim != 2:
-        raise ValueError(f"parvals must be 2D, sent {parvals.ndim}D")
-
-    # It is not obvious why we have the data transposed, but leave as
-    # is for now.
-    #
-    if parvals.shape[1] != len(names):
-        raise ValueError(f"number of parvals and names do not match: {parvals.shape[1]} vs {len(names)}")
-
-    # Create a list of parameters from input
-    pars = []
-    for name, parval in zip(names, parvals.T):
-        minimum = min(parval)
-        maximum = max(parval)
-        # Initial parameter value is always first parameter value listed
-        par = Parameter(modelname, name, parval[0],
-                        min=minimum, max=maximum,
-                        hard_min=minimum, hard_max=maximum)
-        pars.append(par)
-
-    # Create the templates table from input
-    tm = TemplateModel(modelname, pars, parvals, templates)
-    if template_interpolator_name is None:
-        return tm
-
-    try:
-        func, args = interpolators[template_interpolator_name]
-    except KeyError:
-        raise ModelErr(f"Unknown template_interpolator_name={template_interpolator_name}") from None
-
-    # Do not add keys to the stored dictionary
-    args = args.copy()
-    args['template_model'] = tm
-    args['name'] = modelname
-    return func(**args)
 
 
 # Should this provide direct access to query to better match
@@ -242,6 +175,8 @@ class InterpolatingTemplateModel(ArithmeticModel):
     @modelCacher1d
     def calc(self, p, x0, x1=None, *args, **kwargs):
         interpolated_template = self.interpolate(p, x0)
+        if x1 is None:
+            return interpolated_template(x0, *args, **kwargs)
         return interpolated_template(x0, x1, *args, **kwargs)
 
     def interpolate(self, point, x_out):
@@ -260,7 +195,7 @@ class InterpolatingTemplateModel(ArithmeticModel):
 
         Returns
         -------
-        model : TableModel instance
+        model : TableModelBase instance
             The model to use.
 
         """
@@ -322,9 +257,10 @@ class KNNInterpolator(InterpolatingTemplateModel):
 
         sum_weights = sum(1 / weight for (idx, weight) in k_distances)
         y_out /= sum_weights
-        tm = TableModel('interpolated')
-        tm.load(x_out, y_out)
-        return tm
+        if x_out is None:
+            return FixedTableModel('fixed', y=y_out)
+        else:
+            return InterpolatedTableModel1D('interpolated', x=x_out, y=y_out)
 
 
 class Template(KNNInterpolator):
@@ -340,7 +276,7 @@ class Template(KNNInterpolator):
 
 
 class TemplateModel(ArithmeticModel):
-    """Combine TableModel instances.
+    """Combine TableModelBase instances.
 
     Parameters
     ----------
@@ -350,7 +286,7 @@ class TemplateModel(ArithmeticModel):
         The parameters.
     parvals : sequence of sequence of float
         The parameter values for each template.
-    templates : sequence of TableModel
+    templates : sequence of TableModelBase
         The template for each element of parvals.
 
     See Also
@@ -359,8 +295,11 @@ class TemplateModel(ArithmeticModel):
 
     """
 
-    def __init__(self, name='templatemodel', pars=(), parvals=None,
-                 templates=None):
+    def __init__(self,
+                 name: str='templatemodel',
+                 pars=(),
+                 parvals=None,
+                 templates: list[TableModelBase] | None =None):
 
         self.parvals = parvals if parvals is not None else []
         self.templates = templates if templates is not None else []
@@ -399,7 +338,10 @@ class TemplateModel(ArithmeticModel):
 
         """
         for template in self.templates:
-            template.fold(data)
+            # FixedTemplateModel and subclasses need a fold call,
+            # while InterpolatedTableModel1D does not (and doesn't have a "fold" method).
+            if hasattr(template, 'fold'):
+                template.fold(data)
 
     def get_x(self):
         """Return the x (independent) axis for the selected template.
@@ -436,7 +378,7 @@ class TemplateModel(ArithmeticModel):
 
         Returns
         -------
-        model : TableModel instance
+        model : TableModelBase instance
 
         Raises
         ------
@@ -456,6 +398,76 @@ class TemplateModel(ArithmeticModel):
         # return interpolated the spectrum according to the input grid
         # (x0, [x1])
         return table_model(x0, x1, *args, **kwargs)
+
+
+def create_template_model(modelname: str,
+                          names: list[str],
+                          parvals: np.ndarray,
+                          templates: list[TableModelBase],
+                          template_interpolator_name: str | None='default') -> TemplateModel | InterpolatingTemplateModel:
+    """Create a TemplateModel model class.
+
+    Parameters
+    ----------
+    modelname : str
+        The name of the template model.
+    names : sequence of str
+        The parameters names.
+    parvals : ndarray
+        The parameter values, organised as a 2D ndarray of shape
+        (nelem, npars), where nelem is the number of parameter values
+        and npars the number of parameters (which must match the names
+        parameter).
+    templates : sequence of TableModelBase instances
+        The model for each set of parameters (each row of parvals).
+        It must match the first dimension of parvals.
+    template_interpolator_name : str or None, optional
+        The interpolator name. If None then there is no interpolation
+        between templates.
+
+    Returns
+    -------
+    model : TemplateModel instance
+        The template model (may be a subclass of TemplateModel if
+        template_interpolator_name is not None).
+
+    """
+
+    if parvals.ndim != 2:
+        raise ValueError(f"parvals must be 2D, sent {parvals.ndim}D")
+
+    # It is not obvious why we have the data transposed, but leave as
+    # is for now.
+    #
+    if parvals.shape[1] != len(names):
+        raise ValueError(f"number of parvals and names do not match: {parvals.shape[1]} vs {len(names)}")
+
+    # Create a list of parameters from input
+    pars = []
+    for name, parval in zip(names, parvals.T):
+        minimum = min(parval)
+        maximum = max(parval)
+        # Initial parameter value is always first parameter value listed
+        par = Parameter(modelname, name, parval[0],
+                        min=minimum, max=maximum,
+                        hard_min=minimum, hard_max=maximum)
+        pars.append(par)
+
+    # Create the templates table from input
+    tm = TemplateModel(modelname, pars, parvals, templates)
+    if template_interpolator_name is None:
+        return tm
+
+    try:
+        func, args = interpolators[template_interpolator_name]
+    except KeyError:
+        raise ModelErr(f"Unknown template_interpolator_name={template_interpolator_name}") from None
+
+    # Do not add keys to the stored dictionary
+    args = args.copy()
+    args['template_model'] = tm
+    args['name'] = modelname
+    return func(**args)
 
 
 def reset_interpolators() -> None:
