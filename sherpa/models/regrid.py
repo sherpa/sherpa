@@ -179,6 +179,9 @@ class PointAxis(Axis):
 
     @property
     def start(self):
+        if self.is_empty:
+            raise DataErr("emptyaxis")
+
         if self.is_ascending:
             return self.x[0]
 
@@ -186,6 +189,9 @@ class PointAxis(Axis):
 
     @property
     def end(self):
+        if self.is_empty:
+            raise DataErr("emptyaxis")
+
         if self.is_ascending:
             return self.x[-1]
 
@@ -254,6 +260,9 @@ class IntegratedAxis(Axis):
 
     @property
     def start(self):
+        if self.is_empty:
+            raise DataErr("emptyaxis")
+
         if self.is_ascending:
             return self.lo[0]
 
@@ -261,6 +270,9 @@ class IntegratedAxis(Axis):
 
     @property
     def end(self):
+        if self.is_empty:
+            raise DataErr("emptyaxis")
+
         if self.is_ascending:
             return self.hi[-1]
 

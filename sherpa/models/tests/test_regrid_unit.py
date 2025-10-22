@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 - 2024
+#  Copyright (C) 2017-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1194,6 +1194,19 @@ def test_integratedaxis_start():
 def test_integratedaxis_end():
     """Pick a descending axis for fun"""
     assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).end == pytest.approx(4.5)
+
+
+@pytest.mark.parametrize("axis", [PointAxis(None),
+                                  IntegratedAxis(None, None)])
+@pytest.mark.parametrize("name", ["start", "end"])
+def test_axis_ends_when_unset(axis, name):
+    """What happens with .start/.end calls to an empty axis?"""
+
+    # The attribute is a property, so calling getattr will trigger the
+    # error.
+    with pytest.raises(DataErr,
+                       match="^Axis is empty or has a size of 0$"):
+        _ = getattr(axis, name)
 
 
 def test_evaluationspace1d_zeros_like_empty():
