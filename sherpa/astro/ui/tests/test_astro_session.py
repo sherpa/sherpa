@@ -1824,7 +1824,11 @@ def test_get_xxx_component_plot_with_templates_data1dint_no_interp(session, labe
         assert len(mplot.y) == 19
         assert len(cplot.y) == 100
 
-        assert mplot.y[0] == pytest.approx(cplot.y[0] * ynorm)
+        bin_width = np.diff(edges)
+        expected_bin_0 = cplot.y[0] * ynorm
+        # The model is integrated over several bins, but the result is close
+        # to the value of the first bin.
+        assert mplot.y[0] / bin_width[0] == pytest.approx(expected_bin_0, rel=2e-2)
         assert np.all(mplot.y > 0)
         assert np.all(cplot.y > 0)
 
@@ -1988,19 +1992,10 @@ def test_compare_get_model_component_plot_with_templates(interp, make_data_path)
 
     assert cplot_int.xlo == pytest.approx(cplot_pha.xlo)
     assert cplot_1d.x == pytest.approx(cplot_pha.xlo)
-
-    # It looks like the model is not integrated across the bin for
-    # the 1DInt case.
-    #
-    assert cplot_1d.y == pytest.approx(cplot_int.y)
-
-    # The DataPHA result, when compared to Data1D is:
-    #
-    # a) multiplied by SPECRESP
-    # b) divided by BIN_WIDTH
-    #
-    r = cplot_int.y / cplot_pha.y
-    assert r == pytest.approx(ones * BIN_WIDTH / SPECRESP)
+    assert cplot_1d.y == pytest.approx(cplot_int.y / BIN_WIDTH)
+    # DataPHA is a not-integrated dataset (although maybe it should be)
+    # So it differs from Data1D only by the response.
+    assert cplot_pha.y == pytest.approx(cplot_1d.y * SPECRESP)
 
 
 @requires_data
@@ -3011,7 +3006,7 @@ def test_add_model_types_simple(session):
     s._add_model_types(sherpa.models.basic)
 
     # This will need updating if models are added to basic
-    assert len(s.list_models()) == 31
+    assert len(s.list_models()) == 33
 
 
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])
@@ -3023,7 +3018,7 @@ def test_add_model_types_scalar(session):
                        baselist=ArithmeticModel)
 
     # This will need updating if models are added to basic
-    assert len(s.list_models()) == 31
+    assert len(s.list_models()) == 33
 
 
 @pytest.mark.parametrize("session", [pytest.param(Session, marks=pytest.mark.session), AstroSession])

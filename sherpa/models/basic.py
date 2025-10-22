@@ -18,12 +18,15 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from abc import ABCMeta
+from collections.abc import Callable, Sequence
 import logging
+from warnings import warn
 
 import numpy
 
-from sherpa.utils import bool_cast, interpolate, linear_interp, \
-    sao_fcmp
+from sherpa.utils import bool_cast, integrate_tabulated_function, interpolate, linear_interp, \
+    integrate, sao_fcmp
 from sherpa.utils.err import ModelErr
 from sherpa.utils.guess import get_position, guess_amplitude, \
     guess_amplitude_at_ref, guess_amplitude2d, guess_bounds, \
@@ -46,6 +49,7 @@ __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
            'StepLo1D', 'Tan',
            'Box2D', 'Const2D', 'Delta2D', 'Gauss2D', 'SigmaGauss2D',
            'NormGauss2D', 'Polynom2D', 'Scale2D', 'UserModel', 'TableModel',
+           'FixedTableModel', 'InterpolatedTableModel1D',
            'Integrate1D')
 
 DBL_EPSILON = numpy.finfo(float).eps
@@ -1926,7 +1930,7 @@ class TableModel(ArithmeticModel):
 
     The model can be used for data when the independent axis is either
     not useful - such as for an image mask - or the data does not have
-    a meaningful independent axis, as in the the independent variable
+    a meaningful independent axis, as in the independent variable
     being an index for a star and the dependent axis is a property of
     each star. In this case the x argument to `load` is set to `None`,
     which means that no interpolation is used and that the `fold`
@@ -2017,6 +2021,10 @@ class TableModel(ArithmeticModel):
         self._method = linear_interp
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.ampl,))
+        warn("TableModel is deprecated and will be removed in a future version. "
+             "Use FixedTableModel (if only setting y values) "
+             "or InterpolatedTableModel1D (if setting both x and y values).",
+             category=DeprecationWarning)
 
     def load(self, x, y):
         """Set the model values.
@@ -2182,6 +2190,397 @@ class TableModel(ArithmeticModel):
 
         raise ModelErr("filtermismatch", 'table model',
                        f"data, ({len(self.__y)} vs {len(x0)})")
+
+
+
+class TableModelBase(ArithmeticModel, metaclass=ABCMeta):
+    """Tabulated values are linearly scaled and may be interpolated.
+
+    This is an abstract base class.
+    """
+
+    def __init__(self, name='tablemodelbase'):
+        self._y = None
+        self.filename = None
+        self.ampl = Parameter(name, 'ampl', 1)
+        super().__init__( name, (self.ampl,))
+
+    def get_y(self):
+        """Return the dependent axis or None.
+
+        See Also
+        --------
+        get_x, load
+
+        """
+        return self._y
+
+    # A simplified version of sherpa.data._check, which is not
+    # used here to avoid circular dependencies. Rather than raise
+    # DataErr, we raise ModelErr with a similar message.
+    #
+    def _check_array(self, val):
+        if val is None:
+            return None
+
+        val = numpy.asarray(val)
+        if val.ndim != 1:
+            raise ModelErr("Array must be 1D or None")
+
+        # Check we can add 0 to the values. This is to try and
+        # catch cases when a string column is passed to load. It
+        # will not catch all possible problem cases. An
+        # alternative would be to check
+        #    isinstance(val[0], numbers.Number)
+        # but it's not clear which is best.
+        #
+        # We could also check whether values are np.isfinite() but
+        # users may want to read in bad values that we then always
+        # mask out.
+        #
+        try:
+            val + 0
+        except Exception:
+            raise ModelErr(f"Unable to treat array as numeric: {val}") from None
+
+        return val
+
+
+class FixedTableModel(TableModelBase):
+    """Tabulated values are linearly scaled and may be interpolated.
+
+    The `load` method is used to read in the tabular data.
+    The model must have the same size as the y values of the data, and
+    the `fold` method must be sent the data object to be fit
+    before a fit is made if the data is filtered in any way,
+    **because the model will otherwise not know which values to use**.
+
+    The model values - the y argument to `load` - are multiplied by
+    the `ampl` parameter of the model.
+
+    Attributes
+    ----------
+    ampl
+        The linear scaling factor for the table values
+
+    Notes
+    -----
+    The model has `ndim` set to `None` as it can be used for any
+    dimension of data.
+
+    The model ignores the integrate setting.
+
+    See Also
+    --------
+    Const1D, Scale1D, InterpolatedTableModel1D
+
+    Examples
+    --------
+
+    If the x array is given to the `load` call then the model can
+    interpolate from the requested grid onto the load data (the
+    default is linear interpolation):
+
+    The model can be used for data when the independent axis is either
+    not useful - such as for an image mask - or the data does not have
+    a meaningful independent axis, as in the the independent variable
+    being an index for a star and the dependent axis is a property of
+    each star. In this case the `fold`
+    method must be used if the data has been filtered in any way, but
+    it's safest to always use it:
+
+    >>> from sherpa.models.basic import FixedTableModel
+    >>> from sherpa.data import Data1D
+    >>> from sherpa.fit import Fit
+    >>> d = Data1D('data', [1, 2, 3, 4, 5], [1.2, .4, 2.2, .3, 1.])
+    >>> d.staterror = [.2, .2, .2, .2, .2]
+    >>> tm1 = FixedTableModel('tabmodel')
+    >>> tm1.load([.6, .2, 1.1, .2, .5])
+    >>> print(tm1.ampl.val)
+    1.0
+    >>> tm1.fold(d)
+    >>> fit1 = Fit(d, tm1)
+    >>> res1 = fit1.fit()
+    >>> print(tm1.ampl.val)
+    1.9894736842102083
+
+    In this case the `fold` method is necessary, to ensure that the
+    fit only uses the valid data bins:
+
+    >>> import numpy as np
+    >>> y = np.ma.masked_invalid([np.nan, np.nan, 2.2, .3, 1.])
+    >>> d = Data1D('data', [1, 2, 3, 4, 5], y)
+    >>> d.staterror = [.2, .2, .2, .2, .2]
+    >>> tm2 = FixedTableModel('tabmodel')
+    >>> tm2.load([.6, .2, 1.1, .2, .5])
+    >>> tm2.fold(d)
+    >>> print(tm2.ampl.val)
+    1.0
+    >>> fit2 = Fit(d, tm2)
+    >>> res2 = fit2.fit()
+    >>> print(tm2.ampl.val)
+    1.9866666666663104
+
+    The masking also holds if the notice or ignore method has been
+    used on the dataset:
+
+    >>> d = Data1D('data', [1, 2, 3, 4, 5], [1.2, .4, 2.2, .3, 1])
+    >>> d.staterror = [.2, .2, .2, .2, .2]
+    >>> d.ignore(xhi=2)
+    >>> tm3 = FixedTableModel('tabmodel')
+    >>> tm3.load([.6, .2, 1.1, .2, .5])
+    >>> tm3.fold(d)
+    >>> print(tm3.ampl.val)
+    1.0
+    >>> fit3 = Fit(d, tm3)
+    >>> res = fit3.fit()
+    >>> print(tm3.ampl.val)
+    1.9866666666663104
+
+    """
+    def __init__(self, name='fixedtablemodel', y=None):
+        self._filtered_y = None
+        super().__init__(name)
+        self.load(y)
+
+    def load(self, y: Sequence | None):
+        """Set the model values.
+
+        Parameters
+        ----------
+        y : Sequence
+           The model values.
+
+        See Also
+        --------
+        get_x, get_y
+
+        """
+        self._y = self._check_array(y)
+
+        # clear the filtered array
+        self._filtered_y = None
+
+    def fold(self, data):
+        """Ensure the model matches the data filter.
+
+        This should be called after load, to ensure that any existing
+        filter is applied correctly during a fit.
+
+        Parameters
+        ----------
+        data : sherpa.data.Data instance
+           An object with a mask attribute.
+
+        """
+
+        if self._y is None:
+            raise ModelErr("The tablemodel's load method must be called first")
+
+        # Clear out the setting. If needed it will get reset.
+        #
+        self._filtered_y = None
+
+        # What should we do with data.mask = {True, False}?
+        #
+        mask = data.mask
+        if not numpy.iterable(mask):
+            return
+
+        # At this point we know mask is an iterable, so it should
+        # match the y data of the model.
+        #
+        if len(mask) != len(self._y):
+            raise ModelErr("filtermismatch", 'table model',
+                           f"data, ({len(self._y)} vs {len(mask)})")
+
+        self._filtered_y = self._y[mask]
+
+    def calc(self, p, x0, x1=None, *args, **kwargs):
+        """Evaluate the model.
+
+        The load method must have been called first.
+        """
+        if self._y is None:
+            raise ModelErr("The tablemodel's load method must be called first")
+
+        if (self._filtered_y is not None and
+              len(x0) == len(self._filtered_y)):
+            return p[0] * self._filtered_y
+
+        if len(x0) == len(self._y):
+            return p[0] * self._y
+
+        raise ModelErr("filtermismatch", 'table model',
+                       f"data, ({len(self._y)} vs {len(x0)})")
+
+class InterpolatedTableModel1D(TableModelBase, RegriddableModel1D):
+    """Tabulated values are linearly scaled and may be interpolated.
+
+    The `load` method is used to read in the tabular data and model
+    evaluation will interpolate the requested grid onto the data, with the
+    interpolation scheme controlled by the `method` attribute.
+
+    The model values - the y argument to `load` - are multiplied by
+    the `ampl` parameter of the model.
+
+    Attributes
+    ----------
+    ampl
+        The linear scaling factor for the table values
+    method : callable
+        The interpolation method.
+    integrate_kwargs
+        Used to pass extra parameters to the integrator (currently
+        `epsabs`, `epsrel`, `maxeval`, `errflag`, and `logger`).
+        Only used if the `integrate` attribute is set to True.
+
+    See Also
+    --------
+    Const1D, Scale1D, FixedTableModel
+
+    Examples
+    --------
+
+    The model can interpolate from the requested grid onto the load data
+    (the default is linear interpolation):
+
+    >>> tm = InterpolatedTableModel1D()
+    >>> tm.load([10, 20, 25, 30], [14, 12, 17, 18])
+    >>> tm.ampl = 10
+    >>> tm([15, 20, 27])
+    array([130., 120., 174.])
+
+    The `method` attribute can be changed to select a different
+    interpolation scheme: it requires a function that accepts (xout,
+    xin, yin) and returns yout which are the interpolated values of
+    xin,yin onto the grid xout:
+
+    >>> from sherpa.utils import neville
+    >>> tm.method = neville
+    >>> tm([15, 20, 27])
+    array([ 90.   , 120.   , 182.16])
+    """
+    ndim = 1
+
+    @property
+    def method(self):
+        """The interpolation method.
+
+        The method argument is a function that accepts arguments (xout,
+        xin, yin) and returns the yout values from interpolating xout onto
+        (xin, yin). The default is linear interpolation
+        (sherpa.utils.linear_interp).
+        """
+        return self._method
+
+    @method.setter
+    def method(self, val):
+        self._method = val
+
+        # as the method affects the cache, clear it (we could skip
+        # this if the method has not changed but is it worth it?)
+        #
+        self.cache_clear()
+
+    def __init__(self, name: str='interpolatedtablemodel1d',
+                 x: Sequence | None=None, y: Sequence | None=None,
+                 method: Callable=linear_interp,
+                 integrate_method: Callable=integrate_tabulated_function,
+                 integrate_kwargs: dict ={}):
+        self._x = None
+        self._method = method
+        self.integrate_kwargs = integrate_kwargs
+        self.integrate_method = integrate_method
+        super().__init__(name)
+        self.load(x, y)
+
+    def load(self, x, y):
+        """Set the model values.
+
+        Parameters
+        ----------
+        x, y : sequence
+           The model values. It is expected that either both are
+           given, and have the same number of elements, or that only y
+           is set, although the model can be cleared by setting both
+           to None. If x is given then the data is saved after being
+           sorted into increasing order of x.
+
+        See Also
+        --------
+        get_x, get_y
+
+        """
+
+        # Is there a reason to still accept None here?
+        # Presumably you have data to set if you call "load".
+        if (x is not None and y is None):
+            raise ModelErr("y must be set if x is set")
+        if (x is None and y is not None):
+            raise ModelErr("x and y must be set together or both be None")
+        # Clear the cache. We could avoid doing this if the
+        # data has not changed but this is not worth the
+        # complexity.
+        #
+        self.cache_clear()
+
+        self._y = self._check_array(y)
+        self._x = self._check_array(x)
+
+        # The latter two conditions are just there to make type-checkers happy.
+        # If x is None, then _x  is None as well, since it's set from x just above,
+        # and the checks on the top of this method ensure that either both x and y
+        # are None or neither of them is.
+        if x is None or (self._x is None) or (self._y is None):
+            return
+
+        nx = len(self._x)
+        ny = len(self._y)
+        if nx != ny:
+            raise ModelErr(f"size mismatch between x and y: {nx} vs {ny}")
+
+        # Ensure the data is sorted.
+        #
+        idx = self._x.argsort()
+        self._y = self._y[idx]
+        self._x = self._x[idx]
+
+    def get_x(self):
+        """Return the independent axis or None.
+
+        See Also
+        --------
+        get_y, load
+
+        """
+        return self._x
+
+
+    @modelCacher1d
+    def _calc_interpolate(self, x0):
+        return interpolate(x0, self._x, self._y, function=self.method)
+
+    @modelCacher1d
+    def _calc_integrate(self, x0, x1):
+        return integrate(x0, x1, self._x, self._y,
+                         interpolate_func=self.method,
+                         integrate_func=self.integrate_method,
+                         **self.integrate_kwargs)
+
+    def calc(self, p, x0, x1=None, *args, **kwargs):
+        """Evaluate the model.
+
+        The load method must have been called first to set the values that
+        should be interpolated.
+        """
+        if self._y is None:
+            raise ModelErr("The tablemodel's load method must be called first")
+
+        if self.integrate and x1 is not None:
+            return p[0] * self._calc_integrate(x0, x1)
+
+        return p[0] * self._calc_interpolate(x0)
 
 
 class UserModel(ArithmeticModel):

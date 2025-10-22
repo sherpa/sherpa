@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -32,7 +32,7 @@ from sherpa.data import Data1D, Data2D
 from sherpa.instrument import Kernel, PSFModel, RadialProfileKernel, \
     ConvolutionKernel, PSFKernel
 from sherpa.models.basic import Box1D, Box2D, Const1D, Const2D, Gauss1D, \
-    StepLo1D, TableModel
+    StepLo1D, FixedTableModel
 from sherpa.utils.err import PSFErr
 
 
@@ -288,7 +288,7 @@ def test_psfmodel_kernel_has_no_dimension():
     y = np.ones_like(x)
     data = Data1D("data-data", x, y)
 
-    m = PSFModel(kernel=TableModel())
+    m = PSFModel(kernel=FixedTableModel())
     with pytest.raises(PSFErr,
                        match="PSF model dimension must be <= 2"):
         m.get_kernel(data)

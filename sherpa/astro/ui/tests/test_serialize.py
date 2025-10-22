@@ -35,7 +35,7 @@ from sherpa.astro.models import JDPileup
 from sherpa.astro import ui
 from sherpa.astro.io.wcs import WCS
 
-from sherpa.models.basic import TableModel
+from sherpa.models.basic import FixedTableModel
 
 from sherpa.utils.err import ArgumentErr, DataErr, \
     IdentifierErr, IOErr, StatErr
@@ -3317,8 +3317,8 @@ def test_restore_table_model(make_data_path, check_str):
 
     restore()
 
-    assert isinstance(tbl, TableModel)
-    assert tbl.name == "tablemodel.tbl"
+    assert isinstance(tbl, FixedTableModel)
+    assert tbl.name == "fixedtablemodel.tbl"
     assert tbl.ampl.val == 10
     assert tbl.ampl.min == 0
     assert tbl.ampl.max == 20

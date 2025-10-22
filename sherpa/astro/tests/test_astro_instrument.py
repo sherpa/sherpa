@@ -42,7 +42,7 @@ from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
 from sherpa.data import Data1D
 from sherpa.fit import Fit
 from sherpa.models.basic import Box1D, Const1D, Gauss1D, Polynom1D, \
-    PowLaw1D, TableModel
+    PowLaw1D, FixedTableModel
 from sherpa.models.model import ArithmeticModel, \
     ArithmeticConstantModel, BinaryOpModel, Model
 from sherpa.utils.err import DataErr, PSFErr
@@ -2294,7 +2294,7 @@ def test_psfmodel_kernel_has_no_dimension():
     y = np.ones_like(x)
     data = Data1D("data-data", x, y)
 
-    m = PSFModel(kernel=TableModel())
+    m = PSFModel(kernel=FixedTableModel())
     with pytest.raises(PSFErr,
                        match="PSF model dimension must be <= 2"):
         m.get_kernel(data)
