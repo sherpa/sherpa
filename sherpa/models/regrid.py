@@ -796,7 +796,13 @@ class ModelDomainRegridder1D:
         if nargs == 0:
             raise ModelErr('nogrid')
 
+        # This is a pre-requisite for calling this routine.
+        assert not self.evaluation_space.is_empty
+
         requested_eval_space = EvaluationSpace1D(*args_array)
+        if requested_eval_space.is_empty:
+            # This is slightly different to the 'nargs == 0' check.
+            raise ModelErr('nogrid')
 
         # Ensure the two grids match: integrated or non-integrated.
         if self.evaluation_space.is_integrated and not requested_eval_space.is_integrated:
@@ -1063,7 +1069,14 @@ class ModelDomainRegridder2D:
         if nargs == 0:
             raise ModelErr('nogrid')
 
+        # This is a pre-requisite for calling this routine.
+        assert not self.evaluation_space.is_empty
+
         requested_eval_space = EvaluationSpace2D(*args_array)
+        if requested_eval_space.is_empty:
+            # What is the best behaviour here?
+            assert False
+            raise ModelErr('nogrid')
 
         # Ensure the two grids match: integrated or non-integrated.
         if self.evaluation_space.is_integrated and not requested_eval_space.is_integrated:
