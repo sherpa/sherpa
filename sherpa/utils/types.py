@@ -27,7 +27,8 @@ in Python matures.
 """
 
 from collections.abc import Callable, Sequence
-from typing import Any, Concatenate, ParamSpec, Protocol, TypeAlias
+from typing import Any, Concatenate, ParamSpec, Protocol, \
+    SupportsFloat, TypeAlias
 
 import numpy as np
 
@@ -90,7 +91,8 @@ OptFunc = Callable[Concatenate[StatFunc,
 # - an ArithmeticConstantModel can return a scalar
 # - models could return a sequence rather than a ndarray
 #
-ModelFunc = Callable[..., ArrayType]
+ModelValsType = ArrayType | SupportsFloat
+ModelFunc = Callable[..., ModelValsType]
 
 
 # Fit-like function used by both the optimisation and fit modules.
