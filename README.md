@@ -3,7 +3,7 @@
 [![Documentation Status](https://readthedocs.org/projects/sherpa/badge/)](https://sherpa.readthedocs.io/)
 [![DOI](https://zenodo.org/badge/683/sherpa/sherpa.svg)](https://zenodo.org/badge/latestdoi/683/sherpa/sherpa)
 [![GPLv3+ License](https://img.shields.io/badge/license-GPLv3+-blue.svg)](https://www.gnu.org/copyleft/gpl.html)
-![Python version](https://img.shields.io/badge/Python-3.10,3.11,3.12,3.13-green.svg?style=flat)
+![Python version](https://img.shields.io/badge/Python-3.11,3.12,3.13-green.svg?style=flat)
 
 <!-- TOC *generated with [DocToc](https://github.com/thlorenz/doctoc)* -->
 **Table of Contents**
@@ -86,7 +86,8 @@ documentation, and should be read if the following is not sufficient.
 It is strongly recommended that some form of *virtual environment* is
 used with Sherpa.
 
-Sherpa is tested against Python versions 3.10, 3.11, 3.12, and with experimental support for Python 3.13.
+Sherpa is tested against Python versions 3.11, 3.12, and 3.13. There
+is currently no support for the free-threaded version of Python.
 
 The last version of Sherpa which supported Python 2.7 is
 [Sherpa 4.11.1](https://doi.org/10.5281/zenodo.3358134).
@@ -95,8 +96,8 @@ Using Conda
 --------------
 
 Sherpa is provided for both Linux and macOS operating systems running
-Python 3.10, 3.11, and 3.12. It can be installed with the `conda`
-package manager by saying
+Python 3.11 to 3.13. It can be installed with the `conda` package
+manager by saying
 
     $ conda install -c https://cxc.cfa.harvard.edu/conda/sherpa -c conda-forge sherpa
 
