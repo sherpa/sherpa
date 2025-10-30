@@ -97,7 +97,7 @@ jobs:
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
-            python-version: "3.12"
+            python-version: "3.14"
             install-type: install
             test-data: package
             matplotlib-version: 3
