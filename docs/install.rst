@@ -33,7 +33,7 @@ Requirements
 
 Sherpa has the following requirements:
 
-* Python 3.11 to 3.13 (there is no support for free-threaded Python)
+* Python 3.11 to 3.14 (there is no support for free-threaded Python)
 * NumPy
 * Linux or OS-X (patches to add Windows support are welcome)
 
@@ -143,7 +143,7 @@ Prerequisites
 
 The prerequisites for building from source are:
 
-* Python versions: 3.11 to 3.13 (there is no support for free-threaded Python)
+* Python versions: 3.11 to 3.14 (there is no support for free-threaded Python)
 * Python packages: ``setuptools``, ``numpy`` (these should be
   automatically installed by ``pip``)
 * System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
