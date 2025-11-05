@@ -191,14 +191,19 @@ parameter::
     >>> pval, plo, phi = get_error_estimates(par1[nburn:])
 
 """
+
+from collections.abc import Callable
 from datetime import datetime
 import logging
+from typing import Any
 
 import numpy as np
 
 import sherpa
 from sherpa.data import Data1D, Data1DAsymmetricErrs
 from sherpa.fit import Fit
+from sherpa.models.model import Model
+from sherpa.models.parameter import Parameter
 from sherpa.optmethods import LevMar, OptMethod
 
 from sherpa.stats import Cash, CStat, WStat, LeastSq, Stat
@@ -246,8 +251,8 @@ def inverse2(x):
     return 1.0 / (x * x)
 
 
-_samplers = {"metropolismh": MetropolisMH, "mh": MH}
-_walkers = {"metropolismh": Walk, "mh": Walk}
+_samplers: dict[str, type[Sampler]] = {"metropolismh": MetropolisMH, "mh": MH}
+_walkers: dict[str, type[Walk]] = {"metropolismh": Walk, "mh": Walk}
 
 
 class MCMC(NoNewAttributesAfterInit):
@@ -263,31 +268,33 @@ class MCMC(NoNewAttributesAfterInit):
 
     __walkers = _walkers.copy()
 
-    def _get_sampler(self):
+    def _get_sampler(self) -> type[Sampler]:
         return self._sampler
 
-    def _set_sampler(self, sampler):
+    def _set_sampler(self, sampler: type[Sampler]) -> None:
         self._sampler = sampler
         self._sampler_opt = get_keyword_defaults(sampler.init)
 
     sampler = property(_get_sampler, _set_sampler)
 
-    def _get_walker(self):
+    def _get_walker(self) -> type[Walk]:
         return self._walker
 
-    def _set_walker(self, walker):
+    def _set_walker(self, walker: type[Walk]) -> None:
         self._walker = walker
 
     walker = property(_get_walker, _set_walker)
 
-    def _get_sampler_opt(self, opt):
+    def _get_sampler_opt(self, opt: str) -> Any:
         return self._sampler_opt[opt]
 
-    def _set_sampler_opt(self, opt, val):
+    def _set_sampler_opt(self, opt: str, val: Any) -> None:
         self._sampler_opt[opt] = val
 
-    def __init__(self):
-        self.priors = {}
+    def __init__(self) -> None:
+        # A prior can be a function or a model instance, but models
+        # are callable so there is no need to say Callable | Model
+        self.priors: dict[str, Callable] = {}
         self._walker = Walk
         self._sampler = MetropolisMH
         self._sampler_opt = get_keyword_defaults(MetropolisMH.init)
@@ -307,7 +314,7 @@ class MCMC(NoNewAttributesAfterInit):
         self.__dict__.update(state)
 
     # ## DOC-TODO: include examples
-    def list_priors(self):
+    def list_priors(self) -> dict[str, Callable]:
         """Return the priors set for model parameters, if any.
 
         Returns
@@ -324,7 +331,7 @@ class MCMC(NoNewAttributesAfterInit):
         """
         return self.priors
 
-    def get_prior(self, par):
+    def get_prior(self, par: Parameter) -> Callable:
         """Return the prior function for a parameter.
 
         Parameters
@@ -361,7 +368,10 @@ class MCMC(NoNewAttributesAfterInit):
         return prior
 
     # ## DOC-TODO: should set_sampler_opt be mentioned here?
-    def set_prior(self, par, prior):
+    def set_prior(self,
+                  par: Parameter,
+                  prior: Callable
+                  ) -> None:
         """Set the prior function to use with a parameter.
 
         The default prior used by ``get_draws`` for each parameter
@@ -422,7 +432,7 @@ class MCMC(NoNewAttributesAfterInit):
 
         self.priors[par.fullname] = prior
 
-    def list_samplers(self):
+    def list_samplers(self) -> list[str]:
         """List the samplers available for MCMC analysis with ``get_draws``.
 
         Returns
@@ -451,7 +461,7 @@ class MCMC(NoNewAttributesAfterInit):
         """
         return list(self.__samplers.keys())
 
-    def set_sampler(self, sampler):
+    def set_sampler(self, sampler: str | type[Sampler]) -> None:
         """Set the MCMC sampler.
 
         The sampler determines the type of jumping rule to
@@ -525,7 +535,7 @@ class MCMC(NoNewAttributesAfterInit):
         else:
             raise TypeError(f"Unknown sampler '{sampler}'")
 
-    def get_sampler(self):
+    def get_sampler(self) -> dict[str, Any]:
         """Return the current MCMC sampler options.
 
         Returns
@@ -545,7 +555,7 @@ class MCMC(NoNewAttributesAfterInit):
         """
         return self._sampler_opt.copy()
 
-    def get_sampler_name(self):
+    def get_sampler_name(self) -> str:
         """Return the name of the current MCMC sampler.
 
         Returns
@@ -566,7 +576,7 @@ class MCMC(NoNewAttributesAfterInit):
         """
         return self.sampler.__name__
 
-    def get_sampler_opt(self, opt):
+    def get_sampler_opt(self, opt: str) -> Any:
         """Return an option of the current MCMC sampler.
 
         Returns
@@ -589,7 +599,7 @@ class MCMC(NoNewAttributesAfterInit):
         """
         return self._get_sampler_opt(opt)
 
-    def set_sampler_opt(self, opt, value):
+    def set_sampler_opt(self, opt: str, value: Any) -> None:
         """Set an option for the current MCMC sampler.
 
         Parameters
@@ -649,7 +659,13 @@ class MCMC(NoNewAttributesAfterInit):
         """
         self._set_sampler_opt(opt, value)
 
-    def get_draws(self, fit, sigma, niter=1000, cache=True, rng=None):
+    def get_draws(self,
+                  fit: Fit,
+                  sigma,
+                  niter: int = 1000,
+                  cache: bool = True,
+                  rng: random.RandomType | None = None
+                  ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Run the pyBLoCXS MCMC algorithm.
 
         The function runs a Markov Chain Monte Carlo (MCMC) algorithm
@@ -834,7 +850,7 @@ class ReSampleData(NoNewAttributesAfterInit):
     (10, 61)
 
     """
-    def __init__(self, data, model):
+    def __init__(self, data: Data1D, model: Model) -> None:
 
         # Should this error out if data is an instance of Data1DInt?
         if data.ndim != 1:
@@ -845,7 +861,10 @@ class ReSampleData(NoNewAttributesAfterInit):
         self.model = model
         super().__init__()
 
-    def __call__(self, niter=1000, seed=None, rng=None,
+    def __call__(self,
+                 niter: int = 1000,
+                 seed: int | None = None,
+                 rng: random.RandomType | None = None,
                  *,
                  stat: Stat | None = None,
                  method: OptMethod | None = None
@@ -853,7 +872,10 @@ class ReSampleData(NoNewAttributesAfterInit):
         return self.call(niter, seed=seed, rng=rng, stat=stat,
                          method=method)
 
-    def call(self, niter, seed=None, rng=None,
+    def call(self,
+             niter: int,
+             seed: int | None = None,
+             rng: random.RandomType | None = None,
              *,
              # Mark these as keyword-only as they are additions to the
              # interface and the interface is complicated enough it
