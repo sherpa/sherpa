@@ -26,12 +26,19 @@ from sherpa.utils.err import DS9Err
 
 from . import DS9
 
-imager = DS9.DS9Win(DS9._DefTemplate, False)
+
+imager = DS9.DS9Win(template=DS9._DefTemplate, doOpen=False)
 
 
-# TODO: the except blocks would ideally catch explicit errors; the present
-#       catch-anything approach means that we lose potentially-useful
-#       information on the type of error.
+# The except blocks would ideally catch explicit errors; the present
+# catch-anything approach means that we lose potentially-useful
+# information on the type of error. To reduce the loss of information
+# the new exceptions are linked to the original exception.
+#
+# For now the try/except blocks have been made to catch BaseException
+# rather than Exception, since things like "ds9 being killed" is
+# probably something we either want to catch or users are already
+# relying on.
 #
 
 def close():
@@ -44,9 +51,9 @@ def delete_frames():
         raise DS9Err('open')
     try:
         imager.xpaset("frame delete all")
-        return imager.xpaset("frame new")
-    except:
-        raise DS9Err('delframe')
+        imager.xpaset("frame new")
+    except BaseException as exc:
+        raise DS9Err('delframe') from exc
 
 
 def get_region(coord):
@@ -60,39 +67,39 @@ def get_region(coord):
             else:
                 regionfmt = 'saoimage'
 
-            regionstr = "regions -format {} ".format(regionfmt) + \
-                        "-strip yes -system {}".format(coord)
+            regionstr = f"regions -format {regionfmt} " + \
+                        f"-strip yes -system {coord}"
 
-        regionstr = imager.xpaget(regionstr)
-        return regionstr
+        return imager.xpaget(regionstr)
 
-    except:
-        raise DS9Err('retreg')
+    except BaseException as exc:
+        raise DS9Err('retreg') from exc
 
 
 def image(arr, newframe=False, tile=False):
     if not imager.isOpen():
         imager.doOpen()
+
     # Create a new frame if the user requested it, *or* if
     # there happen to be no DS9 frames.
     if newframe or imager.xpaget("frame all") == "\n":
         try:
             imager.xpaset("frame new")
             imager.xpaset("frame last")
-        except:
-            raise DS9Err('newframe')
+        except BaseException as exc:
+            raise DS9Err('newframe') from exc
+
+    tileopt = "yes" if tile else "no"
     try:
-        if tile:
-            imager.xpaset("tile yes")
-        else:
-            imager.xpaset("tile no")
-    except:
-        raise DS9Err('settile')
+        imager.xpaset(f"tile {tileopt}")
+    except BaseException as exc:
+        raise DS9Err('settile') from exc
+
     time.sleep(1)
     try:
         imager.showArray(arr)
-    except:
-        raise DS9Err('noimage')
+    except BaseException as exc:
+        raise DS9Err('noimage') from exc
 
 
 def _set_wcs(keys: tuple[WCS | None, WCS | None, str]) -> str:
@@ -166,8 +173,8 @@ def wcs(keys: tuple[WCS | None, WCS | None, str]) -> None:
 
     try:
         imager.xpaset('wcs replace', info)
-    except:
-        raise DS9Err('setwcs')
+    except BaseException as exc:
+        raise DS9Err('setwcs') from exc
 
 
 def open():
@@ -180,7 +187,7 @@ def set_region(reg, coord):
     try:
         # Assume a region file defines everything correctly
         if access(reg, R_OK):
-            imager.xpaset("regions load " + "'" + reg + "'")
+            imager.xpaset(f"regions load '{reg}'")
         else:
             # Assume region string has to be in CIAO format
             regions = reg.split(";")
@@ -193,8 +200,8 @@ def set_region(reg, coord):
 
                     imager.xpaset("regions", data=data)
 
-    except:
-        raise DS9Err('badreg', str(reg))
+    except BaseException as exc:
+        raise DS9Err('badreg', str(reg)) from exc
 
 
 def xpaget(arg):
@@ -206,4 +213,4 @@ def xpaget(arg):
 def xpaset(arg, data=None):
     if not imager.isOpen():
         raise DS9Err('open')
-    return imager.xpaset(arg, data)
+    imager.xpaset(arg, data)
