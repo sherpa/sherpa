@@ -32,12 +32,13 @@ References
 
 """
 
-import numpy
+import logging
+
+import numpy as np
+
 from sherpa.utils import NoNewAttributesAfterInit, bool_cast, display_fields
 
-import logging
 warning = logging.getLogger(__name__).warning
-backend = None
 
 try:
     from . import ds9_backend as backend
@@ -45,9 +46,9 @@ try:
 except Exception as e:
     # if DS9 is not found for some reason, like inside gdb
     # give a useful warning and fall back on dummy_backend of noops
-    warning("imaging routines will not be available, \n" +
-            "failed to import sherpa.image.ds9_backend due to \n'%s: %s'" %
-            (type(e).__name__, str(e)))
+    warning("imaging routines will not be available, \n"
+            "failed to import sherpa.image.ds9_backend due to \n"
+            "'%s: %s'", type(e).__name__, str(e))
     from . import dummy_backend as backend
 
 
@@ -56,6 +57,14 @@ __all__ = ('Image', 'DataImage', 'ModelImage', 'RatioImage',
            'ComponentModelImage', 'ComponentSourceImage')
 
 
+# As with the Plot and Contour classes, the base Image class works
+# with explicit arrays but the derived classes work with Sherpa
+# objects (Data and Model), and extract the pixel values from
+# them. This means that the image method ends up causing issues for
+# type checkers, as the derived classes have a different
+# signature. There are also issues with the prepare_image call,
+# although this is not defined for the base Image class.
+#
 class Image(NoNewAttributesAfterInit):
     """Base class for sending image data to an external viewer."""
 
@@ -69,16 +78,17 @@ class Image(NoNewAttributesAfterInit):
     def __str__(self) -> str:
         return display_fields(self, self._fields)
 
+    @staticmethod
     def close():
         """Stop the image viewer."""
         backend.close()
-    close = staticmethod(close)
 
+    @staticmethod
     def delete_frames():
         """Delete all the frames open in the image viewer."""
         backend.delete_frames()
-    delete_frames = staticmethod(delete_frames)
 
+    @staticmethod
     def get_region(coord):
         """Return the region defined in the image viewer.
 
@@ -95,24 +105,53 @@ class Image(NoNewAttributesAfterInit):
 
         """
         return backend.get_region(coord)
-    get_region = staticmethod(get_region)
 
-    def image(self, array, shape=None, newframe=False, tile=False):
+    def image(self,
+              array,
+              shape=None,
+              newframe=False,
+              tile=False
+              ):
+        """Send the data to the image viewer to display.
+
+        Parameters
+        ----------
+        array
+           The pixel values
+        shape
+           The shape of the data (optional).
+        newframe
+           Should the pixels be displayed in a new frame?
+        tile
+           Should the display be tiled?
+
+        """
         newframe = bool_cast(newframe)
         tile = bool_cast(tile)
         if shape is None:
-            backend.image(array, newframe, tile)
+            vals = array
         else:
-            backend.image(array.reshape(shape), newframe, tile)
+            vals = array.reshape(shape)
 
+        backend.image(vals, newframe, tile)
+
+    @staticmethod
     def open():
         """Start the image viewer."""
         backend.open()
-    open = staticmethod(open)
 
     def set_wcs(self, keys):
+        """Send the WCS informatiom to the image viewer.
+
+        Parameters
+        ----------
+        keys
+           The eqpos and sky transforms, and the name of the display.
+
+        """
         backend.wcs(keys)
 
+    @staticmethod
     def set_region(reg, coord):
         """Set the region to display in the image viewer.
 
@@ -126,8 +165,8 @@ class Image(NoNewAttributesAfterInit):
 
         """
         backend.set_region(reg, coord)
-    set_region = staticmethod(set_region)
 
+    @staticmethod
     def xpaget(arg):
         """Return the result of an XPA call to the image viewer.
 
@@ -144,8 +183,8 @@ class Image(NoNewAttributesAfterInit):
 
         """
         return backend.xpaget(arg)
-    xpaget = staticmethod(xpaget)
 
+    @staticmethod
     def xpaset(arg, data=None):
         """Return the result of an XPA call to the image viewer.
 
@@ -159,8 +198,7 @@ class Image(NoNewAttributesAfterInit):
            The data for the command.
 
         """
-        return backend.xpaset(arg, data=None)
-    xpaset = staticmethod(xpaset)
+        backend.xpaset(arg, data=None)
 
 
 class DataImage(Image):
@@ -215,6 +253,7 @@ class DataImage(Image):
 
 
 class ModelImage(Image):
+    """Model data."""
 
     _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
     """The fields to include in the string output.
@@ -242,6 +281,8 @@ class ModelImage(Image):
 
 
 class SourceImage(ModelImage):
+    """The source model (before convolution) data."""
+
     def __init__(self):
         ModelImage.__init__(self)
         self.name = 'Source'
@@ -259,6 +300,7 @@ class SourceImage(ModelImage):
 
 
 class RatioImage(Image):
+    """The data divide by the model."""
 
     _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
     """The fields to include in the string output.
@@ -275,9 +317,9 @@ class RatioImage(Image):
         Image.__init__(self)
 
     def _calc_ratio(self, ylist):
-        data = numpy.array(ylist[0])
-        model = numpy.asarray(ylist[1])
-        bad = numpy.where(model == 0.0)
+        data = np.array(ylist[0])
+        model = np.asarray(ylist[1])
+        bad = np.where(model == 0.0)
         data[bad] = 0.0
         model[bad] = 1.0
         return (data / model)
@@ -294,6 +336,7 @@ class RatioImage(Image):
 
 
 class ResidImage(Image):
+    """The data - model image."""
 
     _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
     """The fields to include in the string output.
@@ -324,6 +367,7 @@ class ResidImage(Image):
 
 
 class PSFImage(DataImage):
+    """The PSF image."""
 
     def prepare_image(self, psf, data=None):
         psfdata = psf.get_kernel(data, False)
@@ -332,6 +376,7 @@ class PSFImage(DataImage):
 
 
 class PSFKernelImage(DataImage):
+    """The PSF kernel image."""
 
     def prepare_image(self, psf, data=None):
         psfdata = psf.get_kernel(data)
@@ -340,6 +385,7 @@ class PSFKernelImage(DataImage):
 
 
 class ComponentSourceImage(ModelImage):
+    """The unconvolved source component."""
 
     def prepare_image(self, data, model):
         ModelImage.prepare_image(self, data, model)
@@ -348,6 +394,7 @@ class ComponentSourceImage(ModelImage):
 
 
 class ComponentModelImage(ModelImage):
+    """The model component."""
 
     def prepare_image(self, data, model):
         ModelImage.prepare_image(self, data, model)
