@@ -106,6 +106,7 @@ class Image(NoNewAttributesAfterInit):
         """
         return backend.get_region(coord)
 
+    # This version could be a staticmethod but derived classes can not be.
     def image(self,
               array,
               shape=None,
@@ -140,8 +141,12 @@ class Image(NoNewAttributesAfterInit):
         """Start the image viewer."""
         backend.open()
 
-    def set_wcs(self, keys):
+    @staticmethod
+    def set_wcs(keys):
         """Send the WCS informatiom to the image viewer.
+
+        .. versionchanged:: 4.19.0
+           This is now a static method.
 
         Parameters
         ----------
@@ -249,7 +254,7 @@ class DataImage(Image):
 
     def image(self, shape=None, newframe=False, tile=False):
         Image.image(self, self.y, shape, newframe, tile)
-        Image.set_wcs(self, (self.eqpos, self.sky, self.name))
+        Image.set_wcs((self.eqpos, self.sky, self.name))
 
 
 class ModelImage(Image):
@@ -277,7 +282,7 @@ class ModelImage(Image):
 
     def image(self, shape=None, newframe=False, tile=False):
         Image.image(self, self.y, shape, newframe, tile)
-        Image.set_wcs(self, (self.eqpos, self.sky, self.name))
+        Image.set_wcs((self.eqpos, self.sky, self.name))
 
 
 class SourceImage(ModelImage):
@@ -332,7 +337,7 @@ class RatioImage(Image):
 
     def image(self, shape=None, newframe=False, tile=False):
         Image.image(self, self.y, shape, newframe, tile)
-        Image.set_wcs(self, (self.eqpos, self.sky, self.name))
+        Image.set_wcs((self.eqpos, self.sky, self.name))
 
 
 class ResidImage(Image):
@@ -363,7 +368,7 @@ class ResidImage(Image):
 
     def image(self, shape=None, newframe=False, tile=False):
         Image.image(self, self.y, shape, newframe, tile)
-        Image.set_wcs(self, (self.eqpos, self.sky, self.name))
+        Image.set_wcs((self.eqpos, self.sky, self.name))
 
 
 class PSFImage(DataImage):
@@ -384,7 +389,7 @@ class PSFKernelImage(DataImage):
         self.name = 'PSF_Kernel'
 
 
-class ComponentSourceImage(ModelImage):
+class ComponentSourceImage(SourceImage):
     """The unconvolved source component."""
 
     def prepare_image(self, data, model):
