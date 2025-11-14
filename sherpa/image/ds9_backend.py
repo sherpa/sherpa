@@ -42,11 +42,13 @@ imager = DS9.DS9Win(template=DS9._DefTemplate, doOpen=False)
 #
 
 def close():
+    """Stop the image viewer."""
     if imager.isOpen():
         imager.xpaset("quit")
 
 
 def delete_frames():
+    """Delete all the frames open in the image viewer."""
     if not imager.isOpen():
         raise DS9Err('open')
     try:
@@ -57,6 +59,20 @@ def delete_frames():
 
 
 def get_region(coord):
+    """Return the region defined in the image viewer.
+
+    Parameters
+    ----------
+    coord : str
+       The name of the coordinate system (the empty string means
+       to use the current system).
+
+    Returns
+    -------
+    region : str
+       The region, or regions, or the empty string.
+
+    """
     if not imager.isOpen():
         raise DS9Err('open')
     try:
@@ -76,7 +92,22 @@ def get_region(coord):
         raise DS9Err('retreg') from exc
 
 
-def image(arr, newframe=False, tile=False):
+def image(arr,
+          newframe=False,
+          tile=False
+          ):
+    """Send the data to the image viewer to display.
+
+    Parameters
+    ----------
+    array
+       The pixel values
+    newframe
+       Should the pixels be displayed in a new frame?
+    tile
+       Should the display be tiled?
+
+    """
     if not imager.isOpen():
         imager.doOpen()
 
@@ -102,10 +133,8 @@ def image(arr, newframe=False, tile=False):
         raise DS9Err('noimage') from exc
 
 
-def _set_wcs(keys: tuple[WCS | None, WCS | None, str]) -> str:
+def _set_wcs(eqpos: WCS | None, sky: WCS | None, name: str) -> str:
     """Convert the settings into a string to send via XPA"""
-
-    eqpos, sky, name = keys
 
     # DS9 can be very particular about the WCS settings, so attempt to
     # set everything to avoid problems with ds9 preference settings.
@@ -164,12 +193,20 @@ def _set_wcs(keys: tuple[WCS | None, WCS | None, str]) -> str:
     return '\n'.join(out)
 
 
-def wcs(keys: tuple[WCS | None, WCS | None, str]) -> None:
+def wcs(keys):
+    """Send the WCS information to the image viewer.
+
+    Parameters
+    ----------
+    keys
+       The eqpos and sky transforms, and the name of the display.
+
+    """
 
     if not imager.isOpen():
         raise DS9Err('open')
 
-    info = _set_wcs(keys)
+    info = _set_wcs(keys[0], keys[1], keys[2])
 
     try:
         imager.xpaset('wcs replace', info)
@@ -178,10 +215,22 @@ def wcs(keys: tuple[WCS | None, WCS | None, str]) -> None:
 
 
 def open():
+    """Start the image viewer."""
     imager.doOpen()
 
 
 def set_region(reg, coord):
+    """Set the region to display in the image viewer.
+
+    Parameters
+    ----------
+    reg : str
+       The region to display.
+    coord : str
+       The name of the coordinate system (the empty string means
+       to use the current system).
+
+    """
     if not imager.isOpen():
         raise DS9Err('open')
     try:
@@ -205,12 +254,38 @@ def set_region(reg, coord):
 
 
 def xpaget(arg):
+    """Query the image viewer via XPA.
+
+    Retrieve the results of a query to the image viewer.
+
+    Parameters
+    ----------
+    arg : str
+       A command to send to the image viewer via XPA.
+
+    Returns
+    -------
+    returnval : str
+
+    """
     if not imager.isOpen():
         raise DS9Err('open')
     return imager.xpaget(arg)
 
 
 def xpaset(arg, data=None):
+    """Send the image viewer a command via XPA.
+
+    Send a command to the image viewer.
+
+    Parameters
+    ----------
+    arg : str
+       A command to send to the image viewer via XPA.
+    data : optional
+       The data for the command.
+
+    """
     if not imager.isOpen():
         raise DS9Err('open')
     imager.xpaset(arg, data)
