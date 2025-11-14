@@ -252,7 +252,7 @@ def xpaget(cmd,
            doRaise=True
            ):
     """Executes a simple xpaget command:
-            xpaset -p <template> <cmd>
+            xpaget <template> <cmd>
     returning the reply.
 
     Inputs:
@@ -638,9 +638,6 @@ class DS9Win:
                ):
         """Execute a simple xpaget command and return the reply.
 
-        The command is of the form:
-                xpaset -p <template> <cmd>
-
         Inputs:
         - cmd                command to execute
 
@@ -657,10 +654,7 @@ class DS9Win:
                data=None,
                dataFunc=None
                ):
-        """Executes a simple xpaset command:
-                xpaset -p <template> <cmd>
-        or else feeds data to:
-                xpaset <template> <cmd>
+        """Executes a simple xpaset command.
 
         The command must not return any output for normal completion.
 

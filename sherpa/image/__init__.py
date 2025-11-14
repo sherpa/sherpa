@@ -143,7 +143,7 @@ class Image(NoNewAttributesAfterInit):
 
     @staticmethod
     def set_wcs(keys):
-        """Send the WCS informatiom to the image viewer.
+        """Send the WCS information to the image viewer.
 
         .. versionchanged:: 4.19.0
            This is now a static method.
