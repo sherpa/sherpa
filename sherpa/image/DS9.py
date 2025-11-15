@@ -46,22 +46,6 @@ from sherpa.utils.err import RuntimeErr, TypeErr
 __all__ = ["setup", "xpaget", "xpaset", "DS9Win"]
 
 
-def _addToPATH(newPath: str) -> None:
-    """Add newPath to the PATH environment variable.
-    Do nothing if newPath already in PATH.
-    """
-    pathSep = ":"
-    pathStr = os.environ.get("PATH", "")
-    if newPath in pathStr:
-        return
-
-    if pathStr:
-        pathStr = pathStr + pathSep + newPath
-    else:
-        pathStr = newPath
-    os.environ["PATH"] = pathStr
-
-
 def _findUnixApp(appName: str) -> str:
     """Search PATH to find first directory that has the application.
     Return the path if found.
@@ -292,22 +276,6 @@ _FloatTypes = (np.float32, np.float64)
 _ComplexTypes = (np.complex64, np.complex128)
 
 
-def _expandPath(fname: str,
-                extraArgs: str = ""
-                ) -> str:
-    """Expand a file path and protect it such that spaces are allowed.
-    Inputs:
-    - fname                file path to expand
-    - extraArgs        extra arguments that are to be appended
-                            to the file path
-    """
-    filepath = os.path.abspath(os.path.expanduser(fname))
-    # if windows, change \ to / to work around a bug in ds9
-    filepath = filepath.replace("\\", "/")
-    # quote with "{...}" to allow ds9 to handle spaces in the file path
-    return f"{{{filepath}{extraArgs}}}"
-
-
 def _formatOptions(kargs: Mapping[str, Any]) -> str:
     """Returns a string: "key1=val1,key2=val2,..."
     (where keyx and valx are string representations)
@@ -507,59 +475,6 @@ class DS9Win:
             cmd=f'array [{_formatOptions(arryDict)}]',
             data=arr.tobytes(),
         )
-
-        for keyValue in kargs.items():
-            self.xpaset(cmd=' '.join(keyValue))
-
-# showBinFile is commented out because it is broken with ds9 3.0.3
-# (apparently due to a bug in ds9) and because it wasn't very useful
-#        def showBinFile(self, fname, **kargs):
-#                """Display a binary file in ds9.
-#
-#                The following keyword arguments are used to specify the array:
-#                - xdim                # of points along x
-#                - ydim                # of points along y
-#                - dim                # of points along x = along y (only use for a square array)
-#                - zdim                # of points along z
-#                - bitpix        number of bits/pixel; negative if floating
-#                - arch        one of bigendian or littleendian (intel)
-#
-#                The remaining keywords are extras treated as described
-#                in the module comment.
-#
-#                Note: integer data must be UInt8, Int16 or Int32
-#                (i.e. the formats supported by FITS).
-#                """
-#                arryDict = _splitDict(kargs, _ArrayKeys)
-#                if not arryDict:
-#                        raise RuntimeError("must specify dim (or xdim and ydim) and bitpix")
-#
-#                arrInfo = "[%s]" % (_formatOptions(arryDict),)
-#                filePathPlusInfo = _expandPath(fname, arrInfo)
-#
-#                self.xpaset(cmd='file array "%s"' % (filePathPlusInfo,))
-#
-#                for keyValue in kargs.iteritems():
-#                        self.xpaset(cmd=' '.join(keyValue))
-
-    def showFITSFile(self,
-                     fname,
-                     **kargs):
-        """Display a fits file in ds9.
-
-        Inputs:
-        - fname        name of file (including path information, if necessary)
-        kargs: see Extra Keyword Arguments in the module doc string for information.
-        Keywords that specify array info (see doc for showBinFile for the list)
-        must NOT be included.
-        """
-        filepath = _expandPath(fname)
-        self.xpaset(cmd=f'file "{filepath}"')
-
-        # remove array info keywords from kargs; we compute all that
-        arrKeys = _splitDict(kargs, _ArrayKeys)
-        if arrKeys:
-            raise RuntimeErr('badarr', arrKeys.keys())
 
         for keyValue in kargs.items():
             self.xpaset(cmd=' '.join(keyValue))
