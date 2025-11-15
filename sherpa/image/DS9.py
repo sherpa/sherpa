@@ -188,7 +188,6 @@ def xpaget(cmd: str,
 
 def xpaset(cmd: str,
            data: str | bytes | None = None,
-           dataFunc=None,
            template: str = _DefTemplate,
            doRaise: bool = True,
            method: str | None = None
@@ -202,8 +201,6 @@ def xpaset(cmd: str,
     data
        Extra data to send via stdout (a trailing new-line character is
        added if needed).
-    dataFunc
-       Unused
     template
        The target of the XPA call. It can be the ds9 window title,
        a string giving "host:port", or other supported forms.
@@ -218,7 +215,7 @@ def xpaset(cmd: str,
     if method is not None:
         fullCmd.extend(['-m', method])
 
-    if not data and not dataFunc:
+    if not data:
         fullCmd.append('-p')
 
     fullCmd.extend([template, cmd])
@@ -509,8 +506,7 @@ class DS9Win:
 
     def xpaset(self,
                cmd: str,
-               data: str | bytes | None = None,
-               dataFunc=None
+               data: str | bytes | None = None
                ) -> None:
         """Executes a simple xpaset command.
 
@@ -526,14 +522,11 @@ class DS9Win:
         data
            Extra data to send via stdout (a trailing new-line
            character is added if needed).
-        dataFunc
-           Unused
 
         """
         xpaset(
             cmd=cmd,
             data=data,
-            dataFunc=dataFunc,
             template=self.template,
             doRaise=self.doRaise,
             method=self.xpa_method
