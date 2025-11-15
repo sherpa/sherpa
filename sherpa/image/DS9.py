@@ -18,116 +18,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-r"""
-Interface for viewing images with the ds9 image viewer.
-Loosely based on XPA, by Andrew Williams.
+"""Interface for viewing images with the ds9 image viewer.
 
-For more information, see the XPA Access Points section
-of the ds9 reference manual (under Help in ds9).
+Loosely based on XPA, by Andrew Williams, with the original code by
+ROwen 2004-2005 and then from the Sherpa team from 2006. This code has
+been simplified to only support the features that Sherpa needs.
 
-Requirements:
-
-*** Unix Requirements
-- ds9 and xpa must be installed somewhere on your $PATH
-
-*** MacOS X Requirements
-- The MacOS X ds9.app must be in one of the two *standard* locations
-  applications (e.g. ~/Applications or /Applications on English systems).
-  and/or, if you prefer:
-- xpa for darwin installed somewhere on your $PATH
-- ds9 for darwin installed somewhere on your $PATH
-
-  Note: as I write this, ds9 4.0b7 is out and the MacOS X application
-  does not include xpa. They plan to fix this, but if your ds9.app
-  does not include xpa then you MUST install darwin xpa.
-
-*** Windows Requirements
-- Mark Hammond's pywin32 package: <https://sourceforge.net/projects/pywin32/>
-- ds9 installed in the default directory (C:\Program Files\ds9\
-  on English systems)
-- xpa executables installed in the default directory (C:\Program Files\\xpa\)
-  or in the same directory as ds9.exe. Why might you choose the latter?
-  Because (at least for ds9 3.0.3) to use ds9 with xpa from the command line,
-  the xpa executables should be in with ds9.exe. Otherwise ds9 can't find
-  xpans when it starts up and so fails to register itself.
-
-Extra Keyword Arguments:
-Many commands take additional keywords as arguments. These are sent
-as separate commands after the main command is executed.
-Useful keywords for viewing images include: scale, orient and zoom.
-See the XPA Access Points section of the ds9 reference manual
-for more information. Note that the value of each keyword
-is sent as an unquoted string. If you want quotes, provide them
-as part of the value string.
-
-Template Argument:
-The template argument allows you to specify which copy of ds9
-or which other software you wish to command via xpa.
-One common use is to have multiple copies of ds9 on your own machine
-(often necessary because ds9 only has one window, grr).
-If you launch ds9 with the -title command-line option then you can
-send commands to that ds9 by using that title as the template.
-See the XPA documentation for other uses for template, such as talking
-to ds9 on a remote host.
-
-For a list of local servers try % xpaget xpans
-
-History:
-2004-04-15 ROwen        First release.
-2004-04-20 ROwen        showarry improvements:
-                                        - Accepts any array whose values can be represented as signed ints.
-                                        - Bug fix: x and y dimensions were swapped (#@$@# numarray)
-2004-04-29 ROwen        Added xpaset function.
-2004-05-05 ROwen        Added DS9Win class and moved the showXXX functions to it.
-                                        Added function xpaget.
-                                        Added template argument to xpaset.
-2004-10-15 ROwen        Bug fix: could only communicate with one ds9;
-                                        fixed by specifying port=0 when opening ds9.
-2004-11-02 ROwen        Improved Mac compatibility (now looks in [~]/Applications).
-                                        Made compatible with Windows, except showArray is broken;
-                                        this appears to be a bug in ds9 3.0.3.
-                                        loadFITSFile no longer tests the file name's extension.
-                                        showArray now handles most array types without converting the data.
-                                        Eliminated showBinFile because I could not get it to work;
-                                        this seems to be an bug or documentation bug in ds9.
-                                        Changed order of indices for 3-d images from (y,x,z) to (z,y,x).
-2004-11-17 ROwen        Corrected a bug in the subprocess version of xpaget.
-                                        Updated header comments for big-fixed version of subprocess.
-2004-12-01 ROwen        Bug fix in xpaset: terminate data with \n if not already done.
-                                        Modified to use subprocess module (imported from RO.Future
-                                        if Python is old enough not to include it).
-                                        Added __all__.
-2004-12-13 ROwen        Bug fix in DS9Win; the previous version was missing
-                                        the code that waited for DS9 to launch.
-2005-05-16 ROwen        Added doRaise argument to xpaget, xpaset and DS9Win;
-                                        the default is False so the default behavior has changed.
-2005-09-23 ROwen        Bug fix: used the warnings module without importing it.
-2005-09-27 ROwen        Added function setup.
-                                        Checks for xpa and ds9. If not found at import
-                                        then raise a warning make DS9Win. xpaset and xpaget
-                                        retry the check and raise RuntimeError on failure
-                                        (so you can install xpa and ds9 and run without reloading).
-                                        MacOS X: modified to launch X11 if not already running.
-2005-09-30 ROwen        Windwows: only look for xpa in ds9's directory
-                                        (since ds9 can't find it in the default location);
-                                        updated the installation instructions accordingly.
-2005-10-05 ROwen        Bug fix: Windows path joining via string concatenation was broken;
-                                        switched to os.path.join for all path joining.
-                                        Bug fix: Windows search for xpa was broken ("break" only breaks one level).
-2005-10-11 ROwen        MacOS X: add /usr/local/bin to env var PATH and set env var DISPLAY, if necessary
-                                        (because apps do not see the user's shell modifications to env variables).
-2005-10-13 ROwen        MacOS X and Windows: add ds9 and xpa to the PATH if found
-                                        MacOS X: look for xpaget in <applications>/ds9.app as well as on the PATH
-                                        Windows: look for xpaget in <program files>\\xpa\ as well as ...\ds9\
-2005-10-31 ROwen        Bug fix: showArray mis-handled byteswapped arrays.
-2005-11-02 ROwen        Improved fix for byteswapped arrays that avoids copying the array
-                                        (based on code by Tim Axelrod).
-2005-11-04 ROwen        Simplified byte order test as suggested by Rick White.
-2006-06-01 Stephen Doe  Downloaded RO package to evaluate DS9 interface for CIAO.  Stripped all references to RO package from this file (so it can be used without the rest of the RO package).  Converted it from using numarray to numpy for use in Sherpa Python package.
-2006-06-13 Stephen Doe  Removed findApp, all references to Mac or Windows operating systems.  Porting CIAO to Linux and OS X, so treat these all as Unix systems for now.  Worry about Mac, Windows backends later.  (This also means that ds9 and xpaget, xpaset must be in the PATH.)
-2006-08-04 Stephen Doe  Increase timeout interval.
-2008-05-28 Stephen Doe  Always raise exception on error (doRaise=True always)
-2008-11-25 Stephen Doe  Search PATH for access to application, rather than shell out to use 'which' -- PATH sometimes not correctly inherited by shell via Popen, for csh on some Mac, Solaris machines.
 """
 
 from collections.abc import Mapping
@@ -143,22 +39,6 @@ import numpy as np
 from sherpa.utils.err import RuntimeErr, TypeErr
 
 __all__ = ["setup", "xpaget", "xpaset", "DS9Win"]
-
-
-def _addToPATH(newPath: str) -> None:
-    """Add newPath to the PATH environment variable.
-    Do nothing if newPath already in PATH.
-    """
-    pathSep = ":"
-    pathStr = os.environ.get("PATH", "")
-    if newPath in pathStr:
-        return
-
-    if pathStr:
-        pathStr = pathStr + pathSep + newPath
-    else:
-        pathStr = newPath
-    os.environ["PATH"] = pathStr
 
 
 def _findUnixApp(appName: str) -> str:
@@ -387,22 +267,6 @@ _FloatTypes = (np.float32, np.float64)
 _ComplexTypes = (np.complex64, np.complex128)
 
 
-def _expandPath(fname: str,
-                extraArgs: str = ""
-                ) -> str:
-    """Expand a file path and protect it such that spaces are allowed.
-    Inputs:
-    - fname                file path to expand
-    - extraArgs        extra arguments that are to be appended
-                            to the file path
-    """
-    filepath = os.path.abspath(os.path.expanduser(fname))
-    # if windows, change \ to / to work around a bug in ds9
-    filepath = filepath.replace("\\", "/")
-    # quote with "{...}" to allow ds9 to handle spaces in the file path
-    return f"{{{filepath}{extraArgs}}}"
-
-
 def _formatOptions(kargs: Mapping[str, Any]) -> str:
     """Returns a string: "key1=val1,key2=val2,..."
     (where keyx and valx are string representations)
@@ -578,59 +442,6 @@ class DS9Win:
             cmd=f'array [{_formatOptions(arryDict)}]',
             data=arr.tobytes(),
         )
-
-        for keyValue in kargs.items():
-            self.xpaset(cmd=' '.join(keyValue))
-
-# showBinFile is commented out because it is broken with ds9 3.0.3
-# (apparently due to a bug in ds9) and because it wasn't very useful
-#        def showBinFile(self, fname, **kargs):
-#                """Display a binary file in ds9.
-#
-#                The following keyword arguments are used to specify the array:
-#                - xdim                # of points along x
-#                - ydim                # of points along y
-#                - dim                # of points along x = along y (only use for a square array)
-#                - zdim                # of points along z
-#                - bitpix        number of bits/pixel; negative if floating
-#                - arch        one of bigendian or littleendian (intel)
-#
-#                The remaining keywords are extras treated as described
-#                in the module comment.
-#
-#                Note: integer data must be UInt8, Int16 or Int32
-#                (i.e. the formats supported by FITS).
-#                """
-#                arryDict = _splitDict(kargs, _ArrayKeys)
-#                if not arryDict:
-#                        raise RuntimeError("must specify dim (or xdim and ydim) and bitpix")
-#
-#                arrInfo = "[%s]" % (_formatOptions(arryDict),)
-#                filePathPlusInfo = _expandPath(fname, arrInfo)
-#
-#                self.xpaset(cmd='file array "%s"' % (filePathPlusInfo,))
-#
-#                for keyValue in kargs.iteritems():
-#                        self.xpaset(cmd=' '.join(keyValue))
-
-    def showFITSFile(self,
-                     fname,
-                     **kargs):
-        """Display a fits file in ds9.
-
-        Inputs:
-        - fname        name of file (including path information, if necessary)
-        kargs: see Extra Keyword Arguments in the module doc string for information.
-        Keywords that specify array info (see doc for showBinFile for the list)
-        must NOT be included.
-        """
-        filepath = _expandPath(fname)
-        self.xpaset(cmd=f'file "{filepath}"')
-
-        # remove array info keywords from kargs; we compute all that
-        arrKeys = _splitDict(kargs, _ArrayKeys)
-        if arrKeys:
-            raise RuntimeErr('badarr', arrKeys.keys())
 
         for keyValue in kargs.items():
             self.xpaset(cmd=' '.join(keyValue))
