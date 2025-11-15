@@ -38,13 +38,19 @@ import numpy as np
 
 from sherpa.utils.err import RuntimeErr, TypeErr
 
-__all__ = ["setup", "xpaget", "xpaset", "DS9Win"]
+__all__ = ["xpaget", "xpaset", "DS9Win"]
 
 
-def _findUnixApp(appName: str) -> str:
+def _findUnixApp(appName: str) -> None:
     """Search PATH to find first directory that has the application.
-    Return the path if found.
-    Raise RuntimeError if not found.
+
+    The call will raise a RuntimeErr if appName can not be found.
+
+    Parameters
+    ----------
+    appName
+       The application name
+
     """
     appPath = ''
     for path in os.environ['PATH'].split(':'):
@@ -55,27 +61,8 @@ def _findUnixApp(appName: str) -> str:
     if appPath == '' or not appPath.startswith("/"):
         raise RuntimeErr('notonpath', appName)
 
-    return appPath
 
-
-def _findDS9AndXPA() -> tuple[str, str]:
-    """Locate ds9 and xpa, and add to PATH if not already there.
-
-    Returns:
-    - ds9Dir        directory containing ds9 executable
-    - xpaDir        directory containing xpaget and (presumably)
-                            the other xpa executables
-
-    Raise RuntimeError if ds9 or xpa are not found.
-    """
-    ds9Dir = _findUnixApp("ds9")
-    xpaDir = _findUnixApp("xpaget")
-
-    return (ds9Dir, xpaDir)
-
-
-def setup(debug: bool = False
-          ) -> str | None:
+def setup() -> str | None:
     """Search for xpa and ds9 and set globals accordingly.
     Return None if all is well, else return an error string.
     The return value is also saved in global variable _SetupError.
@@ -92,15 +79,13 @@ def setup(debug: bool = False
     global _SetupError, _Popen, _ex
     _SetupError = None
     try:
-        ds9Dir, xpaDir = _findDS9AndXPA()
-        if debug:
-            print(f"ds9Dir={repr(ds9Dir)}\npaDir={repr(xpaDir)}")
+        _findUnixApp("ds9")
+        _findUnixApp("xpaget")
     except (SystemExit, KeyboardInterrupt):
         raise
     except Exception as e:
         _ex = e
         _SetupError = f"DS9Win unusable: {e}"
-        ds9Dir = xpaDir = None
 
     if _SetupError:
         # Is this worth setting up?
@@ -117,7 +102,7 @@ def setup(debug: bool = False
     return _SetupError
 
 
-errStr = setup(debug=False)
+errStr = setup()
 if errStr:
     warnings.warn(errStr)
 
@@ -462,11 +447,3 @@ class DS9Win:
             data=data,
             template=self.template
         )
-
-
-if __name__ == "__main__":
-    errStr = setup(debug=True)
-    if errStr:
-        print(errStr)
-    else:
-        ds9Win = DS9Win("Test")
