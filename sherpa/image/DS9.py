@@ -79,8 +79,7 @@ def _findDS9AndXPA() -> tuple[str, str]:
     return (ds9Dir, xpaDir)
 
 
-def setup(doRaise: bool = True,
-          debug: bool = False
+def setup(debug: bool = False
           ) -> str | None:
     """Search for xpa and ds9 and set globals accordingly.
     Return None if all is well, else return an error string.
@@ -109,13 +108,13 @@ def setup(doRaise: bool = True,
         ds9Dir = xpaDir = None
 
     if _SetupError:
+        # Is this worth setting up?
         class _Popen(subprocess.Popen):
             def __init__(self, *args, **kargs):
-                setup(doRaise=True)
+                setup()
                 super().__init__(*args, **kargs)
 
-        if doRaise:
-            raise RuntimeErr('badwin', _ex)
+        raise RuntimeErr('badwin', _ex)
 
     else:
         _Popen = subprocess.Popen
@@ -123,7 +122,7 @@ def setup(doRaise: bool = True,
     return _SetupError
 
 
-errStr = setup(doRaise=True, debug=False)
+errStr = setup(debug=False)
 if errStr:
     warnings.warn(errStr)
 
@@ -136,7 +135,6 @@ _MaxOpenTime = 60.0  # seconds
 
 def xpaget(cmd: str,
            template: str = _DefTemplate,
-           doRaise: bool = True,
            method: str | None = None
            ) -> str:
     """Executes a simple xpaget command, returning the reply.
@@ -148,8 +146,6 @@ def xpaget(cmd: str,
     template
        The target of the XPA call. It can be the ds9 window title,
        a string giving "host:port", or other supported forms.
-    doRaise
-       Should an error from xpaget raise an exception?
     method
        The XPA communication method (optional).
 
@@ -176,11 +172,7 @@ def xpaget(cmd: str,
         if errMsg:
             errMsgStr = errMsg.decode()
             cmdStr = shlex.join(fullCmd)
-            if doRaise:
-                raise RuntimeErr('cmdfail', cmdStr, errMsgStr)
-
-            fullErrMsg = f"{cmdStr} failed: {errMsgStr}"
-            warnings.warn(fullErrMsg)
+            raise RuntimeErr('cmdfail', cmdStr, errMsgStr)
 
         return_value = p.stdout.read()
         return return_value.decode()
@@ -189,7 +181,6 @@ def xpaget(cmd: str,
 def xpaset(cmd: str,
            data: str | bytes | None = None,
            template: str = _DefTemplate,
-           doRaise: bool = True,
            method: str | None = None
            ) -> None:
     """Executes a simple xpaset command.
@@ -204,8 +195,6 @@ def xpaset(cmd: str,
     template
        The target of the XPA call. It can be the ds9 window title,
        a string giving "host:port", or other supported forms.
-    doRaise
-       Should an error from xpaget raise an exception?
     method
        The XPA communication method (optional).
 
@@ -239,11 +228,8 @@ def xpaset(cmd: str,
         if reply:
             errMsgStr = reply.strip().decode()
             cmdStr = shlex.join(fullCmd)
-            if doRaise:
-                raise RuntimeErr('cmdfail', cmdStr, errMsgStr)
+            raise RuntimeErr('cmdfail', cmdStr, errMsgStr)
 
-            fullErrMsg = f"{cmdstr} failed: {errMsgStr}"
-            warnings.warn(fullErrMsg)
 
 
 def _computeCnvDict():
@@ -311,14 +297,11 @@ class DS9Win:
        The window name (see ds9 docs for talking to a remote ds9).
     doOpen
        Open ds9 using the desired template, if not already open.
-    doRaise
-       Should an error from xpaget raise an exception?
 
     """
     def __init__(self,
                  template: str = _DefTemplate,
-                 doOpen: bool = True,
-                 doRaise: bool = True
+                 doOpen: bool = True
                  ) -> None:
         self.template = str(template)
 
@@ -333,15 +316,12 @@ class DS9Win:
         #
         self.xpa_method = None if "XPA_METHOD" in os.environ else "local"
 
-        self.doRaise = bool(doRaise)
         self.alreadyOpen = self.isOpen()
         if doOpen:
             self.doOpen()
 
     def doOpen(self) -> None:
         """Open the ds9 window (if necessary).
-
-        Raise OSError or RuntimeError on failure, even if doRaise is False.
 
         .. versionchanged:: 4.19.0
            The communication method is set to "local" unless the
@@ -391,6 +371,7 @@ class DS9Win:
                   arr,
                   **kargs) -> None:
         """Display a 2-d or 3-d grayscale integer numarray arrays.
+
         3-d images are displayed as data cubes, meaning one can
         view a single z at a time or play through them as a movie,
         that sort of thing.
@@ -500,7 +481,6 @@ class DS9Win:
         return xpaget(
             cmd=cmd,
             template=self.template,
-            doRaise=self.doRaise,
             method=self.xpa_method
         )
 
@@ -528,13 +508,12 @@ class DS9Win:
             cmd=cmd,
             data=data,
             template=self.template,
-            doRaise=self.doRaise,
             method=self.xpa_method
         )
 
 
 if __name__ == "__main__":
-    errStr = setup(doRaise=True, debug=True)
+    errStr = setup(debug=True)
     if errStr:
         print(errStr)
     else:
