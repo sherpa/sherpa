@@ -26,7 +26,10 @@ been simplified to only support the features that Sherpa needs.
 
 .. versionchanged:: 4.19.0
    XPA communication now defaults to the "local" method unless the
-   XPA_METHOD environment variable is set.
+   XPA_METHOD environment variable is set. Functionality not used by
+   Sherpa has been removed, including the setup process (supporting
+   multiple options), the showFITSFile method, and removing the unused
+   dataFunc argument to `xpaset`.
 
 """
 
@@ -36,7 +39,6 @@ import shlex
 import sys
 import time
 from typing import Any
-import warnings
 import subprocess
 
 import numpy as np
@@ -67,55 +69,22 @@ def _findUnixApp(appName: str) -> None:
         raise RuntimeErr('notonpath', appName)
 
 
-def setup() -> str | None:
-    """Search for xpa and ds9 and set globals accordingly.
-    Return None if all is well, else return an error string.
-    The return value is also saved in global variable _SetupError.
-
-    Sets globals:
-    - _SetupError        same value as returned
-    - _Popen                subprocess.Popen, if ds9 and xpa found,
-                                    else a variant that searches for ds9 and xpa
-                                    first and then runs subprocess.Popen if found
-                                    else raises an exception
-                                    This permits the user to install ds9 and xpa
-                                    and use this module without reloading it
-    """
-    global _SetupError, _Popen, _ex
-    _SetupError = None
-    try:
-        _findUnixApp("ds9")
-        _findUnixApp("xpaget")
-    except (SystemExit, KeyboardInterrupt):
-        raise
-    except Exception as e:
-        _ex = e
-        _SetupError = f"DS9Win unusable: {e}"
-
-    if _SetupError:
-        # Is this worth setting up?
-        class _Popen(subprocess.Popen):
-            def __init__(self, *args, **kargs):
-                setup()
-                super().__init__(*args, **kargs)
-
-        raise RuntimeErr('badwin', _ex)
-
-    else:
-        _Popen = subprocess.Popen
-
-    return _SetupError
+# If ds9 and the xpa tools are accessible (only xpaget is checked for)
+# then things are fine. If not, error out.
+#
+try:
+    _findUnixApp("ds9")
+    _findUnixApp("xpaget")
+except RuntimeErr as e:
+    raise RuntimeErr('badwin', e) from e
 
 
-errStr = setup()
-if errStr:
-    warnings.warn(errStr)
+_ArrayKeys: tuple[str, ...] = ("dim", "dims", "xdim", "ydim", "zdim",
+                               "bitpix", "skip", "arch")
+_DefTemplate: str = "sherpa"
 
-_ArrayKeys = ("dim", "dims", "xdim", "ydim", "zdim", "bitpix", "skip", "arch")
-_DefTemplate = "sherpa"
-
-_OpenCheckInterval = 0.2  # seconds
-_MaxOpenTime = 60.0  # seconds
+_OpenCheckInterval: float = 0.2  # seconds
+_MaxOpenTime: float = 60.0  # seconds
 
 
 def xpaget(cmd: str,
@@ -146,11 +115,11 @@ def xpaget(cmd: str,
         fullCmd.extend(['-m', method])
 
     fullCmd.extend([template, cmd])
-    with _Popen(args=fullCmd,
-                shell=False,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE) as p:
+    with subprocess.Popen(args=fullCmd,
+                          shell=False,
+                          stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE) as p:
 
         p.stdin.close()
         errMsg = p.stderr.read()
@@ -193,12 +162,11 @@ def xpaset(cmd: str,
         fullCmd.append('-p')
 
     fullCmd.extend([template, cmd])
-    with _Popen(args=fullCmd,
-                shell=False,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT) as p:
-
+    with subprocess.Popen(args=fullCmd,
+                          shell=False,
+                          stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT) as p:
         try:
             data = bytearray(data, "UTF-8")
         except TypeError:
@@ -321,7 +289,7 @@ class DS9Win:
         if self.xpa_method is not None:
             fullCmd.extend(['-xpa', self.xpa_method])
 
-        with _Popen(
+        with subprocess.Popen(
                 args=fullCmd,
                 shell=False,
                 cwd=None,
