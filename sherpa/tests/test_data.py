@@ -830,11 +830,6 @@ def test_data2_get_dims_no_shape(data):
 
 
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
-def test_data2_get_axes(data):
-    numpy.testing.assert_array_equal(data.get_axes(), (X_ARRAY+1, X_ARRAY+1))
-
-
-@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
 def test_data2_get_img(data):
     numpy.testing.assert_array_equal(data.get_img(), Y_2D_RAW)
 
@@ -1751,13 +1746,6 @@ def test_data2dint_get_x1label(make_data2dint):
 
 def test_data2dint_get_ylabel(make_data2dint):
     assert make_data2dint.get_ylabel() == "y"
-
-
-def test_data2dint_get_axes(make_data2dint):
-    axes = make_data2dint.get_axes()
-    assert len(axes) == 2
-    assert (axes[0] == [1]).all()
-    assert (axes[1] == [1, 2]).all()
 
 
 def test_data2dint_notice(make_data2dint):

@@ -2100,10 +2100,9 @@ def histogram2d(x, y, x_grid, y_grid):
     data space. In this case the X grid is [1, 2, ..., 5]
     and the Y grid is [1, 2, .., 10].
 
-    >>> dataspace2d([5, 10])
-    >>> (xgrid, ygrid) = get_axes()
-    >>> n = histogram2d(xvals, yvals, xgrid, ygrid)
-    >>> set_dep(n)
+    >>> from sherpa.utils import dataspace2d, histogram2d
+    >>> d2 = dataspace2d([5, 10])
+    >>> hist = histogram2d([1.2, 1.3, 3.4], [2.2, 1.1, 5.5], d2[0], d2[1])
 
     """
     x_grid = np.asarray(x_grid).copy()
