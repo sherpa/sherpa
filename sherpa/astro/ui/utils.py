@@ -3825,8 +3825,7 @@ class Session(sherpa.ui.utils.Session):
         """Return the independent axes of a data set.
 
         This function returns the coordinates of each point, or pixel,
-        in the data set. The `get_axes` function may be be preferred
-        in some situations.
+        in the data set.
 
         Parameters
         ----------
@@ -3859,7 +3858,6 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_axes : Return information about the independent axes of a data set.
         get_dep : Return the dependent axis of a data set.
         list_data_ids : List the identifiers for the loaded data sets.
         set_coord : Set the coordinate system to use for image analysis.
@@ -3868,9 +3866,7 @@ class Session(sherpa.ui.utils.Session):
         -----
         For a two-dimensional image, with size n by m pixels, the
         `get_dep` function will return two arrays, each of size n * m,
-        which contain the coordinate of the center of each pixel. The
-        `get_axes` function will instead return the coordinates of
-        each axis separately, i.e. arrays of size n and m.
+        which contain the coordinate of the center of each pixel.
 
         Examples
         --------
@@ -3932,103 +3928,6 @@ class Session(sherpa.ui.utils.Session):
         d = self._get_data_or_bkg(id, bkg_id)
         return d.get_indep(filter=filter)
 
-    def get_axes(self,
-                 id: IdType | None = None,
-                 bkg_id: IdType | None = None):
-        """Return information about the independent axes of a data set.
-
-        This function returns the coordinates of each point, or pixel,
-        in the data set. The `get_indep` function may be be preferred
-        in some situations.
-
-        Parameters
-        ----------
-        id : int, str, or None, optional
-           The identifier for the data set to use. If not given then
-           the default identifier is used, as returned by
-           `get_default_id`.
-        bkg_id : int, str, or None, optional
-           Set if the values returned should be from the given
-           background component, instead of the source data set.
-
-        Returns
-        -------
-        axis : tuple of arrays
-           The independent axis values. The differences to `get_dep`
-           that this represents the "alternate grid" for the axis. For
-           PHA data, this is the energy grid (E_MIN and E_MAX). For
-           image data it is an array for each axis, of the length of
-           the axis, using the current coordinate system for the data
-           set.
-
-        Raises
-        ------
-        sherpa.utils.err.IdentifierErr
-           If the data set does not exist.
-
-        See Also
-        --------
-        get_indep : Return the independent axis of a data set.
-        list_data_ids : List the identifiers for the loaded data sets.
-
-        Examples
-        --------
-
-        For 1D data sets, the "alternate" view is the same as the
-        independent axis:
-
-        >>> load_arrays(1, [10, 15, 19], [4, 5, 9], Data1D)
-        >>> get_indep()
-        array([10, 15, 19])
-        >>> get_axes()
-        array([10, 15, 19])
-
-        For a PHA data set, the approximate energy grid of the
-        channels is returned (this is determined by the EBOUNDS
-        extension of the RMF).
-
-        >>> load_pha('core', 'src.pi')
-        read ARF file src.arf
-        read RMF file src.rmf
-        read background file src_bkg.pi
-        >>> (chans,) = get_indep()
-        >>> (elo, ehi) = get_axes()
-        >>> chans[0:5]
-        array([ 1.,  2.,  3.,  4.,  5.])
-        >>> elo[0:5]
-        array([ 0.0073,  0.0146,  0.0292,  0.0438,  0.0584])
-        >>> ehi[0:5]
-        array([ 0.0146,  0.0292,  0.0438,  0.0584,  0.073 ])
-
-        The image has 101 columns by 108 rows. The `get_indep`
-        function returns one-dimensional arrays, for the full dataset,
-        whereas `get_axes` returns values for the individual axis:
-
-        >>> load_image('img', 'img.fits')
-        >>> get_data('img').shape
-        (108, 101)
-        >>> set_coord('img', 'physical')
-        >>> (x0, x1) = get_indep('img')
-        >>> (a0, a1) = get_axes('img')
-        >>> (x0.size, x1.size)
-        (10908, 10908)
-        >>> (a0.size, a1.size)
-        (101, 108)
-        >>> np.all(x0[:101] == a0)
-        True
-        >>> np.all(x1[::101] == a1)
-        True
-
-        """
-
-        d = self._get_data_or_bkg(id, bkg_id)
-        if isinstance(d, DataPHA):
-            return d._get_ebins(group=False)
-
-        if isinstance(d, (Data2D, DataIMG)):
-            return d.get_axes()
-
-        return d.get_indep()
 
     # DOC-NOTE: also in sherpa.utils
     def get_dep(self,
