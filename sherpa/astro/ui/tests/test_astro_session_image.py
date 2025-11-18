@@ -243,7 +243,7 @@ def test_get_data_image_dataimg_repeated():
 
     # What is the name field now?
     obj = s.get_data_image()
-    assert obj.name == 'A_big_blob'  # ideally this would be "Data"
+    assert obj.name == 'Data'
 
 
 @requires_ds9
