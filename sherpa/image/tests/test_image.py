@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2023
+#  Copyright (C) 2007, 2015-2016, 2017-2019, 2023, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,11 +24,13 @@ import pytest
 
 import tempfile
 import os
-import sherpa
+
 from sherpa.image import Image, DataImage, ModelImage, RatioImage, \
     ResidImage
 
+from sherpa.utils.err import DS9Err, RuntimeErr
 from sherpa.utils.testing import requires_ds9
+
 
 # Create a rectangular array for the tests just to ensure that
 # there are no issues with Fortran/C order.
@@ -100,8 +102,8 @@ def get_arr_from_imager(im, yexp):
 
 @requires_ds9
 def test_ds9():
-    ctor = sherpa.image.ds9_backend.DS9.DS9Win
-    im = ctor(sherpa.image.ds9_backend.DS9._DefTemplate, False)
+    from sherpa.image import DS9
+    im = DS9.DS9Win(DS9._DefTemplate, False)
     im.doOpen()
     im.showArray(data.y)
     data_out = get_arr_from_imager(im, data.y)
@@ -233,3 +235,35 @@ def test_image_getregion(coordsys):
     assert float(toks[0]) == pytest.approx(8.5)
     assert float(toks[1]) == pytest.approx(7.0)
     assert float(toks[2]) == pytest.approx(0.8)
+
+
+@requires_ds9
+def test_xpaget_error_not_open():
+    """Check the error is raised."""
+    im = Image()
+    with pytest.raises(DS9Err, match="^Imager not open$"):
+        _ = im.xpaget("not a command")
+
+
+@requires_ds9
+def test_xpaget_error():
+    """Check the error is raised."""
+    im = Image()
+    im.open()
+    command = "not a command"
+    msg = rf"^'xpaget sherpa \"{command}\"' failed: b'XPA\$ERROR " + \
+        "undefined command for this xpa "
+    with pytest.raises(RuntimeErr, match=msg):
+        _ = im.xpaget(command)
+
+
+@requires_ds9
+def test_xpaset_error():
+    """Check the error is raised."""
+    im = Image()
+    im.open()
+    command = "not a command"
+    msg = rf"^'xpaset -p sherpa \"{command}\"' failed: b'XPA\$ERROR " + \
+        "undefined command for this xpa "
+    with pytest.raises(RuntimeErr, match=msg):
+        im.xpaset(command)
