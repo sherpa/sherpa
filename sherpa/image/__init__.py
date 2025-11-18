@@ -198,10 +198,16 @@ class DataImage(Image):
         self.eqpos = getattr(data, 'eqpos', None)
         self.sky = getattr(data, 'sky', None)
         header = getattr(data, 'header', None)
-        if header is not None:
-            obj = header.get('OBJECT')
-            if obj is not None:
-                self.name = str(obj).replace(" ", "_")
+
+        # Clear out any previous version.
+        self.name = "Data"
+
+        if header is None:
+            return
+
+        obj = header.get('OBJECT')
+        if obj is not None:
+            self.name = str(obj).replace(" ", "_")
 
     def image(self, shape=None, newframe=False, tile=False):
         Image.image(self, self.y, shape, newframe, tile)
