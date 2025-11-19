@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2025
+#  Copyright (C) 2010, 2015-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from configparser import ConfigParser
 import copy
 import copyreg as copy_reg
@@ -69,7 +69,7 @@ import sherpa.stats
 from sherpa.stats import Stat, UserStat
 import sherpa.utils
 from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
-    is_iterable_not_str, export_method, send_to_pager
+    export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
@@ -2162,7 +2162,7 @@ class Session(NoNewAttributesAfterInit):
         # - 1 to [1]
         # - ["foo", 2] is not changed.
         #
-        if is_iterable_not_str(idvals):
+        if not isinstance(idvals, str) and isinstance(idvals, Iterable):
             out = [self._fix_id(idval) for idval in idvals]
             if len(out) == 0:
                 raise ArgumentErr("id list is empty")
@@ -14203,7 +14203,9 @@ class Session(NoNewAttributesAfterInit):
             # heuristics may need updating in the future.
             #
             if getargs and allow_multiple_ids and \
-               is_iterable_not_str(getargs[0]):
+               not isinstance(getargs[0], str) and \
+               isinstance(getargs[0], Iterable):
+
                 def getid(id, recalc=True):
                     return getfunc(id, *getargs[1:], recalc=True)
 

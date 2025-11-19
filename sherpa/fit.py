@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018-2025
+#  Copyright (C) 2009, 2015, 2016, 2018-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from contextlib import nullcontext
 from functools import wraps
 import logging
@@ -39,7 +39,7 @@ from sherpa.optmethods import OptMethod, LevMar, NelderMead
 from sherpa.stats import Stat, Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
     LeastSq, Likelihood
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
-    bool_cast, is_iterable, list_to_open_interval, sao_fcmp, formatting
+    bool_cast, list_to_open_interval, sao_fcmp, formatting
 from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
 from sherpa.utils.types import ArrayType, FitFunc, IdType, IdTypes, \
     OptReturn, StatFunc, StatResults
@@ -406,6 +406,11 @@ class FitResults(NoNewAttributesAfterInit):
             out.append(self.param_warnings)
 
         return "\n".join(out)
+
+
+def is_iterable(val: Any) -> bool:
+    """Can we iterate over this item?"""
+    return isinstance(val, Iterable)
 
 
 class ErrorEstResults(NoNewAttributesAfterInit):

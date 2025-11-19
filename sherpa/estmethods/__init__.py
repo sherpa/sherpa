@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019-2021, 2023-2025
+#  Copyright (C) 2007, 2015, 2016, 2019-2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 import logging
 from typing import Any, Protocol, SupportsFloat, TypeVar
@@ -32,7 +32,7 @@ from numpy.linalg import LinAlgError
 from sherpa.stats import StatCallback
 from sherpa.utils import NoNewAttributesAfterInit, \
     FuncCounter, OutOfBoundErr, Knuth_close, \
-    print_fields, is_iterable, list_to_open_interval, quad_coef, \
+    print_fields, list_to_open_interval, quad_coef, \
     demuller, zeroin
 from sherpa.utils.parallel import SupportsLock, SupportsProcess, \
     SupportsQueue, multi, ncpus, context, process_tasks
@@ -1157,7 +1157,7 @@ def c_get_delta_root(arg, dir, par_at_min):
 
     my_neg_pos = ConfBracket.neg_pos[dir]
 
-    if is_iterable(arg):
+    if isinstance(arg, Iterable):
         # return map( lambda x: my_neg_pos * abs( x - par_at_min ), arg )
         return arg
 
@@ -1217,7 +1217,7 @@ def c_print_status(myblog,
 
     msg = f"{p}\t"
 
-    if is_iterable(answer):
+    if isinstance(answer, Iterable):
         msg += list_to_open_interval(answer)
     elif answer is None:
         msg += '-----'
