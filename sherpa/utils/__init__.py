@@ -1822,7 +1822,25 @@ def parse_expr(expr: str) -> list[tuple[float | None, float | None]]:
     return res
 
 
-def calc_total_error(staterror=None, syserror=None):
+@overload
+def calc_total_error(staterror: None = None, syserror: None = None) -> None:
+    ...
+
+@overload
+def calc_total_error(staterror: ArrayType, syserror: None = None) -> np.ndarray:
+    ...
+
+@overload
+def calc_total_error(staterror: None, syserror: ArrayType) -> np.ndarray:
+    ...
+
+@overload
+def calc_total_error(staterror: ArrayType, syserror: ArrayType) -> np.ndarray:
+    ...
+
+def calc_total_error(staterror: ArrayType | None = None,
+                     syserror: ArrayType | None = None
+                     ) -> np.ndarray | None:
     """Add statistical and systematic errors in quadrature.
 
     Parameters
@@ -1840,15 +1858,17 @@ def calc_total_error(staterror=None, syserror=None):
 
     """
 
-    if (staterror is None) and (syserror is None):
-        error = None
-    elif (staterror is not None) and (syserror is None):
-        error = staterror
-    elif (staterror is None) and (syserror is not None):
-        error = syserror
-    else:
-        error = np.sqrt(staterror * staterror + syserror * syserror)
-    return error
+    if staterror is not None:
+        s1 = np.asarray(staterror)
+        if syserror is None:
+            return s1
+
+        return np.sqrt(s1**2 + np.asarray(syserror)**2)
+
+    if syserror is not None:
+        return np.asarray(syserror)
+
+    return None
 
 
 def quantile(sorted_array, f):
