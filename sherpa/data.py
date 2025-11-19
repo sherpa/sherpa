@@ -186,7 +186,7 @@ def _check_nomask(array: None) -> None:
 def _check_nomask(array: ArrayType) -> np.ndarray:
     ...
 
-def _check_nomask(array):
+def _check_nomask(array: ArrayType | None) -> np.ndarray | None:
     if hasattr(array, 'mask'):
         warnings.warn(f'Input array {array} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.')
 
@@ -204,7 +204,8 @@ def _check_dep(array: None) -> tuple[None, Literal[True]]:
 def _check_dep(array: ArrayType) -> tuple[np.ndarray, bool]:
     ...
 
-def _check_dep(array):
+def _check_dep(array: ArrayType | None
+               ) -> tuple[None, Literal[True]] | tuple[np.ndarray, bool]:
     if not hasattr(array, 'mask'):
         return _check(array), True
 
@@ -648,7 +649,9 @@ class Filter:
     def apply(self, array: ArrayType) -> np.ndarray:
         ...
 
-    def apply(self, array):
+    def apply(self,
+              array: ArrayType | None
+              ) -> np.ndarray | None:
         """Apply this filter to an array
 
         Parameters
@@ -1461,7 +1464,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def apply_filter(self, data: ArrayType) -> np.ndarray:
         ...
 
-    def apply_filter(self, data):
+    def apply_filter(self,
+                     data: ArrayType | None
+                     ) -> np.ndarray | None:
         if data is None:
             return None
 
@@ -1837,15 +1842,8 @@ class Data1D(Data):
         model_evaluation = yfunc(*self.get_evaluation_indep(filter, yfunc, use_evaluation_space))
         return (y, model_evaluation)
 
-    @overload
-    def get_bounding_mask(self) -> tuple[bool, None]:
-        ...
-
-    @overload
-    def get_bounding_mask(self) -> tuple[np.ndarray, tuple[int]]:
-        ...
-
-    def get_bounding_mask(self):
+    def get_bounding_mask(self
+                          ) -> tuple[np.ndarray, tuple[int]] | tuple[bool, None]:
         mask = self.mask
         size = None
         if np.iterable(self.mask):
