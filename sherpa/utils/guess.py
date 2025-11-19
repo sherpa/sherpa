@@ -488,8 +488,8 @@ def guess_amplitude_at_ref(r: float,
 def guess_amplitude2d(y: np.ndarray,
                       x0lo: np.ndarray,
                       x1lo: np.ndarray,
-                      x0hi: Literal[None],
-                      x1hi: Literal[None]
+                      x0hi: None = None,
+                      x1hi: None = None
                       ) -> ValueAndRange:
     ...
 
@@ -502,7 +502,12 @@ def guess_amplitude2d(y: np.ndarray,
                       ) -> ValueAndRange:
     ...
 
-def guess_amplitude2d(y, x0lo, x1lo, x0hi=None, x1hi=None):
+def guess_amplitude2d(y: np.ndarray,
+                      x0lo: np.ndarray,
+                      x1lo: np.ndarray,
+                      x0hi: np.ndarray | None = None,
+                      x1hi: np.ndarray | None = None
+                      ) -> ValueAndRange:
     """
     Guess 2D model parameter amplitude (val, min, max)
 
@@ -576,8 +581,8 @@ def get_position(y: np.ndarray,
 def guess_position(y: np.ndarray,
                    x0lo: np.ndarray,
                    x1lo: np.ndarray,
-                   x0hi: Literal[None],
-                   x1hi: Literal[None]
+                   x0hi: None = None,
+                   x1hi: None = None
                    ) -> tuple[ValueAndRange, ValueAndRange]:
     ...
 
@@ -590,7 +595,12 @@ def guess_position(y: np.ndarray,
                    ) -> tuple[ValueAndRange, ValueAndRange]:
     ...
 
-def guess_position(y, x0lo, x1lo, x0hi=None, x1hi=None):
+def guess_position(y: np.ndarray,
+                   x0lo: np.ndarray,
+                   x1lo: np.ndarray,
+                   x0hi: np.ndarray | None = None,
+                   x1hi: np.ndarray | None = None
+                   ) -> tuple[ValueAndRange, ValueAndRange]:
     """
     Guess 2D model parameter positions xpos, ypos ({val0, min0, max0},
                                                    {val1, min1, max1})
@@ -620,7 +630,7 @@ def guess_position(y, x0lo, x1lo, x0hi=None, x1hi=None):
 
 @overload
 def guess_bounds(x: np.ndarray,
-                 xhi: Literal[True]
+                 xhi: Literal[True] = True
                  ) -> tuple[ValueAndRange, ValueAndRange]:
     ...
 
@@ -630,7 +640,9 @@ def guess_bounds(x: np.ndarray,
                  ) -> ValueAndRange:
     ...
 
-def guess_bounds(x, xhi=True):
+def guess_bounds(x: np.ndarray,
+                 xhi: bool = True
+                 ) -> ValueAndRange | tuple[ValueAndRange, ValueAndRange]:
     """Guess the bounds of a parameter from the independent axis.
 
     Parameters
@@ -672,8 +684,8 @@ def guess_bounds(x, xhi=True):
 @overload
 def guess_radius(x0lo: np.ndarray,
                  x1lo: np.ndarray,
-                 x0hi: Literal[None],
-                 x1hi: Literal[None]
+                 x0hi: None = None,
+                 x1hi: None = None
                  ) -> ValueAndRange:
     ...
 
@@ -685,7 +697,11 @@ def guess_radius(x0lo: np.ndarray,
                  ) -> ValueAndRange:
     ...
 
-def guess_radius(x0lo, x1lo, x0hi=None, x1hi=None):
+def guess_radius(x0lo: np.ndarray,
+                 x1lo: np.ndarray,
+                 x0hi: np.ndarray | None = None,
+                 x1hi: np.ndarray | None = None
+                 ) -> ValueAndRange:
     """Guess the radius parameter of a 2D model.
 
     Parameters
