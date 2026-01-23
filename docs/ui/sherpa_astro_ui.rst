@@ -71,7 +71,6 @@ burden...
       get_areascal
       get_arf
       get_arf_plot
-      get_axes
       get_backscal
       get_bkg
       get_bkg_arf
