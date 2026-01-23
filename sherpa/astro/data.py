@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015-2025
+#  Copyright (C) 2008, 2015-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -5889,29 +5889,6 @@ class DataIMG(Data2D):
         return (y_img,
                 self.filter_region(m).reshape(*self.shape))
 
-    def get_axes(self):
-        # FIXME: how to filter an axis when self.mask is size of self.y?
-        self._check_shape()
-
-        # dummy placeholders needed b/c img shape may not be square!
-        axis0 = np.arange(self.shape[1], dtype=float) + 1.
-        axis1 = np.arange(self.shape[0], dtype=float) + 1.
-        if self.coord == 'logical':
-            return (axis0, axis1)
-
-        dummy0 = np.ones(axis0.size, dtype=float)
-        dummy1 = np.ones(axis1.size, dtype=float)
-
-        if self.coord == 'physical':
-            axis0, dummy = self._logical_to_physical(axis0, dummy0)
-            dummy, axis1 = self._logical_to_physical(dummy1, axis1)
-
-        else:
-            axis0, dummy = self._logical_to_world(axis0, dummy0)
-            dummy, axis1 = self._logical_to_world(dummy1, axis1)
-
-        return (axis0, axis1)
-
     def get_x0label(self) -> str:
         """Return the label for the first independent axis.
 
@@ -6312,35 +6289,3 @@ class DataIMGInt(DataIMG):
 
         return (x0lo, x1lo, x0hi, x1hi)
 
-    def get_axes(self):
-        # FIXME: how to filter an axis when self.mask is size of self.y?
-        self._check_shape()
-
-        # dummy placeholders needed b/c img shape may not be square!
-        axis0lo = np.arange(self.shape[1], dtype=float) - 0.5
-        axis1lo = np.arange(self.shape[0], dtype=float) - 0.5
-
-        axis0hi = np.arange(self.shape[1], dtype=float) + 0.5
-        axis1hi = np.arange(self.shape[0], dtype=float) + 0.5
-
-        if self.coord == 'logical':
-            return (axis0lo, axis1lo, axis0hi, axis1hi)
-
-        dummy0 = np.ones(axis0lo.size, dtype=float)
-        dummy1 = np.ones(axis1lo.size, dtype=float)
-
-        if self.coord == 'physical':
-            axis0lo, dummy = self._logical_to_physical(axis0lo, dummy0)
-            axis0hi, dummy = self._logical_to_physical(axis0hi, dummy0)
-
-            dummy, axis1lo = self._logical_to_physical(dummy1, axis1lo)
-            dummy, axis1hi = self._logical_to_physical(dummy1, axis1hi)
-
-        else:
-            axis0lo, dummy = self._logical_to_world(axis0lo, dummy0)
-            axis0hi, dummy = self._logical_to_world(axis0hi, dummy0)
-
-            dummy, axis1lo = self._logical_to_world(dummy1, axis1lo)
-            dummy, axis1hi = self._logical_to_world(dummy1, axis1hi)
-
-        return (axis0lo, axis1lo, axis0hi, axis1hi)

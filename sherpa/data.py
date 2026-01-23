@@ -2521,12 +2521,6 @@ class Data2D(Data):
         """
         self._x1label = label
 
-    def get_axes(self) -> tuple[np.ndarray, np.ndarray]:
-        self._check_shape()
-        # FIXME: how to filter an axis when self.mask is size of self.y?
-        return (np.arange(self.shape[1]) + 1,
-                np.arange(self.shape[0]) + 1)
-
     def get_dims(self, filter: bool = False) -> tuple[int, ...]:
         if self.size is None:
             raise DataErr("sizenotset", self.name)
