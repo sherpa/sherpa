@@ -87,7 +87,7 @@ Glossary
 
    optimagic
        A Python package for numerical optimization, providing a unified
-       interface to optimizerd from :term:`SciPy`, NIOpt, and many other
+       interface to optimizers from :term:`SciPy`, NIOpt, and many other
        Python packages: https://optimagic.readthedocs.io/en/latest/
 
    PHA

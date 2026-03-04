@@ -123,7 +123,7 @@ mentioned otherwise - although it is also possible to use
 :term:`bokeh`, which can provide extra functionality when using Sherpa
 in a Jupyter notebook.  There is limited support for customizing these
 plots - such as always drawing the Y axis with a logarithmic scale -
-but extensive changes will require calling the plotting back-end
+but extensive changes will require calling the plotting backend
 directly.
 
 As an example of the :py:class:`~sherpa.plot.DataPlot` output:
@@ -542,7 +542,7 @@ in the result structure are populated: in particular the
 :py:attr:`~sherpa.fit.FitResults.rstat` and
 :py:attr:`~sherpa.fit.FitResults.qval` fields, which give the
 reduced statistic and the probability of obtaining this statistic value
-respectively.:
+respectively:
 
 .. plot::
    :context:
@@ -740,7 +740,7 @@ display for a range of values close to the best-fit location.  The
 actual values to use can also be explicitly given. In this case they
 are chosen to be close to the three-sigma limit from the confidence
 analysis above, and the dotted line is added to indicate the
-three-sigma limit above the best-fit for a single parameter):
+three-sigma limit above the best-fit for a single parameter:
 
 .. plot::
    :context:
@@ -1251,7 +1251,7 @@ change it. The error is 5 per bin, which has to be set up:
     >>> sfit.stat = Chi2()
     >>> check = sfit.fit()
 
-How much did the fit change?:
+How much did the fit change?
 
 .. plot::
    :context:
