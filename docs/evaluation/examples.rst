@@ -371,7 +371,7 @@ However, we need to include the response information -
 :term:`ARF` and :term:`RMF` - in order to be able to
 compare to the data. The easiest way to do this is to
 use the :py:class:`~sherpa.astro.instrument.Response1D`
-class to extract the ARF amd RMF from the PHA dataset,
+class to extract the ARF and RMF from the PHA dataset,
 and then apply it to create a model expression, here
 called ``full``, which includes the corrections::
 

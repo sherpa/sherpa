@@ -11,7 +11,12 @@ documentation <https://docs.astropy.org/en/stable/modeling/>`_.
 Getting started
 ===============
 
-The following modules are assumed to have been imported::
+The following modules are assumed to have been imported:
+
+.. plot::
+   :context: reset
+   :nofigs:
+   :include-source:
 
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
@@ -43,7 +48,11 @@ Fitting a one-dimensional data set
 ==================================
 
 The following data - where ``x`` is the independent axis and
-``y`` the dependent one - is used in this example::
+``y`` the dependent one - is used in this example:
+
+.. plot::
+   :context:
+   :include-source:
 
     >>> np.random.seed(0)
     >>> x = np.linspace(-5., 5., 200)
@@ -53,9 +62,7 @@ The following data - where ``x`` is the independent axis and
     >>> err_true = 0.2
     >>> y = ampl_true * np.exp(-0.5 * (x - pos_true)**2 / sigma_true**2)
     >>> y += np.random.normal(0., err_true, x.shape)
-    >>> out = plt.plot(x, y, 'ko')
-
-.. image:: _static/quick/data1d.png
+    >>> _ = plt.plot(x, y, 'ko')
 
 The aim is to fit a one-dimensional gaussian to this data and to recover
 estimates of the true parameters of the model, namely the position
@@ -74,7 +81,12 @@ concept of a "data object", which stores the independent and dependent
 axes, as well as any related metadata. For this example, the
 class to use is :py:class:`~sherpa.data.Data1D`, which requires
 a string label (used to identify the data), the independent
-axis, and then dependent axis::
+axis, and then dependent axis:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> from sherpa.data import Data1D
     >>> d = Data1D('example', x, y)
@@ -105,20 +117,25 @@ The steps taken are normally:
 
 3. and then call the :py:meth:`~sherpa.plot.DataPlot.plot` method.
 
-Sherpa has one plotting backend, :term:`matplotlib`, which is used
-to display plots. There is limited support for customizing these
-plots - such as always drawing the Y axis with a logarithmic
-scale - but extensive changes will require calling the plotting back-end
+The standard plotting backend for Sherpa is :term:`matplotlib` - and
+this is used in the examples in this documentation unless explicitly
+mentioned otherwise - although it is also possible to use
+:term:`bokeh`, which can provide extra functionality when using Sherpa
+in a Jupyter notebook.  There is limited support for customizing these
+plots - such as always drawing the Y axis with a logarithmic scale -
+but extensive changes will require calling the plotting backend
 directly.
 
-As an example of the :py:class:`~sherpa.plot.DataPlot` output::
-   
+As an example of the :py:class:`~sherpa.plot.DataPlot` output:
+
+.. plot::
+   :context:
+   :include-source:
+
    >>> from sherpa.plot import DataPlot
    >>> dplot = DataPlot()
    >>> dplot.prepare(d)
    >>> dplot.plot()
-
-.. image:: _static/quick/data1d_dataplot.png   
 
 It is not required to use these classes and in the following, plots
 will be created either via these classes or directly via matplotlib.
@@ -135,7 +152,12 @@ include :ref:`multiple components <model-combine>`,
 sharing models between data sets, and
 :ref:`adding user-defined models <usermodel>`.
 A full description of the model language and capabilities is provided in
-:doc:`models/index`::
+:doc:`models/index`:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> from sherpa.models.basic import Gauss1D
     >>> g = Gauss1D()
@@ -143,10 +165,10 @@ A full description of the model language and capabilities is provided in
     gauss1d
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       gauss1d.fwhm thawed           10  1.17549e-38  3.40282e+38           
-       gauss1d.pos  thawed            0 -3.40282e+38  3.40282e+38           
+       gauss1d.fwhm thawed           10  1.17549e-38  3.40282e+38
+       gauss1d.pos  thawed            0 -3.40282e+38  3.40282e+38
        gauss1d.ampl thawed            1 -3.40282e+38  3.40282e+38
-   
+
 It is also possible to
 :ref:`restrict the range of a parameter <params-limits>`,
 :ref:`toggle parameters so that they are fixed or fitted <params-freeze>`,
@@ -154,23 +176,27 @@ and :ref:`link parameters together <params-link>`.
 
 The :py:class:`sherpa.plot.ModelPlot` class can be used to visualize
 the model. The :py:meth:`~sherpa.plot.ModelPlot.prepare` method
-takes both a data object and the model to plot::
+takes both a data object and the model to plot:
+
+.. plot::
+   :context:
+   :include-source:
 
    >>> from sherpa.plot import ModelPlot
    >>> mplot = ModelPlot()
    >>> mplot.prepare(d, g)
    >>> mplot.plot()
 
-.. image:: _static/quick/data1d_modelplot.png
-
 There is also a :py:class:`sherpa.plot.FitPlot` class which will
 :ref:`combine the two plot results <quick-fitplot>`,
-but it is often just-as-easy to combine them directly::
+but it is easy to combine them directly:
 
-  >>> dplot.plot()
-  >>> mplot.overplot()
-  
-.. image:: _static/quick/data1d_overplot.png
+.. plot::
+   :context:
+   :include-source:
+
+   >>> dplot.plot()
+   >>> mplot.overplot()
 
 The model parameters can be changed - either manually or
 automatically - to try and start the fit off closer to the best-fit
@@ -198,7 +224,12 @@ statistic value.
 For this example, since the dependent axis (``y``)
 has no error estimate, we shall pick the least-square statistic
 (:py:class:`~sherpa.stats.LeastSq`), which calculates the
-numerical difference of the model to the data for each point::
+numerical difference of the model to the data for each point:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> from sherpa.stats import LeastSq
     >>> stat = LeastSq()
@@ -217,6 +248,11 @@ a local minimum). The main optimisers provided by Sherpa are
 (Levenberg-Marquardt). The latter is often quicker, but less robust,
 so we start with it (the optimiser can be changed and the data re-fit):
 
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
     >>> from sherpa.optmethods import LevMar
     >>> opt = LevMar()
     >>> print(opt)
@@ -230,13 +266,22 @@ so we start with it (the optimiser can be changed and the data re-fit):
     numcores = 1
     verbose  = 0
 
+.. note::
+   Sherpa comes with four optimisers in :py:mod:`sherpa.optmethods`:
+   :py:class:`~sherpa.optmethods.NelderMead`,
+   :py:class:`~sherpa.optmethods.LevMar`,
+   :py:class:`~sherpa.optmethods.MonCar`,
+   and :py:class:`~sherpa.optmethods.GridSearch`. If you have
+   :term:`SciPy` or :term:`optimagic` installed then you will
+   also have access to extra optimizers provided by those packages.
+
 .. _quick-gauss1d-fit:
-    
+
 Fit the data
 ------------
 
 The :py:class:`~sherpa.fit.Fit` class is used to bundle up the
-data, model, statistic, and optimiser choices. The 
+data, model, statistic, and optimiser choices. The
 :py:meth:`~sherpa.fit.Fit.fit` method runs the optimiser, and
 returns a
 :py:class:`~sherpa.fit.FitResults` instance, which
@@ -248,6 +293,11 @@ as information on the fit (such as the start and end
 statistic values) and best-fit parameter values. Note that
 the model expression can also be queried for the new
 parameter values.
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> from sherpa.fit import Fit
     >>> gfit = Fit(d, g, stat=stat, method=opt)
@@ -261,8 +311,13 @@ parameter values.
 To actually fit the data, use the
 :py:meth:`~sherpa.fit.Fit.fit` method, which - depending
 on the data, model, or statistic being used - can take some
-time::
-    
+time:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
     >>> gres = gfit.fit()
     >>> print(gres.succeeded)
     True
@@ -271,10 +326,15 @@ time::
 
    Add a note about using the logger to get more on-screen information
    about the fit.
-   
+
 One useful method for interactive analysis is
 :py:meth:`~sherpa.fit.FitResults.format`, which returns
-a string representation of the fit results, as shown below::
+a string representation of the fit results, as shown below:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> print(gres.format())
     Method                = levmar
@@ -284,9 +344,9 @@ a string representation of the fit results, as shown below::
     Data points           = 200
     Degrees of freedom    = 197
     Change in statistic   = 172.641
-       gauss1d.fwhm   1.91572      +/- 0.165982    
-       gauss1d.pos    1.2743       +/- 0.0704859   
-       gauss1d.ampl   3.04706      +/- 0.228618    
+       gauss1d.fwhm   1.91572      +/- 0.165982
+       gauss1d.pos    1.2743       +/- 0.0704859
+       gauss1d.ampl   3.04706      +/- 0.228618
 
 .. note::
 
@@ -296,7 +356,7 @@ a string representation of the fit results, as shown below::
    :py:meth:`~sherpa.fit.Fit.fit` method. In this particular case -
    which uses the :py:class:`~sherpa.stats.LeastSq` statistic -
    the error estimates do not have much meaning. As discussed
-   below, Sherpa can :ref:`make use of error estimates 
+   below, Sherpa can :ref:`make use of error estimates
    on the data <quick-gauss1d-errors>`
    to calculate meaningful parameter errors.
 
@@ -306,7 +366,11 @@ The :py:class:`sherpa.plot.FitPlot` class will display the data
 and model. The :py:meth:`~sherpa.plot.FitPlot.prepare` method
 requires data and model plot objects; in this case the previous
 versions can be re-used, although the model plot needs to be
-updated to reflect the changes to the model parameters::
+updated to reflect the changes to the model parameters:
+
+.. plot::
+   :context:
+   :include-source:
 
    >>> from sherpa.plot import FitPlot
    >>> fplot = FitPlot()
@@ -314,20 +378,20 @@ updated to reflect the changes to the model parameters::
    >>> fplot.prepare(dplot, mplot)
    >>> fplot.plot()
 
-.. image:: _static/quick/data1d_fitplot.png
-
 As the model can be
 :doc:`evaluated directly <evaluation/index>`,
-this plot can also be created manually::
+this plot can also be created manually:
 
-   >>> out = plt.plot(d.x, d.y, 'ko', label='Data')
-   >>> out = plt.plot(d.x, g(d.x), linewidth=2, label='Gaussian')
-   >>> out = plt.legend(loc=2);
+.. plot::
+   :context:
+   :include-source:
 
-.. image:: _static/quick/data1d_gauss_fit.png
+   >>> _ = plt.plot(d.x, d.y, 'ko', label='Data')
+   >>> _ = plt.plot(d.x, g(d.x), linewidth=2, label='Gaussian')
+   >>> _ = plt.legend(loc=2)
 
 .. _quick-gauss1d-extract:
-           
+
 Extract the parameter values
 ----------------------------
 
@@ -336,7 +400,12 @@ are not relevant here (as the fit was done with no error values).
 The following relation is used to convert from the full-width
 half-maximum value, used by the :py:class:`~sherpa.models.basic.Gauss1D`
 model, to the Gaussian sigma value used to create the data:
-:math:`\rm{FWHM} = 2 \sqrt{2ln(2)} \sigma`::
+:math:`\rm{FWHM} = 2 \sqrt{2ln(2)} \sigma`:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> print(gres)
     datasets       = None
@@ -363,37 +432,49 @@ model, to the Gaussian sigma value used to create the data:
     Amplitude= 3.05  truth= 3.00
     >>> print("Sigma    = {:.2f}  truth= {:.2f}".format(ans['gauss1d.fwhm']/conv, sigma_true))
     Sigma    = 0.81  truth= 0.80
-    
+
 The model, and its parameter values, can also be queried directly, as they
-have been changed by the fit::
+have been changed by the fit:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> print(g)
     gauss1d
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       gauss1d.fwhm thawed      1.91572  1.17549e-38  3.40282e+38           
-       gauss1d.pos  thawed       1.2743 -3.40282e+38  3.40282e+38           
-       gauss1d.ampl thawed      3.04706 -3.40282e+38  3.40282e+38       
+       gauss1d.fwhm thawed      1.91572  1.17549e-38  3.40282e+38
+       gauss1d.pos  thawed       1.2743 -3.40282e+38  3.40282e+38
+       gauss1d.ampl thawed      3.04706 -3.40282e+38  3.40282e+38
     >>> print(g.pos)
     val         = 1.2743015983545247
     min         = -3.4028234663852886e+38
     max         = 3.4028234663852886e+38
-    units       = 
+    units       =
     frozen      = False
     link        = None
     default_val = 0.0
     default_min = -3.4028234663852886e+38
     default_max = 3.4028234663852886e+38
+    >>> print(g.pos.val)
+    1.2743015983545247
 
 .. _quick-gauss1d-errors:
-    
+
 Including errors
 ================
 
 For this example, the error on each bin is assumed to be
-the same, and equal to the true error::
+the same, and equal to the true error:
 
-    >>> dy = np.ones(x.size) * err_true
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
+    >>> dy = np.full(x.size, err_true)
     >>> de = Data1D('with-errors', x, y, staterror=dy)
     >>> print(de)
     name      = with-errors
@@ -405,7 +486,12 @@ the same, and equal to the true error::
 The statistic is changed from least squares to
 chi-square (:py:class:`~sherpa.stats.Chi2`), to take advantage
 of this extra knowledge (i.e. the Chi-square statistic includes
-the error value per bin when calculating the statistic value)::
+the error value per bin when calculating the statistic value):
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> from sherpa.stats import Chi2
     >>> ustat = Chi2()
@@ -422,36 +508,46 @@ the error value per bin when calculating the statistic value)::
     Probability [Q-value] = 0.393342
     Reduced statistic     = 1.02408
     Change in statistic   = 4316.01
-       gerr.fwhm      1.91572      +/- 0.0331963   
-       gerr.pos       1.2743       +/- 0.0140972   
-       gerr.ampl      3.04706      +/- 0.0457235   
+       gerr.fwhm      1.91572      +/- 0.0331963
+       gerr.pos       1.2743       +/- 0.0140972
+       gerr.ampl      3.04706      +/- 0.0457235
     >>> if not geres.succeeded: print(geres.message)
 
 Since the error value is independent of bin, then the fit results
 should be the same here (that is, the parameters in ``g`` are the
-same as ``ge``)::
+same as ``ge``):
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> print(g)
     gauss1d
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       gauss1d.fwhm thawed      1.91572  1.17549e-38  3.40282e+38           
-       gauss1d.pos  thawed       1.2743 -3.40282e+38  3.40282e+38           
-       gauss1d.ampl thawed      3.04706 -3.40282e+38  3.40282e+38           
+       gauss1d.fwhm thawed      1.91572  1.17549e-38  3.40282e+38
+       gauss1d.pos  thawed       1.2743 -3.40282e+38  3.40282e+38
+       gauss1d.ampl thawed      3.04706 -3.40282e+38  3.40282e+38
     >>> print(ge)
     gerr
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       gerr.fwhm    thawed      1.91572  1.17549e-38  3.40282e+38           
-       gerr.pos     thawed       1.2743 -3.40282e+38  3.40282e+38           
+       gerr.fwhm    thawed      1.91572  1.17549e-38  3.40282e+38
+       gerr.pos     thawed       1.2743 -3.40282e+38  3.40282e+38
        gerr.ampl    thawed      3.04706 -3.40282e+38  3.40282e+38
-   
+
 The difference is that more of the fields
 in the result structure are populated: in particular the
 :py:attr:`~sherpa.fit.FitResults.rstat` and
 :py:attr:`~sherpa.fit.FitResults.qval` fields, which give the
 reduced statistic and the probability of obtaining this statistic value
-respectively.::
+respectively:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> print(geres)
     datasets       = None
@@ -476,11 +572,16 @@ Error analysis
 
 The default error estimation routine is
 :py:attr:`~sherpa.estmethods.Covariance`, which will be replaced by
-:py:attr:`~sherpa.estmethods.Confidence` for this example::
+:py:attr:`~sherpa.estmethods.Confidence` for this example:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> from sherpa.estmethods import Confidence
     >>> gefit.estmethod = Confidence()
-    >>> print(gefit.estmethod)  # doctest: +IGNORE_OUTPUT
+    >>> print(gefit.estmethod)
     name         = confidence
     sigma        = 1
     eps          = 0.01
@@ -489,23 +590,24 @@ The default error estimation routine is
     remin        = 0.01
     fast         = False
     parallel     = True
-    numcores     = 4
+    numcores     = ...
     maxfits      = 5
     max_rstat    = 3
     tol          = 0.2
     verbose      = False
     openinterval = False
 
-..
-   Comment: IGNORE_OUTPUT is necessary because numcores will have
-   different value, depending on the machine that runs the doctest.
-
 Running the error analysis can take time, for particularly complex
 models. The default behavior is to use all the available CPU cores
 on the machine, but this can be changed with the ``numcores``
 attribute. Note that a message is displayed to the screen when each
-bound is calculated, to indicate progress::
-  
+bound is calculated, to indicate progress:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
     >>> errors = gefit.est_errors()
 
 And this is the output::
@@ -517,8 +619,13 @@ And this is the output::
     gerr.ampl lower bound:	-0.0456119
     gerr.ampl upper bound:	0.0456119
 
-The results can be displayed::
-  
+The results can be displayed:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
     >>> print(errors.format())
     Confidence Method     = confidence
     Fitting Method        = levmar
@@ -529,10 +636,15 @@ The results can be displayed::
        gerr.fwhm         1.91572   -0.0326327    0.0332578
        gerr.pos           1.2743   -0.0140981    0.0140981
        gerr.ampl         3.04706   -0.0456119    0.0456119
-   
+
 The :py:class:`~sherpa.fit.ErrorEstResults` instance returned by
 :py:meth:`~sherpa.fit.Fit.est_errors` contains the parameter
-values and limits::
+values and limits:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> print(errors)
     datasets    = None
@@ -550,7 +662,12 @@ values and limits::
 
 The data can be accessed, e.g. to create a dictionary where the
 keys are the parameter names and the values represent the parameter
-ranges::
+ranges:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> dvals = zip(errors.parnames, errors.parvals, errors.parmins,
     ... errors.parmaxes)
@@ -558,7 +675,7 @@ ranges::
     ...          for d in dvals}
     >>> pvals['gerr.pos']
     {'val': 1.2743015983545225, 'min': -0.01409807406557051, 'max': 0.01409807406557051}
-             
+
 .. todo::
 
    Discuss the relationship between the parameter errors reported in a
@@ -567,8 +684,8 @@ ranges::
 Screen output
 -------------
 
-The default behavior - when *not* using the default 
-:py:class:`~sherpa.estmethods.Covariance` method - is for 
+The default behavior - when *not* using the default
+:py:class:`~sherpa.estmethods.Covariance` method - is for
 :py:meth:`~sherpa.fit.Fit.est_errors` to print out the parameter
 bounds as it finds them, which can be useful in an interactive session
 since the error analysis can be slow. This can be controlled using
@@ -592,35 +709,58 @@ A single parameter
 
 .. todo::
    shouldn't this use the default for min/max/nloop in the prepare call?
-   
+
 It is possible to investigate the error surface of a single
 parameter using the
 :py:class:`~sherpa.plot.IntervalProjection` class. The following shows
-how the error surface changes with the position of the gaussian. The
-:py:meth:`~sherpa.plot.IntervalProjection.prepare` method are given
-the range over which to vary the parameter (the range is chosen to
-be close to the three-sigma limit from the confidence analysis above,
-ahd the dotted line is added to indicate the three-sigma
-limit above the best-fit for a single parameter)::
+how the error surface changes with the position of the gaussian:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> from sherpa.plot import IntervalProjection
    >>> iproj = IntervalProjection()
-   >>> iproj.prepare(min=1.23, max=1.32, nloop=41)
+   >>> iproj.prepare()
    >>> iproj.calc(gefit, ge.pos)
 
 This can take some time, depending on the complexity of the model and
-number of steps requested. The resulting data looks like::
-   
-   >>> iproj.plot()
-   >>> out = plt.axhline(geres.statval + 9, linestyle='dotted');
+number of steps requested. The resulting data looks like:
 
-.. image:: _static/quick/data1d_pos_iproj.png
+.. plot::
+   :context:
+   :include-source:
+
+   >>> iproj.plot()
+
+The default behaviour of
+:py:meth:`~sherpa.plot.IntervalProjection.prepare` is to calculate the
+display for a range of values close to the best-fit location.  The
+actual values to use can also be explicitly given. In this case they
+are chosen to be close to the three-sigma limit from the confidence
+analysis above, and the dotted line is added to indicate the
+three-sigma limit above the best-fit for a single parameter:
+
+.. plot::
+   :context:
+   :include-source:
+
+   >>> iproj.prepare(min=1.23, max=1.32, nloop=41)
+   >>> iproj.calc(gefit, ge.pos)
+   >>> iproj.plot()
+   >>> _ = plt.axhline(geres.statval + 9, linestyle='dotted')
 
 The curve is stored in the
 :py:class:`~sherpa.plot.IntervalProjection` object (in fact, these
 values are created by the call to
 :py:meth:`~sherpa.plot.IntervalProjection.calc` and so can be accessed without
-needing to create the plot)::
+needing to create the plot).
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> print(iproj)
     x      = [1.23  ,1.2323,1.2345,1.2368,1.239 ,1.2412,1.2435,1.2457,1.248 ,1.2503,
@@ -649,7 +789,10 @@ The :py:class:`~sherpa.plot.RegionProjection` class supports
 the comparison of two parameters. The contours indicate the one,
 two, and three sigma contours.
 
-::
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> from sherpa.plot import RegionProjection
    >>> rproj = RegionProjection()
@@ -659,38 +802,55 @@ two, and three sigma contours.
 As with the :ref:`interval projection <quick_errors_intproj>`,
 this step can take time.
 
-::
-   
+.. plot::
+   :context:
+   :include-source:
+
    >>> rproj.contour()
 
-.. image:: _static/quick/data1d_pos_fwhm_rproj.png
-
 As with the single-parameter case, the statistic values for the grid are
-stored in the :py:class:`~sherpa.plot.RegionProjection` object by the 
-:py:meth:`~sherpa.plot.RegionProjection.calc` call, 
+stored in the :py:class:`~sherpa.plot.RegionProjection` object by the
+:py:meth:`~sherpa.plot.RegionProjection.calc` call,
 and so can be accessed without needing to create the contour plot. Useful
-fields include ``x0`` and ``x1`` (the two parameter values), 
+fields include ``x0`` and ``x1`` (the two parameter values),
 ``y`` (the statistic value), and ``levels`` (the values used for the
-contours)::
+contours):
+
+.. plot::
+   :context: close-figs
+   :include-source:
 
     >>> lvls = rproj.levels
     >>> print(lvls)
-    [ 204.03940717  207.92373254  213.57281632]   
+    [ 204.03940717  207.92373254  213.57281632]
     >>> nx, ny = rproj.nloop
     >>> x0, x1, y = rproj.x0, rproj.x1, rproj.y
     >>> x0.resize(ny, nx)
     >>> x1.resize(ny, nx)
     >>> y.resize(ny, nx)
-    >>> out = plt.imshow(y, origin='lower', cmap='viridis_r', aspect='auto',
-    ...                  extent=(x0.min(), x0.max(), x1.min(), x1.max()))
-    >>> out = plt.colorbar()
-    >>> out = plt.xlabel(rproj.xlabel)
-    >>> out = plt.ylabel(rproj.ylabel)
-    >>> cs = plt.contour(x0, x1, y, levels=lvls)
+    >>> hx0 = 0.5 * (x0.max() - x0.min()) / (nx - 1)
+    >>> hx1 = 0.5 * (x1.max() - x1.min()) / (ny - 1)
+    >>> extent = (x0.min() - hx0, x0.max() + hx0, x1.min() - hx1, x1.max() + hx1)
+    >>> _ = plt.imshow(y, origin='lower', cmap='viridis_r', aspect='auto',
+    ...                extent=extent)
+    >>> _ = plt.colorbar()
+    >>> _ = plt.xlabel(rproj.xlabel)
+    >>> _ = plt.ylabel(rproj.ylabel)
+    >>> cs = plt.contour(x0, x1, y, levels=lvls, colors="white")
     >>> lbls = [(v, r"${}\sigma$".format(i+1)) for i, v in enumerate(lvls)]
-    >>> out = plt.clabel(cs, lvls, fmt=dict(lbls));
+    >>> _ = plt.clabel(cs, lvls, fmt=dict(lbls))
 
-.. image:: _static/quick/data1d_pos_fwhm_rproj_manual.png
+.. note::
+   The coordinates of the contours - so the
+   :py:attr:`~sherpa.plot.RegionProjection.x0`
+   and
+   :py:attr:`~sherpa.plot.RegionProjection.x1`
+   fields - represent the center of each pixel. The
+   ``extent`` parameter to the
+   `imshow <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html>`_
+   routine represent the edges of the pixels, hence the
+   need to calculate the half-width of each pixel (``hx0``
+   and ``hx1``) above.
 
 Fitting two-dimensional data
 ============================
@@ -700,7 +860,10 @@ on the independent axes ``x0`` and ``x1``. In the example below a
 contiguous grid is used, that is the pixel size is constant, but
 there is no requirement that this is the case.
 
-::
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> np.random.seed(0)
     >>> x1, x0 = np.mgrid[:128, :128]
@@ -713,7 +876,7 @@ there is no requirement that this is the case.
    probably does force the data to be on a contiguous grid,
    or at least have a constant pixel size, since it has a
    ``shape`` argument.
-    
+
 Creating a data object
 ----------------------
 
@@ -721,7 +884,12 @@ To support irregularly-gridded data, the multi-dimensional
 data classes require
 that the coordinate arrays and data values are one-dimensional.
 For example, the following code creates a
-:py:class:`~sherpa.data.Data2D` object::
+:py:class:`~sherpa.data.Data2D` object:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> from sherpa.data import Data2D
     >>> x0axis = x0.ravel()
@@ -742,7 +910,12 @@ Define the model
 
 Creating the model is the same as the one-dimensional case; in this
 case the :py:class:`~sherpa.models.basic.Polynom2D` class is used
-to create a low-order polynomial::
+to create a low-order polynomial:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> from sherpa.models.basic import Polynom2D
     >>> p2 = Polynom2D('p2')
@@ -750,21 +923,26 @@ to create a low-order polynomial::
     p2
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       p2.c         thawed            1 -3.40282e+38  3.40282e+38           
-       p2.cy1       thawed            0 -3.40282e+38  3.40282e+38           
-       p2.cy2       thawed            0 -3.40282e+38  3.40282e+38           
-       p2.cx1       thawed            0 -3.40282e+38  3.40282e+38           
-       p2.cx1y1     thawed            0 -3.40282e+38  3.40282e+38           
-       p2.cx1y2     thawed            0 -3.40282e+38  3.40282e+38           
-       p2.cx2       thawed            0 -3.40282e+38  3.40282e+38           
-       p2.cx2y1     thawed            0 -3.40282e+38  3.40282e+38           
-       p2.cx2y2     thawed            0 -3.40282e+38  3.40282e+38           
+       p2.c         thawed            1 -3.40282e+38  3.40282e+38
+       p2.cy1       thawed            0 -3.40282e+38  3.40282e+38
+       p2.cy2       thawed            0 -3.40282e+38  3.40282e+38
+       p2.cx1       thawed            0 -3.40282e+38  3.40282e+38
+       p2.cx1y1     thawed            0 -3.40282e+38  3.40282e+38
+       p2.cx1y2     thawed            0 -3.40282e+38  3.40282e+38
+       p2.cx2       thawed            0 -3.40282e+38  3.40282e+38
+       p2.cx2y1     thawed            0 -3.40282e+38  3.40282e+38
+       p2.cx2y2     thawed            0 -3.40282e+38  3.40282e+38
 
 Control the parameters being fit
 --------------------------------
 
 To reduce the number of parameters being fit, the ``frozen`` attribute
-can be set::
+can be set:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> for n in ['cx1', 'cy1', 'cx2y1', 'cx1y2', 'cx2y2']:
     ...     getattr(p2, n).frozen = True
@@ -772,21 +950,26 @@ can be set::
     p2
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       p2.c         thawed            1 -3.40282e+38  3.40282e+38           
-       p2.cy1       frozen            0 -3.40282e+38  3.40282e+38           
-       p2.cy2       thawed            0 -3.40282e+38  3.40282e+38           
-       p2.cx1       frozen            0 -3.40282e+38  3.40282e+38           
-       p2.cx1y1     thawed            0 -3.40282e+38  3.40282e+38           
-       p2.cx1y2     frozen            0 -3.40282e+38  3.40282e+38           
-       p2.cx2       thawed            0 -3.40282e+38  3.40282e+38           
-       p2.cx2y1     frozen            0 -3.40282e+38  3.40282e+38           
+       p2.c         thawed            1 -3.40282e+38  3.40282e+38
+       p2.cy1       frozen            0 -3.40282e+38  3.40282e+38
+       p2.cy2       thawed            0 -3.40282e+38  3.40282e+38
+       p2.cx1       frozen            0 -3.40282e+38  3.40282e+38
+       p2.cx1y1     thawed            0 -3.40282e+38  3.40282e+38
+       p2.cx1y2     frozen            0 -3.40282e+38  3.40282e+38
+       p2.cx2       thawed            0 -3.40282e+38  3.40282e+38
+       p2.cx2y1     frozen            0 -3.40282e+38  3.40282e+38
        p2.cx2y2     frozen            0 -3.40282e+38  3.40282e+38
-   
+
 Fit the data
 ------------
 
 Fitting is no different (the same statistic and optimisation
-objects used earlier could have been re-used here)::
+objects used earlier could have been re-used here):
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> f2 = Fit(d2, p2, stat=LeastSq(), method=LevMar())
     >>> res2 = f2.fit()
@@ -812,15 +995,15 @@ objects used earlier could have been re-used here)::
     p2
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       p2.c         thawed     -80.2895 -3.40282e+38  3.40282e+38           
-       p2.cy1       frozen            0 -3.40282e+38  3.40282e+38           
-       p2.cy2       thawed    -0.481745 -3.40282e+38  3.40282e+38           
-       p2.cx1       frozen            0 -3.40282e+38  3.40282e+38           
-       p2.cx1y1     thawed      1.50227 -3.40282e+38  3.40282e+38           
-       p2.cx1y2     frozen            0 -3.40282e+38  3.40282e+38           
-       p2.cx2       thawed      1.98941 -3.40282e+38  3.40282e+38           
-       p2.cx2y1     frozen            0 -3.40282e+38  3.40282e+38           
-       p2.cx2y2     frozen            0 -3.40282e+38  3.40282e+38           
+       p2.c         thawed     -80.2895 -3.40282e+38  3.40282e+38
+       p2.cy1       frozen            0 -3.40282e+38  3.40282e+38
+       p2.cy2       thawed    -0.481745 -3.40282e+38  3.40282e+38
+       p2.cx1       frozen            0 -3.40282e+38  3.40282e+38
+       p2.cx1y1     thawed      1.50227 -3.40282e+38  3.40282e+38
+       p2.cx1y2     frozen            0 -3.40282e+38  3.40282e+38
+       p2.cx2       thawed      1.98941 -3.40282e+38  3.40282e+38
+       p2.cx2y1     frozen            0 -3.40282e+38  3.40282e+38
+       p2.cx2y2     frozen            0 -3.40282e+38  3.40282e+38
 
 .. todo::
 
@@ -832,10 +1015,21 @@ objects used earlier could have been re-used here)::
 Display the model
 -----------------
 
-The model can be visualized by evaluating it over a grid of points
-and then displaying it::
+The model can be visualized by evaluating it over a grid of points:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> m2 = p2(x0axis, x1axis).reshape(128, 128)
+
+and then displaying it:
+
+.. plot::
+   :context:
+   :include-source:
+
     >>> def pimg(d, title):
     ...     plt.imshow(d, origin='lower', interpolation='nearest',
     ...                vmin=-1e4, vmax=5e4, cmap='viridis')
@@ -844,15 +1038,14 @@ and then displaying it::
     ...                  ticks=[0, 20000, 40000])
     ...     plt.title(title)
     ...
-    >>> out = plt.figure(figsize=(8, 3))
-    >>> out = plt.subplot(1, 3, 1);
+    >>> plt.close()
+    >>> fig = plt.figure(figsize=(8, 3))
+    >>> _ = plt.subplot(1, 3, 1)
     >>> pimg(y, "Data")
-    >>> out = plt.subplot(1, 3, 2)
+    >>> _ = plt.subplot(1, 3, 2)
     >>> pimg(m2, "Model")
-    >>> out = plt.subplot(1, 3, 3)
+    >>> _ = plt.subplot(1, 3, 3)
     >>> pimg(y - m2, "Residual")
-
-.. image:: _static/quick/data2d_residuals.png
 
 .. note::
 
@@ -861,7 +1054,7 @@ and then displaying it::
    `DS9 <https://ds9.si.edu/site/Home.html>`_ image viewer is installed.
    For the examples in this document, matplotlib plots will be
    created to view the data directly.
-   
+
 Simultaneous fits
 =================
 
@@ -872,11 +1065,16 @@ a dataset containing a lorentzian signal with a background component,
 and another with just the background component. Fitting both together
 can improve the constraints on the parameter values.
 
-First we start by simulating the data, where the 
+First we start by simulating the data, where the
 :py:class:`~sherpa.models.basic.Polynom1D`
 class is used to model the background as a straight line, and
 :py:class:`~sherpa.astro.models.Lorentz1D`
-for the signal::
+for the signal:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> from sherpa.models import Polynom1D
     >>> from sherpa.astro.models import Lorentz1D
@@ -895,15 +1093,23 @@ for the signal::
     x1 size 21  x2 size 11
 
 There is **no** requirement that the data sets have a common grid,
-as can be seen in a raw view of the data::
+as can be seen in a raw view of the data:
 
+.. plot::
+   :context:
+   :include-source:
+
+    >>> plt.close()
     >>> out = plt.plot(x1, y1)
     >>> out = plt.plot(x2, y2)
-   
-.. image:: _static/quick/quick_simulfit_data.png
 
 The fits are set up as before; a data object is needed for each
-data set, and model instances are created::
+data set, and model instances are created:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> d1 = Data1D('a', x1, y1)
     >>> d2 = Data1D('b', x2, y2)
@@ -914,24 +1120,44 @@ data set, and model instances are created::
 To help the fit, we use a simple algorithm to estimate the
 starting point for the source amplitude, by evaluating
 the model on the data grid and calculating the change in
-the amplitude needed to make it match the data::
-  
+the amplitude needed to make it match the data:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
     >>> flor.ampl = y1.sum() / flor(x1).sum()
 
 For simultaneous fits the same optimisation and statistic
 needs to be used for each fit (this is an area we are looking
-to improve)::
-  
+to improve):
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
     >>> from sherpa.optmethods import NelderMead
     >>> stat, opt = LeastSq(), NelderMead()
 
-Set up the fits to the individual data sets::
-  
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
+Set up the fits to the individual data sets:
+
     >>> f1 = Fit(d1, fpoly + flor, stat, opt)
     >>> f2 = Fit(d2, fpoly, stat, opt)
 
-and a simultaneous (i.e. to both data sets) fit::
-   
+and a simultaneous (i.e. to both data sets) fit:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
     >>> from sherpa.data import DataSimulFit
     >>> from sherpa.models import SimulFitModel
     >>> sdata = DataSimulFit('all', (d1, d2))
@@ -951,7 +1177,12 @@ Note that there is a :py:meth:`~sherpa.fit.Fit.simulfit` method that
 can be used to fit using multiple :py:class:`sherpa.fit.Fit` objects,
 which wraps the above (using individual fit objects allows some
 of the data to be fit first, which may help reduce the parameter
-space needed to be searched)::
+space needed to be searched):
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> res = sfit.fit()
     >>> print(res)
@@ -977,29 +1208,36 @@ have been used in the fit.
 
 The data can then be viewed (in this case a separate grid
 is used, but the
-:ref:`data objects could be used to define the grid <evaluation_data>`)::
+:ref:`data objects could be used to define the grid <evaluation_data>`):
 
-    >>> out = plt.plot(x1, y1, label='Data 1')
-    >>> out = plt.plot(x2, y2, label='Data 2')
+.. plot::
+   :context: close-figs
+   :include-source:
+
+    >>> _ = plt.plot(x1, y1, label='Data 1')
+    >>> _ = plt.plot(x2, y2, label='Data 2')
     >>> x = np.arange(4000, 5000, 10)
-    >>> out = plt.plot(x, (fpoly + flor)(x), linestyle='dotted', label='Fit 1')
-    >>> out = plt.plot(x, fpoly(x), linestyle='dotted', label='Fit 2')
-    >>> out = plt.legend()
-
-.. image:: _static/quick/quick_simulfit_fit.png
+    >>> _ = plt.plot(x, (fpoly + flor)(x), linestyle='dotted', label='Fit 1')
+    >>> _ = plt.plot(x, fpoly(x), linestyle='dotted', label='Fit 2')
+    >>> _ = plt.legend()
 
 .. todo::
 
    May want to show the residual plot.
 
    Improve the English in the following section:
-   
+
 How do you do error analysis? Well, can call ``sfit.est_errors()``, but
-that will fail with the current statistic (``LeastSq``), so need to
-change it. The error is 5, per bin, which has to be set up::
+that will fail with the current statistic (``LeastSq``), so we need to
+change it. The error is 5 per bin, which has to be set up:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> print(sfit.calc_stat_info())
-    name      = 
+    name      =
     ids       = None
     bkg_ids   = None
     statname  = leastsq
@@ -1008,22 +1246,32 @@ change it. The error is 5, per bin, which has to be set up::
     dof       = 27
     qval      = None
     rstat     = None
-    >>> d1.staterror = np.ones(x1.size) * 5
-    >>> d2.staterror = np.ones(x2.size) * 5
+    >>> d1.staterror = np.full(x1.size, 5)
+    >>> d2.staterror = np.full(x2.size, 5)
     >>> sfit.stat = Chi2()
     >>> check = sfit.fit()
 
-How much did the fit change?::
-  
+How much did the fit change?
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
     >>> print(check.dstatval)
     0.0
-   
+
 Note that since the error on each bin is the same value, the best-fit
 value is not going to be different to the LeastSq result (so ``dstatval``
-should be 0)::
+should be 0):
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> print(sfit.calc_stat_info())
-    name      = 
+    name      =
     ids       = None
     bkg_ids   = None
     statname  = chi2
@@ -1048,15 +1296,17 @@ should be 0)::
     nfits       = 0
 
 Error estimates on a single parameter are
-:ref:`as above <quick_errors_intproj>`::
+:ref:`as above <quick_errors_intproj>`:
+
+.. plot::
+   :context:
+   :include-source:
 
     >>> iproj = IntervalProjection()
     >>> iproj.prepare(min=6000, max=18000, nloop=101)
     >>> iproj.calc(sfit, flor.ampl)
     >>> iproj.plot()
 
-.. image:: _static/quick/quick_simulfit_error.png
-
 .. todo::
-   
+
    Hmm, not particularly symmetric, but that's life.

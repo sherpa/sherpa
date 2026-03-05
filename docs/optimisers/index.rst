@@ -40,10 +40,11 @@ the :py:attr:`~sherpa.optmethods.OptMethod.config` dictionary
 field.
 
 In addition to the built-in optimisers in `sherpa.optmethods.buildin`,
-Sherpa includes an interface to several of the optimizers in
-`scipy.optimize`, which will be available if the `scipy` package
-is installed in your Python environment.
-Available optimisers are listed in the `Reference/API` section below.
+Sherpa includes interfaces to several of the optimizers in
+`scipy.optimize` or :term:`optimagic` packages, which will be
+available when :term:`SciPy` or :term:`optimagic`, respectively, are
+installed in your Python environment.  Available optimisers are listed
+in the `Reference/API` section below.
 
 More optimisers can be built with the
 :py:class:`sherpa.optmethods.OptMethod` class; a detailed example is given

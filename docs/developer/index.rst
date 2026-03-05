@@ -687,7 +687,7 @@ available.
 
    The parameter lines will mostly look like this: parameter name,
    unit string (is often ``" "``), the default value, the hard and then
-   soft minimum, then the soft ahd hard maximum, and then a value used
+   soft minimum, then the soft and hard maximum, and then a value used
    by the XSPEC optimiser, but we only care about if it is negative
    (which indicates that the parameter should be frozen by default).
    The other common variant is the "flag" parameter - that is, a

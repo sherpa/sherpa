@@ -85,6 +85,11 @@ Glossary
        that define the data formats and standards used by high-energy
        Astrophysics missions.
 
+   optimagic
+       A Python package for numerical optimization, providing a unified
+       interface to optimizers from :term:`SciPy`, NIOpt, and many other
+       Python packages: https://optimagic.readthedocs.io/en/latest/
+
    PHA
        The standard file format used to store astronomical X-ray
        spectral data. The format is defined as part of the
@@ -114,6 +119,10 @@ Glossary
        represent RMFs is defined in the
        :term:`OGIP` Calibration Memo
        `CAL/GEN/02-002 <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
+
+   SciPy
+       Priovides fundamental algorithms for scientific computing
+       in Python: https://scipy.org/.
 
    WCS
        The phrase World Coordinate System for an Astronomical data set
