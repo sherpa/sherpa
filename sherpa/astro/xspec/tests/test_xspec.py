@@ -852,13 +852,14 @@ def test_apec_redshift_parameter_is_case_insensitive():
 
 
 @requires_xspec
-@pytest.mark.parametrize("op", [operator.add,
-                                operator.sub,
-                                operator.mul,
-                                operator.truediv,
-                                operator.floordiv
-                                ])
-def test_can_combine_additive(op, xsmodel):
+@pytest.mark.parametrize("op,opstr",
+                         [(operator.add, None),
+                          (operator.sub, None),
+                          (operator.mul, "\\*"),
+                          (operator.truediv, "/"),
+                          (operator.floordiv, "//")
+                          ])
+def test_can_combine_additive(op, opstr, xsmodel):
     """Check can combine additive models."""
 
     # Assume XSapec exists.
@@ -869,17 +870,23 @@ def test_can_combine_additive(op, xsmodel):
     #
     _ = op(m1, 2)
     _ = op(2, m1)
-    _ = op(m1, m1)
+    if opstr is None:
+        _ = op(m1, m1)
+    else:
+        msg = f"^Invalid operation: XSapec {opstr} XSapec$"
+        with pytest.raises(TypeError, match=msg):
+            _ = op(m1, m1)
 
 
 @requires_xspec
-@pytest.mark.parametrize("op", [operator.add,
-                                operator.sub,
-                                operator.mul,
-                                operator.truediv,
-                                operator.floordiv
-                                ])
-def test_can_combine_multiplicative(op, xsmodel):
+@pytest.mark.parametrize("op,opstr",
+                         [(operator.add, "\\+"),
+                          (operator.sub, "-"),
+                          (operator.mul, None),
+                          (operator.truediv, None),
+                          (operator.floordiv, None)
+                          ])
+def test_can_combine_multiplicative(op, opstr, xsmodel):
     """Check can combine multiplicative models."""
 
     # Assume XSphabs exists.
@@ -890,4 +897,10 @@ def test_can_combine_multiplicative(op, xsmodel):
     #
     _ = op(m1, 2)
     _ = op(2, m1)
-    _ = op(m1, m1)
+    if opstr is None:
+        _ = op(m1, m1)
+
+    else:
+        msg = f"^Invalid operation: XSphabs {opstr} XSphabs$"
+        with pytest.raises(TypeError, match=msg):
+            _ = op(m1, m1)
