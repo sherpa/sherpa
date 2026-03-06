@@ -848,13 +848,14 @@ def test_apec_redshift_parameter_is_case_insensitive():
 
 
 @requires_xspec
-@pytest.mark.parametrize("op", [operator.add,
-                                operator.sub,
-                                operator.mul,
-                                operator.truediv,
-                                operator.floordiv
-                                ])
-def test_can_combine_additive(op, xsmodel):
+@pytest.mark.parametrize("op,opstr",
+                         [(operator.add, None),
+                          (operator.sub, None),
+                          (operator.mul, "\\*"),
+                          (operator.truediv, "/"),
+                          (operator.floordiv, "//")
+                          ])
+def test_can_combine_additive(op, opstr, xsmodel):
     """Check can combine additive models."""
 
     # Assume XSapec/XSgaussian exist.
@@ -866,17 +867,23 @@ def test_can_combine_additive(op, xsmodel):
     #
     _ = op(a1, 2)
     _ = op(2, a1)
-    _ = op(a1, a2)
+    if opstr is None:
+        _ = op(a1, a2)
+    else:
+        msg = f"^Invalid operation: XSapec {opstr} XSgaussian$"
+        with pytest.raises(TypeError, match=msg):
+            _ = op(a1, a2)
 
 
 @requires_xspec
-@pytest.mark.parametrize("op", [operator.add,
-                                operator.sub,
-                                operator.mul,
-                                operator.truediv,
-                                operator.floordiv
-                                ])
-def test_can_combine_multiplicative(op, xsmodel):
+@pytest.mark.parametrize("op,opstr",
+                         [(operator.add, "\\+"),
+                          (operator.sub, "-"),
+                          (operator.mul, None),
+                          (operator.truediv, None),
+                          (operator.floordiv, None)
+                          ])
+def test_can_combine_multiplicative(op, opstr, xsmodel):
     """Check can combine multiplicative models."""
 
     # Assume XSphabs/dust exists.
@@ -888,7 +895,12 @@ def test_can_combine_multiplicative(op, xsmodel):
     #
     _ = op(m1, 2)
     _ = op(2, m1)
-    _ = op(m1, m2)
+    if opstr is None:
+        _ = op(m1, m2)
+    else:
+        msg = f"^Invalid operation: XSphabs {opstr} XSdust$"
+        with pytest.raises(TypeError, match=msg):
+            _ = op(m1, m2)
 
 
 @requires_xspec
@@ -896,6 +908,9 @@ def test_can_combine_complex_models(xsmodel):
     """Can we create this 'interesting' model expression?
 
     This is a regression test.
+
+    The difference in behaviour is because we can not hook into the
+    BinaryOpModel __add__/... methods (which come from AdditiveModel).
 
     """
 
@@ -906,16 +921,26 @@ def test_can_combine_complex_models(xsmodel):
 
     # Test if we can catch combinations within BinaryOpModel combinations.
     #
-    _ = a1 * (1 + a2)
+    msg1 = "^Invalid operation: XSgaussian \\* XSapec$"
+    msg2 = "^Invalid operation: XSphabs \\+ XSconstant$"
+    with pytest.raises(TypeError, match=msg1):
+        _ = a1 * (1 + a2)
+
     _ = (1 + a1) * a2
 
-    _ = a1 * (m2 + a2)
+    with pytest.raises(TypeError, match=msg1):
+        _ = a1 * (m2 + a2)
+
     _ = (m1 + a1) * a2
 
-    _ = m1 + (1 * m2)
+    with pytest.raises(TypeError, match=msg2):
+        _ = m1 + (1 * m2)
+
     _ = (1 * m1) + m2
 
-    _ = m1 + (a2 * m2)
+    with pytest.raises(TypeError, match=msg2):
+        _ = m1 + (a2 * m2)
+
     _ = (a1 * m1) + m2
 
     _ = m1 + 1 + 2 + m2
