@@ -5252,7 +5252,7 @@ It is an integer or string.
             >>> print(f"{xlabel}, {ylabel}")
             Energy (keV), Counts/sec/keV
 
-        We can compare the length of the oringial PHA data with `x` and we see that
+        We can compare the length of the original PHA data with `x` and we see that
         after filtering and grouping the number of bins is much smaller:
 
             >>> print("Number of bins:", len(pha.channel), "- Number of points to plot:", len(x))
