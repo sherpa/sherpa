@@ -1,5 +1,5 @@
 /*** File libwcs/hget.c
- *** November 6, 2015
+ *** March 12, 2026
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
  *** Copyright (C) 1994-2015
@@ -14,7 +14,7 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-    
+
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -68,13 +68,13 @@
 #define INT_MAX  2147483647 /* Biggest number that can fit in long */
 #define SHRT_MAX 32767
 #endif
-#define VLENGTH 81
+#define VLENGTH 811
 
 #ifdef USE_SAOLIB
 static int use_saolib=0;
 #endif
 
-char *hgetc ();
+char *hgetc (const char *, const char *);
 
 static char val[VLENGTH+1];
 static int multiline = 0;
@@ -1043,7 +1043,7 @@ const char *keyword0;	/* character string containing the name of the keyword
 	    lkey = strlen (brack1);
 	    for (i = 0; i < lkey; i++) {
 		if (brack1[i] > 64 && brack1[i] < 91)
-		    brack1[i] = brack1[i] + 32; 
+		    brack1[i] = brack1[i] + 32;
 		}
 	    v1 = igetc (cval, brack1);
 	    if (v1) {
@@ -1326,7 +1326,7 @@ const char *in;	/* Character string of sexigesimal or decimal degrees */
 	lval = strlen (value);
 	while (value[lval-1] == ' ')
 	    lval--;
-	
+
 	if ((c1 = strsrch (value,":")) == NULL)
 	    c1 = strnsrch (value," ",lval);
 	if (c1 != NULL) {
@@ -1361,7 +1361,7 @@ const char *in;	/* Character string of sexigesimal or decimal degrees */
 		*dchar = 'e';
 	    dec = sign * atof (value);
 	    }
-	else 
+	else
 	    dec = sign * (double) atoi (value);
 	}
     return (dec);
@@ -1414,7 +1414,7 @@ const int ls1;	/* Length of string being searched */
     clast = (char) s2[ls2-1];
     s1e = (char *) s1 + (int) ls1 - ls2 + 1;
     s = (char *) s1;
-    while (s < s1e) { 
+    while (s < s1e) {
 
 	/* Search for first character in pattern string */
 	if (*s == cfirst) {
@@ -1531,7 +1531,7 @@ const int ls1;	/* Length of string being searched */
     /* Loop through input string, character by character */
     s = (char *) s1;
     s1e = s + (int) ls1 - ls2 + 1;
-    while (s < s1e) { 
+    while (s < s1e) {
 
 	/* Search for first character in pattern string */
 	if (*s == cfirst || *s == ocfirst) {
@@ -1844,7 +1844,7 @@ int	dropzero;	/* If nonzero, drop trailing zeroes */
  * Jan 22 1997	Add ifdefs for Eric Mandel (SAOtng)
  * Jan 27 1997	Convert to integer through ATOF so exponents are recognized
  * Jul 25 1997	Implement FITS version of ISO date format
- * 
+ *
  * Feb 24 1998	Implement code to return IRAF multiple-keyword strings
  * Mar 12 1998	Add subroutine NOTNUM
  * Mar 27 1998	Add changes to match SKYCAT version
@@ -1920,4 +1920,7 @@ int	dropzero;	/* If nonzero, drop trailing zeroes */
  * Nov  6 2015	In isnum(), add return of 4 for yyyy-mm-dd dates
  *
  * Jun  9 2016	Fix isnum() tests for added coloned times and dashed dates
+
+ * Mar 12 2026  Minimal change to support -std=c23
+
  */
