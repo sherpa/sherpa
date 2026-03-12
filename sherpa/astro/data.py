@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015-2025
+#  Copyright (C) 2008, 2015-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -132,13 +132,12 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 import logging
 import os
-from typing import Any, Literal, cast, overload, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, cast, overload
 import warnings
 
 import numpy as np
 import numpy.typing as npt
 
-from sherpa.astro import hc
 from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
@@ -152,9 +151,11 @@ from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.types import ArrayType, IdType, IdTypes, \
     ModelFunc, StatErrFunc
 
+from . import hc
+
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid symbols.
-from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
+from .utils import arf_fold, rmf_fold, filter_resp, \
     compile_energy_grid, do_group, expand_grouped_mask
 
 __doctest_requires__ = {
@@ -163,14 +164,14 @@ __doctest_requires__ = {
     }
 
 if TYPE_CHECKING:
-    from sherpa.astro.io.wcs import WCS
+    from .io.wcs import WCS
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
 regstatus = False
 try:
-    from sherpa.astro.utils._region import Region  # type: ignore
+    from .utils._region import Region  # type: ignore
     regstatus = True
 except ImportError:
     warning('failed to import sherpa.astro.utils._region; Region routines ' +
