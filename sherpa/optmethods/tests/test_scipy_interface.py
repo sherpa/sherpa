@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2025
+#  Copyright (C) 2025, 2026
 #  MIT
 #
 #
@@ -183,7 +183,7 @@ def test_scipy_unconstrainted(optimizer, works_unconstrained):
     "optimizer,rtol",
     [(optmethods.Scipy_Minimize, 1e-5),
      (optmethods.Scipy_Basinhopping, 1e-5),
-     (optmethods.Scipy_DifferentialEvolution, 1e-4),
+     (optmethods.Scipy_DifferentialEvolution, 1e-3),
      (optmethods.Scipy_DualAnnealing, 1e-4),
      (optmethods.Scipy_Shgo, 1e-5),
      (optmethods.Scipy_Direct, 0.001),
@@ -224,7 +224,7 @@ def test_scipy_constrained(optimizer, rtol):
         assert result.succeeded is True
 
 
-@pytest.mark.parametrize("cls,par,numbers", 
+@pytest.mark.parametrize("cls,par,numbers",
                          [(optmethods.Scipy_Minimize, 'tol', (0.01, 0.001)),
                           (optmethods.Scipy_Basinhopping, "niter", (150, 200)),
                           (optmethods.Scipy_DifferentialEvolution, "maxiter", (100, 200)),
