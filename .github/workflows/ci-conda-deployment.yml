@@ -35,7 +35,7 @@ jobs:
     steps:
     #Checkout the code with a depth of 0 to grab the tags/branches as well
     - name: Checkout Code
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -84,7 +84,7 @@ jobs:
 
     #Checkout the code with a depth of 0 to grab the tags/branches as well
     - name: Checkout Code
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         path: sherpa
@@ -172,7 +172,7 @@ jobs:
         sudo tar -C /opt -xf MacOSX11.0.sdk.tar.xz
 
     - name: Checkout Code
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         path: sherpa
