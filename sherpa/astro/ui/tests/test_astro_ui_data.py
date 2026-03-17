@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2025
+#  Copyright (C) 2025, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,9 +24,10 @@ from tempfile import NamedTemporaryFile
 
 from sherpa.astro.io.wcs import WCS
 from sherpa.astro import ui
-from sherpa.utils.testing import requires_fits, requires_wcs
+from sherpa.utils.testing import requires_fits, requires_wcs, requires_region
 
 
+@requires_region
 @requires_wcs
 @requires_fits
 def test_DataIMG_filter(caplog, clean_astro_ui):
