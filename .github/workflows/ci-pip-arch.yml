@@ -34,7 +34,7 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       # As we do not include an I/O backend it is not worth checking out the data submodule.
       #
       # with:
