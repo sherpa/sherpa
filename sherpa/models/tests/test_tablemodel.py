@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2022
+#  Copyright (C) 2022, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -31,68 +31,82 @@ import numpy as np
 import pytest
 
 from sherpa.data import Data1D
-from sherpa.models.basic import TableModel
+from sherpa.models.basic import TableModel, FixedTableModel, InterpolatedTableModel1D
 from sherpa.models.model import ArithmeticModel
 from sherpa.utils import linear_interp, nearest_interp
 from sherpa.utils.err import ModelErr
 
 
-def test_create():
+TABLE_MODELS = (TableModel, FixedTableModel, InterpolatedTableModel1D)
+
+
+@pytest.mark.parametrize("cls", TABLE_MODELS)
+def test_create(cls):
     """Basic creation test"""
 
-    mdl = TableModel()
+    mdl = cls()
     assert isinstance(mdl, ArithmeticModel)
 
 
-def test_name():
+@pytest.mark.parametrize("cls, name", [(TableModel, "tablemodel"),
+                                       (FixedTableModel, "fixedtablemodel"),
+                                       (InterpolatedTableModel1D, "interpolatedtablemodel1d")])
+def test_name(cls, name):
     """Basic creation test: name"""
 
-    mdl = TableModel()
-    assert mdl.name == "tablemodel"
+    mdl = cls()
+    assert mdl.name == name
 
 
-def test_named():
+@pytest.mark.parametrize("cls", TABLE_MODELS)
+def test_named(cls):
     """Basic creation test: name"""
 
-    mdl = TableModel("bobby")
+    mdl = cls("bobby")
     assert mdl.name == "bobby"
 
 
-def test_filename():
+@pytest.mark.parametrize("cls", TABLE_MODELS)
+def test_filename(cls):
     """Basic creation test: filename
 
     How is the filename attribute meant to be used?
     """
 
-    mdl = TableModel()
+    mdl = cls()
     assert mdl.filename is None
 
 
-def test_ndim():
+@pytest.mark.parametrize("cls, ndim", [(TableModel, None),
+                                         (FixedTableModel, None),
+                                         (InterpolatedTableModel1D, 1)])
+def test_ndim(cls, ndim):
     """What is the ndim?
 
     At the moment we can use this with nD data but only really if we do
     not set the "x" argument.
     """
 
-    mdl = TableModel()
-    assert mdl.ndim is None
+    mdl = cls()
+    assert mdl.ndim == ndim
 
 
-def test_pars():
+@pytest.mark.parametrize("cls", TABLE_MODELS)
+def test_pars(cls):
     """We have a single parameter."""
 
-    mdl = TableModel()
+    mdl = cls()
     assert len(mdl.pars) == 1
     assert mdl.pars[0].name == "ampl"
     assert mdl.pars[0].val == pytest.approx(1)
     assert not mdl.pars[0].frozen
 
 
-def test_show():
+@pytest.mark.parametrize("cls", TABLE_MODELS)
+def test_show(cls):
     """Basic show test"""
 
-    mdl = TableModel("test")
+    mdl = cls("test")
     out = str(mdl).split("\n")
     assert out[0] == "test"
     assert out[1].startswith("   Param        Type ")
@@ -101,33 +115,38 @@ def test_show():
     assert len(out) == 4
 
 
-def test_empty():
+@pytest.mark.parametrize("cls", TABLE_MODELS)
+def test_empty(cls):
     """Basic creation test: no data"""
 
-    mdl = TableModel()
-    assert mdl.get_x() is None
+    mdl = cls()
+    if cls in (TableModel, InterpolatedTableModel1D):
+        assert mdl.get_x() is None
     assert mdl.get_y() is None
 
 
-def test_method_change():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_method_change(cls):
     """We can change the method"""
 
-    mdl = TableModel()
+    mdl = cls()
     assert mdl.method == linear_interp
 
     mdl.method = nearest_interp
     assert mdl.method == nearest_interp
 
 
-def test_method_must_be_callable():
+@pytest.mark.parametrize("cls, name", ([TableModel, 'TableModel'],
+                                       [InterpolatedTableModel1D, 'InterpolatedTableModel1D']))
+def test_method_must_be_callable(cls, name):
     """method must be callable"""
 
-    mdl = TableModel()
+    mdl = cls()
 
     # This comes from NoNewAttributesAfterInit via AttrithmeticModel
     #
     with pytest.raises(AttributeError,
-                       match="^'TableModel' object attribute 'method' cannot be replaced with a non-callable attribute$"):
+                       match=f"^'{name}' object attribute 'method' cannot be replaced with a non-callable attribute$"):
         mdl.method = 23
 
 
@@ -140,25 +159,35 @@ def test_load_no_x():
     assert mdl.get_y() == pytest.approx([3, 2, 7])
 
 
-def test_load_x_y_sorted():
+def test_load_no_y_InterpolatedTableModel1D():
+    mdl = InterpolatedTableModel1D()
+    with pytest.raises(ModelErr,
+                       match="^x and y must be set together or both be None$"):
+        mdl.load(None, [3, 2, 7])
+
+
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_load_x_y_sorted(cls):
     """load: x and y (sorted)"""
 
-    mdl = TableModel()
+    mdl = cls()
     mdl.load([12, 14, 17], [3, 2, 7])
     assert mdl.get_x() == pytest.approx([12, 14, 17])
     assert mdl.get_y() == pytest.approx([3, 2, 7])
 
 
-def test_load_x_y_unsorted():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_load_x_y_unsorted(cls):
     """load: x and y (unsorted)"""
 
-    mdl = TableModel()
+    mdl = cls()
     mdl.load([17, 12, 14], [7, 3, 2])
     assert mdl.get_x() == pytest.approx([12, 14, 17])
     assert mdl.get_y() == pytest.approx([3, 2, 7])
 
 
-def test_load_no_x_check_storage():
+@pytest.mark.parametrize("cls", (TableModel, FixedTableModel))
+def test_load_no_x_check_storage(cls):
     """How are the x/y values stored?
 
     This is a regression test (that is, the behavior could be
@@ -166,19 +195,23 @@ def test_load_no_x_check_storage():
 
     """
 
-    mdl = TableModel()
-    mdl.load(None, [1, 3, 7])
+    mdl = cls()
+    if cls is FixedTableModel:
+        mdl.load([1, 3, 7])
+    else:
+        mdl.load(None, [1, 3, 7])
     y = mdl.get_y()
     assert isinstance(y, np.ndarray)
 
 
-def test_load_x_y_sorted_check_storage():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_load_x_y_sorted_check_storage(cls):
     """How are the x/y values stored?
 
     This is a regression test.
     """
 
-    mdl = TableModel()
+    mdl = cls()
     mdl.load([1, 2, 3], [1, 3, 7])
     x = mdl.get_x()
     y = mdl.get_y()
@@ -186,13 +219,14 @@ def test_load_x_y_sorted_check_storage():
     assert isinstance(y, np.ndarray)
 
 
-def test_load_x_y_unsorted_check_storage():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_load_x_y_unsorted_check_storage(cls):
     """How are the x/y values stored?
 
     This is a regression test.
     """
 
-    mdl = TableModel()
+    mdl = cls()
     mdl.load([3, 2, 1], [1, 3, 7])
     x = mdl.get_x()
     y = mdl.get_y()
@@ -200,43 +234,47 @@ def test_load_x_y_unsorted_check_storage():
     assert isinstance(y, np.ndarray)
 
 
-def test_load_no_y():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_load_no_y(cls):
     """do we error out or not?
 
     This is a regression test.
     """
 
-    mdl = TableModel()
+    mdl = cls()
     with pytest.raises(ModelErr,
                        match="^y must be set if x is set$"):
         mdl.load([12, 14, 17], None)
 
 
-def test_load_x_longer_than_y():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_load_x_longer_than_y(cls):
     """do we error out or not?
 
     This is a regression test.
     """
 
-    mdl = TableModel()
+    mdl = cls()
     with pytest.raises(ModelErr,
                        match="^size mismatch between x and y: 3 vs 2$"):
         mdl.load([12, 14, 17], [3, 2])
 
 
-def test_load_x_shorter_than_y():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_load_x_shorter_than_y(cls):
     """do we error out or not?
 
     This is a regression test.
     """
 
-    mdl = TableModel()
+    mdl = cls()
     with pytest.raises(ModelErr,
                        match="^size mismatch between x and y: 3 vs 4$"):
         mdl.load([12, 17, 14], [3, 2, 4, 5])
 
 
-def test_load_y_not_1d():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_load_y_not_1d(cls):
     """do we error out or not?
 
     This is a regression test.
@@ -244,12 +282,13 @@ def test_load_y_not_1d():
 
     x = np.arange(6) + 1
     y = np.arange(6).reshape(2, 3)
-    mdl = TableModel()
+    mdl = cls()
     with pytest.raises(ModelErr,
                        match="Array must be 1D or None"):
         mdl.load(x, y)
 
 
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
 # sherpa.utils.interpolate assumes inputs are ndarray, so work around
 # this by forcing the input to be one.
 #
@@ -257,28 +296,36 @@ def test_load_y_not_1d():
                          [(None, False),
                           ([14, 16, 20, 25], False),
                           ([14, 16, 20, 25], True)])
-def test_eval_x_y(x2, iflag):
+def test_eval_x_y(cls, x2, iflag):
     """Check we can interpolate onto a grid after load(x,y)
 
-    The application ignores the integrate setting/upper-edge of the bin.
+    The TableModel ignores the integrate setting/upper-edge of the
+    bin, but the InterpolatedTableModel1D uses it if integrate is set.
     """
 
-    tm = TableModel()
+    tm = cls()
     tm.load([10, 15, 20], [4, 6, 2])
     tm.ampl = 10
     tm.integrate = iflag
 
     yout = tm(np.asarray([12, 14, 16, 20]), x2)
-    exp = 10 * np.asarray([4.8, 5.6, 5.2, 2])
+
+    if cls is InterpolatedTableModel1D and iflag:
+        # integrate from 12-14, 14-16, 16-20, 20-25
+        exp = 10 * np.array([2., 2., 4. , 5]) * \
+            np.asarray([5.2, 0.5 * 5.8 + 0.5 * 5.6, 3.6, 0])
+    else:
+        exp = 10 * np.asarray([4.8, 5.6, 5.2, 2])
     assert yout == pytest.approx(exp)
 
 
+@pytest.mark.parametrize("cls", (TableModel, FixedTableModel))
 @pytest.mark.parametrize("y", [[4, 6, 2], np.asarray([4, 6, 2])])
 @pytest.mark.parametrize("x2,iflag",
                          [(None, False),
                           ([14, 16, 20], False),
                           ([14, 16, 20], True)])
-def test_eval_no_x(y, x2, iflag):
+def test_eval_no_x(cls, y, x2, iflag):
     """Check we can return something after load(None,y)
 
     The application ignores the integrate setting/upper-edge of the
@@ -288,8 +335,11 @@ def test_eval_no_x(y, x2, iflag):
 
     """
 
-    tm = TableModel()
-    tm.load(None, y)
+    tm = cls()
+    if cls is FixedTableModel:
+        tm.load(y)
+    else:
+        tm.load(None, y)
     tm.ampl = 10
     tm.integrate = iflag
 
@@ -298,14 +348,18 @@ def test_eval_no_x(y, x2, iflag):
     assert yout == pytest.approx([40, 60, 20])
 
 
+@pytest.mark.parametrize("cls", (TableModel, FixedTableModel))
 @pytest.mark.parametrize("y", [[4, 6, 2, 8, 7], np.asarray([4, 6, 2, 8, 7])])
 @pytest.mark.parametrize("iflag", [False, True])
-def test_eval_filtered(y, iflag):
+def test_eval_filtered(cls, y, iflag):
     """Check we can return something after load(None, y) and filtering the dataset.
     """
 
-    tm = TableModel()
-    tm.load(None, y)
+    tm = cls()
+    if cls is FixedTableModel:
+        tm.load(y)
+    else:
+        tm.load(None, y)
     tm.ampl = 10
     tm.integrate = iflag
 
@@ -319,7 +373,8 @@ def test_eval_filtered(y, iflag):
     assert yout == pytest.approx([60, 20, 70])
 
 
-def test_eval_pick_up_changed_load():
+@pytest.mark.parametrize("cls", (TableModel, FixedTableModel))
+def test_eval_pick_up_changed_load(cls):
     """Corner case: does __filtered_y get cleaned up?
 
     There's no "nice" way to check if __filtered_y gets cleared after
@@ -327,8 +382,11 @@ def test_eval_pick_up_changed_load():
 
     """
 
-    tm = TableModel()
-    tm.load(None, [5, 7, 2, 8, 4])
+    tm = cls()
+    if cls is FixedTableModel:
+        tm.load([5, 7, 2, 8, 4])
+    else:
+        tm.load(None, [5, 7, 2, 8, 4])
     tm.ampl = 10
 
     d = Data1D('simple', [20, 30, 40, 50, 70], [1, 2, 3, 4, 5])
@@ -342,7 +400,10 @@ def test_eval_pick_up_changed_load():
 
     # Call load with a different y array
     #
-    tm.load(None, [2, 3, 1, 4, 2])
+    if cls is FixedTableModel:
+        tm.load([2, 3, 1, 4, 2])
+    else:
+        tm.load(None, [2, 3, 1, 4, 2])
 
     # The filter has been removed, so we can not call it with a
     # filtered array.
@@ -354,15 +415,19 @@ def test_eval_pick_up_changed_load():
         tm([1, 2, 3, 4])
 
 
+@pytest.mark.parametrize("cls", (TableModel, FixedTableModel))
 @pytest.mark.parametrize("flag", [True, False])
-def test_eval_filter_all_or_none(flag):
+def test_eval_filter_all_or_none(cls, flag):
     """Check that .fold does nothing when the mask is True or False
 
     This is a regression test.
     """
 
-    mdl = TableModel()
-    mdl.load(None, np.asarray([5, 3, 4]))
+    mdl = cls()
+    if cls is FixedTableModel:
+        mdl.load([5, 3, 4])
+    else:
+        mdl.load(None, np.asarray([5, 3, 4]))
 
     d = Data1D("ex", [1, 2, 3], [1, 1, 2])
 
@@ -378,21 +443,26 @@ def test_eval_filter_all_or_none(flag):
     assert y == pytest.approx([5, 3, 4])
 
 
-def test_eval_pass_kwargs():
+@pytest.mark.parametrize("cls", (TableModel, FixedTableModel))
+def test_eval_pass_kwargs(cls):
     """Check we can pass kwargs, even though we ignore them.
 
     This is a regression test.
     """
 
-    mdl = TableModel()
-    mdl.load(None, [10, 12 , 2])
+    mdl = cls()
+    if cls is FixedTableModel:
+        mdl.load([10, 12 , 2])
+    else:
+        mdl.load(None, [10, 12 , 2])
     mdl.ampl = 5
 
     y = mdl([1, 2, 3], arg1=True, not_a_kwarg={"answer": 23})
     assert y == pytest.approx([50, 60, 10])
 
 
-def test_eval_checks_length():
+@pytest.mark.parametrize("cls", TABLE_MODELS)
+def test_eval_checks_length(cls):
     """Check we error out when the lengths are wrong: calc via model evaluation
 
     This requires
@@ -400,14 +470,15 @@ def test_eval_checks_length():
 
     """
 
-    tm = TableModel('tbl')
+    tm = cls('tbl')
 
     with pytest.raises(ModelErr,
                        match="^The tablemodel's load method must be called first$"):
         tm([1, 2, 3])
 
 
-def test_fold_no_load_checks_length():
+@pytest.mark.parametrize("cls", (TableModel, FixedTableModel))
+def test_fold_no_load_checks_length(cls):
     """Check we error out when the lengths are wrong: fold.
 
     This requires
@@ -415,9 +486,7 @@ def test_fold_no_load_checks_length():
       - the data being partially filtered
 
     """
-
-    ytbl = [5, 7, 3, 2]
-    tm = TableModel('tbl')
+    tm = cls('tbl')
 
     xdata = np.asarray([0, 10, 20, 25, 30, 40])
     ydata = np.ones_like(xdata)
@@ -429,18 +498,23 @@ def test_fold_no_load_checks_length():
         tm.fold(d)
 
 
-def test_fold_load_checks_length():
+@pytest.mark.parametrize("cls", (TableModel, FixedTableModel))
+def test_fold_load_checks_length(cls):
     """Check we error out when the lengths are wrong: fold.
 
     This requires
       - the table data having no X array
+      - But we do have Y data
       - the data being partially filtered
 
     """
 
     ytbl = [5, 7, 3, 2]
-    tm = TableModel('tbl')
-    tm.load(None, ytbl)
+    tm = cls('tbl')
+    if cls is FixedTableModel:
+        tm.load(ytbl)
+    else:
+        tm.load(None, ytbl)
 
     xdata = np.asarray([0, 10, 20, 25, 30, 40])
     ydata = np.ones_like(xdata)
@@ -452,14 +526,15 @@ def test_fold_load_checks_length():
         tm.fold(d)
 
 
-def test_cached_basic():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_cached_basic(cls):
     """Basic check the cache works.
 
     This is mainly here so we can have confidence in
     test_cache_is_revoked.
     """
 
-    mdl = TableModel()
+    mdl = cls()
     mdl.load([1, 2, 3], [5, 2, 12])
 
     # We could check the _cache_ctr all in one go but we do want false
@@ -489,11 +564,12 @@ def test_cached_basic():
     assert mdl._cache_ctr["misses"] == 2
 
 
-def test_cache_is_revoked():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_cache_is_revoked(cls):
     """Loading new data should clear the cache. Does it?
     """
 
-    mdl = TableModel()
+    mdl = cls()
     mdl.load([1, 2, 3], [5, 2, 12])
 
     y = mdl([1, 2, 3])
@@ -517,14 +593,15 @@ def test_cache_is_revoked():
     assert mdl._cache_ctr["misses"] == 1
 
 
-def test_cache_method():
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_cache_method(cls):
     """Does changing the method cause the cache to change?
 
     In this case we just test the model evaluation,
     and not the actual cache values.
     """
 
-    mdl = TableModel()
+    mdl = cls()
     mdl.load([1, 2, 3], [5, 2, 12])
     assert mdl.method == linear_interp
 
@@ -536,7 +613,8 @@ def test_cache_method():
     assert y == pytest.approx([5, 12])
 
 
-def test_pickle_none(tmp_path):
+@pytest.mark.parametrize("cls", TABLE_MODELS)
+def test_pickle_none(cls, tmp_path):
     """Can we save/restore a TableModel with no data?"""
 
     x = [1, 2, 3]
@@ -544,7 +622,7 @@ def test_pickle_none(tmp_path):
     xtest = [1.5, 2, 2.5, 3]
     ytest = [1, -2, 5.5, 13]
 
-    mdl = TableModel("fred")
+    mdl = cls("fred")
 
     out = tmp_path / "model.state"
     out = str(out)
@@ -554,23 +632,24 @@ def test_pickle_none(tmp_path):
     with open(out, "rb") as ifh:
         nmdl = pickle.load(ifh)
 
-    assert isinstance(nmdl, TableModel)
+    assert isinstance(nmdl, cls)
     assert nmdl.name == "fred"
     assert nmdl.filename is None
-    assert nmdl.get_x() is None
     assert nmdl.get_y() is None
     assert nmdl.ampl.val == pytest.approx(1)
     assert not nmdl.ampl.frozen
 
-    assert nmdl.method is linear_interp
+    if cls in (TableModel, InterpolatedTableModel1D):
+        assert nmdl.method is linear_interp
+        assert nmdl.get_x() is None
+        # Check we can use the restored object
+        #
+        nmdl.load(x, y)
+        assert nmdl(xtest) == pytest.approx(ytest)
 
-    # Check we can use the restored object
-    #
-    nmdl.load(x, y)
-    assert nmdl(xtest) == pytest.approx(ytest)
 
-
-def test_pickle_x_y(tmp_path):
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_pickle_x_y(cls, tmp_path):
     """Can we save/restore a TableModel with x/y?"""
 
     x = [1, 2, 3]
@@ -578,7 +657,7 @@ def test_pickle_x_y(tmp_path):
     xtest = [1.5, 2, 2.5, 3]
     ytest = [-5 * 1, -5 * -2, -5 * 5.5, -5 * 13]
 
-    mdl = TableModel()
+    mdl = cls()
     mdl.load(x, y)
     mdl.ampl = -5
     mdl.ampl.freeze()
@@ -592,8 +671,8 @@ def test_pickle_x_y(tmp_path):
     with open(out, "rb") as ifh:
         nmdl = pickle.load(ifh)
 
-    assert isinstance(nmdl, TableModel)
-    assert nmdl.name == "tablemodel"
+    assert isinstance(nmdl, cls)
+    assert "tablemodel" in nmdl.name  # Fully qualified name is tested elsewhere
     assert nmdl.filename is None
     assert nmdl.get_x() == pytest.approx(x)
     assert nmdl.get_y() == pytest.approx(y)
@@ -603,7 +682,8 @@ def test_pickle_x_y(tmp_path):
     assert nmdl(xtest) == pytest.approx(ytest)
 
 
-def test_pickle_y(tmp_path):
+@pytest.mark.parametrize("cls", (TableModel, FixedTableModel))
+def test_pickle_y(cls, tmp_path):
     """Can we save/restore a TableModel with just y and filtered?"""
 
     x = [0, 1, 2, 3, 5]
@@ -611,8 +691,11 @@ def test_pickle_y(tmp_path):
     xtest = [1, 2, 3]
     ytest = [-5 * 4, -5 * -2, -5 * 13]
 
-    mdl = TableModel("test")
-    mdl.load(None, y)
+    mdl = cls("test")
+    if cls is FixedTableModel:
+        mdl.load(y)
+    else:
+        mdl.load(None, y)
     mdl.ampl = -5
     mdl.ampl.freeze()
 
@@ -635,10 +718,11 @@ def test_pickle_y(tmp_path):
     with open(out, "rb") as ifh:
         nmdl = pickle.load(ifh)
 
-    assert isinstance(nmdl, TableModel)
+    assert isinstance(nmdl, cls)
     assert nmdl.name == "test"
     assert nmdl.filename == filename
-    assert nmdl.get_x() is None
+    if cls is TableModel:
+        assert nmdl.get_x() is None
     assert nmdl.get_y() == pytest.approx(y)
     assert nmdl.ampl.val == pytest.approx(-5)
     assert nmdl.ampl.frozen
@@ -646,7 +730,8 @@ def test_pickle_y(tmp_path):
     assert nmdl(xtest) == pytest.approx(ytest)
 
 
-def test_pickle_interpolation(tmp_path):
+@pytest.mark.parametrize("cls", (TableModel, InterpolatedTableModel1D))
+def test_pickle_interpolation(cls, tmp_path):
     """Can we save/restore a TableModel with different interpolation
 
     This is only relevant for load(x, y) cases.
@@ -657,7 +742,7 @@ def test_pickle_interpolation(tmp_path):
     xtest = [0.6, 3.9]
     ytest = [-5 * 4, -5 * 13]
 
-    mdl = TableModel("test")
+    mdl = cls("test")
     mdl.load(x, y)
     mdl.ampl = -5
     mdl.ampl.freeze()
@@ -674,7 +759,7 @@ def test_pickle_interpolation(tmp_path):
     with open(out, "rb") as ifh:
         nmdl = pickle.load(ifh)
 
-    assert isinstance(nmdl, TableModel)
+    assert isinstance(nmdl, cls)
     assert nmdl.name == "test"
     assert nmdl.filename is None
     assert nmdl.get_x() == pytest.approx(x)
@@ -685,3 +770,14 @@ def test_pickle_interpolation(tmp_path):
     assert nmdl.method is nearest_interp
 
     assert nmdl(xtest) == pytest.approx(ytest)
+
+
+def test_TableModel_deprecation_warning():
+    """Check that TableModel raises a deprecation warning upon instantiation."""
+
+    with pytest.warns(DeprecationWarning,
+                      match="TableModel is deprecated and will be removed in a future version. "
+                      "Use FixedTableModel "
+                      r"\(if only setting y values\) or InterpolatedTableModel1D "
+                      r"\(if setting both x and y values\)\."):
+        _ = TableModel()

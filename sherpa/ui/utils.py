@@ -52,7 +52,7 @@ import sherpa.instrument
 import sherpa.io
 import sherpa.image
 import sherpa.models
-from sherpa.models.basic import TableModel
+from sherpa.models.basic import FixedTableModel, InterpolatedTableModel1D
 import sherpa.models.model
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.parameter import Parameter
@@ -523,7 +523,7 @@ def read_template_model(modelname, templatefile,
         if ntcols != 2:
             raise IOErr("wrongnumcols", 2, ntcols)
 
-        tm = TableModel(filename)
+        tm = InterpolatedTableModel1D(filename)
         tm.method = method  # interpolation method
         tm.load(*tcols)
         tm.ampl.freeze()
@@ -7595,23 +7595,16 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def _read_user_model(self, filename, ncols=2, colkeys=None,
-                         dstype=sherpa.data.Data1D, sep=' ', comment='#'):
-        x = None
-        y = None
-        try:
-            data = self.unpack_data(filename, ncols, colkeys,
-                                    dstype, sep, comment)
-            x = data.get_x()
-            y = data.get_y()
+                         sep=' ', comment='#'):
+        cols = sherpa.io.get_ascii_data(filename, ncols=ncols, colkeys=colkeys,
+                                         sep=sep, comment=comment)[1]
 
-        except TypeError:
-            # we have to check for the case of a *single* column in the file
-            # extract the single array from the read and bypass the dataset
-            y = sherpa.io.get_ascii_data(filename, ncols=1, colkeys=colkeys,
-                                         sep=sep, dstype=dstype,
-                                         comment=comment)[1].pop()
+        if len(cols) == 0:
+               raise IOErr(f"No column data found in {filename}")
+        elif len(cols) == 1:
+                return (None, cols[0])
+        return (cols[0], cols[1])
 
-        return (x, y)
 
     # DOC-TODO: I am not sure I have the data format correct.
     # DOC-TODO: description of template interpolation needs a lot of work.
@@ -7754,9 +7747,9 @@ class Session(NoNewAttributesAfterInit):
         """
         add_interpolator(name, interpolator_class, **kwargs)
 
-    def load_table_model(self, modelname, filename, ncols=2, colkeys=None,
-                         dstype=sherpa.data.Data1D, sep=' ', comment='#',
-                         method=sherpa.utils.linear_interp):
+    def load_table_model(self, modelname, filename,
+                         method=sherpa.utils.linear_interp,
+                         *args, **kwargs):
         """Load ASCII tabular data and use it as a model component.
 
         A table model is defined on a grid of points which is
@@ -7778,9 +7771,6 @@ class Session(NoNewAttributesAfterInit):
            ``None``, which uses the first ``ncols`` columns in the file.
            The default column names are col followed by the column number,
            so ``col1`` for the first column.
-        dstype : data class to use, optional
-           What type of data is to be used. Supported values include
-           `Data1D` (the default) and `Data1DInt`.
         sep : str, optional
            The separator character for columns. The default is ``' '``.
         comment : str, optional
@@ -7837,14 +7827,22 @@ class Session(NoNewAttributesAfterInit):
         >>> set_par(filt.ampl, 1e3, min=1, max=1e6)
 
         """
+        # Implementation note: the *args and **kwargs are
+        # passed to _read_user_model where the default values are set.
+        # The reason to not define all parameters here is that
+        # sherpa.astro.ui.load_user_model can't work with these defaults
+        # (because they are applicable to ASCII, but not to fits files) and we
+        # want to call this method here from the astro.Session child class.
 
-        x, y = self._read_user_model(filename, ncols, colkeys,
-                                     dstype, sep, comment)
+        x, y = self._read_user_model(filename, *args, **kwargs)
 
-        tablemodel = TableModel(modelname)
-        tablemodel.method = method
+        if x is None:
+            tablemodel = FixedTableModel(name=modelname, y=y)
+        else:
+            tablemodel = InterpolatedTableModel1D(name=modelname,
+            x=x, y=y)
+            tablemodel.method = method
         tablemodel.filename = filename
-        tablemodel.load(x, y)
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
@@ -7852,8 +7850,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how is the _y value used if set
     # @loggable()
     def load_user_model(self, func, modelname, filename=None, ncols=2,
-                        colkeys=None, dstype=sherpa.data.Data1D,
-                        sep=' ', comment='#'):
+                        colkeys=None, sep=' ', comment='#'):
         """Create a user-defined model.
 
         Assign a name to a function; this name can then be used as any
@@ -7879,10 +7876,6 @@ class Session(NoNewAttributesAfterInit):
         colkeys : array of str, optional
            An array of the column name to read in. The default is
            ``None``.
-        dstype : data class to use, optional
-           What type of data is to be used. Supported values include
-           `Data1D` (the default), `Data1DInt`, `Data2D`, and
-           `Data2DInt`.
         sep : str, optional
            The separator character. The default is ``' '``.
         comment : str, optional
@@ -7950,7 +7943,7 @@ class Session(NoNewAttributesAfterInit):
         usermodel._file = filename
         if filename is not None:
             _, usermodel._y = self._read_user_model(filename, ncols, colkeys,
-                                                    dstype, sep, comment)
+                                                    sep, comment)
         self._add_model_component(usermodel)
 
     # @loggable()

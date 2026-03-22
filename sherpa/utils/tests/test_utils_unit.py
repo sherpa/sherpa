@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018 - 2024
+#  Copyright (C) 2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,17 +18,16 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import warnings
-
-import numpy
+import numpy as np
 from numpy.testing import assert_almost_equal, assert_array_equal, \
     assert_array_almost_equal
 
 import pytest
 
-from sherpa.utils import _utils, is_binary_file, pad_bounding_box, \
+from sherpa.utils import _utils, integrate, is_binary_file, pad_bounding_box, \
     histogram1d, histogram2d, dataspace1d, dataspace2d, \
-    interpolate, bool_cast, multinormal_pdf, multit_pdf
+    interpolate, bool_cast, multinormal_pdf, multit_pdf, \
+    integrate_tabulated_function
 from sherpa.utils.guess import get_fwhm
 from sherpa.utils.testing import requires_data
 
@@ -120,7 +119,7 @@ def test_calc_hist1d():
     """
     this test was created using sherpa 4.8.1 (2507414) as an oracle for the python 3 migration
     """
-    x, xlo, xhi = numpy.arange(0, 21)/2, range(0, 20, 1), range(1, 21, 1)
+    x, xlo, xhi = np.arange(0, 21)/2, range(0, 20, 1), range(1, 21, 1)
     expected = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     assert_array_equal(expected, _utils.hist1d(x, xlo, xhi))
 
@@ -129,8 +128,8 @@ def test_calc_hist2d():
     """
     this test was created using sherpa 4.8.1 (2507414) as an oracle for the python 3 migration
     """
-    x = numpy.arange(10)//2
-    xx, yy = numpy.meshgrid(x, x)
+    x = np.arange(10)//2
+    xx, yy = np.meshgrid(x, x)
     xin = xx.ravel()
     yin = yy.ravel()
 
@@ -206,7 +205,7 @@ def test_neville():
     """
     x = [1.2, 3.4, 4.5, 5.2]
     y = [12.2, 14.4, 16.8, 15.5]
-    xgrid = numpy.linspace(2, 5, 5)
+    xgrid = np.linspace(2, 5, 5)
     expected = [10.7775023, 12.24227718, 14.7319838, 16.60004786, 16.19989505]
     assert_almost_equal(expected, _utils.neville(xgrid, x, y))
 
@@ -243,19 +242,19 @@ def test_rebin_partial_overlap():
     # and then rebinned onto the requested grid. So, the edge bins
     # are partially filled.
     #
-    xdataspace = numpy.arange(1, 7, 0.5)
+    xdataspace = np.arange(1, 7, 0.5)
     xdlo, xdhi = xdataspace[:-1], xdataspace[1:]
 
-    xgrid = numpy.arange(2.1, 6, 0.5)
+    xgrid = np.arange(2.1, 6, 0.5)
     xglo, xghi = xgrid[:-1], xgrid[1:]
 
     # Manually calculated
-    ygrid = numpy.asarray([0, 0.4, 2, 2, 2, 1.6, 0])
+    ygrid = np.asarray([0, 0.4, 2, 2, 2, 1.6, 0])
 
     yans = _utils.rebin(ygrid, xglo, xghi, xdlo, xdhi)
 
     # Manually calculated
-    yexp = numpy.asarray([0, 0, 0, 0.32, 1.68, 2, 2, 1.68, 0.32, 0, 0])
+    yexp = np.asarray([0, 0, 0, 0.32, 1.68, 2, 2, 1.68, 0.32, 0, 0])
     assert yans == pytest.approx(yexp)
 
 
@@ -283,8 +282,8 @@ def test_is_binary_file(make_data_path):
 def test_pad_bounding_box_fail():
     """The mask size must be >= kernel."""
 
-    kernel = numpy.arange(12)
-    mask = numpy.ones(10)
+    kernel = np.arange(12)
+    mask = np.ones(10)
     with pytest.raises(TypeError) as excinfo:
 
         pad_bounding_box(kernel, mask)
@@ -308,13 +307,13 @@ def test_pad_bounding_box_fail():
 def test_pad_bounding_box(mask, expected):
     """Basic tests"""
 
-    kernel = numpy.asarray([1, 2, 3, 4, 5])
+    kernel = np.asarray([1, 2, 3, 4, 5])
 
     # The tests use equality rather than approximate equality
     # since the values are just being copied around by the
     # code, not manipulated.
     #
-    exp = numpy.asarray(expected).astype(numpy.float64)
+    exp = np.asarray(expected).astype(np.float64)
 
     ans = pad_bounding_box(kernel, mask)
     assert_array_equal(ans, exp)
@@ -331,14 +330,14 @@ def test_pad_bounding_box_mask_too_large():
     instead?
     """
 
-    kernel = numpy.arange(5)
-    mask = numpy.ones(10)
+    kernel = np.arange(5)
+    mask = np.ones(10)
 
     ans = pad_bounding_box(kernel, mask)
 
     # Assume that the "extra" mask elements get mapped to 0 (or
     # ignored).
-    exp = numpy.asarray([0, 1, 2, 3, 4, 0, 0, 0, 0, 0]).astype(numpy.float64)
+    exp = np.asarray([0, 1, 2, 3, 4, 0, 0, 0, 0, 0]).astype(np.float64)
     assert_array_equal(ans, exp)
 
 
@@ -362,11 +361,11 @@ def test_pad_bounding_box_mask_too_large():
 # If the values are <= 0 then we just use the fall-through value
 # of half the x range.
 #
-fwhm_x = numpy.asarray([10, 22, 30, 45, 50, 61, 70, 90, 100, 120])
-fwhm_y_both = numpy.asarray([9, 28, 25, 52, 53, 49, 33, 10, 10, 6])
-fwhm_y_left = numpy.asarray([10, 5, 3, 5, 7, 13, 8, 42, 57, 43])
-fwhm_y_right = numpy.asarray([46, 45, 40, 16, 20, 7, 6, 5, 3, 7])
-fwhm_y_flat = numpy.ones(fwhm_x.size)
+fwhm_x = np.asarray([10, 22, 30, 45, 50, 61, 70, 90, 100, 120])
+fwhm_y_both = np.asarray([9, 28, 25, 52, 53, 49, 33, 10, 10, 6])
+fwhm_y_left = np.asarray([10, 5, 3, 5, 7, 13, 8, 42, 57, 43])
+fwhm_y_right = np.asarray([46, 45, 40, 16, 20, 7, 6, 5, 3, 7])
+fwhm_y_flat = np.ones(fwhm_x.size)
 
 @pytest.mark.parametrize("x,y,expected",
                          [(fwhm_x, fwhm_y_both, 60),
@@ -393,8 +392,8 @@ def test_histogram1d_sort_axis():
 
     """
 
-    glo = numpy.asarray([1, 3, 6, 7, 9])
-    ghi = numpy.asarray([6, 3, 12, 7, 9])
+    glo = np.asarray([1, 3, 6, 7, 9])
+    ghi = np.asarray([6, 3, 12, 7, 9])
 
     ga = glo.copy()
     gb = ghi.copy()
@@ -423,7 +422,7 @@ def test_histogram1d_with_fixed_bins():
     """
 
     # Ensure we can't overwrite the grid
-    grid = numpy.asarray([1, 3, 6, 7, 9, 12])
+    grid = np.asarray([1, 3, 6, 7, 9, 12])
     grid.setflags(write=False)
 
     n = histogram1d([2, 3, 4, 5, 6, -1, 7, 20, 8, 9], grid[:-1], grid[1:])
@@ -437,16 +436,16 @@ def test_histogram2d_with_fixed_bins():
 
     """
 
-    x0 = numpy.asarray([1, 2, 3])
-    x1 = numpy.asarray([1, 2, 3, 4])
+    x0 = np.asarray([1, 2, 3])
+    x1 = np.asarray([1, 2, 3, 4])
     x0.setflags(write=False)
     x1.setflags(write=False)
 
-    x = numpy.asarray([2, 3, 0])
-    y = numpy.asarray([3, 4, 0])
+    x = np.asarray([2, 3, 0])
+    y = np.asarray([3, 4, 0])
 
     n = histogram2d(x, y, x0, x1)
-    expected = numpy.zeros((3, 4))
+    expected = np.zeros((3, 4))
     expected[1, 2] = 1
     expected[2, 3] = 1
     assert n == pytest.approx(expected)
@@ -646,3 +645,32 @@ def test_multit_pdf(x, mu, sigma, dof, expected):
 
     out = multit_pdf(x, mu, sigma, dof)
     assert out == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("func", [integrate_tabulated_function, integrate])
+def test_integrate_tabulated_function(func):
+    """Test that we can calculate the area under a linearly interpolated function.
+
+    Expected results are manually calculated.
+    The test is run twice - directly with the integrate_tabulated_function
+    and via the integrate() wrapper with default settings (which default to
+    integrate_tabulated_function).
+    """
+    x0 = np.array([2,3,5,6.5])
+    x1 = np.array([3,5,6.5,7.5])
+    x_points = np.array([0, 15])
+    y_points = np.array([2, 2])
+    out = func(x0, x1, x_points, y_points)
+    assert out == pytest.approx([2., 4., 3., 2.])
+
+    x0 = np.array([-1, 4, 10, 15])
+    x1 = np.array([1, 6, 15, 20])
+    x_points = np.array([0, 5, 10])
+    y_points = np.array([1, 5, 2])
+    out = func(x0, x1, x_points, y_points)
+    assert out == pytest.approx([  2. ,   9.3,   2.5, -12.5])
+
+    x0 = np.array([1])
+    x1 = np.array([1])
+    out = func(x0, x1, x_points, y_points)
+    assert out == pytest.approx([0.])

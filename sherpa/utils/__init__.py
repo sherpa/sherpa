@@ -34,7 +34,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Any, Generic, TypeVar
+from typing import Any, Dict, Generic, TypeVar
 import warnings
 
 import numpy as np
@@ -2204,7 +2204,8 @@ def nearest_interp(xout, xin, yin):
     return np.where((np.abs(xout - x0) < np.abs(xout - x1)), y0, y1)
 
 
-def interpolate(xout, xin, yin, function=linear_interp):
+def interpolate(xout: np.ndarray, xin: np.ndarray, yin: np.ndarray,
+                function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray] = linear_interp):
     """One-dimensional interpolation.
 
     Parameters
@@ -2252,6 +2253,121 @@ def interpolate(xout, xin, yin, function=linear_interp):
         raise TypeError(f"input function '{repr(function)}' is not callable")
 
     return function(xout, xin, yin)
+
+
+def integrate_tabulated_function(x0: np.ndarray, x1: np.ndarray,
+                                 x_points: np.ndarray, y_points: np.ndarray,
+                                 *args, **kwargs):
+    '''Integrate y_points between x0 and x1
+
+    This function is meant to be used for models that linarly interpolate
+    between given points (x_points, y_points) and need to be integrated
+    between arbitrary limits (x0, x1) which my or may not coincide with the
+    given points. Numerical methods of integration do no always perform well
+    with non-differentiable functions such as linear interpolation which could
+    have a non-differentiable point at every x_point.
+
+    Parameters
+    ----------
+    x0, x1: array-like
+        The lower and upper bounds of the integration. Must have the same length.
+    x_points, y_points: array-like
+        The points defining the function to integrate.
+    args, kwargs
+        Unused, but needed to conform to the interface of other integrate functions.
+
+    Returns
+    -------
+    result: ndarray
+        The integral of y_points between x0 and x1.
+    '''
+    if np.any(x1 < x0):
+        raise ValueError("x1 must be greater than or equal to x0")
+
+    # Add the integration limits to the points, if they are not already present
+    x = np.concatenate([x_points, x0, x1])
+    y = np.concatenate([y_points,
+                        linear_interp(x0, x_points, y_points),
+                        linear_interp(x1, x_points, y_points)])
+    # some x values might be repeated because they appear in both x0 and x1
+    # or they are also one of the original x_points.
+    # Simplify the implementation by sorting and removing duplicate points
+    sortidx = np.argsort(x)
+    x = x[sortidx]
+    y = y[sortidx]
+    x, ind = np.unique(x, return_index=True)
+    y = y[ind]
+
+    area = np.diff(x) * (y[:-1] + y[1:]) / 2
+
+    result = np.zeros(x0.shape, dtype=np.float64)
+
+    for i in range(len(x0)):
+        ind0 = np.nonzero(x == x0[i])[0][0]
+        ind1 = np.nonzero(x == x1[i])[0][0]
+        result[i] = area[ind0:ind1].sum()
+
+    return result
+
+
+def integrate(x0: np.ndarray, x1: np.ndarray, xin: np.ndarray, yin: np.ndarray,
+              interpolate_func: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray] = linear_interp,
+              integrate_func: Callable[[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Callable, Dict], np.ndarray] = integrate_tabulated_function,
+              **kwargs):
+    """One-dimensional integration.
+
+    This function performs one-dimensional integration of the
+    given data points (xin, yin) over the specified range
+    [x0, x1].
+
+    Parameters
+    ----------
+    x0, x1 : array_like
+       Bin boundaries where to integrate the interpolated function.
+    xin : array_like
+       The x values of the data to interpolate. This must be
+       sorted so that it is monotonically increasing.
+    yin : array_like
+       The y values of the data to interpolate (must be the same
+       size as ``xin``).
+    interpolate_func : func, optional
+       The function to perform the interpolation. It accepts
+       the arguments (xout, xin, yin) and returns the interpolated
+       values. The default is to use linear interpolation.
+    integrate_func : func, optional
+         The function to perform the integration. It accepts
+         the arguments (x0, x1, xin, yin, interpolate_func, **kwargs) and
+         returns the integrated values.
+
+    Returns
+    -------
+    yout : array_like
+       The integrated values.
+
+    See Also
+    --------
+    linear_interp, nearest_interp, integrate_tabulated_function, neville
+
+    Examples
+    --------
+
+    Define a function by giving a few tabulated points and then integrate
+    bins defined by x0 and x1:
+
+    >>> import numpy as np
+    >>> x = np.asarray([1.2, 3.4, 4.5, 5.2])
+    >>> y = np.asarray([12.2, 14.4, 16.8, 15.5])
+    >>> x0= np.array([2.0, 4.0])
+    >>> x1= np.array([3.0, 5.0])
+    >>> yout = integrate(x0, x1, x, y)
+    """
+
+    if not callable(integrate_func):
+        raise TypeError(f"input function '{repr(integrate_func)}' is not callable")
+
+    return integrate_func(x0, x1, xin, yin,
+                          interpolate_func=interpolate_func,
+                          **kwargs)
 
 
 def is_binary_file(filename: str) -> bool:
