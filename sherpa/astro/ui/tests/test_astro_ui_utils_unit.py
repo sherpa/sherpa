@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2021 - 2024
+#  Copyright (C) 2016, 2018, 2021-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -65,7 +65,7 @@ def test_load_table_model_fails_with_dir(tmp_path):
     assert ui.list_model_components() == []
 
     with pytest.raises(IOErr,
-                       match="^unable to open "):
+                       match="^No column data found in"):
         ui.load_table_model('tmpdir', str(tmpdir))
 
     assert ui.list_model_components() == []
@@ -110,7 +110,7 @@ def test_load_table_model_fails_with_empty_file(tmp_path):
     assert ui.list_model_components() == []
 
     with pytest.raises(IOErr,
-                       match="^No column data found in /dev/null$"):
+                       match="^No column data found in /dev/null"):
         ui.load_table_model('devnull', '/dev/null')
 
     assert ui.list_model_components() == []
