@@ -1,5 +1,5 @@
 /*** File wcscon.c
- *** June 9, 2016
+ *** March 12, 2026
  *** Doug Mink, Harvard-Smithsonian Center for Astrophysics
  *** Some subroutines are based on Starlink subroutines by Patrick Wallace
  *** Copyright (C) 1995-2016
@@ -14,7 +14,7 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-    
+
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -73,10 +73,10 @@
 #include <string.h>
 #include "wcs.h"
 
-void fk524(), fk524e(), fk524m(), fk524pv();
-void fk425(), fk425e(), fk425m(), fk425pv();
-void fk42gal(), fk52gal(), gal2fk4(), gal2fk5();
-void fk42ecl(), fk52ecl(), ecl2fk4(), ecl2fk5();
+void fk524(double *, double *), fk524e(double *, double *, double), fk524m(double *, double *, double *, double *), fk524pv(double *, double *, double *, double *, double *, double *);
+void fk425(double *, double *), fk425e(double *, double *, double), fk425m(double *, double *, double *, double *), fk425pv(double *, double *, double *, double *, double *, double *);
+void fk42gal(double *, double *), fk52gal(double *, double *), gal2fk4(double *, double *), gal2fk5(double *, double *);
+void fk42ecl(double *, double *, double), fk52ecl(double *, double *, double), ecl2fk4(double *, double *, double), ecl2fk5(double *, double *, double);
 
 /* Convert from coordinate system sys1 to coordinate system sys2, converting
    proper motions, too, and adding them if an epoch is specified */
@@ -100,7 +100,7 @@ double	*pphi;	/* Latitude or declination proper motion in Dec degrees/year
 		   Input in sys1, returned in sys2 */
 
 {
-    void fk5prec(), fk4prec();
+  void fk5prec(double, double, double *, double *), fk4prec(double, double, double *, double *);
 
     /* Set equinoxes if 0.0 */
     if (eq1 == 0.0) {
@@ -186,7 +186,7 @@ double	*pphi;	/* Latitude or declination proper motion in Dec degrees/year
 	    else
 		fk524 (dtheta, dphi);
 	    }
-	else if (sys1 == WCS_GALACTIC) 
+	else if (sys1 == WCS_GALACTIC)
 	    gal2fk4 (dtheta, dphi);
 	else if (sys1 == WCS_ECLIPTIC)
 	    ecl2fk4 (dtheta, dphi, ep2);
@@ -306,7 +306,7 @@ double	*px;	/* Parallax in arcseconds */
 double	*rv;	/* Radial velocity in km/sec */
 
 {
-    void fk5prec(), fk4prec();
+    void fk5prec(double, double, double *, double *), fk4prec(double, double, double *, double *);
 
     /* Set equinoxes if 0.0 */
     if (eq1 == 0.0) {
@@ -393,7 +393,7 @@ double	*rv;	/* Radial velocity in km/sec */
 	    else
 		fk524 (dtheta, dphi);
 	    }
-	else if (sys1 == WCS_GALACTIC) 
+	else if (sys1 == WCS_GALACTIC)
 	    gal2fk4 (dtheta, dphi);
 	else if (sys1 == WCS_ECLIPTIC)
 	    ecl2fk4 (dtheta, dphi, ep2);
@@ -510,7 +510,7 @@ double	*dphi;	/* Latitude or declination in degrees
 double	epoch;	/* Besselian epoch in years */
 
 {
-    void fk5prec(), fk4prec();
+    void fk5prec(double, double, double *, double *), fk4prec(double, double, double *, double *);
 
     /* Set equinoxes if 0.0 */
     if (eq1 == 0.0) {
@@ -560,7 +560,7 @@ double	epoch;	/* Besselian epoch in years */
 	    else
 		fk524 (dtheta, dphi);
 	    }
-	else if (sys1 == WCS_GALACTIC) 
+	else if (sys1 == WCS_GALACTIC)
 	    gal2fk4 (dtheta, dphi);
 	else if (sys1 == WCS_ECLIPTIC) {
 	    if (epoch > 0)
@@ -836,35 +836,35 @@ static double emi[6][6] = {
 	-0.00000242389840,	/* emi[0][3] */
 	-0.00000002710544,	/* emi[0][4] */
 	-0.00000001177742 },	/* emi[0][5] */
- 
+
     {	-0.0111814828,		/* emi[1][0] */
 	 0.9999374849,		/* emi[1][1] */
 	-0.0000271771,		/* emi[1][2] */
 	 0.00000002710544,	/* emi[1][3] */
 	-0.00000242392702,	/* emi[1][4] */
 	 0.00000000006585 },	/* emi[1][5] */
- 
+
     {	-0.0048590040,		/* emi[2][0] */
 	-0.0000271557,		/* emi[2][1] */
 	 0.9999881946,		/* emi[2][2] */
 	 0.00000001177742,	/* emi[2][3] */
 	 0.00000000006585,	/* emi[2][4] */
 	-0.00000242404995 },	/* emi[2][5] */
- 
+
     {	-0.000551,		/* emi[3][0] */
 	 0.238509,		/* emi[3][1] */
 	-0.435614,		/* emi[3][2] */
 	 0.99990432,		/* emi[3][3] */
 	 0.01118145,		/* emi[3][4] */
 	 0.00485852 },		/* emi[3][5] */
- 
+
     {	-0.238560,		/* emi[4][0] */
 	-0.002667,		/* emi[4][1] */
 	 0.012254,		/* emi[4][2] */
 	-0.01118145,		/* emi[4][3] */
 	 0.99991613,		/* emi[4][4] */
 	-0.00002717 },		/* emi[4][5] */
- 
+
     {	 0.435730,		/* emi[5][0] */
 	-0.008541,		/* emi[5][1] */
 	 0.002117,		/* emi[5][2] */
@@ -948,7 +948,7 @@ double *rv;		/* Rradial velocity (km/s, +ve = moving away) */
  *  Conversion from other than Julian epoch 2000.0 to other than Besselian
     epoch 1950.0 will require use of the appropriate precession, proper
     motion, and e-terms routines before and/or after fk524 is called.
- 
+
  *  In the FK4 catalogue the proper motions of stars within 10 degrees
     of the poles do not embody the differential e-term effect and should,
     strictly speaking, be handled in a different manner from stars outside
@@ -979,7 +979,7 @@ double *rv;		/* Rradial velocity (km/s, +ve = moving away) */
 	  Hohenkerk, C.Y.; Smith, C.A.; Kaplan, G.H.; Hughes, J.A.;
 	  Seidelmann, P.K.; Astronomical Journal vol. 97, Jan. 1989,
 	  p. 274-279.
- 
+
       3  Seidelmann, P.K. (ed), 1992.  "Explanatory Supplement to
          the Astronomical Almanac", ISBN 0-935702-68-7.
 
@@ -1030,7 +1030,7 @@ double *rv;		/* Rradial velocity (km/s, +ve = moving away) */
     v1[0] = x;
     v1[1] = y;
     v1[2] = z;
- 
+
     if (ur != zero || ud != zero) {
 	v1[3] = -(ur*y) - (cr*sd*ud);
 	v1[4] =  (ur*x) - (sr*sd*ud);
@@ -1041,7 +1041,7 @@ double *rv;		/* Rradial velocity (km/s, +ve = moving away) */
 	v1[4] = zero;
 	v1[5] = zero;
 	}
- 
+
     /* Convert position + velocity vector to bn system */
     for (i = 0; i < 6; i++) {
 	w = zero;
@@ -1050,7 +1050,7 @@ double *rv;		/* Rradial velocity (km/s, +ve = moving away) */
 	    }
 	v2[i] = w;
 	}
- 
+
     /* Vector components */
     x = v2[0];
     y = v2[1];
@@ -1058,13 +1058,13 @@ double *rv;		/* Rradial velocity (km/s, +ve = moving away) */
 
     /* Magnitude of position vector */
     rxyz = sqrt (x*x + y*y + z*z);
- 
+
     /* Apply e-terms to position */
     w = (x * a[0]) + (y * a[1]) + (z * a[2]);
     x = x + (a[0] * rxyz) - (w * x);
     y = y + (a[1] * rxyz) - (w * y);
     z = z + (a[2] * rxyz) - (w * z);
- 
+
     /* Recompute magnitude of position vector */
     rxyz = sqrt (x*x + y*y + z*z);
 
@@ -1130,35 +1130,35 @@ static double em[6][6] = {
 	 0.00000242395018,	/* em[0][3] */
 	-0.00000002710663,	/* em[0][4] */
 	-0.00000001177656 },	/* em[0][5] */
- 
+
     {	 0.0111820610,		/* em[1][0] */
 	 0.9999374784,		/* em[1][1] */
 	-0.0000271765,		/* em[1][2] */
 	 0.00000002710663,	/* em[1][3] */
 	 0.00000242397878,	/* em[1][4] */
 	-0.00000000006587 },	/* em[1][5] */
- 
+
     {	 0.0048579479,		/* em[2][0] */
 	-0.0000271474,		/* em[2][1] */
 	 0.9999881997,		/* em[2][2] */
 	 0.00000001177656,	/* em[2][3] */
 	-0.00000000006582,	/* em[2][4] */
 	 0.00000242410173 },	/* em[2][5] */
- 
+
     {	-0.000551,		/* em[3][0] */
 	-0.238565,		/* em[3][1] */
 	 0.435739,		/* em[3][2] */
 	 0.99994704,		/* em[3][3] */
 	-0.01118251,		/* em[3][4] */
 	-0.00485767 },		/* em[3][5] */
- 
+
     {	 0.238514,		/* em[4][0] */
 	-0.002667,		/* em[4][1] */
 	-0.008541,		/* em[4][2] */
 	 0.01118251,		/* em[4][3] */
 	 0.99995883,		/* em[4][4] */
 	-0.00002718 },		/* em[4][5] */
- 
+
     {	-0.435623,		/* em[5][0] */
 	 0.012254,		/* em[5][1] */
 	 0.002117,		/* em[5][2] */
@@ -1241,7 +1241,7 @@ double *rv;		/* Rradial velocity (km/s, +ve = moving away) */
  *  Conversion from other than Besselian epoch 1950.0 to other than Julian
     epoch 2000.0 will require use of the appropriate precession, proper
     motion, and e-terms routines before and/or after fk425 is called.
- 
+
  *  In the FK4 catalogue the proper motions of stars within 10 degrees
     of the poles do not embody the differential e-term effect and should,
     strictly speaking, be handled in a different manner from stars outside
@@ -1441,9 +1441,9 @@ double *dphi;	/* B1950.0 FK4 declination in degrees
     Reference: Blaauw et al, MNRAS,121,123 (1960) */
 {
     double pos[3],pos1[3],r,dl,db,rl,rb,rra,rdec,dra,ddec;
-    void v2s3(),s2v3();
+    void v2s3(double pos[3], double *, double *, double *),s2v3(double, double, double, double pos[3]);
     int i;
-    char *eqcoor, *eqstrn();
+    char *eqcoor, *eqstrn(double, double);
 
     dra = *dtheta;
     ddec = *dphi;
@@ -1499,8 +1499,8 @@ double *dphi;	/* Galactic latitude (b2) in degrees
 
 {
     double pos[3],pos1[3],r,dl,db,rl,rb,rra,rdec,dra,ddec;
-    void v2s3(),s2v3();
-    char *eqcoor, *eqstrn();
+    void v2s3(double pos[3], double *, double *, double *),s2v3(double, double, double, double pos[3]);
+    char *eqcoor, *eqstrn(double, double);
     int i;
 
     /*  spherical to cartesian */
@@ -1574,8 +1574,8 @@ double *dphi;	/* J2000 declination in degrees
     Reference: Blaauw et al, MNRAS,121,123 (1960) */
 {
     double pos[3],pos1[3],r,dl,db,rl,rb,rra,rdec,dra,ddec;
-    void v2s3(),s2v3();
-    char *eqcoor, *eqstrn();
+    void v2s3(double pos[3], double *, double *, double *),s2v3(double, double, double, double pos[3]);
+    char *eqcoor, *eqstrn(double, double);
     int i;
 
     /*  Spherical to cartesian */
@@ -1627,9 +1627,9 @@ double *dphi;	/* Galactic latitude (b2) in degrees
 
 {
     double pos[3],pos1[3],r,dl,db,rl,rb,rra,rdec,dra,ddec;
-    void v2s3(),s2v3();
+    void v2s3(double pos[3], double *, double *, double *),s2v3(double, double, double, double pos[3]);
     int i;
-    char *eqcoor, *eqstrn();
+    char *eqcoor, *eqstrn(double, double);
 
     /*  Spherical to Cartesian */
     dl = *dtheta;
@@ -1727,7 +1727,7 @@ double *dphi;	/* B1950 declination in degrees
 double	epoch;	/* Besselian epoch in years */
 
 {
-    void fk425e(), fk52ecl();
+  /** void fk425e(), fk52ecl(); **/
 
     /* Convert from B1950 to J2000 coordinates */
     fk425e (dtheta, dphi, epoch);
@@ -1755,7 +1755,7 @@ double	epoch;	/* Besselian epoch in years */
     double v1[3], v2[3], r;
     double rmat[9], *rmati;	/* Rotation matrix  */
 
-    void rotmat(), v2s3(), s2v3(), fk5prec();
+    void rotmat(int, double, double, double, double *), v2s3(double pos[3], double *, double *, double *), s2v3(double, double, double, double pos[3]), fk5prec(double, double, double *, double *);
 
     /* Precess coordinates from J2000 to epoch */
     if (epoch != 2000.0)
@@ -1771,10 +1771,10 @@ double	epoch;	/* Besselian epoch in years */
 
     /* Interval between basic epoch J2000.0 and current epoch (JC) in centuries*/
     t = (epoch - 2000.0) * 0.01;
- 
+
     /* Mean obliquity */
     eps0 = secrad ((84381.448 + (-46.8150 + (-0.00059 + 0.001813*t) * t) * t));
- 
+
     /* Form the equatorial to ecliptic rotation matrix (IAU 1980 theory).
      *  References: Murray, C.A., Vectorial Astrometry, section 4.3.
      *    The matrix is in the sense   v[ecl]  =  rmat * v[equ];  the
@@ -1810,7 +1810,7 @@ double *dphi;	/* Galactic latitude (b2) in degrees
 double	epoch;	/* Besselian epoch in years */
 
 {
-    void ecl2fk5(), fk524e();
+  /** void ecl2fk5(), fk524e(); **/
 
     /* Convert from ecliptic to J2000 coordinates */
     ecl2fk5 (dtheta, dphi, epoch);
@@ -1839,7 +1839,7 @@ double	epoch;	/* Besselian epoch in years */
     double rtheta, rphi, v1[3], v2[3];
     double t, eps0, r;
     double rmat[9];	/* Rotation matrix */
-    void v2s3(),s2v3(), fk5prec(), rotmat();
+    void v2s3(double pos[3], double *, double *, double *),s2v3(double, double, double, double pos[3]), fk5prec(double, double, double *, double *), rotmat(int, double, double, double, double *);
 
     rtheta = degrad (*dtheta);
     rphi = degrad (*dphi);
@@ -1850,16 +1850,16 @@ double	epoch;	/* Besselian epoch in years */
 
     /* Interval between basic epoch J2000.0 and current epoch (JC) in centuries*/
     t = (epoch - 2000.0) * 0.01;
- 
+
     /* Mean obliquity */
     eps0 = secrad ((84381.448 + (-46.8150 + (-0.00059 + 0.001813*t) * t) * t));
- 
+
     /* Form the equatorial to ecliptic rotation matrix (IAU 1980 theory).
      *  References: Murray, C.A., Vectorial Astrometry, section 4.3.
      *    The matrix is in the sense   v[ecl]  =  rmat * v[equ];  the
      *    equator, equinox and ecliptic are mean of date. */
     rotmat (1, eps0, 0.0, 0.0, rmat);
- 
+
     /* Multiply position vector by ecliptic to equatorial rotation matrix */
     for (i = 0; i < 3; i++) {
 	v2[i] = 0;
@@ -1902,18 +1902,18 @@ double *dec;	/* Dec in degrees mean equator & equinox of epoch ep0
 {
     int i, j;
     double pm[9], *pmi, v1[3], v2[3], rra, rdec, r;
-    void v2s3(),s2v3(), mprecfk4();
+    void v2s3(double pos[3], double *, double *, double *),s2v3(double, double, double, double pos[3]), mprecfk4(double, double, double rmatp[9]);
 
     rra = degrad (*ra);
     rdec = degrad (*dec);
     r = 1.0;
- 
+
     /* Generate appropriate precession matrix */
     mprecfk4 ( ep0, ep1, pm );
- 
+
     /* Convert RA,Dec to x,y,z */
     s2v3 (rra, rdec, r, v1);
- 
+
     /* Multiply position vector by precession matrix */
     pmi = pm;
     for (i = 0; i < 3; i++) {
@@ -1921,7 +1921,7 @@ double *dec;	/* Dec in degrees mean equator & equinox of epoch ep0
 	for (j = 0; j < 3; j++)
 	    v2[i] = v2[i] + (*pmi++ * v1[j]);
 	}
- 
+
     /* Back to RA,Dec */
     v2s3 (v2, &rra, &rdec, &r);
 
@@ -1950,18 +1950,18 @@ double *dec;	/* Dec in degrees mean equator & equinox of epoch ep0
 {
     int i, j;
     double pm[9], *pmi, v1[3], v2[3], rra, rdec, r;
-    void v2s3(),s2v3(), mprecfk5();
+    void v2s3(double pos[3], double *, double *, double *),s2v3(double, double, double, double pos[3]), mprecfk5(double, double, double rmatp[9]);
 
     rra = degrad (*ra);
     rdec = degrad (*dec);
     r = 1.0;
- 
+
     /* Generate appropriate precession matrix */
     mprecfk5 (ep0, ep1, pm);
- 
+
     /* Convert RA,Dec to x,y,z */
     s2v3 (rra, rdec, r, v1);
- 
+
     /* Multiply position vector by precession matrix */
     pmi = pm;
     for (i = 0; i < 3; i++) {
@@ -1969,7 +1969,7 @@ double *dec;	/* Dec in degrees mean equator & equinox of epoch ep0
 	for (j = 0; j < 3; j++)
 	    v2[i] = v2[i] + ( v1[j] * *pmi++ );
 	}
- 
+
     /* Back to RA,Dec */
     v2s3 (v2, &rra, &rdec, &r);
 
@@ -2003,14 +2003,14 @@ double rmatp[9];	/* 3x3 Precession matrix (returned) */
 */
 {
     double bigt, t, tas2r, w, zeta, z, theta;
-    void rotmat();
- 
+    void rotmat(int, double, double, double, double *);
+
     /* Interval between basic epoch B1850.0 and beginning epoch in TC */
     bigt  = ( bep0 - 1850.0 ) / 100.0;
- 
+
     /* Interval over which precession required, in tropical centuries */
     t = ( bep1 - bep0 ) / 100.0;
- 
+
     /* Euler angles */
     tas2r = secrad (t);
     w = 2303.5548 + ( 1.39720 + 0.000059 * bigt ) * bigt;
@@ -2018,7 +2018,7 @@ double rmatp[9];	/* 3x3 Precession matrix (returned) */
     z = (w + ( 1.09478 + 0.000387 * bigt + 0.018324 * t ) * t ) * tas2r;
     theta = ( 2005.1125 + ( - 0.85294 - 0.000365* bigt ) * bigt +
 	    ( - 0.42647 - 0.000365 * bigt - 0.041802 * t ) * t ) * tas2r;
- 
+
     /* Rotation matrix */
     rotmat (323, -zeta, theta, -z, rmatp);
     return;
@@ -2047,14 +2047,14 @@ double rmatp[9];	/* 3x3 Precession matrix (returned) */
 */
 {
     double t0, t, tas2r, w, zeta, z, theta;
-    void rotmat();
- 
+    void rotmat(int, double, double, double, double *);
+
     /* Interval between basic epoch J2000.0 and beginning epoch (JC) */
     t0 = ( ep0 - 2000.0 ) / 100.0;
- 
+
     /* Interval over which precession required (JC) */
     t =  ( ep1 - ep0 ) / 100.0;
- 
+
     /* Euler angles */
     tas2r = secrad (t);
     w = 2306.2181 + ( ( 1.39656 - ( 0.000139 * t0 ) ) * t0 );
@@ -2062,7 +2062,7 @@ double rmatp[9];	/* 3x3 Precession matrix (returned) */
     z = (w + ( ( 1.09468 + 0.000066 * t0 ) + 0.018203 * t ) * t ) * tas2r;
     theta = ( ( 2004.3109 + ( - 0.85330 - 0.000217 * t0 ) * t0 )
 	  + ( ( -0.42665 - 0.000217 * t0 ) - 0.041833 * t ) * t ) * tas2r;
- 
+
     /* Rotation matrix */
     rotmat (323, -zeta, theta, -z, rmatp);
     return;
@@ -2134,7 +2134,7 @@ double *matrix;	/* 3x3 rotation matrix (returned) */
 
 	srot = sin (rot[iaxis]);
 	crot = cos (rot[iaxis]);
-	
+
 	/* Matrix for rotation in X */
 	if (axis[iaxis] == 1) {
 	    matn[4] = crot;
@@ -2142,7 +2142,7 @@ double *matrix;	/* 3x3 rotation matrix (returned) */
 	    matn[7] = -srot;
 	    matn[8] = crot;
 	    }
-	
+
 	/* Matrix for rotation in Y */
 	else if (axis[iaxis] == 2) {
 	    matn[0] = crot;
@@ -2150,7 +2150,7 @@ double *matrix;	/* 3x3 rotation matrix (returned) */
 	    matn[6] = srot;
 	    matn[8] = crot;
 	    }
-	
+
 	/* Matrix for rotation in Z */
 	else {
 	    matn[0] = crot;
@@ -2327,4 +2327,7 @@ double *r;	/* Distance to object in same units as pos (returned) */
  * Mar 30 2010	Drop ep1 assignment after line 178 in wcsconp()
  *
  * Jun  9 2016	Fix isnum() tests for added coloned times and dashed dates
+
+ * Mar 12 2026  Minimal change to support -std=c23
+
  */
