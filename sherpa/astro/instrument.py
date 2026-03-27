@@ -258,7 +258,13 @@ class RSPModel(CompositeModel, ArithmeticModel):
         self.xlo, self.xhi = self.elo, self.ehi
 
         # Used to rebin against finer or coarser energy grids
-        self.rmfargs = ()
+        #
+        elo, ehi = self.rmf.get_indep()
+        if len(elo) != len(self.elo):
+            self.rmfargs = ((elo, ehi), (self.elo, self.ehi))
+        else:
+            self.rmfargs = ()
+
         self.arfargs = ()
 
     def startup(self, cache: bool = False) -> None:
@@ -481,18 +487,7 @@ class RSPModelPHA(RSPModel):
 
         RSPModel.filter(self)
 
-        # Can this really happen? There is a test of it but it is an
-        # engineered test case rather than "actual" data.
-        #
-        # Should this check be a "or" and not "and", and really it
-        # should check the grid values.
-        #
-        elo, ehi = self.rmf.get_indep()
-        if len(elo) != len(self.elo) and len(ehi) != len(self.ehi):
-            self.rmfargs = ((elo, ehi), (self.elo, self.ehi))
-
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
+        # Convert the units if necessary
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
@@ -557,7 +552,7 @@ class RSPModelNoPHA(RSPModel):
              x, xhi=None, *args, **kwargs) -> np.ndarray:
         # x could be channels or x, xhi could be energy|wave
 
-        # Always evaluates source model in keV!
+        # Always evaluates source model in keV as have no PHA.
         src = self.model.calc(p, self.xlo, self.xhi)
         src = self.arf.apply_arf(src, *self.arfargs)
         return self.rmf.apply_rmf(src, *self.rmfargs)

@@ -1693,15 +1693,10 @@ def test_rspmodelnopha_rmf2_arf_mismatch():
 
     # This does *not* include the exposure time.
     rsp = RSPModelNoPHA(arf=arf, rmf=rmf2, model=src)
+    y = rsp(pha.channel)
 
-    # This is known to fail, so make sure we know how it fails.
-    #
-    with pytest.raises(TypeError,
-                       match="^Mismatched filter between ARF and RMF or PHA and RMF$"):
-        y = rsp(pha.channel)
-
-    # expected = eval_xrism_like_model_rmf2() / pha.exposure
-    # assert y == pytest.approx(expected)
+    expected = eval_xrism_like_model_rmf2() / pha.exposure
+    assert y == pytest.approx(expected)
 
 
 def test_multi_response_xrism_like():
