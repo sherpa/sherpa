@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2023-2025
+#  Copyright (C) 2010, 2015, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,8 +34,9 @@ Michael F. Corcoran
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, SupportsFloat
 import os
 
 import numpy as np
@@ -48,7 +49,8 @@ from sherpa.instrument import PSFModel as _PSFModel
 from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.data import Data1D
 from sherpa.astro import hc
-from sherpa.astro.data import DataARF, DataRMF, _notice_resp, DataIMG
+from sherpa.astro.data import DataARF, DataPHA, DataRMF, DataIMG, \
+    _notice_resp
 from sherpa.astro import io
 from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
@@ -64,6 +66,9 @@ _tol = np.finfo(np.float32).eps
 
 string_types = (str, )
 
+# An approximation of how the parameters can be supplied.
+ParamsType = Sequence[SupportsFloat]
+
 
 __all__ = ('RMFModel', 'ARFModel', 'RSPModel', 'RMFModelPHA',
            'RMFModelNoPHA', 'ARFModelPHA', 'ARFModelNoPHA',
@@ -74,7 +79,10 @@ __all__ = ('RMFModel', 'ARFModel', 'RSPModel', 'RMFModelPHA',
            'create_non_delta_rmf', 'rmf_to_matrix', 'rmf_to_image' )
 
 
-def apply_areascal(mdl, pha, instlabel):
+def apply_areascal(mdl: np.ndarray,
+                   pha: DataPHA,
+                   instlabel: str
+                   ) -> np.ndarray:
     """Apply the AREASCAL conversion.
 
     This should be done after applying any RMF or ARF.
@@ -115,7 +123,7 @@ class RMFModel(CompositeModel, ArithmeticModel):
     """Base class for expressing RMF convolution in model expressions.
     """
 
-    def __init__(self, rmf, model):
+    def __init__(self, rmf, model) -> None:
         self.rmf = rmf
         self.model = model
 
@@ -136,7 +144,7 @@ class RMFModel(CompositeModel, ArithmeticModel):
         CompositeModel.__init__(self, f'apply_rmf({model.name})', (model,))
         self.filter()
 
-    def filter(self):
+    def filter(self) -> None:
         # Energy grid (keV)
         self.elo, self.ehi = self.rmf.get_indep()
 
@@ -149,15 +157,16 @@ class RMFModel(CompositeModel, ArithmeticModel):
         # Used to rebin against finer or coarser energy grids
         self.rmfargs = ()
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.model.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p, x, xhi=None, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, *args, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
 
@@ -165,7 +174,7 @@ class ARFModel(CompositeModel, ArithmeticModel):
     """Base class for expressing ARF convolution in model expressions.
     """
 
-    def __init__(self, arf, model):
+    def __init__(self, arf, model) -> None:
         self.arf = arf
         self.model = model
 
@@ -185,7 +194,7 @@ class ARFModel(CompositeModel, ArithmeticModel):
         CompositeModel.__init__(self, f'apply_arf({model.name})', (model,))
         self.filter()
 
-    def filter(self):
+    def filter(self) -> None:
         # Energy grid (keV)
         self.elo, self.ehi = self.arf.get_indep()
 
@@ -198,15 +207,16 @@ class ARFModel(CompositeModel, ArithmeticModel):
         # Used to rebin against finer or coarser energy grids
         self.arfargs = ()
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.model.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p, x, xhi=None, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, *args, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
 
@@ -214,7 +224,7 @@ class RSPModel(CompositeModel, ArithmeticModel):
     """Base class for expressing RMF + ARF convolution in model expressions
     """
 
-    def __init__(self, arf, rmf, model):
+    def __init__(self, arf, rmf, model) -> None:
         self.arf = arf
         self.rmf = rmf
         self.model = model
@@ -237,7 +247,7 @@ class RSPModel(CompositeModel, ArithmeticModel):
                                 (model,))
         self.filter()
 
-    def filter(self):
+    def filter(self) -> None:
         # Energy grid (keV), ARF grid breaks tie
         self.elo, self.ehi = self.arf.get_indep()
 
@@ -251,15 +261,16 @@ class RSPModel(CompositeModel, ArithmeticModel):
         self.rmfargs = ()
         self.arfargs = ()
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.model.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p, x, xhi=None, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, *args, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
 
@@ -275,12 +286,16 @@ class RMFModelPHA(RMFModel):
     this model.
     """
 
-    def __init__(self, rmf, pha, model):
+    def __init__(self,
+                 rmf,
+                 pha: DataPHA,
+                 model
+                 ) -> None:
         self.pha = pha
         self._rmf = rmf  # store a reference to original
         RMFModel.__init__(self, rmf, model)
 
-    def filter(self):
+    def filter(self) -> None:
 
         RMFModel.filter(self)
 
@@ -289,7 +304,7 @@ class RMFModelPHA(RMFModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         rmf = self._rmf  # original
 
         # Create a view of original RMF
@@ -311,13 +326,14 @@ class RMFModelPHA(RMFModel):
 
         RMFModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.rmf = self._rmf
 
         self.filter()
         RMFModel.teardown(self)
 
-    def calc(self, p, x, xhi=None, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, *args, **kwargs) -> np.ndarray:
         # x is noticed/full channels here
 
         src = self.model.calc(p, self.xlo, self.xhi)
@@ -336,10 +352,8 @@ class RMFModelNoPHA(RMFModel):
     AREASCAL setting associated with the data.
     """
 
-    def __init__(self, rmf, model):
-        RMFModel.__init__(self, rmf, model)
-
-    def calc(self, p, x, xhi=None, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, *args, **kwargs) -> np.ndarray:
         # x is noticed/full channels here
 
         # Always evaluates source model in keV!
@@ -359,12 +373,16 @@ class ARFModelPHA(ARFModel):
     this model. It is not yet clear if this is handled correctly.
     """
 
-    def __init__(self, arf, pha, model):
+    def __init__(self,
+                 arf,
+                 pha: DataPHA,
+                 model
+                 ) -> None:
         self.pha = pha
         self._arf = arf  # store a reference to original
         ARFModel.__init__(self, arf, model)
 
-    def filter(self):
+    def filter(self) -> None:
 
         ARFModel.filter(self)
 
@@ -373,7 +391,7 @@ class ARFModelPHA(ARFModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         arf = self._arf  # original
         pha = self.pha
 
@@ -396,13 +414,14 @@ class ARFModelPHA(ARFModel):
 
         ARFModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.arf = self._arf  # restore original
 
         self.filter()
         ARFModel.teardown(self)
 
-    def calc(self, p, x, xhi=None, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, *args, **kwargs) -> np.ndarray:
         # x could be channels or x, xhi could be energy|wave
 
         src = self.model.calc(p, self.xlo, self.xhi)
@@ -421,10 +440,8 @@ class ARFModelNoPHA(ARFModel):
     AREASCAL setting associated with the data.
     """
 
-    def __init__(self, arf, model):
-        ARFModel.__init__(self, arf, model)
-
-    def calc(self, p, x, xhi=None, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, *args, **kwargs) -> np.ndarray:
         # x could be channels or x, xhi could be energy|wave
 
         # if (xhi is not None and
@@ -449,7 +466,12 @@ class RSPModelPHA(RSPModel):
     this model.
     """
 
-    def __init__(self, arf, rmf, pha, model):
+    def __init__(self,
+                 arf,
+                 rmf,
+                 pha: DataPHA,
+                 model
+                 ) -> None:
         self.pha = pha
         self._arf = arf
         self._rmf = rmf
@@ -474,7 +496,7 @@ class RSPModelPHA(RSPModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         arf = self._arf
         rmf = self._rmf
 
@@ -501,14 +523,15 @@ class RSPModelPHA(RSPModel):
 
         RSPModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.arf = self._arf  # restore originals
         self.rmf = self._rmf
 
         self.filter()
         RSPModel.teardown(self)
 
-    def calc(self, p, x, xhi=None, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, *args, **kwargs) -> np.ndarray:
         # x could be channels or x, xhi could be energy|wave
 
         src = self.model.calc(p, self.xlo, self.xhi)
@@ -530,10 +553,8 @@ class RSPModelNoPHA(RSPModel):
     AREASCAL setting associated with the data.
     """
 
-    def __init__(self, arf, rmf, model):
-        RSPModel.__init__(self, arf, rmf, model)
-
-    def calc(self, p, x, xhi=None, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, *args, **kwargs) -> np.ndarray:
         # x could be channels or x, xhi could be energy|wave
 
         # Always evaluates source model in keV!
@@ -544,12 +565,16 @@ class RSPModelNoPHA(RSPModel):
 
 class ARF1D(NoNewAttributesAfterInit):
 
-    def __init__(self, arf, pha=None, rmf=None):
+    def __init__(self,
+                 arf,
+                 pha: DataPHA | None = None,
+                 rmf=None  # TODO: remove this as it is unused?
+                 ) -> None:
         self._arf = arf
         self._pha = pha
         NoNewAttributesAfterInit.__init__(self)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str):
         arf = None
         try:
             arf = ARF1D.__getattribute__(self, '_arf')
@@ -564,7 +589,7 @@ class ARF1D(NoNewAttributesAfterInit):
 
         return ARF1D.__getattribute__(self, name)
 
-    def __setattr__(self, name, val):
+    def __setattr__(self, name: str, val) -> None:
         arf = None
         try:
             arf = ARF1D.__getattribute__(self, '_arf')
@@ -579,10 +604,10 @@ class ARF1D(NoNewAttributesAfterInit):
     def __dir__(self):
         return dir(self._arf)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self._arf)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self._arf)
 
     def __call__(self, model, session=None):
@@ -610,13 +635,17 @@ class ARF1D(NoNewAttributesAfterInit):
 
 class RMF1D(NoNewAttributesAfterInit):
 
-    def __init__(self, rmf, pha=None, arf=None):
+    def __init__(self,
+                 rmf,
+                 pha: DataPHA | None = None,
+                 arf=None
+                 ) -> None:
         self._rmf = rmf
         self._arf = arf
         self._pha = pha
         NoNewAttributesAfterInit.__init__(self)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str):
         rmf = None
         try:
             rmf = RMF1D.__getattribute__(self, '_rmf')
@@ -631,7 +660,7 @@ class RMF1D(NoNewAttributesAfterInit):
 
         return RMF1D.__getattribute__(self, name)
 
-    def __setattr__(self, name, val):
+    def __setattr__(self, name: str, val) -> None:
         rmf = None
         try:
             rmf = RMF1D.__getattribute__(self, '_rmf')
@@ -646,10 +675,10 @@ class RMF1D(NoNewAttributesAfterInit):
     def __dir__(self):
         return dir(self._rmf)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self._rmf)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self._rmf)
 
     def __call__(self, model, session=None):
@@ -728,7 +757,7 @@ class Response1D(NoNewAttributesAfterInit):
 
     """
 
-    def __init__(self, pha):
+    def __init__(self, pha: DataPHA) -> None:
         self.pha = pha
         arf, rmf = pha.get_response()
         if arf is None and rmf is None:
@@ -764,12 +793,19 @@ class Response1D(NoNewAttributesAfterInit):
         raise DataErr('norsp', pha.name)
 
 
+# This is very similar to RSPMmodelPHA/NoPHA except that the source
+# model has already been evaluated.
+#
 class ResponseNestedModel(Model):
+    """Handle a response component for a PHA dataset."""
 
-    def __init__(self, arf=None, rmf=None):
+    def __init__(self, arf=None, rmf=None) -> None:
         self.arf = arf
         self.rmf = rmf
 
+        # TODO: the name is incorrect (it misses out the trailing
+        # closing bracket). It is unfortunately not simple to fix.
+        #
         name = ''
         if arf is not None and rmf is not None:
             name = 'apply_rmf(apply_arf('
@@ -779,21 +815,27 @@ class ResponseNestedModel(Model):
             name = 'apply_rmf('
         Model.__init__(self, name)
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             *args, **kwargs) -> np.ndarray:
         arf = self.arf
         rmf = self.rmf
 
-        if arf is not None and rmf is not None:
-            return rmf.apply_rmf(arf.apply_arf(*args, **kwargs))
-        elif self.arf is not None:
-            return arf.apply_arf(*args, **kwargs)
+        # For now we ignore the kwargs
+        assert len(args) == 1, f"internal error, len(args)={len(args)}"
+        src = args[0]
+        if arf is not None:
+            src = arf.apply_arf(src)
 
-        return rmf.apply_rmf(*args, **kwargs)
+        if rmf is not None:
+            src = rmf.apply_rmf(src)
+
+        return src
 
 
 class MultiResponseSumModel(CompositeModel, ArithmeticModel):
+    """Apply the model to multiple responses."""
 
-    def __init__(self, source, pha):
+    def __init__(self, source, pha: DataPHA) -> None:
         self.channel = pha.channel
         self.mask = np.ones(len(pha.channel), dtype=bool)
         self.pha = pha
@@ -833,7 +875,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         name = f'{type(self).__name__}({expr})'
         CompositeModel.__init__(self, name, (source,))
 
-    def _get_noticed_energy_list(self):
+    def _get_noticed_energy_list(self) -> None:
         grid = []
         for id in self.pha.response_ids:
             arf, rmf = self.pha.get_response(id)
@@ -847,7 +889,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self.elo, self.ehi, self.table = compile_energy_grid(grid)
         self.lo, self.hi = hc / self.ehi, hc / self.elo
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         pha = self.pha
         if np.iterable(pha.mask):
             pha.notice_response(True)
@@ -856,7 +898,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self._get_noticed_energy_list()
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         pha = self.pha
         if np.iterable(pha.mask):
             pha.notice_response(False)
@@ -869,11 +911,11 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self.hi = None
         CompositeModel.teardown(self)
 
-    def _check_for_user_grid(self, x, xhi=None):
+    def _check_for_user_grid(self, x, xhi=None) -> bool:
         return (len(self.channel) != len(x) or
                 not (sao_fcmp(self.channel, x, _tol) == 0).all())
 
-    def _startup_user_grid(self, x, xhi=None):
+    def _startup_user_grid(self, x, xhi=None) -> None:
         # fit() never comes in here b/c it calls startup()
         pha = self.pha
         self.mask = np.zeros(len(pha.channel), dtype=bool)
@@ -881,7 +923,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         pha.notice_response(True, x)
         self._get_noticed_energy_list()
 
-    def _teardown_user_grid(self):
+    def _teardown_user_grid(self) -> None:
         # fit() never comes in here b/c it calls startup()
         pha = self.pha
         self.mask = np.ones(len(pha.channel), dtype=bool)
@@ -892,7 +934,8 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self.lo = None
         self.hi = None
 
-    def calc(self, p, x, xhi=None, *args, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, *args, **kwargs) -> np.ndarray:
         pha = self.pha
 
         # TODO: this should probably include AREASCAL
@@ -985,7 +1028,12 @@ class MultipleResponse1D(Response1D):
 
 class PileupRMFModel(CompositeModel, ArithmeticModel):
 
-    def __init__(self, rmf, model, pha=None):
+    def __init__(self,
+                 rmf,
+                 model,
+                 pha: DataPHA | None = None
+                 ) -> None:
+        # TODO: should this require pha be set?
         self.pha = pha
         self.channel = sao_arange(1, rmf.detchans)  # sao_arange is inclusive
         self.mask = np.ones(rmf.detchans, dtype=bool)
@@ -1001,7 +1049,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
                                 f'apply_rmf({self.model.name})',
                                 (self.model,))
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         pha = self.pha
         pha.notice_response(False)
         self.channel = pha.get_noticed_channels()
@@ -1009,7 +1057,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
 
         # Note:
         #
@@ -1026,16 +1074,17 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         self.model.teardown()
         CompositeModel.teardown(self)
 
-    def _check_for_user_grid(self, x):
+    def _check_for_user_grid(self, x) -> bool:
         return (len(self.channel) != len(x) or
                 not (sao_fcmp(self.channel, x, _tol) == 0).all())
 
-    def _startup_user_grid(self, x):
+    def _startup_user_grid(self, x) -> None:
         # fit() never comes in here b/c it calls startup()
         self.mask = np.zeros(self.rmf.detchans, dtype=bool)
         self.mask[np.searchsorted(self.pha.channel, x)] = True
 
-    def _calc(self, p, xlo, xhi):
+    def _calc(self, p: ParamsType,
+              xlo, xhi) -> np.ndarray:
         # Evaluate source model on RMF energy/wave grid OR
         # model.calc --> pileup_model
         src = self.model.calc(p, xlo, xhi)
@@ -1043,7 +1092,8 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         # rmf_fold
         return self.rmf.apply_rmf(src)
 
-    def calc(self, p, x, xhi=None, **kwargs):
+    def calc(self, p: ParamsType,
+             x, xhi=None, **kwargs) -> np.ndarray:
         pha = self.pha
         # x is noticed/full channels here
 
@@ -1092,7 +1142,10 @@ class PileupResponse1D(NoNewAttributesAfterInit):
 
     """
 
-    def __init__(self, pha, pileup_model):
+    def __init__(self,
+                 pha: DataPHA,
+                 pileup_model
+                 ) -> None:
         self.pha = pha
         self.pileup_model = pileup_model
         NoNewAttributesAfterInit.__init__(self)
@@ -1136,7 +1189,7 @@ class PileupResponse1D(NoNewAttributesAfterInit):
 
 class PSFModel(_PSFModel):
 
-    def fold(self, data):
+    def fold(self, data) -> None:
         super().fold(data)
 
         # Set WCS coordinates of kernel data set to match source data set.
@@ -1183,8 +1236,14 @@ class PSFModel(_PSFModel):
         raise PSFErr('ndim')
 
 
-def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
-               name='user-arf', header=None):
+def create_arf(elo: np.ndarray,
+               ehi: np.ndarray,
+               specresp: np.ndarray | None = None,
+               exposure: float | None =None,
+               ethresh: float | None = None,
+               name: str = 'user-arf',
+               header=None
+               ) -> DataARF:
     """Create an ARF.
 
     .. versionadded:: 4.10.1
@@ -1225,9 +1284,15 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
                    exposure=exposure, ethresh=ethresh, header=header)
 
 
-def create_delta_rmf(rmflo, rmfhi, offset=1,
-                     e_min=None, e_max=None, ethresh=None,
-                     name='delta-rmf', header=None):
+def create_delta_rmf(rmflo: np.ndarray,
+                     rmfhi: np.ndarray,
+                     offset: int = 1,
+                     e_min: np.ndarray | None = None,
+                     e_max: np.ndarray | None = None,
+                     ethresh: float | None = None,
+                     name: str = 'delta-rmf',
+                     header=None
+                     ) -> DataRMF:
     """Create an ideal RMF.
 
     The RMF has a unique mapping from channel to energy, in
@@ -1301,9 +1366,16 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
                    ethresh=ethresh, header=header)
 
 
-def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
-                         e_min=None, e_max=None, ethresh=None,
-                         name='delta-rmf', header=None):
+def create_non_delta_rmf(rmflo: np.ndarray,
+                         rmfhi: np.ndarray,
+                         fname: str,
+                         offset: int = 1,
+                         e_min: np.ndarray | None = None,
+                         e_max: np.ndarray | None = None,
+                         ethresh: float | None = None,
+                         name: str = 'delta-rmf',
+                         header=None
+                         ) -> DataRMF:
     """Create a RMF using a matrix from a file.
 
     The RMF matrix (the mapping from channel to energy bin) is
