@@ -222,9 +222,23 @@ class ARFModel(CompositeModel, ArithmeticModel):
 
 class RSPModel(CompositeModel, ArithmeticModel):
     """Base class for expressing RMF + ARF convolution in model expressions
+
+    .. versionchanged:: 4.18.1
+       This class can now be used, with `RSPModelNoPHA` being
+       identical to it.
+
+    Notes
+    -----
+    Since there is no PHA data set, there is no correction for any
+    AREASCAL setting associated with the data.
+
     """
 
-    def __init__(self, arf, rmf, model) -> None:
+    def __init__(self,
+                 arf: DataARF,
+                 rmf: DataRMF,
+                 model
+                 ) -> None:
         self.arf = arf
         self.rmf = rmf
         self.model = model
@@ -238,7 +252,7 @@ class RSPModel(CompositeModel, ArithmeticModel):
 
         # Used to rebin against finer or coarser energy grids
         self.rmfargs = ()
-        self.arfargs = ()
+        self.arfargs = ()  # This never gets changed.
 
         # Logic for ArithmeticModel.__init__
         self._pars = ()
@@ -277,7 +291,12 @@ class RSPModel(CompositeModel, ArithmeticModel):
 
     def calc(self, p: ParamsType,
              x, xhi=None, *args, **kwargs) -> np.ndarray:
-        raise NotImplementedError
+        """Evaluate the model and combine with the response."""
+
+        # Evaluate the model on the xlo/xhi grid.
+        src = self.model.calc(p, self.xlo, self.xhi)
+        src = self.arf.apply_arf(src, *self.arfargs)
+        return self.rmf.apply_rmf(src, *self.rmfargs)
 
 
 class RMFModelPHA(RMFModel):
@@ -473,8 +492,8 @@ class RSPModelPHA(RSPModel):
     """
 
     def __init__(self,
-                 arf,
-                 rmf,
+                 arf: DataARF,
+                 rmf: DataRMF,
                  pha: DataPHA,
                  model
                  ) -> None:
@@ -510,12 +529,6 @@ class RSPModelPHA(RSPModel):
         _notice_resp(self.pha.get_noticed_channels(), self.arf, self.rmf)
 
         self.filter()
-
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
-        if self.pha.units == 'wavelength':
-            self.xlo, self.xhi = self.lo, self.hi
-
         RSPModel.startup(self, cache)
 
     def teardown(self) -> None:
@@ -527,11 +540,9 @@ class RSPModelPHA(RSPModel):
 
     def calc(self, p: ParamsType,
              x, xhi=None, *args, **kwargs) -> np.ndarray:
-        # x could be channels or x, xhi could be energy|wave
+        """Evaluate the model and combine with the response."""
 
-        src = self.model.calc(p, self.xlo, self.xhi)
-        src = self.arf.apply_arf(src, *self.arfargs)
-        src = self.rmf.apply_rmf(src, *self.rmfargs)
+        src = RSPModel.calc(self, p, x, *args, xhi=xhi, **kwargs)
 
         # Assume any issues with the binning (between AREASCAL
         # and src) is related to the RMF rather than the ARF.
@@ -542,20 +553,15 @@ class RSPModelPHA(RSPModel):
 class RSPModelNoPHA(RSPModel):
     """RMF + ARF convolution model without associated PHA data set.
 
-    Notes
-    -----
-    Since there is no PHA data set, there is no correction for any
-    AREASCAL setting associated with the data.
+    .. versionchanged:: 4.18.1
+       This class is now identical to `RSPModel`.
+
     """
 
-    def calc(self, p: ParamsType,
-             x, xhi=None, *args, **kwargs) -> np.ndarray:
-        # x could be channels or x, xhi could be energy|wave
-
-        # Always evaluates source model in keV as have no PHA.
-        src = self.model.calc(p, self.xlo, self.xhi)
-        src = self.arf.apply_arf(src, *self.arfargs)
-        return self.rmf.apply_rmf(src, *self.rmfargs)
+    # Historically RSPModel did not contain the logic to call
+    # calc, but this has changed in Sherpa 4.18.1.
+    #
+    pass
 
 
 class ARF1D(NoNewAttributesAfterInit):
