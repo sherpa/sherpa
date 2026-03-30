@@ -859,6 +859,10 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
             models.append(m)
             grid.append(indep)
 
+        # Ensure there is a response.
+        if len(models) == 0:
+            raise DataErr("norsp", pha.name)
+
         self.models = models
         self.grid = grid
 

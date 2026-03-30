@@ -36,7 +36,7 @@ from sherpa.astro import hc, io
 from sherpa.astro.data import DataARF, DataPHA, DataRMF, DataIMG
 from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     Response1D, MultipleResponse1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
-    RSPModelNoPHA, RSPModelPHA, PSFModel, RMFMatrix, \
+    RSPModelNoPHA, RSPModelPHA, PSFModel, RMFMatrix, MultiResponseSumModel, \
     create_arf, create_delta_rmf, create_non_delta_rmf, \
     rmf_to_matrix, rmf_to_image, has_pha_response
 from sherpa.data import Data1D
@@ -1534,6 +1534,25 @@ def test_rsp_multi_2_filtered(analysis, arfexp, phaexp):
 
     expected2 = expected[[3, 4]]
     assert out == pytest.approx(2 * expected2)
+
+
+def test_rsp_multi_no_response():
+    """Corner chase: check we error out if no response"""
+
+    pha = DataPHA("x", np.asarray([1, 2]), np.asarray([0, 1]))
+    model = Box1D()
+
+    # Note that
+    #    rsp = MultipleResponse1D(pha)
+    #    rsp(model)
+    # could also error out, but MultiResponse1D already checks that
+    # there is at least one response, so there is a need to call
+    # MultiResponseSumModel directly.
+    #
+    with pytest.raises(DataErr,
+                       match="^No instrument response found for "
+                       "dataset x$"):
+        MultiResponseSumModel(model, pha=pha)
 
 
 def create_xrism_like_responses() -> tuple[DataRMF,
