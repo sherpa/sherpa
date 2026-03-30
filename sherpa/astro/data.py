@@ -789,7 +789,12 @@ class DataOgipResponse(Data1DInt):
     # The shift to creating a warning message instead of raising an
     # error has made this messier.
     #
-    def _validate_energy_ranges(self, label, elo, ehi, ethresh):
+    def _validate_energy_ranges(self,
+                                label: str,
+                                elo: np.ndarray,
+                                ehi: np.ndarray,
+                                ethresh: float | None
+                                ) -> tuple[np.ndarray, np.ndarray]:
         """Check the lo/hi values are > 0, handling common error case.
 
         Several checks are made, to make sure the parameters follow
@@ -960,8 +965,17 @@ class DataARF(DataOgipResponse):
 
     specresp = property(_get_specresp, _set_specresp)
 
-    def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
-                 bin_hi=None, exposure=None, header=None, ethresh=None):
+    def __init__(self,
+                 name: str,
+                 energ_lo: np.ndarray,
+                 energ_hi: np.ndarray,
+                 specresp: np.ndarray,
+                 bin_lo=None,
+                 bin_hi=None,
+                 exposure=None,
+                 header=None,
+                 ethresh: float | None = None
+                 ) -> None:
         self.specresp = specresp
         # Keep these fields for now, but they are unused.
         self.bin_lo = None
@@ -1018,10 +1032,14 @@ class DataARF(DataOgipResponse):
             self._lo = self.energ_lo[bin_mask]
             self._hi = self.energ_hi[bin_mask]
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ) -> tuple[np.ndarray, np.ndarray]:
         return (self._lo, self._hi)
 
-    def get_dep(self, filter=False):
+    def get_dep(self,
+                filter: bool = False
+                ) -> np.ndarray:
         return self._rsp
 
     def get_ylabel(self, yfunc=None) -> str:
@@ -1086,9 +1104,21 @@ class DataRMF(DataOgipResponse):
                "e_max")
     _extra_fields = ("detchans", "offset", "ethresh")
 
-    def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
-                 n_chan, matrix, offset=1, e_min=None, e_max=None,
-                 header=None, ethresh=None):
+    def __init__(self,
+                 name: str,
+                 detchans: int,
+                 energ_lo: np.ndarray,
+                 energ_hi: np.ndarray,
+                 n_grp: ArrayType,
+                 f_chan: ArrayType,
+                 n_chan: ArrayType,
+                 matrix: ArrayType,
+                 offset: int = 1,
+                 e_min: ArrayType | None = None,
+                 e_max: ArryaType | None = None,
+                 header=None,
+                 ethresh: float | None = None
+                 ) -> None:
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
         # Check it's an integer.
@@ -1221,7 +1251,9 @@ class DataRMF(DataOgipResponse):
         ...
 
     # Note that noticed_chans is not a mask, but the channel values.
-    def notice(self, noticed_chans=None):
+    def notice(self,
+               noticed_chans: np.ndarray | None = None
+               ) -> np.ndarray | None:
         """Filter the response to match the requested channels."""
 
         self._fch = self.f_chan
@@ -1244,10 +1276,14 @@ class DataRMF(DataOgipResponse):
         self._hi = self.energ_hi[bin_mask]
         return bin_mask
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ) -> tuple[np.ndarray, np.ndarray]:
         return (self._lo, self._hi)
 
-    def get_dep(self, filter=False):
+    def get_dep(self,
+                filter: bool = False
+                ) -> np.ndarray:
         return self.apply_rmf(np.ones(self.energ_lo.shape, SherpaFloat))
 
 
