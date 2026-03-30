@@ -1720,9 +1720,6 @@ def test_rspmodelnopha_rmf2_arf_mismatch():
 
 def test_multi_response_xrism_like():
     """Can we handle XRISM-like responses as separate objects?
-
-    This is currently a regression test, as the answer is no,
-    so we just check we fail as expected.
     """
 
     rmf1, rmf2, arf, pha = create_xrism_like_responses()
@@ -1759,13 +1756,8 @@ def test_multi_response_xrism_like():
     assert y_1 == pytest.approx(expected_1)
     assert y_2 == pytest.approx(expected_2)
 
-    # This is known to fail, so make sure we know how it fails.
-    #
-    with pytest.raises(TypeError,
-                       match="^Mismatched filter between ARF and RMF or PHA and RMF$"):
-        y_c = model_c(pha.channel)
-
-    # assert y_c == pytest.approx(expected)
+    y_c = model_c(pha.channel)
+    assert y_c == pytest.approx(expected)
 
 
 def test_multi_response_xrism_like_swapped():
@@ -1778,6 +1770,8 @@ def test_multi_response_xrism_like_swapped():
     rmf1, rmf2, arf, pha = create_xrism_like_responses()
     src = create_xrism_like_model()
 
+    # Combine the responses. SWAPPED
+    #
     pha.set_response(arf, rmf2, id=1)
     pha.set_response(arf, rmf1, id=2)
     resp_c = pha.get_full_response()
@@ -1787,13 +1781,8 @@ def test_multi_response_xrism_like_swapped():
     expected_2 = eval_xrism_like_model_rmf2()
     expected = expected_1 + expected_2
 
-    # Combine the responses. SWAPPED
-    #
-    with pytest.raises(TypeError,
-                       match="^Mismatched filter between ARF and RMF or PHA and RMF$"):
-        y_c = model_c(pha.channel)
-
-    # assert y_c == pytest.approx(expected)
+    y_c = model_c(pha.channel)
+    assert y_c == pytest.approx(expected)
 
 
 class MyPowLaw1D(PowLaw1D):
@@ -2765,7 +2754,6 @@ def test_rsp_multi_startup(startup):
 
     This is with two pairs of responses.
 
-    This is known to fail so we test that it does fail.
     """
 
     exposure = 200.1
@@ -2803,15 +2791,12 @@ def test_rsp_multi_startup(startup):
     if startup:
         convolved.startup()
 
-    emsg = "Mismatched filter between ARF and RMF or PHA and RMF"
-    with pytest.raises(TypeError,
-                       match=f"^{emsg}$"):
-        y = convolved(pha.channel)
+    y = convolved(pha.channel)
 
     # Unlike the single-response case, the result does not reflect
     # any channel filtering. At least for now.
     #
-    # assert y == pytest.approx(expected)
+    assert y == pytest.approx(expected)
 
 
 def test_rsp_single_setup_wavelength():
@@ -3096,9 +3081,47 @@ def test_rsp_multi_setup_wavelength():
     # Get the "no startup" values.
     #
     pha.set_analysis("energy")
-    with pytest.raises(TypeError,
-                       match="^Mismatched filter between ARF and RMF or PHA and RMF$"):
-        orig = convolved(pha.channel)
+    orig = convolved(pha.channel)
 
-    # See test_rsp_single_setup_wavelength for tests to run
-    # once the above is fixed.
+    # Select channels 3, 4, 5, 6 (of the starting 1-8).
+    # The response is different to test_rsp_single_setup_wavelength
+    # but keep the same channel range.
+    #
+    pha.set_analysis("channel")
+    pha.ignore(hi=2)
+    pha.ignore(lo=7)
+
+    # Go through the settings.
+    #
+    out = {}
+    for setting in ["channel", "wavelength", "energy"]:
+        pha.set_analysis(setting)
+        convolved.startup()
+        out[setting] = convolved(pha.channel)
+        convolved.teardown()
+
+    # Channel and energy should be the same.
+    #
+    assert out["energy"] == pytest.approx(out["channel"])
+
+    # Wavelength analysis is different because the model parameters
+    # are now interpreted in Angstroms rather than keV.
+    #
+    # This is a regression test (with values calculated by a
+    # development branch of 4.18.1) just to know when anything
+    # changes.
+    #
+    expected = np.asarray([32.26217862, 45.16705026, 70.9767945,
+                           96.78653682, 96.78653778, 96.78653682,
+                           96.78653778, 93.56031891, 87.10788381,
+                           80.65544727, 80.65544799, 70.97679354,
+                           43.55394143, 24.19663397, 24.19663397,
+                           24.19663397, 24.19663397, 24.19663397,
+                           24.19663397, 24.19663397])
+    assert out["wavelength"] == pytest.approx(expected, rel=1e-4)
+
+    # The channel/energy values should match the original
+    # values for the selected channels.
+    #
+    idx = [2, 3, 4, 5]
+    assert out["energy"][idx] == pytest.approx(orig[idx])

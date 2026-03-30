@@ -790,9 +790,15 @@ class Response1D(NoNewAttributesAfterInit):
 class ResponseNestedModel(Model):
     """Handle a response component for a PHA dataset."""
 
-    def __init__(self, arf=None, rmf=None) -> None:
+    def __init__(self,
+                 arf: DataARF | None = None,
+                 rmf: DataRMF | None = None
+                 ) -> None:
         self.arf = arf
         self.rmf = rmf
+
+        # Is there a need to rebin the model to the RMF grid?
+        self.rmfargs = ()
 
         # TODO: the name is incorrect (it misses out the trailing
         # closing bracket). It is unfortunately not simple to fix.
@@ -800,6 +806,15 @@ class ResponseNestedModel(Model):
         name = ''
         if arf is not None and rmf is not None:
             name = 'apply_rmf(apply_arf('
+
+            # An incomplete check to see whether the data needs
+            # re-gridding.
+            #
+            arf_indep = arf.get_indep()
+            rmf_indep = rmf.get_indep()
+            if len(arf_indep[0]) != len(rmf_indep[0]):
+                self.rmfargs = (rmf_indep, arf_indep)
+
         elif arf is not None:
             name = 'apply_arf('
         elif rmf is not None:
@@ -808,6 +823,13 @@ class ResponseNestedModel(Model):
 
     def calc(self, p: ParamsType,
              *args, **kwargs) -> np.ndarray:
+        """Apply the response to the model.
+
+        Unlike the standard Model class, the first argument contains
+        the model values, and not the grid.
+
+        """
+
         arf = self.arf
         rmf = self.rmf
 
@@ -817,10 +839,10 @@ class ResponseNestedModel(Model):
         if arf is not None:
             src = arf.apply_arf(src)
 
-        if rmf is not None:
-            src = rmf.apply_rmf(src)
+        if rmf is None:
+            return src
 
-        return src
+        return rmf.apply_rmf(src, *self.rmfargs)
 
 
 class MultiResponseSumModel(CompositeModel, ArithmeticModel):
@@ -872,11 +894,14 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         grid = []
         for id in self.pha.response_ids:
             arf, rmf = self.pha.get_response(id)
-            indep = None
             if arf is not None:
                 indep = arf.get_indep()
             elif rmf is not None:
                 indep = rmf.get_indep()
+            else:
+                # This should not be possible (since idval comes from
+                # pha.respose_ids).
+                raise DataErr('norsp', self.pha.name)
             grid.append(indep)
 
         self.elo, self.ehi, self.table = compile_energy_grid(grid)
