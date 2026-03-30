@@ -838,25 +838,23 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self.table = None
         self.orders = None
 
-        models = []
-        grid = []
+        models: list[ResponseNestedModel] = []
+        grid: list[tuple[np.ndarray, np.ndarray]] = []
 
-        for id in pha.response_ids:
-            arf, rmf = pha.get_response(id)
+        for idval in pha.response_ids:
+            arf, rmf = pha.get_response(idval)
 
-            if arf is None and rmf is None:
-                raise DataErr('norsp', pha.name)
-
-            m = ResponseNestedModel(arf, rmf)
-            indep = None
-
+            # ARF wins out.
             if arf is not None:
                 indep = arf.get_indep()
-
-            if rmf is not None:
+            elif rmf is not None:
                 indep = rmf.get_indep()
+            else:
+                # This should not be possible (since idval comes from
+                # pha.respose_ids).
+                raise DataErr('norsp', pha.name)
 
-            models.append(m)
+            models.append(ResponseNestedModel(arf, rmf))
             grid.append(indep)
 
         # Ensure there is a response.

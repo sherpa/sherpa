@@ -1762,7 +1762,7 @@ def test_multi_response_xrism_like():
     # This is known to fail, so make sure we know how it fails.
     #
     with pytest.raises(TypeError,
-                       match="^input array sizes do not match, source: 5 vs effarea: 20$"):
+                       match="^Mismatched filter between ARF and RMF or PHA and RMF$"):
         y_c = model_c(pha.channel)
 
     # assert y_c == pytest.approx(expected)
@@ -1790,7 +1790,7 @@ def test_multi_response_xrism_like_swapped():
     # Combine the responses. SWAPPED
     #
     with pytest.raises(TypeError,
-                       match="^input array sizes do not match, source: 5 vs effarea: 20$"):
+                       match="^Mismatched filter between ARF and RMF or PHA and RMF$"):
         y_c = model_c(pha.channel)
 
     # assert y_c == pytest.approx(expected)
@@ -2803,11 +2803,7 @@ def test_rsp_multi_startup(startup):
     if startup:
         convolved.startup()
 
-    if startup:
-        emsg = "Mismatched filter between ARF and RMF or PHA and RMF"
-    else:
-        emsg = "input array sizes do not match, source: 5 vs effarea: 20"
-
+    emsg = "Mismatched filter between ARF and RMF or PHA and RMF"
     with pytest.raises(TypeError,
                        match=f"^{emsg}$"):
         y = convolved(pha.channel)
@@ -3101,7 +3097,7 @@ def test_rsp_multi_setup_wavelength():
     #
     pha.set_analysis("energy")
     with pytest.raises(TypeError,
-                       match="^input array sizes do not match, source: 5 vs effarea: 20$"):
+                       match="^Mismatched filter between ARF and RMF or PHA and RMF$"):
         orig = convolved(pha.channel)
 
     # See test_rsp_single_setup_wavelength for tests to run
