@@ -44,7 +44,7 @@ from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.astro.data import DataIMG
 
 from sherpa.utils.err import ArgumentTypeErr
-from sherpa.utils.testing import requires_ds9, requires_region
+from sherpa.utils.testing import requires_ds9, requires_region, requires_wcs
 
 
 def example_data():
@@ -197,3 +197,125 @@ def test_ignore2d_image():
     # 47 is from test_notice2d_image
     assert len(d.mask) == FILTER_NTOT
     assert d.mask.sum() == (FILTER_NTOT - FILTER_NSET)
+
+
+@requires_ds9
+def test_get_data_image_dataimg():
+    """Check that the OBJECT keyword is used"""
+
+    from sherpa.image import DataImage
+
+    s = AstroSession()
+    d = example_data()
+    d.header = {"OBJECT": "A big blob", "NOT_OBJ": "foo"}
+    s.set_data(d)
+
+    obj = s.get_data_image()
+    assert isinstance(obj, DataImage)
+    assert obj.name == 'A_big_blob'
+    assert obj.eqpos is None
+    assert obj.sky is None
+
+    assert d.y.ndim == 1
+    y = d.y.reshape((9, 9))
+    assert obj.y == pytest.approx(y)
+
+    # sanity check
+    assert y[2, 5] == pytest.approx(100.0)
+
+
+@requires_ds9
+def test_get_data_image_dataimg_repeated():
+    """If OBJECT is set and then not set, what happens?"""
+
+    s = AstroSession()
+    d = example_data()
+    d.header = {"OBJECT": "A big blob", "NOT_OBJ": "foo"}
+    s.set_data(d)
+
+    # This changes the name field (see test_get_data_image_dataimg)
+    _ = s.get_data_image()
+
+    d = example_data()
+    d.header = {"NOT_OBJ": "foo"}
+    s.set_data(d)
+
+    # What is the name field now?
+    obj = s.get_data_image()
+    assert obj.name == 'Data'
+
+
+@requires_ds9
+@requires_wcs
+def test_send_wcs(tmp_path, check_str):
+    """Check we can send WCS information to DS9.
+
+    Validating this is awkward and it has revealed some subtle issues
+    with how DS9 interacts with its preference settings (e.g. ICRS vs
+    FK5) that can result in subtle changes. Hence the need to be
+    explicit.
+
+    """
+
+    from sherpa.astro.io.wcs import WCS
+
+    s = AstroSession()
+    s.dataspace2d([4, 3])
+
+    # Set the WCS to something that is easy to check when returned
+    # from DS9.
+    #
+    d = s.get_data()
+    d.sky = WCS(type="LINEAR", name="physical", crval=[2000.0, 3000.0],
+                crpix=[0.5, 0.5], cdelt=[2.0, 2.0])
+
+    d.eqpos = WCS(type="WCS", name="world", crval=[50.5, -23.4],
+                  crpix=[2000.0, 3000.0], cdelt=[-0.036, 0.036],
+                  crota=0.0, epoch=2000.0, equinox=2000.0)
+
+    # This needs to call the image methd, not just prepare_image
+    s.image_data()
+
+    resp = s.image_xpaget("wcs")
+    assert resp == "wcs\n"
+
+    # Is this the best way to check the WCS info that DS9 has?
+    # Ensure we use ICRS, since the results are slightly different
+    # if the FK5 system is in use.
+    #
+    s.image_xpaset("wcs sky icrs")
+    wcsfile = tmp_path / "test.wcs"
+    s.image_xpaset(f"wcs save {wcsfile}")
+
+    # How much does the output here depend on system info (e.g
+    # numerical precision) and is the order fixed across versions of
+    # DS9?
+    #
+    cts = wcsfile.read_text()
+
+    lines = ["WCSAXES =                    2 / Number of WCS axes",
+             "CRPIX1  =                  0.5 / Reference pixel on axis 1",
+             "CRPIX2  =                  0.5 / Reference pixel on axis 2",
+             "CRVAL1  =                 50.5 / Value at ref. pixel on axis 1",
+             "CRVAL2  =                -23.4 / Value at ref. pixel on axis 2",
+             "CTYPE1  = 'RA---TAN'           / Type of co-ordinate on axis 1",
+             "CTYPE2  = 'DEC--TAN'           / Type of co-ordinate on axis 2",
+             "CDELT1  =               -0.072 / Pixel size on axis 1",
+             "CDELT2  =                0.072 / Pixel size on axis 2",
+             "RADESYS = 'ICRS    '           / Reference frame for RA/DEC values",
+             # "EQUINOX =               2000.0 / [yr] Epoch of reference equinox",
+             "WCSAXESP=                    2 / Number of WCS axes",
+             "WCSNAMEP= 'PHYSICAL'           / Reference name for the coord. frame",
+             "CRPIX1P =                  1.0 / Reference pixel on axis 1",
+             "CRPIX2P =                  1.0 / Reference pixel on axis 2",
+             "CRVAL1P =               2001.0 / Value at ref. pixel on axis 1",
+             "CRVAL2P =               3001.0 / Value at ref. pixel on axis 2",
+             "CTYPE1P = 'x       '           / Type of co-ordinate on axis 1",
+             "CTYPE2P = 'y       '           / Type of co-ordinate on axis 2",
+             "CDELT1P =                  2.0 / Pixel size on axis 1",
+             "CDELT2P =                  2.0 / Pixel size on axis 2"
+             ]
+
+    # No idea why the two blank/empty lines
+    expected = [f"{l:80s}" for l in lines] + ["", ""]
+    check_str(cts, expected)

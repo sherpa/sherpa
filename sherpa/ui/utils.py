@@ -19659,8 +19659,9 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The XPA access point of the ds9 image viewer lets commands and
-        queries to be sent to the viewer.
+        The `XPA access point <https://ds9.si.edu/doc/ref/xpa.html>`_ of
+        the ds9 image viewer lets commands and queries to be sent to
+        the viewer.
 
         Examples
         --------
@@ -19675,7 +19676,10 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: check the ds9 link when it is working
     # DOC-TODO: is there a link of ds9 commands we can link to?
-    def image_xpaset(self, arg: str, data=None) -> None:
+    def image_xpaset(self,
+                     arg: str,
+                     data: str | bytes | None = None
+                     ) -> None:
         """Return the result of an XPA call to the image viewer.
 
         Send a command to the image viewer.
@@ -19704,8 +19708,9 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The XPA access point of the ds9 image viewer lets commands and
-        queries to be sent to the viewer.
+        The `XPA access point <https://ds9.si.edu/doc/ref/xpa.html>`_ of
+        the ds9 image viewer lets commands and queries to be sent to
+        the viewer.
 
 
         Examples
@@ -19728,4 +19733,4 @@ class Session(NoNewAttributesAfterInit):
         >>> image_xpaset('saveimage png /tmp/img.png')
 
         """
-        return sherpa.image.Image.xpaset(arg, data)
+        sherpa.image.Image.xpaset(arg, data)

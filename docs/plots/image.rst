@@ -12,6 +12,7 @@ The sherpa.image module
       :toctree: api
 
       Image
+      BaseImage
       DataImage
       ModelImage
       ComponentModelImage
@@ -25,5 +26,5 @@ The sherpa.image module
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram::   Image DataImage ModelImage ComponentModelImage SourceImage ComponentSourceImage RatioImage ResidImage PSFImage PSFKernelImage
+.. inheritance-diagram::   Image BaseImage DataImage ModelImage ComponentModelImage SourceImage ComponentSourceImage RatioImage ResidImage PSFImage PSFKernelImage
    :parts: 1
