@@ -35,6 +35,7 @@ Michael F. Corcoran
 from __future__ import annotations
 
 from collections.abc import Sequence
+import copy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, SupportsFloat
 import os
@@ -356,11 +357,7 @@ class RMFModelPHA(RMFModel):
         rmf = self._rmf  # original
 
         # Create a view of original RMF
-        self.rmf = DataRMF(rmf.name, rmf.detchans, rmf.energ_lo,
-                           rmf.energ_hi, rmf.n_grp, rmf.f_chan,
-                           rmf.n_chan, rmf.matrix, offset=rmf.offset,
-                           e_min=rmf.e_min, e_max=rmf.e_max,
-                           header=rmf.header)
+        self.rmf = copy.copy(rmf)
 
         # Filter the view for current fitting session
         _notice_resp(self.pha.get_noticed_channels(), None, self.rmf)
@@ -429,8 +426,7 @@ class ARFModelPHA(ARFModel):
         pha = self.pha
 
         # Create a view of original ARF
-        self.arf = DataARF(arf.name, arf.energ_lo, arf.energ_hi, arf.specresp,
-                           exposure=arf.exposure, header=arf.header)
+        self.arf = copy.copy(arf)
 
         # Filter the view for current fitting session
         if np.iterable(pha.mask):
@@ -505,15 +501,10 @@ class RSPModelPHA(RSPModel):
         rmf = self._rmf
 
         # Create a view of original RMF
-        self.rmf = DataRMF(rmf.name, rmf.detchans, rmf.energ_lo,
-                           rmf.energ_hi, rmf.n_grp, rmf.f_chan,
-                           rmf.n_chan, rmf.matrix, offset=rmf.offset,
-                           e_min=rmf.e_min, e_max=rmf.e_max,
-                           header=rmf.header)
+        self.rmf = copy.copy(rmf)
 
         # Create a view of original ARF
-        self.arf = DataARF(arf.name, arf.energ_lo, arf.energ_hi, arf.specresp,
-                           exposure=arf.exposure, header=arf.header)
+        self.arf = copy.copy(arf)
 
         # Filter the view for current fitting session
         _notice_resp(self.pha.get_noticed_channels(), self.arf, self.rmf)
