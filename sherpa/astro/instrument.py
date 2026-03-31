@@ -121,9 +121,19 @@ def apply_areascal(mdl: np.ndarray,
 
 class RMFModel(CompositeModel, ArithmeticModel):
     """Base class for expressing RMF convolution in model expressions.
+
+    .. versionchanged:: 4.18.1
+       This class can now be used, with `RMFModelNoPHA` being
+       identical to it.
+
+    Notes
+    -----
+    Since there is no PHA data set, there is no correction for any
+    AREASCAL setting associated with the data.
+
     """
 
-    def __init__(self, rmf, model) -> None:
+    def __init__(self, rmf: DataRMF, model) -> None:
         self.rmf = rmf
         self.model = model
 
@@ -167,14 +177,26 @@ class RMFModel(CompositeModel, ArithmeticModel):
 
     def calc(self, p: ParamsType,
              x, xhi=None, *args, **kwargs) -> np.ndarray:
-        raise NotImplementedError
+
+        src = self.model.calc(p, self.xlo, self.xhi)
+        return self.rmf.apply_rmf(src, *self.rmfargs)
 
 
 class ARFModel(CompositeModel, ArithmeticModel):
     """Base class for expressing ARF convolution in model expressions.
+
+    .. versionchanged:: 4.18.1
+       This class can now be used, with `ARFModelNoPHA` being
+       identical to it.
+
+    Notes
+    -----
+    Since there is no PHA data set, there is no correction for any
+    AREASCAL setting associated with the data.
+
     """
 
-    def __init__(self, arf, model) -> None:
+    def __init__(self, arf: DataARF, model) -> None:
         self.arf = arf
         self.model = model
 
@@ -217,7 +239,9 @@ class ARFModel(CompositeModel, ArithmeticModel):
 
     def calc(self, p: ParamsType,
              x, xhi=None, *args, **kwargs) -> np.ndarray:
-        raise NotImplementedError
+
+        src = self.model.calc(p, self.xlo, self.xhi)
+        return self.arf.apply_arf(src, *self.arfargs)
 
 
 class RSPModel(CompositeModel, ArithmeticModel):
@@ -309,10 +333,11 @@ class RMFModelPHA(RMFModel):
     -----
     Scaling by the AREASCAL setting (scalar or array) is included in
     this model.
+
     """
 
     def __init__(self,
-                 rmf,
+                 rmf: DataRMF,
                  pha: DataPHA,
                  model
                  ) -> None:
@@ -324,8 +349,6 @@ class RMFModelPHA(RMFModel):
 
         RMFModel.filter(self)
 
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
@@ -343,12 +366,6 @@ class RMFModelPHA(RMFModel):
         _notice_resp(self.pha.get_noticed_channels(), None, self.rmf)
 
         self.filter()
-
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
-        if self.pha.units == 'wavelength':
-            self.xlo, self.xhi = self.lo, self.hi
-
         RMFModel.startup(self, cache)
 
     def teardown(self) -> None:
@@ -359,11 +376,8 @@ class RMFModelPHA(RMFModel):
 
     def calc(self, p: ParamsType,
              x, xhi=None, *args, **kwargs) -> np.ndarray:
-        # x is noticed/full channels here
 
-        src = self.model.calc(p, self.xlo, self.xhi)
-        out = self.rmf.apply_rmf(src, *self.rmfargs)
-
+        out = RMFModel.calc(self, p, x, *args, xhi=xhi, **kwargs)
         return apply_areascal(out, self.pha,
                               f"RMF: {self.rmf.name}")
 
@@ -371,19 +385,15 @@ class RMFModelPHA(RMFModel):
 class RMFModelNoPHA(RMFModel):
     """RMF convolution model without an associated PHA data set.
 
-    Notes
-    -----
-    Since there is no PHA data set, there is no correction for any
-    AREASCAL setting associated with the data.
+    .. versionchanged:: 4.18.1
+       This class is now identical to `RMFModel`.
+
     """
 
-    def calc(self, p: ParamsType,
-             x, xhi=None, *args, **kwargs) -> np.ndarray:
-        # x is noticed/full channels here
-
-        # Always evaluates source model in keV!
-        src = self.model.calc(p, self.xlo, self.xhi)
-        return self.rmf.apply_rmf(src)
+    # Historically RMFModel did not contain the logic to call
+    # calc, but this has changed in Sherpa 4.18.1.
+    #
+    pass
 
 
 class ARFModelPHA(ARFModel):
@@ -399,7 +409,7 @@ class ARFModelPHA(ARFModel):
     """
 
     def __init__(self,
-                 arf,
+                 arf: DataARF,
                  pha: DataPHA,
                  model
                  ) -> None:
@@ -411,8 +421,6 @@ class ARFModelPHA(ARFModel):
 
         ARFModel.filter(self)
 
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
@@ -431,12 +439,6 @@ class ARFModelPHA(ARFModel):
                 self.arf.notice(mask)
 
         self.filter()
-
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
-        if pha.units == 'wavelength':
-            self.xlo, self.xhi = self.lo, self.hi
-
         ARFModel.startup(self, cache)
 
     def teardown(self) -> None:
@@ -447,11 +449,8 @@ class ARFModelPHA(ARFModel):
 
     def calc(self, p: ParamsType,
              x, xhi=None, *args, **kwargs) -> np.ndarray:
-        # x could be channels or x, xhi could be energy|wave
 
-        src = self.model.calc(p, self.xlo, self.xhi)
-        src = self.arf.apply_arf(src, *self.arfargs)
-
+        src = ARFModel.calc(self, p, x, *args, xhi=xhi, **kwargs)
         return apply_areascal(src, self.pha,
                               f"ARF: {self.arf.name}")
 
@@ -459,24 +458,15 @@ class ARFModelPHA(ARFModel):
 class ARFModelNoPHA(ARFModel):
     """ARF convolution model without associated PHA data set.
 
-    Notes
-    -----
-    Since there is no PHA data set, there is no correction for any
-    AREASCAL setting associated with the data.
+    .. versionchanged:: 4.18.1
+       This class is now identical to `ARFModel`.
+
     """
 
-    def calc(self, p: ParamsType,
-             x, xhi=None, *args, **kwargs) -> np.ndarray:
-        # x could be channels or x, xhi could be energy|wave
-
-        # if (xhi is not None and
-        #    x[0] > x[-1] and xhi[0] > xhi[-1]):
-        #    xlo, xhi = self.lo, self.hi
-        # else:
-
-        # Always evaluates source model in keV!
-        src = self.model.calc(p, self.xlo, self.xhi)
-        return self.arf.apply_arf(src)
+    # Historically ARFModel did not contain the logic to call
+    # calc, but this has changed in Sherpa 4.18.1.
+    #
+    pass
 
 
 class RSPModelPHA(RSPModel):
@@ -567,7 +557,7 @@ class RSPModelNoPHA(RSPModel):
 class ARF1D(NoNewAttributesAfterInit):
 
     def __init__(self,
-                 arf,
+                 arf: DataARF,
                  pha: DataPHA | None = None,
                  rmf=None  # TODO: remove this as it is unused?
                  ) -> None:
@@ -637,7 +627,7 @@ class ARF1D(NoNewAttributesAfterInit):
 class RMF1D(NoNewAttributesAfterInit):
 
     def __init__(self,
-                 rmf,
+                 rmf: DataRMF,
                  pha: DataPHA | None = None,
                  arf=None
                  ) -> None:
@@ -1030,7 +1020,7 @@ class MultipleResponse1D(Response1D):
 class PileupRMFModel(CompositeModel, ArithmeticModel):
 
     def __init__(self,
-                 rmf,
+                 rmf: DataRMF,
                  model,
                  pha: DataPHA | None = None
                  ) -> None:
