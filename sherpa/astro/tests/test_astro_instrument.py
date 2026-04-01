@@ -2802,3 +2802,293 @@ def test_rsp_multi_startup(startup):
     # any channel filtering. At least for now.
     #
     # assert y == pytest.approx(expected)
+
+
+def test_rsp_single_setup_wavelength():
+    """RSPModelPHA, wavelength analysis, use of startup.
+
+    This is intended to test the behaviour of setup/filter
+    by evaluating a model.
+
+    This is with a single pair of responses.
+
+    """
+
+    exposure = 200.1
+    rdata = create_non_delta_rmf_local()
+    specresp = create_non_delta_specresp()
+    adata = create_arf(rdata.energ_lo,
+                       rdata.energ_hi,
+                       specresp,
+                       exposure=exposure)
+
+    nchans = rdata.e_min.size
+    channels = np.arange(1, nchans + 1, dtype=np.int16)
+    counts = np.ones(nchans, dtype=np.int16)
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  exposure=exposure)
+
+    pha.set_arf(adata)
+    pha.set_rmf(rdata)
+
+    rsp = Response1D(pha)
+    constant = 2.3
+    slope = -0.25
+    mdl = Polynom1D('mdl')
+    mdl.c0 = constant
+    mdl.c1 = slope
+
+    # Ensure the model is not cached.
+    mdl.cache = 0
+    convolved = rsp(mdl)
+    assert isinstance(convolved, RSPModelPHA)
+
+    # Get the "no startup" values.
+    #
+    pha.set_analysis("energy")
+    orig = convolved(channels)
+
+    # Select channels 3, 4, 5, 6 (of the starting 1-8).
+    #
+    pha.set_analysis("channel")
+    pha.ignore(hi=2)
+    pha.ignore(lo=7)
+
+    # Go through the settings.
+    #
+    out = {}
+    for setting in ["channel", "wavelength", "energy"]:
+        pha.set_analysis(setting)
+        convolved.startup()
+        out[setting] = convolved(channels)
+        convolved.teardown()
+
+    # Channel and energy should be the same.
+    #
+    assert out["energy"] == pytest.approx(out["channel"])
+
+    # Wavelength analysis is different because the model parameters
+    # are now interpreted in Angstroms rather than keV. These
+    # parameters lead to all channels (other than the last) being
+    # negative.
+    #
+    # This is a regression test (with values calculated by a
+    # development branch of 4.18.1) just to know when anything
+    # changes.
+    #
+    expected = np.asarray([-1.21430630e6, -1.41944674e6,
+                           -1.83990472e5, -7.48808180e4,
+                           -2.47166908e4, -2.35095965e4,
+                           -9.35854705e2, 0])
+    assert out["wavelength"] == pytest.approx(expected, rel=1e-4)
+
+    # The channel/energy values should match the original
+    # values for the selected channels.
+    #
+    idx = [2, 3, 4, 5]
+    assert out["energy"][idx] == pytest.approx(orig[idx])
+
+
+def test_rmf_single_setup_wavelength():
+    """RMFModelPHA, wavelength analysis, use of startup.
+
+    This is intended to test the behaviour of setup/filter
+    by evaluating a model.
+
+    This is with a single pair of responses.
+
+    """
+
+    exposure = 200.1
+    rdata = create_non_delta_rmf_local()
+
+    nchans = rdata.e_min.size
+    channels = np.arange(1, nchans + 1, dtype=np.int16)
+    counts = np.ones(nchans, dtype=np.int16)
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  exposure=exposure)
+
+    pha.set_rmf(rdata)
+
+    rsp = Response1D(pha)
+    constant = 2.3
+    slope = -0.25
+    mdl = Polynom1D('mdl')
+    mdl.c0 = constant
+    mdl.c1 = slope
+
+    # Ensure the model is not cached.
+    mdl.cache = 0
+    convolved = rsp(mdl)
+    assert isinstance(convolved, RMFModelPHA)
+
+    # Get the "no startup" values.
+    #
+    pha.set_analysis("energy")
+    orig = convolved(channels)
+
+    # Select channels 3, 4, 5, 6 (of the starting 1-8).
+    #
+    pha.set_analysis("channel")
+    pha.ignore(hi=2)
+    pha.ignore(lo=7)
+
+    # Go through the settings.
+    #
+    out = {}
+    for setting in ["channel", "wavelength", "energy"]:
+        pha.set_analysis(setting)
+        convolved.startup()
+        out[setting] = convolved(channels)
+        convolved.teardown()
+
+    # Channel and energy should be the same.
+    #
+    assert out["energy"] == pytest.approx(out["channel"])
+
+    # Wavelength analysis is different because the model parameters
+    # are now interpreted in Angstroms rather than keV. These
+    # parameters lead to all channels (other than the last) being
+    # negative.
+    #
+    # This is a regression test (with values calculated by a
+    # development branch of 4.18.1) just to know when anything
+    # changes.
+    #
+    expected = np.asarray([-1.50712369e5, -1.60594556e5,
+                           -1.03440118e4, -3.86060019e3,
+                           -1.98967947e3, -1.27644364e3,
+                           -1.47756554e2, 0])
+    assert out["wavelength"] == pytest.approx(expected, rel=1e-4)
+
+    # The channel/energy values should match the original
+    # values for the selected channels.
+    #
+    idx = [2, 3, 4, 5]
+    assert out["energy"][idx] == pytest.approx(orig[idx])
+
+
+def test_arf_single_setup_wavelength():
+    """ARFModelPHA, wavelength analysis, use of startup.
+
+    This is intended to test the behaviour of setup/filter
+    by evaluating a model.
+
+    This is with a single pair of responses.
+
+    """
+
+    exposure = 200.1
+    rdata = create_non_delta_rmf_local()
+    specresp = create_non_delta_specresp()
+    adata = create_arf(rdata.energ_lo,
+                       rdata.energ_hi,
+                       specresp,
+                       exposure=exposure)
+
+    nchans = adata.energ_lo.size
+    channels = np.arange(1, nchans + 1, dtype=np.int16)
+    counts = np.ones(nchans, dtype=np.int16)
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  exposure=exposure)
+
+    pha.set_arf(adata)
+
+    rsp = Response1D(pha)
+    constant = 2.3
+    slope = -0.25
+    mdl = Polynom1D('mdl')
+    mdl.c0 = constant
+    mdl.c1 = slope
+
+    # Ensure the model is not cached.
+    mdl.cache = 0
+    convolved = rsp(mdl)
+    assert isinstance(convolved, ARFModelPHA)
+
+    # Get the "no startup" values.
+    #
+    pha.set_analysis("energy")
+    orig = convolved(channels)
+
+    # Select channels 3, 4, 5, 6 (of the starting 1-20).
+    #
+    pha.set_analysis("channel")
+    pha.ignore(hi=2)
+    pha.ignore(lo=7)
+
+    # Go through the settings.
+    #
+    out = {}
+    for setting in ["channel", "wavelength", "energy"]:
+        pha.set_analysis(setting)
+        convolved.startup()
+        out[setting] = convolved(channels)
+        convolved.teardown()
+
+    # Channel and energy should be the same.
+    #
+    assert out["energy"] == pytest.approx(out["channel"])
+
+    # Unlike RSP/RMFModelPHA, the output here is restricted to the
+    # input size, not the intrinsic range. This may be an issue, but
+    # we do not really have any ARF-only real-life data to check
+    # against.
+    #
+    assert len(out["energy"]) == 4
+
+    # Wavelength analysis is different because the model parameters
+    # are now interpreted in Angstroms rather than keV. These
+    # parameters lead to all channels (other than the last) being
+    # negative.
+    #
+    # This is a regression test (with values calculated by a
+    # development branch of 4.18.1) just to know when anything
+    # changes.
+    #
+    expected = np.asarray([0.0, -288983.46463642, -224901.11145058,
+                           -172341.83467511])
+    assert out["wavelength"] == pytest.approx(expected, rel=1e-4)
+
+    # The channel/energy values should match the original
+    # values for the selected channels.
+    #
+    idx = [2, 3, 4, 5]
+    assert out["energy"] == pytest.approx(orig[idx])
+
+
+def test_rsp_multi_setup_wavelength():
+    """RSPModelPHA, wavelength analysis, use of startup.
+
+    This is intended to test the behaviour of setup/filter
+    by evaluating a model.
+
+    This is with a single pair of responses.
+
+    """
+
+    exposure = 200.1
+    rmf1, rmf2, arf, pha = create_xrism_like_responses()
+
+    src = create_xrism_like_model()
+
+    pha.set_response(arf, rmf1, id=1)
+    pha.set_response(arf, rmf2, id=2)
+
+    rsp = pha.get_full_response()
+    assert isinstance(rsp, MultipleResponse1D)
+
+    # Ensure the model is not cached.
+    src.lhs.cache = 0
+    src.rhs.cache = 0
+    convolved = rsp(src)
+
+    # Get the "no startup" values.
+    #
+    pha.set_analysis("energy")
+    with pytest.raises(TypeError,
+                       match="^input array sizes do not match, source: 5 vs effarea: 20$"):
+        orig = convolved(pha.channel)
+
+    # See test_rsp_single_setup_wavelength for tests to run
+    # once the above is fixed.
