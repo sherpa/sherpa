@@ -20,7 +20,7 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.15.0, 12.14.1, 12.14.0, 12.13.1, and
+Sherpa supports versions 12.15.1, 12.15.0, 12.14.1, 12.14.0, 12.13.1, and
 12.13.0 of XSPEC [1]_, and can be built against the model library or
 the full application.  There is no guarantee of support for older or
 newer versions of XSPEC.
@@ -103,13 +103,11 @@ References
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from contextlib import suppress
-import functools
 import logging
 from pathlib import Path
 import string
-from typing import Any, overload
+from typing import Any, Literal, overload
 import warnings
 
 import numpy as np
@@ -474,27 +472,148 @@ def get_xscosmo() -> tuple[float, float, float]:
     return _xspec.get_xscosmo()
 
 
-def get_xsversion() -> str:
+VersionType = Literal["atomdb"] | Literal["nei"] | Literal["spex"]
+"""Versions that can be retrieved (get_xsversion) or set (set_xsversion).
+
+Support for a particular database depends on the XSPEC model library
+version.
+"""
+
+
+def get_xsversion(name: VersionType | None = None) -> str:
     """Return the version of the X-Spec model library in use.
+
+    .. versionchanged:: 4.18.1
+       If called with an argument then the version for the name
+       argument is returned.
+
+    Parameters
+    ----------
+    name : {"atomdb", "nei", "spex"}, optional
+       If not set then the X-Spec version is returned, otherwise the
+       specific database version is returned.
 
     Returns
     -------
     version : str
-       The version of the X-Spec model library used by Sherpa [1]_.
+       The version of the X-Spec model library or database.
 
-    References
-    ----------
+    See Also
+    --------
+    get_xsxset, set_xsversion
 
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/
+    Notes
+    -----
+
+    Support for querying the spex version is only available with XSPEC
+    12.15.0 and later.
 
     Examples
     --------
 
     >>> get_xsversion()
-    '12.11.0m'
+    '12.15.1'
+
+    >>> get_xsversion("atomdb")
+    '3.1.3'
+
+    >>> get_xsversion("spex")
+    '3.08'
+
     """
 
-    return _xspec.get_xsversion()
+    match name:
+        case None:
+            getfn = _xspec.get_xsversion
+
+        case "atomdb":
+            getfn = _xspec.get_xsversion_atomdb
+
+        case "nei":
+            getfn = _xspec.get_xsversion_nei
+
+        case "spex":
+            try:
+                getfn = _xspec.get_xsversion_spex
+            except AttributeError as ae:
+                raise ValueError("spex support requires XSPEC 12.15.0 or later") from ae
+
+        case _:
+            raise ValueError(f"Unsupported option: name='{name}'")
+
+    # Check the unlikely case that the user has somehow cleared-out
+    # the version.
+    #
+    out = getfn()
+    if out == _xspec.get_missing_key():
+        raise KeyError(f"Missing data for name='{name}'")
+
+    return out
+
+
+def set_xsversion(name: VersionType,
+                  version: str) -> None:
+    """Set the version of the X-Spec database library.
+
+    .. versionadded:: 4.18.1
+
+    Parameters
+    ----------
+    name : {"atomdb", "nei", "spex"}
+       The database version to set.
+    version : str
+       The new version of the library.
+
+    See Also
+    --------
+    get_xsversion, set_xsxset
+
+    Notes
+    -----
+
+    There is no validation that the version is valid. Changes to the
+    version may not be correctly handled if the XSPEC version is older
+    than 12.15.1.
+
+    Support for setting the spex version is only available with XSPEC
+    12.15.0 and later.
+
+    The "APECROOT", "NEIAPECROOT", and "SPEXROOT" xset settings are
+    automatically updated when the corresonding database version is
+    changed (XSPEC 12.15.1 and later).
+
+    Examples
+    --------
+
+    >>> set_xsversion("atomdb", "3.0.9")
+
+    """
+
+    match name:
+        case "atomdb":
+            setfn = _xspec.set_xsversion_atomdb
+
+        case "nei":
+            setfn = _xspec.set_xsversion_nei
+
+        case "spex":
+            try:
+                setfn = _xspec.set_xsversion_spex
+            except AttributeError as ae:
+                raise ValueError("spex support requires XSPEC 12.15.0 or later") from ae
+
+        case _:
+            raise ValueError(f"Unsupported option: name='{name}'")
+
+    # Error out if version is empty, as this causes the string
+    # database to remove the key. If a user really wants to remove the
+    # setting then they will have to call _xspec.set_xsversion_xxx
+    # directly.
+    #
+    if version == "":
+        raise KeyError(f"version can not be empty for name='{name}'")
+
+    setfn(version)
 
 
 def get_xsxsect() -> str:
@@ -797,6 +916,10 @@ def get_xsxset(name: str) -> str:
 
 def get_xsxset(name: str | None = None) -> str | dict[str, str]:
     """Return the X-Spec model setting or settings.
+
+    .. versionchanged:: 4.18.1
+       The model settings now include the "APECROOT", "NEIAPECROOT",
+       and "SPEXROOT" keywords when XSPEC 12.15.1 is used.
 
     .. versionchanged:: 4.17.1
        This routine can now be called with no argument, which means
@@ -1867,6 +1990,13 @@ def mkabund(name: str,
                        hard_min=minval, hard_max=maxval, frozen=True)
 
 
+def mkRScolumn(name) -> XSParameter:
+    """Make a RScolumn parameter."""
+
+    return XSParameter(name, 'RScolumn', 0.0, min=0.0, max=10000.0,
+                       hard_min=0.0, hard_max=10000.0, frozen=True, units='10^22')
+
+
 class XSAdditiveModel(XSModel):
     """The base class for XSPEC additive models.
 
@@ -2466,8 +2596,8 @@ class XSapec(XSAdditiveModel):
 
     See Also
     --------
-    XSbapec, XSbvapec, XSbvvapec, XSeebremss, XSnlapec, XSsnapec,
-    XSvapec, XSvvapec, XSwdem
+    XSbapec, XSbvapec, XSbvvapec, XSeebremss, XSnlapec, XSrsapec,
+    XSsnapec, XSvapec, XSvvapec, XSwdem
 
     References
     ----------
@@ -2668,7 +2798,7 @@ class XSbcie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -2726,7 +2856,7 @@ class XSbcoolflow(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     lowT
         The low temperature in keV.
@@ -2786,7 +2916,7 @@ class XSbcph(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     peakT
         The peak temperature in keV.
@@ -2840,7 +2970,7 @@ class XSbequil(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The temperature in keV.
@@ -2939,6 +3069,78 @@ class XSbexpcheb6(XSAdditiveModel):
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
                 self.abundanc, self.Redshift, self.Velocity,
                 self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.1")
+class XSbfekblor(XSAdditiveModel):
+    """The XSPEC bfekblor model: Fe Kbeta line at high resolution.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    Velocity
+       The velocity broadening in km/s.
+    norm
+       The total emission (in photom/cm^2/s) in the line.
+
+    See Also
+    --------
+    XSbfeklor, XSfekblor, XSzbfekblor, XSzfekblor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelFekblor.html
+
+    """
+
+    __function__ = "C_bFeKbetafromFourLorentzians"
+
+    def __init__(self, name='bfekblor'):
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.Velocity,)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.1")
+class XSbfeklor(XSAdditiveModel):
+    """The XSPEC bfeklor model: Fe Kalpha line at high resolution.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    Velocity
+       The velocity broadening in km/s.
+    norm
+       The total emission (in photom/cm^2/s) in the line.
+
+    See Also
+    --------
+    XSbfekblor, XSfeklor, XSzbfeklor, XSzfeklor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelFeklor.html
+
+    """
+
+    __function__ = "C_bFeKfromSevenLorentzians"
+
+    def __init__(self, name='bfeklor'):
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.Velocity,)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -4086,7 +4288,7 @@ class XSbvcie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -4154,7 +4356,7 @@ class XSbvcoolflow(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     lowT
         The low temperature in keV.
@@ -4229,7 +4431,7 @@ class XSbvcph(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     peakT
         The peak temperature in keV.
@@ -4298,7 +4500,7 @@ class XSbvequil(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The temperature in keV.
@@ -5095,7 +5297,7 @@ class XSbvvcie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -6760,7 +6962,7 @@ class XScie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -8299,23 +8501,56 @@ class XSezdiskbb(XSAdditiveModel):
         self.cache = 0
 
 
-@version_at_least("12.15.0")
-class XSfeklor(XSAdditiveModel):
-    """The XSPEC feklor model: Fe K fluourescence line at high resolution
+@version_at_least("12.15.1")
+class XSfekblor(XSAdditiveModel):
+    """The XSPEC fekblor model: Fe Kbeta line at high resolution.
 
     The model is described at [1]_.
 
-    .. versionadded:: 4.17.1
-       This model requires XSPEC 12.15.0 or later.
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
 
-    Parameters
+    Attributes
     ----------
     norm
        The total emission (in photom/cm^2/s) in the line.
 
     See Also
     --------
-    XSzfeklor
+    XSbfekblor, XSfeklor, XSzbfekblor, XSzfekblor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelFekblor.html
+
+    """
+
+    __function__ = "C_FeKbetafromFourLorentzians"
+
+    def __init__(self, name='fekblor'):
+
+        pars = ()
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.0")
+class XSfeklor(XSAdditiveModel):
+    """The XSPEC feklor model: Fe Kalpha line at high resolution.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.15.0 or later.
+
+    Attributes
+    ----------
+    norm
+       The total emission (in photom/cm^2/s) in the line.
+
+    See Also
+    --------
+    XSbfeklor, XSfekblor, XSzbfeklor, XSzfeklor
 
     References
     ----------
@@ -9043,7 +9278,7 @@ class XSkerrdisk(XSAdditiveModel):
 
     """
 
-    __function__ = "C_spin"
+    __function__ = "dospin" if equal_or_greater_than("12.15.1") else "C_spin"
 
     def __init__(self, name='kerrdisk'):
         self.lineE = XSParameter(name, 'lineE', 6.4, 0.1, 100., 0.1, 100, units='keV', frozen=True)
@@ -10089,7 +10324,7 @@ class XSnthComp(XSAdditiveModel):
 
     """
 
-    __function__ = "C_nthcomp"
+    __function__ = "donthcomp" if equal_or_greater_than("12.15.1") else "C_nthcomp"
 
     def __init__(self, name='nthcomp'):
         self.Gamma = XSParameter(name, 'Gamma', 1.7, 1.001, 5., 1.001, 10.)
@@ -10879,6 +11114,99 @@ class XSrefsch(XSAdditiveModel):
         self.cache = 0
 
 
+@version_at_least("12.15.1")
+class XSrsapec(XSAdditiveModel):
+    """The XSPEC rsapec model: APEC emission spectrum with resonance scattering.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    kT
+       The temperature of the plasma, in keV.
+    Abundanc
+       The metal abundance of the plasma, as defined by the
+       ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
+       keyword.
+    Redshift
+       The redshift of the plasma.
+    Velocity
+       The gaussian sigma for velocity broadening, in km/s.
+    RScolumn
+       The resonance scattering column (10^22 cm^-2).
+    norm
+       The normalization of the model: see [1]_ for an explanation
+       of the units.
+
+    See Also
+    --------
+    XSapec, XSrsvapec, XSrsvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRsapec.html
+
+    """
+
+    __function__ = "C_rsapec"
+
+    def __init__(self, name='rsapec'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')
+        self.Abundanc = mkAbundanc(name)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.RScolumn = mkRScolumn(name)
+
+        pars = (self.kT, self.Abundanc, self.Redshift, self.Velocity, self.RScolumn)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+# Is rsgauss the same as rsgaussian? This is not the first model with this
+# naming confusion.
+#
+@version_at_least("12.15.1")
+class XSrsgaussian(XSAdditiveModel):
+    """The XSPEC rsgaussian model: gaussian line profile with resonance scattering
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    LineE
+       The line energy in keV.
+    Sigma
+       The line width in keV.
+    Tau0
+       The optical depth at the line peak.
+    norm
+       The flux in the line (in photon/cm^2/s) before scattering
+       correction.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRsgauss.html
+
+    """
+
+    __function__ = "C_rsgaussianLine"
+
+    def __init__(self, name='rsgaussian'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1000000.0, hard_min=0.0, hard_max=1000000.0, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 0.1, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='keV')
+        self.Tau0 = XSParameter(name, 'Tau0', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0)
+
+        pars = (self.LineE, self.Sigma, self.Tau0)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSrnei(XSAdditiveModel):
     """The XSPEC rnei model: non-equilibrium recombining collisional plasma.
 
@@ -10905,7 +11233,7 @@ class XSrnei(XSAdditiveModel):
 
     See Also
     --------
-    XSnei, XSgnei, XSvrnei, XSvvrnei
+    XSnei, XSrnei, XSgnei, XSvrnei, XSvvrnei
 
     References
     ----------
@@ -10925,6 +11253,360 @@ class XSrnei(XSAdditiveModel):
 
         pars = (self.kT, self.kT_init, self.Abundanc, self.Tau,
                 self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.1")
+class XSrsrnei(XSAdditiveModel):
+    """The XSPEC rsrnei model: Non-equilibrium recombining collisional plasma with resonance scattering.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    kT
+       The temperature of the plasma, in keV.
+    kT_init
+       The initial temperature of the plasma, in keV.
+    Abundanc
+       The metal abundance of the plasma, as defined by the
+       ``set_xsabund`` function.
+    Tau
+       The ionization timescale in units of s/cm^3.
+    Redshift
+       The redshift of the plasma.
+    Velocity
+       The gaussian sigma for velocity broadening, in km/s.
+    RScolumn
+       The resonance scattering column (10^22 cm^-2).
+    norm
+       The normalization of the model: see [1]_ for an explanation
+       of the units.
+
+    See Also
+    --------
+    XSrnei, XSrsvrnei, XSrsvvrnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRsrnei.html
+
+    """
+
+    __function__ = "C_rsrnei"
+
+    def __init__(self, name='rsrnei'):
+        self.kT = XSParameter(name, 'kT', 0.5, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.kT_init = XSParameter(name, 'kT_init', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.RScolumn = mkRScolumn(name)
+
+        pars = (self.kT, self.kT_init, self.Abundanc, self.Tau, self.Redshift, self.Velocity, self.RScolumn)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.1")
+class XSrsvapec(XSAdditiveModel):
+    """The XSPEC rsvapec model: APEC emission spectrum with resonance scattering.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    kT
+       The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Redshift
+       The redshift of the plasma.
+    Velocity
+       The gaussian sigma for velocity broadening, in km/s.
+    RScolumn
+       The resonance scattering column (10^22 cm^-2).
+    norm
+       The normalization of the model: see [1]_ for an explanation
+       of the units.
+
+    See Also
+    --------
+    XSrsapec, XSrsvvapec, XSvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRsapec.html
+
+    """
+
+    __function__ = "C_rsvapec"
+
+    def __init__(self, name='rsvapec'):
+        self.kT = XSParameter(name, 'kT', 6.5, min=0.0808, max=68.447, hard_min=0.0808, hard_max=68.447, units='keV')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.RScolumn = mkRScolumn(name)
+
+        pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Redshift, self.Velocity, self.RScolumn)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.1")
+class XSrsvrnei(XSAdditiveModel):
+    """The XSPEC rsvrnei model: Non-equilibrium recombining collisional plasma with resonance scattering.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    kT
+       The temperature of the plasma, in keV.
+    kT_init
+       The initial temperature of the plasma, in keV.
+    H
+        The H abundance: it should be set to 0 to switch on and
+        1 to switch off the free-free continuum.
+    He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element, with respect to Solar.
+    Tau
+       The ionization timescale in units of s/cm^3.
+    Redshift
+       The redshift of the plasma.
+    Velocity
+       The gaussian sigma for velocity broadening, in km/s.
+    RScolumn
+       The resonance scattering column (10^22 cm^-2).
+    norm
+       The normalization of the model: see [1]_ for an explanation
+       of the units.
+
+    See Also
+    --------
+    XSrsrnei, XSrsvvrnei, XSvrnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRsrnei.html
+
+    """
+
+    __function__ = "C_rsvrnei"
+
+    def __init__(self, name='rsvrnei'):
+        self.kT = XSParameter(name, 'kT', 0.5, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.kT_init = XSParameter(name, 'kT_init', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1.0, hard_min=0.0, hard_max=1.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.RScolumn = mkRScolumn(name)
+
+        pars = (self.kT, self.kT_init, self.H, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Tau, self.Redshift, self.Velocity, self.RScolumn)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.1")
+class XSrsvvapec(XSAdditiveModel):
+    """The XSPEC rsvvapec model: APEC emission spectrum with resonance scattering.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    kT
+       The temperature of the plasma, in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+       The abundance of the element in solar units.
+    Redshift
+       The redshift of the plasma.
+    Velocity
+       The gaussian sigma for velocity broadening, in km/s.
+    RScolumn
+       The resonance scattering column (10^22 cm^-2).
+    norm
+       The normalization of the model: see [1]_ for an explanation
+       of the units.
+
+    See Also
+    --------
+    XSrsapec, XSrsvapec, XSvvapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRsapec.html
+
+    """
+
+    __function__ = "C_rsvvapec"
+
+    def __init__(self, name='rsvvapec'):
+        self.kT = XSParameter(name, 'kT', 6.5, min=0.0808, max=68.447, hard_min=0.0808, hard_max=68.447, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.RScolumn = mkRScolumn(name)
+
+        pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.Velocity, self.RScolumn)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.1")
+class XSrsvvrnei(XSAdditiveModel):
+    """The XSPEC rsvvrnei model: Non-equilibrium recombining collisional plasma with resonance scattering.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    kT
+       The temperature of the plasma, in keV.
+    kT_init
+       The initial temperature of the plasma, in keV.
+    H
+       The H abundance: it should be set to 0 to switch on and
+       1 to switch off the free-free continuum.
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+       The abundance of the element, with respect to Solar.
+    Tau
+       The ionization timescale in units of s/cm^3.
+    Redshift
+       The redshift of the plasma.
+    Velocity
+       The gaussian sigma for velocity broadening, in km/s.
+    RScolumn
+       The resonance scattering column (10^22 cm^-2).
+    norm
+       The normalization of the model: see [1]_ for an explanation
+       of the units.
+
+    See Also
+    --------
+    XSrsrnei, XSrsvrnei, XSvvrnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelRsrnei.html
+
+    """
+
+    __function__ = "C_rsvvrnei"
+
+    def __init__(self, name='rsvvrnei'):
+        self.kT = XSParameter(name, 'kT', 0.5, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.kT_init = XSParameter(name, 'kT_init', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.RScolumn = mkRScolumn(name)
+
+        pars = (self.kT, self.kT_init, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Tau, self.Redshift, self.Velocity, self.RScolumn)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -11492,7 +12174,7 @@ class XSvagauss(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.14.1 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line wavelength in Angstrom.
@@ -11775,7 +12457,7 @@ class XSvcie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -12310,7 +12992,7 @@ class XSvlorentz(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        Line energy in keV
@@ -13022,15 +13704,15 @@ class XSvvapec(XSAdditiveModel):
     Attributes
     ----------
     kT
-        The temperature of the plasma, in keV.
+       The temperature of the plasma, in keV.
     H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
     K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
-        The abundance of the element in solar units.
+       The abundance of the element in solar units.
     Redshift
-        The redshift of the plasma.
+       The redshift of the plasma.
     norm
-        The normalization of the model: see [1]_ for an explanation
-        of the units.
+       The normalization of the model: see [1]_ for an explanation
+       of the units.
 
     See Also
     --------
@@ -13098,7 +13780,7 @@ class XSvvcie(XSAdditiveModel):
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
-    Parameters
+    Attributes
     ----------
     kT
         The plasma temperature in keV.
@@ -13541,7 +14223,7 @@ class XSvvoigt(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        Line energy in keV.
@@ -14219,6 +14901,84 @@ class XSzbbody(XSAdditiveModel):
         self.cache = 0
 
 
+@version_at_least("12.15.1")
+class XSzbfekblor(XSAdditiveModel):
+    """The XSPEC zbfekblor model: Fe Kbeta line at high resolution.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    Velocity
+       The velocity broadening in km/s.
+    Redshift
+       The redshift of the component.
+    norm
+       The total emission (in photom/cm^2/s) in the line.
+
+    See Also
+    --------
+    XSbfekblor, XSfekblor, XSzbfeklor, XSzfekblor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelFekblor.html
+
+    """
+
+    __function__ = "C_zbFeKbetafromFourLorentzians"
+
+    def __init__(self, name='zbfekblor'):
+        self.Velocity = mkVelocity(name)
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.Velocity, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.15.1")
+class XSzbfeklor(XSAdditiveModel):
+    """The XSPEC zbfeklor model: Fe Kalpha line at high resolution.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    Velocity
+       The velocity broadening in km/s.
+    Redshift
+       The redshift of the component.
+    norm
+       The total emission (in photom/cm^2/s) in the line.
+
+    See Also
+    --------
+    XSbfeklor, XSfekblor, XSzbfekblor, XSzfeklor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelFeklor.html
+
+    """
+
+    __function__ = "C_zbFeKfromSevenLorentzians"
+
+    def __init__(self, name='zbfeklor'):
+        self.Velocity = mkVelocity(name)
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.Velocity, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSzbknpower(XSAdditiveModel):
     """The XSPEC zbknpower model: broken power law.
 
@@ -14342,24 +15102,61 @@ class XSzcutoffpl(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
+@version_at_least("12.15.1")
+class XSzfekblor(XSAdditiveModel):
+    """The XSPEC zfekblor model: Fe Kbeta line at high resolution.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.18.1
+       This model requires XSPEC 12.15.1 or later.
+
+    Attributes
+    ----------
+    Redshift
+       The redshift of the component.
+    norm
+       The total emission (in photom/cm^2/s) in the line.
+
+    See Also
+    --------
+    XSbfekblor, XSfekblor, XSzbfekblor, XSzfeklor
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelFekblor.html
+
+    """
+
+    __function__ = "C_zFeKbetafromFourLorentzians"
+
+    def __init__(self, name='zfekblor'):
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.Redshift,)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 @version_at_least("12.15.0")
 class XSzfeklor(XSAdditiveModel):
-    """The XSPEC zfeklor model: Fe K fluourescence line at high resolution
+    """The XSPEC zfeklor model: Fe Kalpha line at high resolution.
 
     The model is described at [1]_.
 
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     Redshift
+       The redshift of the component.
     norm
        The total emission (in photom/cm^2/s) in the line.
 
     See Also
     --------
-    XSfeklor
+    XSbfeklor, XSfeklor, XSzbfeklor, XSzfekblor
 
     References
     ----------
@@ -14551,7 +15348,7 @@ class XSzlorentz(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
         The line energy, in keV.
@@ -14633,7 +15430,7 @@ class XSzvagauss(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.14.1 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line wavelength in Angstrom.
@@ -14724,7 +15521,7 @@ class XSzvlorentz(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        Line energy in keV
@@ -14771,7 +15568,7 @@ class XSzvoigt(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy, in keV.
@@ -14821,7 +15618,7 @@ class XSzvvoigt(XSAdditiveModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        Line energy in keV.
@@ -15561,7 +16358,7 @@ class XSlorabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -15826,7 +16623,7 @@ class XSpwab(XSMultiplicativeModel):
 
     """
 
-    __function__ = "C_xspwab"
+    __function__ = "xspwab" if equal_or_greater_than("12.15.1") else "C_xspwab"
 
     def __init__(self, name='pwab'):
         self.nHmin = XSParameter(name, 'nHmin', 1., 1.e-7, 1.e5, 1e-7, 1e6, units='10^22 atoms / cm^2')
@@ -16567,7 +17364,7 @@ class XSvgabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.14.1 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -16614,7 +17411,7 @@ class XSvlorabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -16654,7 +17451,7 @@ class XSvoigtabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -16754,7 +17551,7 @@ class XSvvoigtabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17088,7 +17885,7 @@ class XSzgabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.14.1 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17138,7 +17935,7 @@ class XSzvgabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.14.1 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17262,7 +18059,7 @@ class XSzlorabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17380,7 +18177,7 @@ class XSzvlorabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17427,7 +18224,7 @@ class XSzvoigtabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -17478,7 +18275,7 @@ class XSzvvoigtabs(XSMultiplicativeModel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     LineE
        The line energy in keV.
@@ -18802,7 +19599,7 @@ class XSrgsext(XSConvolutionKernel):
     .. versionadded:: 4.17.1
        This model requires XSPEC 12.15.0 or later.
 
-    Parameters
+    Attributes
     ----------
     order
         The order, which must be -1 to -3 inclusive.

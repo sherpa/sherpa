@@ -1,4 +1,4 @@
-//  Copyright (C) 2007, 2015 - 2025
+//  Copyright (C) 2007, 2015-2025
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -39,6 +39,145 @@
 //
 #include <XSFunctions/funcWrappers.h>
 #include <XSFunctions/functionMap.h>
+
+
+// C++20 support is not guaranteed.
+//
+inline bool ends_with(const std::string &value,
+		      const std::string &suffix)
+{
+  return value.size() >= suffix.size() &&
+    std::equal(suffix.rbegin(),
+	       suffix.rend(),
+	       value.rbegin());
+}
+
+// Case-insensitive search.
+//
+static bool is_latest(const std::string &value)
+{
+  std::string check = value;
+  std::transform(check.begin(), check.end(), check.begin(),
+		 [](unsigned char c) { return std::tolower(c); });
+  return (check == "latest");
+}
+
+
+template <const std::string &getfunc(),
+          void setfunc(const std::string&)>
+static void set_if_latest(const std::map<std::string, std::string> versionMap,
+                          const std::string &key,
+                          const std::string &def)
+{
+
+  if (!is_latest(getfunc())) {
+    return;
+  }
+
+  std::map<std::string, std::string>::const_iterator it =
+    versionMap.find(key);
+  if (it == versionMap.end()) {
+    setfunc(def);
+  } else {
+    setfunc(it->second);
+  }
+}
+
+
+// As of XSPEC 12.15.1 the APEC/ATOMDB, NEI, and SPEX versions can be
+// set to "latest" and then converted to a value by the XSPEC
+// initialization code.
+//
+// The "latest" string is converted to a version by
+//
+// - checking for $HEADAS/spectral/modelData/latest.txt file
+//
+// - if not present, use a hard-coded value (for XSPEC 12.15.1 these
+//   values are different depending on if the XSPEC program or
+//   model libraries are in use).
+//
+// The "latest.txt" file is a text key-value file (with no apparent
+// error checking) with lines like
+//
+//     ATOMDB_VERSION: 3.1.3
+//     SPEX_VERSION: 3.0.8
+//     NEI_VERSION: 3.1.3
+//
+// Note that the file may not be present because, for instance, the
+// "XSPEC data" conda package has not been installed from the HEASOFT
+// conda channel.
+//
+// Note that these "versions" map to
+//
+//      FunctionUtility::atomdbVersion()
+//      FunctionUtility::neiVersion()
+//      FunctionUtility::spexVersion()
+//
+// and to the following "string model" keywords
+//
+//      APECROOT
+//      NEIAPECROOT
+//      SPEXROOT
+//
+// It appears that setting one of these will set the other, at least
+// for XSPEC 12.15.1.
+//
+static void validateVersions()
+{
+
+  // Are any keywords set to "latest"?
+  //
+  bool foundLatest = false;
+  foundLatest |= is_latest(FunctionUtility::atomdbVersion());
+  foundLatest |= is_latest(FunctionUtility::neiVersion());
+#ifdef XSPEC_12_15_0
+  foundLatest |= is_latest(FunctionUtility::spexVersion());
+#endif
+  if (!foundLatest) {
+    return;
+  }
+
+  // Read in the versions from the latest file.
+  // There appears to be no validity check, and
+  // the lines are expected to be
+  //    <key>_VERSION: <version_str>
+  //
+  const std::string versionPath(FunctionUtility::modelDataPath() +
+				"latest.txt");
+  std::map<std::string, std::string> versionMap;
+
+  std::ifstream versionFile(versionPath.c_str());
+  if (versionFile) {
+    const std::string suffix = "_VERSION:";
+    std::string lKey, lVersion;
+    while (versionFile >> lKey >> lVersion) {
+      if (ends_with(lKey, suffix)) {
+	const std::string lName = lKey.substr(0, lKey.size() - suffix.size());
+	versionMap[lName] = lVersion;
+      }
+    }
+  }
+
+  // It is not obvious what to use as the default value (if the above
+  // has no match) since this code supports multiple XSPEC versions.
+  // Use the defaults from XSPEC 12.15.0 Global.cxx file as this is
+  // the last version before XSPEC added support for "latest" as a
+  // valid version.
+  //
+  set_if_latest<FunctionUtility::atomdbVersion,
+                FunctionUtility::atomdbVersion>
+    (versionMap, "ATOMDB", "3.1.2");
+  set_if_latest<FunctionUtility::neiVersion,
+                FunctionUtility::neiVersion>
+    (versionMap, "NEI", "3.1.2");
+#ifdef XSPEC_12_15_0
+  set_if_latest<FunctionUtility::spexVersion,
+                FunctionUtility::spexVersion>
+    (versionMap, "SPEX", "3.08");
+#endif
+
+}
+
 
 // The XSPEC initialization used to be done lazily - that is, only
 // when the first routine from XSPEC was about to be called - but
@@ -105,6 +244,16 @@ static int _sherpa_init_xspec_library()
   FunctionUtility::setH0( 70.0 );
   FunctionUtility::setq0( 0.0 );
   FunctionUtility::setlambda0( 0.73 );
+
+  // Convert "latest" version numbers. Ideally this would only be done
+  // if XSPEC 12.15.1 or later were in use, but users can have a XSPEC
+  // 12.15.1 ~/.xspec/Xspec.init file - e.g. with lines like
+  //
+  //      ATOMDB_VERSION:  latest
+  //
+  // but still be building against XSPEC 12.15.0 (or earlier).
+  //
+  validateVersions();
 
   init = true;
   return EXIT_SUCCESS;
@@ -531,16 +680,16 @@ static PyObject* get_xspec_string( PyObject *self ) {
   return Py_BuildValue( (char*)"s", get().c_str() );
 }
 
-static PyObject* set_manager_data_path( PyObject *self, PyObject *args )
+template <void set(const std::string&)>
+static PyObject* set_xspec_string( PyObject *self, PyObject *args )
 {
 
-  char* path = NULL;
-  if ( !PyArg_ParseTuple( args, (char*)"s", &path ) )
+  char* strval = NULL;
+  if ( !PyArg_ParseTuple( args, (char*)"s", &strval ) )
     return NULL;
 
-  FunctionUtility::managerPath(string(path));
+  set(std::string(strval));
   Py_RETURN_NONE;
-
 }
 
 #define NOARGSPEC(name, func) \
@@ -585,7 +734,29 @@ static PyMethodDef XSpecMethods[] = {
 
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
   NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
-  FCTSPEC(set_xspath_manager, set_manager_data_path),
+  FCTSPEC(set_xspath_manager,
+	  set_xspec_string<FunctionUtility::managerPath>),
+
+  NOARGSPEC(get_xsversion_atomdb,
+	    get_xspec_string<FunctionUtility::atomdbVersion>),
+  NOARGSPEC(get_xsversion_nei,
+	    get_xspec_string<FunctionUtility::neiVersion>),
+#ifdef XSPEC_12_15_0
+  NOARGSPEC(get_xsversion_spex,
+	    get_xspec_string<FunctionUtility::spexVersion>),
+#endif
+
+  FCTSPEC(set_xsversion_atomdb,
+	  set_xspec_string<FunctionUtility::atomdbVersion>),
+  FCTSPEC(set_xsversion_nei,
+	  set_xspec_string<FunctionUtility::neiVersion>),
+#ifdef XSPEC_12_15_0
+  FCTSPEC(set_xsversion_spex,
+	  set_xspec_string<FunctionUtility::spexVersion>),
+#endif
+
+  NOARGSPEC(get_missing_key,
+	    get_xspec_string<FunctionUtility::NOT_A_KEY>),
 
   // Start model definitions
 
@@ -602,6 +773,12 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_bcph, 5),                      // XSbcph
   XSPECMODELFCT_C(C_bequil, 4),                    // XSbequil
   XSPECMODELFCT_C(C_bexpcheb6, 11),                // XSbexpcheb6
+#endif
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT_C(C_bFeKbetafromFourLorentzians, 1), // XSbfekblor
+  XSPECMODELFCT_C(C_bFeKfromSevenLorentzians, 1),  // XSbfeklor
+#endif
+#ifdef XSPEC_12_14_0
   XSPECMODELFCT_C(C_bgaussDem, 7),                 // XSbgadem
   XSPECMODELFCT_C(C_bgnei, 6),                     // XSbgnei
   XSPECMODELFCT_C(C_bnei, 5),                      // XSbnei
@@ -716,6 +893,9 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_expcheb6, 10),                 // XSexpcheb6
 #endif
   XSPECMODELFCT(ezdiskbb, 1),                      // XSezdiskbb
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT_C(C_FeKbetafromFourLorentzians, 0), // XSfekblor
+#endif
 #ifdef XSPEC_12_15_0
   XSPECMODELFCT_C(C_FeKfromSevenLorentzians, 0),   // XSfeklor
 #endif
@@ -730,7 +910,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT(jet, 15),                          // XSjet
   XSPECMODELFCT_C(C_kerrbb, 9),                    // XSkerrbb
   XSPECMODELFCT_C(C_kerrd, 7),                     // XSkerrd
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT(dospin, 9),                        // XSkerrdisk
+#else
   XSPECMODELFCT_C(C_spin, 9),                      // XSkerrdisk
+#endif
 
   XSPECMODELFCT_CON_F77(kyconv, 12),               // XSkyconv
 
@@ -752,7 +936,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_nsmaxg, 5),                    // XSnsmaxg
   XSPECMODELFCT_C(C_nsx, 5),                       // XSnsx
   XSPECMODELFCT_C(C_xsnteea, 15),                  // XSnteea
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT(donthcomp, 5),                     // XSnthComp
+#else
   XSPECMODELFCT_C(C_nthcomp, 5),                   // XSnthComp
+#endif
   XSPECMODELFCT(optxagn, 13),                      // XSoptxagn
   XSPECMODELFCT(optxagnf, 11),                     // XSoptxagnf
   XSPECMODELFCT(xspegp, 3),                        // XSpegpwrlw
@@ -777,6 +965,15 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON_F77(rgsxsrc, 1),               // XSrgsxsrc
 #endif
 
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT_C(C_rsapec, 5),                    // XSrsapec
+  XSPECMODELFCT_C(C_rsgaussianLine, 3),            // XSrsgaussian
+  XSPECMODELFCT_C(C_rsrnei, 7),                    // XSrsrnei
+  XSPECMODELFCT_C(C_rsvapec, 17),                  // XSrsvapec
+  XSPECMODELFCT_C(C_rsvrnei, 19),                  // XSrsvrnei
+  XSPECMODELFCT_C(C_rsvvapec, 34),                 // XSrsvvapec
+  XSPECMODELFCT_C(C_rsvvrnei, 36),                 // XSrsvvrnei
+#endif
   XSPECMODELFCT_C(C_rnei, 5),                      // XSrnei
   XSPECMODELFCT_C(C_sedov, 5),                     // XSsedov
   XSPECMODELFCT_C(C_sirf, 9),                      // XSsirf
@@ -845,9 +1042,16 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_wDem, 7),                      // XSwdem
   XSPECMODELFCT_C(C_zagauss, 3),                   // XSzagauss
   XSPECMODELFCT(xszbod, 2),                        // XSzbbody
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT_C(C_zbFeKbetafromFourLorentzians, 2), // XSzbfekblor
+  XSPECMODELFCT_C(C_zbFeKfromSevenLorentzians, 2), // XSzbfeklor
+#endif
   XSPECMODELFCT_C(C_zBrokenPowerLaw, 4),           // XSzbknpower
   XSPECMODELFCT(xszbrm, 2),                        // XSzbremss
   XSPECMODELFCT_C(C_zcutoffPowerLaw, 3),           // XSzcutoffpl
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT_C(C_zFeKbetafromFourLorentzians, 1), // XSzfekblor
+#endif
 #ifdef XSPEC_12_15_0
   XSPECMODELFCT_C(C_zFeKfromSevenLorentzians, 1),  // XSzfeklor
 #endif
@@ -890,7 +1094,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT(xsabsp, 2),                        // XSpcfabs
   XSPECMODELFCT(xsphab, 1),                        // XSphabs
   XSPECMODELFCT(xsplab, 2),                        // XSplabs
+#ifdef XSPEC_12_15_1
+  XSPECMODELFCT(xspwab, 3),                        // XSpwab
+#else
   XSPECMODELFCT_C(C_xspwab, 3),                    // XSpwab
+#endif
   XSPECMODELFCT(xscred, 1),                        // XSredden
   XSPECMODELFCT(xssmdg, 4),                        // XSsmedge
   XSPECMODELFCT_C(C_superExpCutoff, 2),            // XSspexpcut

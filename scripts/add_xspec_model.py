@@ -23,6 +23,7 @@
 """Usage:
 
   ./add_xspec_model.py version infile model
+     --allow_exists
 
 Aim:
 
@@ -34,9 +35,10 @@ any possible version updates.
 
 """
 
-import sys
+import argparse
 
 from sherpa.astro.utils import xspec
+import sherpa.astro.xspec
 
 
 Version = tuple[int, int, int]
@@ -83,7 +85,8 @@ def edit_python(version: Version,
 
 def create_xspec_model(version: Version,
                        models: list[xspec.ModelDefinition],
-                       modelname: str
+                       modelname: str,
+                       allow_exists: bool = False
                        ) -> None:
     """Write out the Python and C++ code needed to wrap the XSPEC model.
 
@@ -93,7 +96,9 @@ def create_xspec_model(version: Version,
        The XSPEC version
     models
     modelname
-        XSPEC model name (as given in the model.dat file)
+       XSPEC model name (as given in the model.dat file)
+    allow_exists
+       If False then the model can not already exists.
 
     """
 
@@ -104,6 +109,11 @@ def create_xspec_model(version: Version,
     else:
         raise ValueError(f"Unknown model name: {modelname}")
 
+    # If the model already exists error out.
+    #
+    if not allow_exists and hasattr(sherpa.astro.xspec, f"XS{modelname}"):
+        raise ValueError(f"Model {modelname} already exists")
+
     code = xspec.create_xspec_code([model], internal=version)
     print("# C++ code for sherpa/astro/xspec/src/_xspec.cc\n")
     print(code.compiled)
@@ -113,16 +123,23 @@ def create_xspec_model(version: Version,
 
 if __name__ == "__main__":
 
-    if len(sys.argv) != 4:
-        sys.stderr.write(f"Usage: {sys.argv[0]} version infile model\n")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Create code for a new XSPEC model")
 
-    version = parse_version(sys.argv[1])
+    parser.add_argument("version")
+    parser.add_argument("infile")
+    parser.add_argument("model")
+
+    parser.add_argument("--allow_exists", action="store_true")
+
+    args = parser.parse_args()
+
+    version = parse_version(args.version)
 
     # This errors out in case of significant model-support issues
     # (e.g. a periodic model parameter) but can also just be an
     # issue with a poorly-specified interchange format (the model.dat
     # file) which may just need changes to this routine.
     #
-    models = xspec.parse_xspec_model_description(sys.argv[2])
-    create_xspec_model(version, models, sys.argv[3])
+    models = xspec.parse_xspec_model_description(args.infile)
+    create_xspec_model(version, models, args.model,
+                       allow_exists=args.allow_exists)
