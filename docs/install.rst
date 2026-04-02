@@ -149,6 +149,8 @@ The prerequisites for building from source are:
 * System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
   ``bison``, ``ar`` (which may be provided by the ``binutils`` package), ``file``.
 
+   * the C++ compiler must support C++11.
+
 The aim is to support recent versions of these tools and libraries;
 please report problems to the
 `Sherpa issue tracker <https://github.com/sherpa/sherpa/issues/>`_.

@@ -312,6 +312,22 @@ def test_do_group_check_func(func, expected):
     assert ans == pytest.approx(expected)
 
 
+def test_do_group_callable():
+    """Check we can send in our own grouping function."""
+
+    def func(xs):
+        dx2 = (xs - np.mean(xs))**2
+        return np.sum(dx2)
+
+    # The groups are
+    #    1, 2
+    #    3, 4, 5
+    #    6
+    #
+    ans = do_group([1, 2, 3, 4, 5, 6], [1, -1, 1, -1, -1, 1], func)
+    assert ans == pytest.approx([0.5, 2, 0])
+
+
 # Note that the grouping code expects the data to be >= 0 so
 # support for -1 in the following is basically "an extra" (i.e. we
 # could decide to error out if values < 0 are included, which
