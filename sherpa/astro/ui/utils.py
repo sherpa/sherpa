@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2025
+#  Copyright (C) 2010, 2015-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,6 +25,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 import logging
 import os
+from typing import Any
 import sys
 
 import numpy as np
