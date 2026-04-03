@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020 - 2025
+#  Copyright (C) 2020-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,6 +20,7 @@
 
 """Continued testing of sherpa.astro.data."""
 
+import copy
 import logging
 from pathlib import Path
 import pickle
@@ -4626,6 +4627,159 @@ def test_rmf_offset_check_basics(offset):
     # it is internally consistent.
     #
     assert got1 == pytest.approx([0, 0.56, 2.99, 1.85, 0])
+
+
+def test_arf_notice_basic():
+    """Basic checks of ARF notice call."""
+
+    egrid = np.asarray([0.1, 0.2, 0.3, 0.4, 0.5])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    specresp = np.asarray([1, 2, 3, 4])
+
+    arf = DataARF("orig", elo, ehi, specresp)
+
+    # It is not entirely clear what argument the DataARF notice
+    # method takes - is it a mask (as suggested from the name)
+    # or a set of channel numbers (as suggested by the fact that
+    # DataPHA get_noticed_channels is used by the DataPHA
+    # notice_response method).
+    #
+    # So, what does sending in channels 2 and 3 return?
+    ochans = np.asarray([2, 3])
+    arf.notice(ochans)
+
+    # There is an argument that this should be "idx = ochans - 1" to
+    # reflect the fact that the default channel numbering starts at 1
+    # rather than 0 - i.e. this should return the middle-two elements
+    # not the last two.
+    #
+    idx = ochans
+    assert arf.specresp == pytest.approx(specresp)
+    assert arf.energ_lo == pytest.approx(elo)
+    assert arf.energ_hi == pytest.approx(ehi)
+
+    assert arf.get_dep() == pytest.approx(specresp[idx])
+
+    x1, x2 = arf.get_indep()
+    assert x1 == pytest.approx(elo[idx])
+    assert x2 == pytest.approx(ehi[idx])
+
+
+def test_arf_notice_copy():
+    """Can we copy an ARF, notice it, and not change the parent?"""
+
+    # This process may be useful in sherpa.astro.instrument so check
+    # that it works as expected (i.e. that after a basic copy of an
+    # ARF we can notice the copy and not change the original).
+    #
+    egrid = np.asarray([0.1, 0.2, 0.3, 0.4, 0.5])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    specresp = np.asarray([1, 2, 3, 4])
+
+    arf1 = DataARF("orig", elo, ehi, specresp)
+    ochans = np.asarray([2, 3])
+    idx1 = ochans
+    arf1.notice(ochans)
+
+    arf2 = copy.copy(arf1)
+
+    assert arf2.get_dep() == pytest.approx(specresp[idx1])
+
+    # Drop the filter from the copy.
+    #
+    arf2.notice()
+    assert arf2.get_dep() == pytest.approx(specresp)
+
+    # Check the original has not changed
+    assert arf1.get_dep() == pytest.approx(specresp[idx1])
+
+
+def test_rmf_notice_basic():
+    """Basic checks of RMF notice call."""
+
+    egrid = np.asarray([0.1, 0.2, 0.3, 0.4, 0.5], dtype=np.float32)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    n_grp = np.asarray([1, 1, 1, 1], dtype=np.int16)
+    f_chan = np.asarray([1, 2, 3, 3], dtype=np.int16)
+    n_chan = np.asarray([1, 2, 2, 2], dtype=np.int16)
+
+    matrix = np.asarray([1.0, 0.2, 0.8, 0.4, 0.6, 0.7, 0.3],
+                        dtype=np.float32)
+
+    rmf = DataRMF("orig", 4, n_grp=n_grp, f_chan=f_chan,
+                  n_chan=n_chan, matrix=matrix, offset=1,
+                  energ_lo=elo, energ_hi=ehi, e_min=elo, e_max=ehi)
+
+    # See discussion of what DataARF.notice takes in
+    # test_arf_notice_basic. However, unlike the ARF, it lools like
+    # the RMF handles the channel numbering (at least for offset=1).
+    #
+    # Treat this as a regression test as it is not quite obvious
+    # to DJB why the results are as they are.
+    #
+    for idx, expected in [(1, [True, False, False, False]),
+                          (2, [True, True, False, False]),
+                          (3, [False, True, True, True]),
+                          (4, [False, True, True, True])]:
+        rmf.notice()
+        assert rmf.notice([idx]) == pytest.approx(expected)
+
+        xlo, xhi = rmf.get_indep()
+        assert xlo == pytest.approx(elo[expected])
+        assert xhi == pytest.approx(ehi[expected])
+
+        # rmf.get_dep() raises an error unless all channels are
+        # noticed, so do not test here.
+
+    # Check apply_rmf works as expected.
+    #
+    assert rmf.notice([1, 2]) == pytest.approx([True, True, False, False])
+
+    # Should this send in a "rmfargs" grid here?
+    #
+    # This applies the matrix from the first two rows to the model.
+    # Is this the expected behaviour?
+    #
+    mdl = np.asarray([10, 20])
+    expected = np.asarray([10 * 1.0, 20 * 0.2, 20 * 0.8, 0])
+    got = rmf.apply_rmf(mdl)
+    assert got == pytest.approx(expected)
+
+
+def test_rmf_notice_copy():
+    """Can we copy an RMF, notice it, and not change the parent?"""
+
+    egrid = np.asarray([0.1, 0.2, 0.3, 0.4, 0.5], dtype=np.float32)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    n_grp = np.asarray([1, 1, 1, 1], dtype=np.int16)
+    f_chan = np.asarray([1, 2, 3, 3], dtype=np.int16)
+    n_chan = np.asarray([1, 2, 2, 2], dtype=np.int16)
+
+    matrix = np.asarray([1.0, 0.2, 0.8, 0.4, 0.6, 0.7, 0.3],
+                        dtype=np.float32)
+
+
+    rmf1 = DataRMF("orig", 4, n_grp=n_grp, f_chan=f_chan,
+                   n_chan=n_chan, matrix=matrix, offset=1,
+                   energ_lo=elo, energ_hi=ehi, e_min=elo, e_max=ehi)
+
+    rmf1.notice([3, 4])
+
+    rmf2 = copy.copy(rmf1)
+    rmf2.notice([1, 2])
+
+    xlo1, _ = rmf1.get_indep()
+    xlo2, _ = rmf2.get_indep()
+
+    # Check the two grids are different
+    assert xlo1 == pytest.approx(elo[1:])
+    assert xlo2 == pytest.approx(elo[:2])
 
 
 @pytest.mark.parametrize("subtract", [True, False])
