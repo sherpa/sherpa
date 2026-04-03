@@ -1068,7 +1068,8 @@ class DataRMF(DataOgipResponse):
     """RMF data set.
 
     The RMF format is described in OGIP documents [CAL_92_002]_ and
-    [CAL_92_002a]_.
+    [CAL_92_002a]_. However, the data use to create a DataRMF
+    instance has been modified from the on-disk format.
 
     Parameters
     ----------
@@ -1082,6 +1083,9 @@ class DataRMF(DataOgipResponse):
         than the ENERG_LO values for each bin, and the energy arrays
         must be in increasing or decreasing order.
     n_grp, f_chan, n_chan, matrix : array-like
+        These map to the N_GRP, F_CHAN, N_CHAN, and MATRIX columns of
+        the RMF FITS format, but with changes described in the Notes
+        section below.
     offset : int, optional
         This must be 0 or greater. This maps to the TLMIN value of
         the F_CHAN column (when reading from a FITS file).
@@ -1098,10 +1102,50 @@ class DataRMF(DataOgipResponse):
     the standard, these checks can not cover all cases. If a check fails
     then a warning message is logged.
 
+    The on-disk format for RMF files allows for two-dimensional data
+    to allow for multiple blocks of data (F_CHAN, N_CHAN) for each
+    channel row, accessing into the MATRIX block. The arguments to
+    DataRMF have been simplified so that:
+
+    - any rows with N_GTP=0 have been remove
+    - 2D arrays have been flattened (this is particularly relevant
+      if the data has not been stored as a FITS variable-length array.
+
+    So with the following (where [] is used to indicate a
+    variable-length aray for the column):
+
+      ========  ========  =====  ======  ======  =============
+      energ_lo  energ_hi  n_grp  f_chan  n_chan     matrix
+      ========  ========  =====  ======  ======  =============
+         0.1       0.2      0    []      []      []
+         0.2       0.3      2    [1,4]   [2,1]   [0.1,0.6,0.3]
+         0.3       0.4      1    [4]     [2]     [0.2,0.8]
+      ========  ========  =====  ======  ======  =============
+
+    then the arguments would be::
+
+      detchans=3
+      energ_lo=np.asarray([0.1, 0.2, 0.3])
+      energ_hi=np.asarray([0.2, 0.3, 0.4])
+      n_grp=np.asarray([0, 2, 1])
+      f_chan=np.asarray([1, 4, 4])
+      n_chan=np.asarray([2, 1, 2])
+      matrix=np.asarray([0.1, 0.6, 0.3, 0.2, 0.8])
+
+    The number of elements in f_chan and n_chan must match the NUMGRP
+    value, and the size of matrix must match the NUMELT value (if set
+    in the header).
+
+    Best results - in that the RMF convolution should be fastest - are
+    when n_grp, f_chan, n_chan store numpy.uint64 values and matrix
+    stores numpy.float64 values. The main saving is from getting the
+    size correct (e.g. 64 bit versus 32 bit).
+
     """
+
     _ui_name = "RMF"
-    _fields = ("name", "energ_lo", "energ_hi", "n_grp", "f_chan", "n_chan", "matrix", "e_min",
-               "e_max")
+    _fields = ("name", "energ_lo", "energ_hi", "n_grp", "f_chan",
+               "n_chan", "matrix", "e_min", "e_max")
     _extra_fields = ("detchans", "offset", "ethresh")
 
     def __init__(self,
