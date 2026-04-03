@@ -34,7 +34,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeGuard, TypeVar, overload
 import warnings
 
 import numpy as np
@@ -57,6 +57,7 @@ from .guess import _guess_ampl_scale, get_midpoint, get_peak, \
 from .parallel import multi as _multi, ncpus as _ncpus, \
     parallel_map, parallel_map_funcs, run_tasks
 from .random import poisson_noise
+from .types import ArrayType
 
 
 warning = logging.getLogger("sherpa").warning
@@ -100,7 +101,7 @@ T = TypeVar("T")
 # This logic was found in several modules so centralize it. Note that
 # this is not added to __all__.
 #
-def is_subclass(t1, t2):
+def is_subclass(t1, t2) -> bool:
     """Is t2 a subclass of t1 but not the same as t1?"""
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
@@ -790,7 +791,10 @@ def rebin(y0, x0lo, x0hi, x1lo, x1hi):
     return _utils.rebin(y0, x0lo, x0hi, x1lo, x1hi)
 
 
-def neville(xout, xin, yin):
+def neville(xout: ArrayType,
+            xin: ArrayType,
+            yin: ArrayType
+            ) -> np.ndarray:
     """Polynomial one-dimensional interpolation using Neville's method.
 
     The scheme used for interpolation (Neville's method) is described
@@ -866,7 +870,7 @@ def extract_kernel(kernel, dims_kern, dims_new, center, xlo, xhi, widths,
                                xlo, xhi, widths, radial)
 
 
-def normalize(xs):
+def normalize(xs: ArrayType) -> np.ndarray:
     """Normalize an array.
 
     Parameters
@@ -1073,20 +1077,25 @@ def filter_bins(mins: Sequence[float | None],
     return mask
 
 
-def bool_cast(val):
-    """Convert a string to a boolean.
+# Sherpa has used bool_cast to deal with boolean conversion, and this
+# was to handle users of "old" Sherpa, and users of the S-Lang version
+# of Sherpa.
+#
+def bool_cast(val: Any) -> bool:
+    """Convert a scalar value to a boolean.
+
+    .. versionchanged:: 4.18.1
+       The input value must be a scalar. The support for converting an
+       array of values has been removed.
 
     Parameters
     ----------
-    val : bool, str or sequence
+    val : bool, str
        The input value to decode.
 
     Returns
     -------
-    flag : bool or ndarray
-       True or False if val is considered to be a true or false term.
-       If val is a sequence then the return value is an ndarray of
-       the same size.
+    flag : bool
 
     Notes
     -----
@@ -1099,10 +1108,7 @@ def bool_cast(val):
 
     """
 
-    if type(val) in (tuple, list, np.ndarray):
-        return np.asarray([bool_cast(item) for item in val], bool)
-
-    if type(val) == str:
+    if isinstance(val, str):
         # since built in bool() only returns false for empty strings
         vlo = val.lower()
         if vlo in ('false', 'off', 'no', '0', 'f', 'n'):
@@ -1111,6 +1117,12 @@ def bool_cast(val):
         if vlo in ('true', 'on', 'yes', '1', 't', 'y'):
             return True
 
+        raise TypeError(f"unknown boolean value: '{val}'")
+
+    # As bool([1, 2, 3]) is True (False if empty) protect against
+    # accidentally converting some form of a sequence.
+    #
+    if isinstance(val, Iterable):
         raise TypeError(f"unknown boolean value: '{val}'")
 
     # use built in bool cast
@@ -1408,7 +1420,11 @@ def print_fields(names: Sequence[str],
     return '\n'.join(lines)
 
 
-def create_expr(vals, mask=None, format='%s', delim='-'):
+def create_expr(vals: Sequence,
+                mask: Sequence | None = None,
+                format: str = '%s',
+                delim: str = '-'
+                ) -> str:
     """Create a string representation of a filter.
 
     Use the mask to convert the input values into a set of
@@ -1476,19 +1492,19 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         # Ensure we have a boolean array to make indexing behave sensibly
         # (NumPy 1.17 or so changed behavior related to this).
         #
-        mask = np.asarray(mask, dtype=bool)
+        mask_ = np.asarray(mask, dtype=bool)
 
         # Ensure that the vals and mask array match: the number of
         # mask=True elements should equal the number of input values.
         #
-        if sum(mask) != len(vals):
+        if sum(mask_) != len(vals):
             raise ValueError("mask array mismatch with vals")
 
         # We only care about the difference between two consecutive
         # values, so it doesn't matter if index starts at 0 or 1.
         #
-        index = np.arange(len(mask))
-        seq = index[mask]
+        index = np.arange(len(mask_))
+        seq = index[mask_]
 
     exprs = []
     start = vals[0]
@@ -1517,9 +1533,13 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
     return ",".join([filt(*expr) for expr in exprs])
 
 
-def create_expr_integrated(lovals, hivals, mask=None,
-                           format='%s', delim='-',
-                           eps=np.finfo(np.float32).eps):
+def create_expr_integrated(lovals: Sequence,
+                           hivals: Sequence,
+                           mask: Sequence | None = None,
+                           format: str = '%s',
+                           delim: str = '-',
+                           eps=np.finfo(np.float32).eps
+                           ) -> str:
     """Create a string representation of a filter (integrated).
 
     Use the mask to convert the input values into a set of
@@ -1609,13 +1629,13 @@ def create_expr_integrated(lovals, hivals, mask=None,
     if mask is None:
         seq = np.arange(len(lovals))
     else:
-        mask = np.asarray(mask, dtype=bool)
+        mask_ = np.asarray(mask, dtype=bool)
 
-        if sum(mask) != len(lovals):
+        if sum(mask_) != len(lovals):
             raise ValueError("mask array mismatch with lovals")
 
-        seq = np.arange(len(mask))
-        seq = seq[mask]
+        seq = np.arange(len(mask_))
+        seq = seq[mask_]
 
     out = format % lovals[0]
 
@@ -1732,7 +1752,25 @@ def parse_expr(expr: str) -> list[tuple[float | None, float | None]]:
     return res
 
 
-def calc_total_error(staterror=None, syserror=None):
+@overload
+def calc_total_error(staterror: None = None, syserror: None = None) -> None:
+    ...
+
+@overload
+def calc_total_error(staterror: ArrayType, syserror: None = None) -> np.ndarray:
+    ...
+
+@overload
+def calc_total_error(staterror: None, syserror: ArrayType) -> np.ndarray:
+    ...
+
+@overload
+def calc_total_error(staterror: ArrayType, syserror: ArrayType) -> np.ndarray:
+    ...
+
+def calc_total_error(staterror: ArrayType | None = None,
+                     syserror: ArrayType | None = None
+                     ) -> np.ndarray | None:
     """Add statistical and systematic errors in quadrature.
 
     Parameters
@@ -1750,18 +1788,20 @@ def calc_total_error(staterror=None, syserror=None):
 
     """
 
-    if (staterror is None) and (syserror is None):
-        error = None
-    elif (staterror is not None) and (syserror is None):
-        error = staterror
-    elif (staterror is None) and (syserror is not None):
-        error = syserror
-    else:
-        error = np.sqrt(staterror * staterror + syserror * syserror)
-    return error
+    if staterror is not None:
+        s1 = np.asarray(staterror)
+        if syserror is None:
+            return s1
+
+        return np.sqrt(s1**2 + np.asarray(syserror)**2)
+
+    if syserror is not None:
+        return np.asarray(syserror)
+
+    return None
 
 
-def quantile(sorted_array, f):
+def quantile(sorted_array: ArrayType, f: float) -> float:
     """Return the quantile element from sorted_array, where f is [0,1]
     using linear interpolation.
 
@@ -1787,7 +1827,9 @@ def quantile(sorted_array, f):
     return (1.0 - delta) * sorted_array[i] + delta * sorted_array[i + 1]
 
 
-def get_error_estimates(x, sorted=False):
+def get_error_estimates(x: ArrayType,
+                        sorted: bool = False
+                        ) -> tuple[float, float, float]:
     """Compute the median and (-1,+1) sigma values for the data.
 
     Parameters
@@ -1821,7 +1863,10 @@ def get_error_estimates(x, sorted=False):
     return (median, lval, hval)
 
 
-def multinormal_pdf(x, mu, sigma):
+def multinormal_pdf(x: ArrayType,
+                    mu: ArrayType,
+                    sigma: ArrayType
+                    ) -> float:
     """The PDF of a multivariate-normal distribution.
 
     Returns the probability density function (PDF) of a
@@ -1874,7 +1919,11 @@ def multinormal_pdf(x, mu, sigma):
     return float(out)
 
 
-def multit_pdf(x, mu, sigma, dof):
+def multit_pdf(x: ArrayType,
+               mu: ArrayType,
+               sigma: ArrayType,
+               dof: int
+               ) -> float:
     """The PDF of a multivariate student-t distribution.
 
     Returns the probability density function (PDF) of a
@@ -1935,7 +1984,11 @@ def multit_pdf(x, mu, sigma, dof):
     return float(out)
 
 
-def dataspace1d(start, stop, step=1, numbins=None):
+def dataspace1d(start: float,
+                stop: float,
+                step: float = 1,
+                numbins: int | None = None
+                ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Populates an integrated grid
 
@@ -1974,7 +2027,8 @@ def dataspace1d(start, stop, step=1, numbins=None):
     return xlo, xhi, y
 
 
-def dataspace2d(dim):
+def dataspace2d(dim: Sequence[int]
+                ) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[int, int]]:
     """
     Populates a blank image dataset
     """
@@ -1999,7 +2053,10 @@ def dataspace2d(dim):
     return x0, x1, y, shape
 
 
-def histogram1d(x, x_lo, x_hi):
+def histogram1d(x: ArrayType,
+                x_lo: ArrayType,
+                x_hi: ArrayType
+                ) -> np.ndarray:
     """Create a 1D histogram from a sequence of samples.
 
     See the `numpy.histogram` routine for a version with more options.
@@ -2057,7 +2114,11 @@ def histogram1d(x, x_lo, x_hi):
     return hist1d(np.asarray(x), x_lo, x_hi)
 
 
-def histogram2d(x, y, x_grid, y_grid):
+def histogram2d(x: ArrayType,
+                y: ArrayType,
+                x_grid: ArrayType,
+                y_grid: ArrayType
+                ) -> np.ndarray:
     """Create 2D histogram from a sequence of samples.
 
     See the `numpy.histogram2d` routine for a version with more options.
@@ -2108,18 +2169,17 @@ def histogram2d(x, y, x_grid, y_grid):
     return vals.reshape((len(x_grid), len(y_grid)))
 
 
-def interp_util(xout, xin, yin):
+def interp_util(xout: ArrayType,
+                xin: np.ndarray,
+                yin: np.ndarray
+                ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     lenxin = len(xin)
 
     i1 = np.searchsorted(xin, xout)
 
+    # Shift the end points
     i1[i1 == 0] = 1
     i1[i1 == lenxin] = lenxin - 1
-
-#     if 0 == i1:
-#         i1 = 1
-#     if lenxin == i1:
-#         i1 = lenxin - 1
 
     x0 = xin[i1 - 1]
     x1 = xin[i1]
@@ -2128,7 +2188,9 @@ def interp_util(xout, xin, yin):
     return x0, x1, y0, y1
 
 
-def linear_interp(xout, xin, yin):
+def linear_interp(xout: ArrayType,
+                  xin: np.ndarray,
+                  yin: np.ndarray) -> np.ndarray:
     """Linear one-dimensional interpolation.
 
     Parameters
@@ -2168,7 +2230,9 @@ def linear_interp(xout, xin, yin):
     return val
 
 
-def nearest_interp(xout, xin, yin):
+def nearest_interp(xout: ArrayType,
+                   xin: np.ndarray,
+                   yin: np.ndarray) -> np.ndarray:
     """Nearest-neighbor one-dimensional interpolation.
 
     Parameters
@@ -2204,7 +2268,12 @@ def nearest_interp(xout, xin, yin):
     return np.where((np.abs(xout - x0) < np.abs(xout - x1)), y0, y1)
 
 
-def interpolate(xout, xin, yin, function=linear_interp):
+def interpolate(xout: ArrayType,
+                xin: np.ndarray,
+                yin: np.ndarray,
+                function: Callable[[ArrayType, np.ndarray, np.ndarray],
+                                   np.ndarray] = linear_interp
+                ) -> np.ndarray:
     """One-dimensional interpolation.
 
     Parameters
@@ -2500,6 +2569,7 @@ class NoRichardsonExtrapolation:
         self.verbose = verbose
 
     def __call__(self, x, t, tol, maxiter, h, *args):
+        # TODO: shouldn't this be a return call?
         self.sequence(x, h, *args)
 
 
@@ -2642,14 +2712,21 @@ def is_in(arg, seq):
     return False
 
 
-def is_iterable(arg) -> bool:
-    return isinstance(arg, (list, tuple, np.ndarray)) or np.iterable(arg)
+# The TypeGuard signals intent, even if it is not quite what the code
+# does.
+#
+def is_iterable(arg) -> TypeGuard[Sequence]:
+    # This check used to be more-complex, but it has been simplified to
+    return isinstance(arg, Iterable)
 
 
-def is_iterable_not_str(arg: Any) -> bool:
+# The TypeGuard signals intent, even if it is not quite what the code
+# does.
+#
+def is_iterable_not_str(arg: Any) -> TypeGuard[Sequence]:
     """It is iterable but not a string."""
 
-    return not isinstance(arg, str) and isinstance(arg, Iterable)
+    return not isinstance(arg, str) and is_iterable(arg)
 
 
 def is_sequence(start, mid, end) -> bool:
@@ -3649,8 +3726,7 @@ def send_to_pager(txt: str,
         return
 
     # Assume a filename
-    clobber = bool_cast(clobber)
-    if os.path.isfile(filename) and not clobber:
+    if os.path.isfile(filename) and not bool_cast(clobber):
         raise IOErr('filefound', filename)
 
     with open(filename, 'w', encoding="UTF-8") as fh:

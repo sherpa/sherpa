@@ -899,7 +899,9 @@ class DataOgipResponse(Data1DInt):
 
         return elo, ehi
 
-    def _get_data_space(self, filter=False):
+    def _get_data_space(self,
+                        filter: bool = False
+                        ):
         # TODO: the class has no _lo/_hi attributes so what is this
         #       meant to do?
         return EvaluationSpace1D(self._lo, self._hi)
@@ -1017,10 +1019,14 @@ class DataARF(DataOgipResponse):
             self._lo = self.energ_lo[bin_mask]
             self._hi = self.energ_hi[bin_mask]
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ):
         return (self._lo, self._hi)
 
-    def get_dep(self, filter=False):
+    def get_dep(self,
+                filter: bool = False
+                ):
         return self._rsp
 
     def get_ylabel(self, yfunc=None) -> str:
@@ -1212,7 +1218,7 @@ class DataRMF(DataOgipResponse):
                         self.detchans, self.offset)
 
     @overload
-    def notice(self, noticed_chans: None) -> None:
+    def notice(self, noticed_chans: None = None) -> None:
         ...
 
     @overload
@@ -1220,7 +1226,9 @@ class DataRMF(DataOgipResponse):
         ...
 
     # Note that noticed_chans is not a mask, but the channel values.
-    def notice(self, noticed_chans=None):
+    def notice(self,
+               noticed_chans: np.ndarray | None = None
+               ) -> np.ndarray | None:
         """Filter the response to match the requested channels."""
 
         self._fch = self.f_chan
@@ -1243,10 +1251,14 @@ class DataRMF(DataOgipResponse):
         self._hi = self.energ_hi[bin_mask]
         return bin_mask
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ):
         return (self._lo, self._hi)
 
-    def get_dep(self, filter=False):
+    def get_dep(self,
+                filter: bool = False
+                ):
         return self.apply_rmf(np.ones(self.energ_lo.shape, SherpaFloat))
 
 
@@ -1830,7 +1842,7 @@ will be removed. The identifiers can be integers or strings.
                      attr: str,
                      val: ArrayType | None,
                      check_mask: bool = True,
-                     allow_scalar: object = Literal[False],
+                     allow_scalar: Literal[False] = False,
                      **kwargs
                      ) -> None:
         ...
@@ -1840,13 +1852,18 @@ will be removed. The identifiers can be integers or strings.
                      attr: str,
                      val: float,
                      check_mask: bool = True,
-                     allow_scalar: object = Literal[True],
+                     allow_scalar: Literal[True] = True,
                      **kwargs
                      ) -> None:
         ...
 
-    def _set_related(self, attr, val, check_mask=True,
-                     allow_scalar=False, **kwargs):
+    def _set_related(self,
+                     attr: str,
+                     val: float | ArrayType | None,
+                     check_mask: bool = True,
+                     allow_scalar: bool = False,
+                     **kwargs
+                     ) -> None:
         """Set a field that must match the independent axes size.
 
         The value can be None, a scalar (if allow_scalar is set), or
@@ -2968,8 +2985,8 @@ It is an integer or string.
     def get_background_scale(self,
                              bkg_id: IdType = 1,
                              units='counts',
-                             group=True,
-                             filter=False
+                             group: bool = True,
+                             filter: bool = False
                              ):
         """Return the correction factor for the background dataset.
 
@@ -3049,7 +3066,11 @@ It is an integer or string.
         scale = src / bkg / nbkg
         return self._check_scale(scale, group=group, filter=filter)
 
-    def _check_scale(self, scale, group=True, filter=False):
+    def _check_scale(self,
+                     scale,
+                     group: bool = True,
+                     filter: bool = False
+                     ):
         """Ensure the scale value is positive and filtered/grouped.
 
         Parameters
@@ -3084,7 +3105,10 @@ It is an integer or string.
 
         return scale
 
-    def get_backscal(self, group=True, filter=False):
+    def get_backscal(self,
+                     group: bool = True,
+                     filter: bool = False
+                     ):
         """Return the background scaling of the PHA data set.
 
         Return the BACKSCAL setting [OGIP_92_007]_ for the PHA data
@@ -3131,7 +3155,10 @@ It is an integer or string.
 
         return self._check_scale(self.backscal, group, filter)
 
-    def get_areascal(self, group=True, filter=False):
+    def get_areascal(self,
+                     group: bool = True,
+                     filter: bool = False
+                     ):
         """Return the fractional area factor of the PHA data set.
 
         Return the AREASCAL setting [OGIP_92_007]_ for the PHA data
@@ -3184,7 +3211,10 @@ It is an integer or string.
                      groupfunc: Callable) -> np.ndarray:
         ...
 
-    def apply_filter(self, data, groupfunc=np.sum):
+    def apply_filter(self,
+                     data: ArrayType | None,
+                     groupfunc: Callable = np.sum
+                     ) -> np.ndarray | None:
         """Group and filter the supplied data to match the data set.
 
         Parameters
@@ -3341,7 +3371,10 @@ It is an integer or string.
                        groupfunc: Callable) -> np.ndarray:
         ...
 
-    def apply_grouping(self, data, groupfunc=np.sum):
+    def apply_grouping(self,
+                       data: ArrayType | None,
+                       groupfunc: Callable = np.sum
+                       ) -> np.ndarray | None:
         """Apply the grouping scheme of the data set to the supplied data.
 
         Parameters
@@ -4420,7 +4453,11 @@ It is an integer or string.
                      ) -> np.ndarray:
         ...
 
-    def _fix_y_units(self, val, filter=False, response_id=None):
+    def _fix_y_units(self,
+                     val: ArrayType | None,
+                     filter: bool = False,
+                     response_id: IdType | None = None
+                     ) -> np.ndarray | None:
         """Rescale the data to match the 'y' axis."""
 
         if val is None:
@@ -4513,8 +4550,12 @@ It is an integer or string.
 
     # Note that use_evaluation_space is unused.
     #
-    def get_y(self, filter=False, yfunc=None, response_id=None,
-              use_evaluation_space=False):
+    def get_y(self,
+              filter: bool = False,
+              yfunc: ModelFunc | None = None,
+              response_id: IdType | None = None,
+              use_evaluation_space: bool = False
+              ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
 
         vals = Data.get_y(self, yfunc=yfunc)
         vallist = (vals,) if yfunc is None else vals
@@ -5787,7 +5828,10 @@ class DataIMG(Data2D):
 
     get_filter = get_filter_expr
 
-    def notice2d(self, val=None, ignore=False):
+    def notice2d(self,
+                 val=None,
+                 ignore: bool = False
+                 ):
         """Apply a 2D filter.
 
         Parameters
@@ -6221,13 +6265,17 @@ class DataIMGInt(DataIMG):
         self._check_data_space(ds)
         return ds
 
-    def get_x0(self, filter=False):
+    def get_x0(self,
+               filter: bool = False
+               ):
         if self.size is None:
             return None
         indep = self._data_space.get(filter)
         return (indep.x0lo + indep.x0hi) / 2.0
 
-    def get_x1(self, filter=False):
+    def get_x1(self,
+               filter: bool = False
+               ):
         if self.size is None:
             return None
         indep = self._data_space.get(filter)

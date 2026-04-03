@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019 - 2024
+#  Copyright (C) 2010, 2015, 2016, 2019-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -448,7 +448,10 @@ class SourcePlot(shplot.SourceHistogramPlot):
         # Should self.mask be applied to self.xlo/hi/y here?
         # If so, the plot method could be removed.
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         xlo = self.xlo
         xhi = self.xhi
         y = self.y
@@ -724,7 +727,9 @@ class RMFPlot(shplot.HistogramPlot):
         self.y = np.stack(y)
         self.title = rmf.name
 
-    def plot(self, overplot=False, clearwindow=True,
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
              **kwargs):
         """Plot the data.
 
@@ -955,7 +960,10 @@ class OrderPlot(ModelHistogram):
         if len(self.xlo) != len(self.y):
             raise PlotErr("orderarrfail")
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         default_color = self.histo_prefs['color']
         count = 0
         for xlo, xhi, y, color in \
@@ -1111,7 +1119,10 @@ class DataIMGPlot(shplot.Image):
         self.ylabel = f'Y ({lbl})'
         self.title = img.name
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
 
         super().plot(self.x0, self.x1, self.y, title=self.title,
                      xlabel=self.xlabel, ylabel=self.ylabel,

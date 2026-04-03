@@ -2272,7 +2272,7 @@ class Integrator1D(CompositeModel, RegriddableModel1D):
                                 f'integrate1d({self.model.name})',
                                 (self.model,))
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False):
         self.model.startup(cache)
         self._errflag = 1
         CompositeModel.startup(self, cache)
