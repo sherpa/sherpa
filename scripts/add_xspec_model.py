@@ -98,7 +98,7 @@ def create_xspec_model(version: Version,
     modelname
        XSPEC model name (as given in the model.dat file)
     allow_exists
-       If False then the model can not already exists.
+       If False then the model can not already exist.
 
     """
 
