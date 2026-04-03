@@ -19,6 +19,7 @@ is expected.
 import datetime
 import json
 import ssl
+import sys
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -78,7 +79,7 @@ def make_zenodo_citation(jsdata):
     print(f"        idval='{idval}')")
 
 
-def dump_zenodo(version):
+def dump_zenodo(version: str | None) -> None:
     """Access Zenodo for the version information.
 
     Parameters
@@ -87,6 +88,27 @@ def dump_zenodo(version):
         The version string (e.g. '4.12.2'). If None then all versions
         are reported.
     """
+
+    # Does Sherpa already know about this version? Do not make this a
+    # required check (so Sherpa does not have to be installed).
+    #
+    # As well as an import error, this can also fail because it loads
+    # a sherpa module which is empty, and so raising an attribute
+    # error. In this case the user should ensure that PYTHONPATH is
+    # set correctly (as it is probably an editable install path
+    # issue).
+    #
+    if version is not None:
+        try:
+            import sherpa
+
+            res = sherpa._get_citation_hardcoded(version)
+            if res is not None:
+                sys.stderr.write("WARNING: already support "
+                                 f"version {version}\n")
+
+        except (AttributeError, ImportError):
+            pass
 
     params = {"q": "parent.id:593753",
               "all_versions": 1,

@@ -40,7 +40,7 @@ import os
 import os.path
 import subprocess
 import sys
-from typing import Any, Optional
+from typing import Any
 
 from . import _version
 __version__ = _version.get_versions()['version']
@@ -178,7 +178,7 @@ def _make_citation(version: str,
     return out
 
 
-def _get_citation_hardcoded(version: str) -> Optional[str]:
+def _get_citation_hardcoded(version: str) -> str | None:
     """Retrieve the citation information.
 
     Parameters
@@ -208,6 +208,20 @@ def _get_citation_hardcoded(version: str) -> Optional[str]:
         assert version not in cite
         cite[version] = dict(**kwargs)
         cite[version]['version'] = version
+
+    add(version='4.18.0', title='sherpa/sherpa: Sherpa 4.18.0',
+        date=todate(2025, 10, 7),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'luzpaz', 'Christoph Deil', 'Brigitta Sipőcz', 'nplee', 'Johannes Buchner', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
+        idval='17288983')
+
+    add(version='4.17.1', title='sherpa/sherpa: Sherpa 4.17.1',
+        date=todate(2025, 5, 13),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'luzpaz', 'Christoph Deil', 'Brigitta Sipőcz', 'nplee', 'Johannes Buchner', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
+        idval='15397764')
+    add(version='4.17.0', title='sherpa/sherpa: Sherpa 4.17.0',
+        date=todate(2024, 10, 9),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'luzpaz', 'Christoph Deil', 'Brigitta Sipőcz', 'Johannes Buchner', 'nplee', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
+        idval='13909532')
 
     add(version='4.16.1', title='sherpa/sherpa: Sherpa 4.16.1',
         date=todate(2024, 5, 21),
@@ -871,7 +885,7 @@ def get_config() -> str:
 
 def smoke(verbosity: int = 0,
           require_failure: bool = False,
-          fits: Optional[str] = None,
+          fits: str | None = None,
           xspec: bool = False,
           ds9: bool = False) -> None:
     """Run Sherpa's "smoke" test.

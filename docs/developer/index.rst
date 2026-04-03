@@ -289,7 +289,8 @@ It can query the Zenodo API, but it also contains a list of known
 releases in the ``sherpa._get_citation_hardcoded`` routine. To add
 to this list (for when there's been a new release), run the
 ``scripts/make_zenodo_release.py`` script with the version number
-and add the screen output to the list in ``_get_citation_hardcoded``.
+and add the screen output to the list in ``_get_citation_hardcoded``,
+which is in the file ``sherpa/__init__.py``.
 
 For example, using release 4.12.2 would create (the author list has been
 simplified)::
