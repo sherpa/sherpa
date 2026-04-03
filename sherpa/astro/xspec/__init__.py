@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2025
+#  Copyright (C) 2010, 2015-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -103,9 +103,7 @@ References
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from contextlib import suppress
-import functools
 import logging
 from pathlib import Path
 import string
