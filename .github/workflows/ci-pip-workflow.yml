@@ -51,7 +51,7 @@ jobs:
             test-data: package
             matplotlib-pkg: 'matplotlib>=3,<4'
             bokeh-pkg: 'bokeh>=3,<4'
-            arviz-pkg: 'arviz'
+            arviz-pkg: 'arviz<1.0'
             optimagic-pkg: 'optimagic'
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
