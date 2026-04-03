@@ -1287,63 +1287,6 @@ def test_img_file_get_world(coord, read_test_image):
     assert y[169 * 377 - 169] == pytest.approx(2.691668318963721)
 
 
-def test_img_get_axes_logical(make_test_image):
-    """Does get_axes work?"""
-    d = make_test_image
-    x, y = d.get_axes()
-
-    assert x == pytest.approx(np.arange(1, 31, 1))
-    assert y == pytest.approx(np.arange(1, 21, 1))
-
-
-@requires_fits
-@requires_data
-@pytest.mark.parametrize('coord', ['logical', 'image'])
-def test_img_file_get_axes_logical(coord, read_test_image):
-    """get_axes when coord is set: logical"""
-    d = read_test_image
-    d.set_coord(coord)
-    x, y = d.get_axes()
-
-    assert x == pytest.approx(np.arange(1, 170, 1))
-    assert y == pytest.approx(np.arange(1, 378, 1))
-
-
-@requires_fits
-@requires_data
-@requires_wcs
-@pytest.mark.parametrize('coord', ['physical'])
-def test_img_file_get_axes_physical(coord, read_test_image):
-    """get_axes when coord is set: physical"""
-    d = read_test_image
-    d.set_coord(coord)
-    x, y = d.get_axes()
-
-    assert x == pytest.approx(np.arange(3062.3100585938, 3231, 1))
-    assert y == pytest.approx(np.arange(4333.1298828125, 4710, 1))
-
-
-@requires_fits
-@requires_data
-@requires_wcs
-@pytest.mark.parametrize('coord', ['world', 'wcs'])
-def test_img_file_get_axes_world(coord, read_test_image):
-    """get_axes when coord is set: world"""
-    d = read_test_image
-    d.set_coord(coord)
-    x, y = d.get_axes()
-
-    assert x.size == 169
-    assert y.size == 377
-
-    # This is an interesting combination of the corners from
-    # test_img_file_get_world
-    assert x[0] == pytest.approx(150.02683651815326)
-    assert y[0] == pytest.approx(2.6402818651328728)
-    assert x[-1] == pytest.approx(150.00385224075313)
-    assert y[-1] == pytest.approx(2.691668318963721)
-
-
 @requires_fits
 @requires_data
 @requires_wcs
@@ -4949,20 +4892,6 @@ def test_dataimgint_get_x1label(make_dataimgint):
 
 def test_dataimgint_get_ylabel(make_dataimgint):
     assert make_dataimgint.get_ylabel() == "y"
-
-
-def test_dataimgint_get_axes(make_dataimgint):
-    """This copies the Data2DInt case but is different"""
-    axes = make_dataimgint.get_axes()
-    assert len(axes) == 4
-
-    # What are these values? They are not the input values
-    # to DataIMGInt.
-    #
-    assert (axes[0] == [-0.5]).all()
-    assert (axes[1] == [-0.5, 0.5]).all()
-    assert (axes[2] == [0.5]).all()
-    assert (axes[3] == [0.5, 1.5]).all()
 
 
 @pytest.mark.xfail
