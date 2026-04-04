@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015 - 2017, 2019 - 2025
+#  Copyright (C) 2008, 2015-2017, 2019-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -117,7 +117,7 @@ dependent axis (``y``) then filter to select only those values between
 """
 
 from abc import ABCMeta
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 import logging
 from typing import Any, Literal, overload
 import warnings
@@ -186,7 +186,7 @@ def _check_nomask(array: None) -> None:
 def _check_nomask(array: ArrayType) -> np.ndarray:
     ...
 
-def _check_nomask(array):
+def _check_nomask(array: ArrayType | None) -> np.ndarray | None:
     if hasattr(array, 'mask'):
         warnings.warn(f'Input array {array} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.')
 
@@ -204,7 +204,8 @@ def _check_dep(array: None) -> tuple[None, Literal[True]]:
 def _check_dep(array: ArrayType) -> tuple[np.ndarray, bool]:
     ...
 
-def _check_dep(array):
+def _check_dep(array: ArrayType | None
+               ) -> tuple[None, Literal[True]] | tuple[np.ndarray, bool]:
     if not hasattr(array, 'mask'):
         return _check(array), True
 
@@ -648,7 +649,7 @@ class Filter:
     def apply(self, array: ArrayType) -> np.ndarray:
         ...
 
-    def apply(self, array):
+    def apply(self, array: ArrayType | None) -> np.ndarray | None:
         """Apply this filter to an array
 
         Parameters
@@ -1078,22 +1079,26 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         self._data_space.filter.mask = val
 
-    # This is overloaded by Data1D and Data2D so can it be made "virtual"?
+    def get_filter(self, **kwargs) -> str:
+        """Return the data filter as a string."""
+        raise NotImplementedError
+
+    def get_filter_expr(self) -> str:
+        """Return the data filter as a string along with units."""
+        raise NotImplementedError
+
+    # This could be made generic - that is the logic moved here rather
+    # than in the subclasses - but there is currently different
+    # behaviour with the filter flag in the Data2D case.
     #
-    def get_dims(self) -> tuple[int, ...]:
-        """
-        Return the dimensions of this data space as a tuple of tuples.
-        The first element in the tuple is a tuple with the dimensions of the data space, while the second element
-        provides the size of the dependent array.
+    def get_dims(self, filter: bool = False) -> tuple[int, ...]:
+        """Return the fimensions of the data space.
 
         Returns
         -------
         tuple
         """
-        # What should this do when the independent or dependent axes
-        # are not set?
-        indep_size = tuple(indep.size for indep in self.indep)
-        return indep_size, self.dep.size
+        raise NotImplementedError
 
     def _clear_filter(self) -> None:
         """Clear out the existing filter.
@@ -1228,15 +1233,12 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         self.y = dep
 
-    # It is not clear when default values need to be given in overload
-    # statements. The current choice is based on mypy 1.10.0.
-    #
     @overload
     def get_y(self,
-              filter: bool,
-              yfunc: None,
+              filter: bool = False,
+              yfunc: None = None,
               use_evaluation_space: bool = False
-              ) -> np.ndarray:
+              ) -> np.ndarray | None:
         ...
 
     @overload
@@ -1247,7 +1249,11 @@ class Data(NoNewAttributesAfterInit, BaseData):
               ) -> tuple[np.ndarray, ArrayType]:
         ...
 
-    def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
+    def get_y(self,
+              filter: bool = False,
+              yfunc: ModelFunc | None = None,
+              use_evaluation_space: bool = False
+              ) -> np.ndarray | tuple[np.ndarray, ArrayType] | None:
         """Return dependent axis in N-D view of dependent variable
 
         Parameters
@@ -1264,9 +1270,14 @@ class Data(NoNewAttributesAfterInit, BaseData):
             the independent axis.
 
         """
-        y = self.get_dep(filter)
+        y = self.get_dep(filter=filter)
+        # Should this error out if y is None?
         if yfunc is None:
             return y
+
+        # Ensure we have a grid
+        if y is None:
+            raise DataErr("dependent axis has not been set")
 
         if filter:
             y2 = self.eval_model_to_fit(yfunc)
@@ -1334,7 +1345,11 @@ class Data(NoNewAttributesAfterInit, BaseData):
             staterror = self.apply_filter(staterror)
 
         if (staterror is None) and (staterrfunc is not None):
-            dep = self.get_dep(filter)
+            dep = self.get_dep(filter=filter)
+            if dep is None:
+                # What is the best thing to do here?
+                raise DataErr("dependent axis has not been set")
+
             staterror = staterrfunc(dep)
 
         return staterror
@@ -1370,7 +1385,10 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         return syserr
 
-    def get_error(self, filter=False, staterrfunc=None):
+    def get_error(self,
+                  filter: bool = False,
+                  staterrfunc: Callable | None = None
+                  ) -> np.ndarray | None:
         """Return the total error on the dependent variable.
 
         Parameters
@@ -1461,7 +1479,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def apply_filter(self, data: ArrayType) -> np.ndarray:
         ...
 
-    def apply_filter(self, data):
+    def apply_filter(self, data: ArrayType | None) -> np.ndarray | None:
         if data is None:
             return None
 
@@ -1783,9 +1801,6 @@ class Data1D(Data):
         """
         self._xlabel = label
 
-    # The superclass suggests returning both the independent and
-    # dependent axis sizes.
-    #
     def get_dims(self, filter: bool = False) -> tuple[int, ...]:
         if self.size is None:
             raise DataErr("sizenotset", self.name)
@@ -1794,7 +1809,7 @@ class Data1D(Data):
 
     @overload
     def get_y(self,
-              filter: bool,
+              filter: bool = False,
               yfunc: None = None,
               use_evaluation_space: bool = False
               ) -> np.ndarray:
@@ -1808,8 +1823,11 @@ class Data1D(Data):
               ) -> tuple[np.ndarray, ArrayType]:
         ...
 
-    def get_y(self, filter=False, yfunc=None,
-              use_evaluation_space=False):
+    def get_y(self,
+              filter: bool = False,
+              yfunc: ModelFunc | None = None,
+              use_evaluation_space: bool = False
+              ) -> np.ndarray | tuple[np.ndarray, ArrayType]:
         """Return the dependent axis.
 
         Parameters
@@ -1845,7 +1863,7 @@ class Data1D(Data):
     def get_bounding_mask(self) -> tuple[np.ndarray, tuple[int]]:
         ...
 
-    def get_bounding_mask(self):
+    def get_bounding_mask(self) -> tuple[bool, None] | tuple[np.ndarray, tuple[int]]:
         mask = self.mask
         size = None
         if np.iterable(self.mask):
@@ -2210,7 +2228,10 @@ class Data1DInt(Data1D):
         xlo, xhi = indep
         return (xhi - xlo) / 2
 
-    def get_filter(self, format='%.4f', delim=':') -> str:
+    def get_filter(self,
+                   format: str = '%.4f',
+                   delim: str = ':'
+                   ) -> str:
         """Return the data filter as a string.
 
         For each noticed range the filter is reported as
@@ -2532,6 +2553,7 @@ class Data2D(Data):
             raise DataErr("sizenotset", self.name)
 
         # self._check_shape()
+        # TODO: should this not recognize if filter is set?
         if self.shape is not None:
             return self.shape[::-1]
 

@@ -2013,7 +2013,7 @@ class TableModel(ArithmeticModel):
         self.__x = None
         self.__y = None
         self.__filtered_y = None
-        self.filename = None
+        self.filename: str | None = None
         self._method = linear_interp
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.ampl,))
@@ -2197,8 +2197,8 @@ class UserModel(ArithmeticModel):
         # NOTE added: actually, we can not have user-defined names
         # here thanks to the NoNewAttributesAfterInit base class.
         #
-        self._y = []
-        self._file = None
+        self._y: ArrayType = []
+        self._file: str | None = None
         if pars is None:
             self.ampl = Parameter(name, 'ampl', 1)
             pars = (self.ampl,)
