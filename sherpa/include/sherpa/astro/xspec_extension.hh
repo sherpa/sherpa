@@ -37,6 +37,24 @@
 #include <XSFunctions/Utilities/funcType.h>
 #include <XSFunctions/Utilities/xsFortran.h>
 
+#ifdef Py_GIL_DISABLED
+
+// Assume that XSPEC is not thread safe, so apply a global mutex.
+//
+// This does not seem like the best way to pass through access to
+// the mutex global variable.
+//
+extern PyMutex mutex;
+
+#define LOCK()    PyMutex_Lock(&mutex)
+#define UNLOCK()  PyMutex_Unlock(&mutex)
+
+#else
+#define LOCK()
+#define UNLOCK()
+
+#endif
+
 namespace sherpa { namespace astro { namespace xspec {
 
       // Track the type of Python error we want to throw:
@@ -595,8 +613,10 @@ static void create_output(int nbins, T &a, T &b) {
           : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars ) { }
 
         void call_xspec( RealArray& result ) {
+	  LOCK();
           XSpecFunc( &this->ear[0], this->npts, &this->pars[0], this->ifl,
                      &result[0], &this->error[0], NULL );
+	  UNLOCK();
           return;
         }
 
@@ -613,8 +633,10 @@ static void create_output(int nbins, T &a, T &b) {
           // convert to 32-byte float
           std::vector<float> fear(this->ngrid);
           CONVERTARRAY(this->ear, fear, this->ngrid);
+	  LOCK();
           XSpecFunc( &fear[0], this->npts, &this->pars[0], this->ifl,
                      &result[0], &this->error[0] );
+	  UNLOCK();
           return;
         }
 
@@ -629,8 +651,10 @@ static void create_output(int nbins, T &a, T &b) {
           : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars ) { }
 
         void call_xspec( RealArray& result ) {
+	  LOCK();
           XSpecFunc( &this->ear[0], this->npts, &this->pars[0], this->ifl,
                      &result[0], &this->error[0] );
+	  UNLOCK();
           return;
         }
 
@@ -712,8 +736,10 @@ static void create_output(int nbins, T &a, T &b) {
           : xspecModelFctConBase<Real, RealArray>( arg, kwargs, numpars ) { }
 
         void call_xspec( RealArray& result ) {
+	  LOCK();
           XSpecFunc( &this->ear[0], this->npts, &this->pars[0], this->ifl,
                      &result[0], &this->error[0], NULL );
+	  UNLOCK();
           return;
         }
 
@@ -730,8 +756,10 @@ static void create_output(int nbins, T &a, T &b) {
           // convert to 32-byte float
           std::vector<float> fear(this->ngrid);
           CONVERTARRAY(this->ear, fear, this->ngrid);
+	  LOCK();
           XSpecFunc( &fear[0], this->npts, &this->pars[0], this->ifl,
                      &result[0], &this->error[0] );
+	  UNLOCK();
           return;
         }
 
@@ -805,9 +833,11 @@ static void create_output(int nbins, T &a, T &b) {
                          FloatArray& pars, npy_intp npars,
                          char* filename, char*tabtype,
                          FloatArray& result ) {
+	  LOCK();
           tabint( &fear[0], this->npts, &pars[0], npars,
                   filename, this->ifl, tabtype,
                   &result[0], &this->error[0] );
+	  UNLOCK();
         }
       }; // class xspecTableModelTabint
 
