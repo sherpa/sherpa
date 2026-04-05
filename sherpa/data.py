@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015 - 2017, 2019 - 2025
+#  Copyright (C) 2008, 2015-2017, 2019-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -51,8 +51,8 @@ The design for the `Data` class assumes
 
 - fields are converted to `ndarray` when read in.
 
-- the independent axes can either be points (`~sherpa.models.regrid.PointAxis`)
-  or integrated (`~sherpa.models.regrid.IntegratedAxis`). There is
+- the independent axes can either be points (`~sherpa.utils.axes.PointAxis`)
+  or integrated (`~sherpa.utils.axes.IntegratedAxis`). There is
   currently no support for an object with a combination of point and
   integrated axes but it could be added.
 
@@ -124,10 +124,11 @@ import warnings
 
 import numpy as np
 
-from sherpa.models.regrid import EvaluationSpace1D, IntegratedAxis, PointAxis
+from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.utils import NoNewAttributesAfterInit, formatting, \
     print_fields, create_expr, create_expr_integrated, \
     calc_total_error, bool_cast, filter_bins
+from sherpa.utils.axes import Axes, IntegratedAxis, PointAxis
 from sherpa.utils.err import DataErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.parallel import parallel_map_funcs
@@ -1170,6 +1171,49 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
         return self._data_space.get(filter).grid
 
+    def get_indep_axes(self,
+                       filter: bool = False
+                       ) -> Axes | None:
+        """The grid of the data space associated with this data set.
+
+        .. versionadded:: 4.18.0
+           This is hopefully temporary,
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not. The default is `False`.
+
+        Raises
+        ------
+        DataErr
+           If filter is set and all the data has been filtered out,
+           or no independent axes have been set.
+
+        """
+        # TODO: this should perhaps call grid(), as that should be
+        # dataset-agnostic. However, we then lose information
+        # (e.g. point vs integrated). Changing grid would address
+        # this, but that's a large change.
+        #
+        ds = self._data_space.get(filter)
+        try:
+            x_axis = ds.x_axis
+            if x_axis.is_empty:
+                raise DataErr("sizenotset", self.name)
+
+            axes = [x_axis]
+            try:
+                axes.append(ds.y_axis)
+            except AttributeError:
+                pass
+
+            return Axes(axes=axes)
+        except AttributeError as ae:
+            # Is this a Data object?
+            raise NotImplementedError from ae
+
     def set_indep(self,
                   val: tuple[ArrayType, ...] | tuple[None, ...]
                   ) -> None:
@@ -1511,20 +1555,37 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self._can_apply_model(modelfunc)
         return modelfunc(*self.get_indep(filter=True))
 
-    def to_guess(self) -> tuple[np.ndarray | None, ...]:
+    def to_guess(self) -> tuple[np.ndarray, Axes]:
+        """Return the dependent and independent axes for guessing.
 
-        # Should this also check whether the independent and dependent
-        # axes are set?
+        .. versionchanged:: 4.18.0
+           It is now an error to call this with either the independent
+           or dependent axes unset. The return type has changed.
+
+        Return
+        ------
+        axes
+           The dependent axis and then the independent axes, including
+           any data filtering.
+
+        """
+
+        dep = self.get_y(filter=True, yfunc=None)
+        if dep is None:
+            # This can also be because everything has been ignored.
+            #
+            raise DataErr("The dependent axis of "
+                          f"'{self.name}' has not been set")
+
+        # get_indep_axes checks that the axis has been set, and will
+        # also error out if all the data has been filtered out.
         #
-        arrays: list[np.ndarray | None]
-        arrays = [self.get_y(filter=True, yfunc=None)]
-        arrays.extend(self.get_indep(True))
-        return tuple(arrays)
+        return (dep, self.get_indep_axes(filter=True))
 
     def to_fit(self,
                staterrfunc: StatErrFunc | None = None
                ) -> tuple[np.ndarray | None,
-                          ArrayType | None,
+                          ArrayType | None,  # should this be np.ndarray?
                           np.ndarray | None]:
         return (self.get_dep(True),
                 self.get_staterror(True, staterrfunc),
