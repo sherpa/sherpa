@@ -30,6 +30,69 @@ M. George, Keith A. Arnaud, Bill Pence, Laddawan Ruamsuwan and
 Michael F. Corcoran
 <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
 
+Handling PHA data
+=================
+
+PHA models are evaluated on an energy grid - e.g. the ENERG_LO and
+ENERG_HI fields of the MATRIX block of a RMF - but then need to "pass
+through" the instrument model (the ARF and RMF) to be converted to the
+channel space (PI or PHA) of the data. The expected use case is that
+the `Response1D` class - which includes `MultipleResponse1D` and
+`PileupResponse1D` - is used to create a convolution-style object
+that, when called with the physical model - creates the model that can
+be used to fit the data.  This is done by returning one of the
+`RSPModel`, `RMFModel`, or `ARFModel` classes. It is these classes
+that take the response date - `DataARF` and `DataRMF` - and convert
+them into model expressions. However, the model expressions can be
+directly created if so required.
+
+In the following, the PHA file "3c273.pi" has automatically-loaded
+ARF and RMF data (so the response_ids array is not empty):
+
+  >>> from sherpa.astro.io import read_pha
+  >>> from sherpa.utils.logging import SherpaVerbosity
+  >>> with SherpaVerbosity("ERROR"):
+  ...    pha = read_pha(data_3c273 + '3c273.pi')
+  >>> pha.response_ids
+  [1]
+
+If we create a model expression - in this case just a power-law,
+but normally it would be something more complex:
+
+  >>> from sherpa.models.basic import PowLaw1D
+  >>> pl = PowLaw1D()
+  >>> pl.gamma = 1.7
+  >>> pl.ampl = 2e-3
+
+then a response can be added by saying:
+
+  >>> resp = Response1D(pha)
+  >>> mdl = resp(pl)
+  >>> print(mdl)
+  apply_rmf(apply_arf(38564.608926889 * powlaw1d))
+     Param        Type          Value          Min          Max      Units
+     -----        ----          -----          ---          ---      -----
+     powlaw1d.gamma thawed          1.7          -10           10
+     powlaw1d.ref frozen            1 -3.40282e+38  3.40282e+38
+     powlaw1d.ampl thawed        0.002            0  3.40282e+38
+
+Notes
+-----
+
+The model evaluation includes the exposure time of the observation (in
+this case taken from the `exposure` field of the `DataPHA` object).
+The behaviour can change depending on exactly which class is used.
+
+The `get_full_response` method of the `DataPHA` class can also be
+used:
+
+  >>> resp = pha.get_full_response()
+
+The `ARF1D` and `RMF1D` classes wrap the `DataARF` and `DataRMF`
+classes, resulting in objects that have the same fields as the
+underlying data object, but that can be called in the same manner that
+`Response1D` is to apply the response to a model.
+
 """
 
 from __future__ import annotations
@@ -246,7 +309,7 @@ class ARFModel(CompositeModel, ArithmeticModel):
 
 
 class RSPModel(CompositeModel, ArithmeticModel):
-    """Base class for expressing RMF + ARF convolution in model expressions
+    """Base class for expressing RMF + ARF convolution in model expressions.
 
     .. versionchanged:: 4.18.1
        This class can now be used, with `RSPModelNoPHA` being
@@ -546,6 +609,7 @@ class RSPModelNoPHA(RSPModel):
 
 
 class ARF1D(NoNewAttributesAfterInit):
+    """Wrap the ARF to allow it to be applied to a model."""
 
     def __init__(self,
                  arf: DataARF,
@@ -616,6 +680,7 @@ class ARF1D(NoNewAttributesAfterInit):
 
 
 class RMF1D(NoNewAttributesAfterInit):
+    """Wrap the RMF to allow it to be applied to a model."""
 
     def __init__(self,
                  rmf: DataRMF,
