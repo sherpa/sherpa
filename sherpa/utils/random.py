@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2023 - 2025
+#  Copyright (C) 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -28,7 +28,7 @@ allows both the legacy (pre 1.17) NumPy random API to be used
 """
 
 from collections.abc import Sequence
-from typing import Literal, SupportsFloat, overload
+from typing import SupportsFloat, overload
 
 import numpy as np
 
@@ -156,7 +156,7 @@ SizeType = int | Sequence[int] | np.ndarray
 def uniform(rng: RandomType | None,
             low: float,
             high: float,
-            size: Literal[None] = None
+            size: None = None
             ) -> float:
     ...
 
@@ -174,7 +174,7 @@ def uniform(rng: RandomType | None,
 def uniform(rng: RandomType | None,
             low: ArrayType,
             high: ArrayType,
-            size: Literal[None] = None
+            size: None = None
             ) -> np.ndarray:
     ...
 
@@ -243,7 +243,7 @@ def integers(rng: RandomType | None,
 def normal(rng: RandomType | None,
            loc: float,
            scale: float,
-           size: Literal[None]
+           size: None = None
            ) -> float:
     ...
 
@@ -288,7 +288,7 @@ def normal(rng: RandomType | None,
 
 @overload
 def standard_normal(rng: RandomType | None,
-                    size: Literal[None]
+                    size: None = None
                     ) -> float:
     ...
 

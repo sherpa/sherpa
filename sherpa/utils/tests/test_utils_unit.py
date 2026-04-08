@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018 - 2024
+#  Copyright (C) 2016, 2018-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -557,18 +557,16 @@ def test_interpolate_sent_a_callable():
         interpolate([1.5, 2.5], [1, 2, 3], [2, 4, 3], function=True)
 
 
-@pytest.mark.parametrize("arg,badval",
-                         [("truthy", None),
-                          ("falsey", None),
-                          ("ya", None),
-                          ("nah", None),
-                          ("2", None),
-                          ([1, 0, "1", "0", "bob"], "bob")])
-def test_bool_cast_invalid(arg, badval):
+@pytest.mark.parametrize("arg",
+                         ["truthy", "falsey", "ya", "nah", "2", [], [1, 0]])
+def test_bool_cast_invalid(arg):
     """Check error handling"""
 
-    emsg = arg if badval is None else badval
-    with pytest.raises(TypeError, match=f"^unknown boolean value: '{emsg}'$"):
+    # Since the error message for the arrays would include [], the
+    # need to protect them in the regexp complicates the check, so do
+    # not test the full string.
+    #
+    with pytest.raises(TypeError, match=f"^unknown boolean value: '"):
         bool_cast(arg)
 
 

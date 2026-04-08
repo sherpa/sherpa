@@ -1222,7 +1222,7 @@ def read_pha(arg,
     return datasets
 
 
-def _empty_header(creator=False) -> Header:
+def _empty_header(creator: bool = False) -> Header:
     """Create an empty header."""
 
     out = Header([])

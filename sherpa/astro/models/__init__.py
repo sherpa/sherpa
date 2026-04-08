@@ -29,7 +29,7 @@ from sherpa.models.model import (ArithmeticModel,
                                  )
 
 from sherpa.astro.utils import apply_pileup
-from sherpa.utils import bool_cast, lgam
+from sherpa.utils import lgam
 from sherpa.utils.err import ModelErr
 from sherpa.utils.guess import _guess_ampl_scale, get_fwhm, \
     get_peak, get_position, guess_amplitude, guess_amplitude2d, \

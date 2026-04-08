@@ -122,7 +122,10 @@ def rmvt(mu, sigma, dof, rng=None):
     return proposal
 
 
-def dmvt(x, mu, sigma, dof, log=True, norm=False):
+def dmvt(x, mu, sigma, dof,
+         log: bool = True,
+         norm: bool = False
+         ):
     """Probability Density of a multi-variate Student's t distribution
 
     """
@@ -152,7 +155,11 @@ def dmvt(x, mu, sigma, dof, log=True, norm=False):
     return val
 
 
-def dmvnorm(x, mu, sigma, log=True):
+def dmvnorm(x,
+            mu,
+            sigma,
+            log: bool = True
+            ):
     """
 
     Probability Density of a multi-variate Normal distribution
@@ -373,8 +380,16 @@ class MH(Sampler):
     def calc_fit_stat(self, proposed_params):
         return self.fcn(proposed_params)
 
-    def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
-             priors=(), originalscale=True, scale=1, sigma_m=False):
+    def init(self,
+             log: bool = False,
+             inv: bool = False,
+             defaultprior: bool = True,
+             priorshape: bool = False,
+             priors=(),
+             originalscale: bool = True,
+             scale=1,
+             sigma_m: bool = False
+             ):
 
         if self._sigma is None or self._mu is None:
             raise AttributeError('sigma or mu is None, initialization failed')
@@ -464,7 +479,11 @@ class MH(Sampler):
 
         return (current, stat)
 
-    def update(self, stat, mu, init=True):
+    def update(self,
+               stat,
+               mu,
+               init: bool = True
+               ):
         """ include prior """
         if not self.defaultprior:
             x = mu.copy()
@@ -511,7 +530,11 @@ class MH(Sampler):
         # MH jumps from the best-fit parameter values at each iteration
         return rmvt(self._mu, self._sigma, self._dof, rng=self.rng)
 
-    def dmvt(self, x, log=True, norm=False):
+    def dmvt(self,
+             x,
+             log: bool = True,
+             norm: bool = False
+             ):
         return dmvt(x, self._mu, self._sigma, self._dof, log, norm)
 
     def accept_mh(self, current, current_stat, proposal, proposal_stat):
@@ -567,8 +590,17 @@ class MetropolisMH(MH):
         self.num_mh = 0
         self.num_metropolis = 0
 
-    def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
-             priors=(), originalscale=True, scale=1, sigma_m=False, p_M=.5):
+    def init(self,
+             log: bool = False,
+             inv: bool = False,
+             defaultprior: bool = True,
+             priorshape: bool = False,
+             priors=(),
+             originalscale: bool = True,
+             scale=1,
+             sigma_m: bool = False,
+             p_M=.5
+             ):
 
         debug("Running Metropolis with Metropolis-Hastings")
 
