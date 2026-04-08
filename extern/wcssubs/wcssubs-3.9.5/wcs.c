@@ -1,5 +1,5 @@
 /*** File libwcs/wcs.c
- *** June 24, 2016
+ *** March 12, 2026
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
  *** Copyright (C) 1994-2016
@@ -14,7 +14,7 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-    
+
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -64,18 +64,18 @@
  * Subroutine:	wcs2pix (wcs,xpos,ypos,xpix,ypix,offscl) sky coordinates -> pixel coordinates
  * Subroutine:  wcszin (izpix) sets third dimension for pix2wcs() and pix2wcst()
  * Subroutine:  wcszout (wcs) returns third dimension from wcs2pix()
- * Subroutine:	setwcsfile (filename)  Set file name for error messages 
- * Subroutine:	setwcserr (errmsg)  Set error message 
- * Subroutine:	wcserr()  Print error message 
- * Subroutine:	setdefwcs (wcsproj)  Set flag to choose AIPS or WCSLIB WCS subroutines 
- * Subroutine:	getdefwcs()  Get flag to switch between AIPS and WCSLIB subroutines 
+ * Subroutine:	setwcsfile (filename)  Set file name for error messages
+ * Subroutine:	setwcserr (errmsg)  Set error message
+ * Subroutine:	wcserr()  Print error message
+ * Subroutine:	setdefwcs (wcsproj)  Set flag to choose AIPS or WCSLIB WCS subroutines
+ * Subroutine:	getdefwcs()  Get flag to switch between AIPS and WCSLIB subroutines
  * Subroutine:	savewcscoor (wcscoor)
- * Subroutine:	getwcscoor()  Return preset output default coordinate system 
- * Subroutine:	savewcscom (i, wcscom)  Save specified WCS command 
- * Subroutine:	setwcscom (wcs)  Initialize WCS commands 
- * Subroutine:	getwcscom (i)  Return specified WCS command 
+ * Subroutine:	getwcscoor()  Return preset output default coordinate system
+ * Subroutine:	savewcscom (i, wcscom)  Save specified WCS command
+ * Subroutine:	setwcscom (wcs)  Initialize WCS commands
+ * Subroutine:	getwcscom (i)  Return specified WCS command
  * Subroutine:	wcsfree (wcs)  Free storage used by WCS structure
- * Subroutine:	freewcscom (wcs)  Free storage used by WCS commands 
+ * Subroutine:	freewcscom (wcs)  Free storage used by WCS commands
  * Subroutine:  cpwcs (&header, cwcs)
  */
 
@@ -89,8 +89,8 @@
 
 static char wcserrmsg[80];
 static char wcsfile[256]={""};
-static void wcslibrot();
-void wcsrotset();
+static void wcslibrot(struct WorldCoor *);
+void wcsrotset(struct WorldCoor *);
 static int wcsproj0 = 0;
 static int izpix = 0;
 static double zpix = 0.0;
@@ -198,7 +198,7 @@ char	*proj;	/* Projection */
 	wcsfree (wcs);
 	return (NULL);
 	}
-    
+
     /* Approximate world coordinate system from a known plate scale */
     cdelt1 = -secpix / 3600.0;
     cdelt2 = secpix / 3600.0;
@@ -693,7 +693,7 @@ double equinox;			/* Desired equinox as fractional year */
 
     /* Convert center from B1950 (FK4) to J2000 (FK5) */
     if (equinox == 2000.0 && wcs->equinox == 1950.0) {
-	if (wcs->coorflip) { 
+	if (wcs->coorflip) {
 	    fk425e (&wcs->crval[1], &wcs->crval[0], wcs->epoch);
 	    wcs->cel.ref[1] = wcs->crval[0];
 	    wcs->cel.ref[0] = wcs->crval[1];
@@ -714,7 +714,7 @@ double equinox;			/* Desired equinox as fractional year */
 
     /* Convert center from J2000 (FK5) to B1950 (FK4) */
     else if (equinox == 1950.0 && wcs->equinox == 2000.0) {
-	if (wcs->coorflip) { 
+	if (wcs->coorflip) {
 	    fk524e (&wcs->crval[1], &wcs->crval[0], wcs->epoch);
 	    wcs->cel.ref[1] = wcs->crval[0];
 	    wcs->cel.ref[0] = wcs->crval[1];
@@ -2105,7 +2105,7 @@ int	lstr;		/* Length of world coordinate string (returned) */
 		    strcat (wcstring, " ");
 		    strcat (wcstring, wcs->units[1]);
 		    }
-		    
+
 		}
 	    }
 	return (1);
@@ -2123,7 +2123,7 @@ double	*xpos,*ypos;	/* RA and Dec in degrees (returned) */
 {
     double	xpi, ypi, xp, yp;
     double	eqin, eqout;
-    int wcspos();
+    int wcspos(double, double, struct WorldCoor *, double *, double *);
 
     if (nowcs (wcs))
 	return;
@@ -2175,7 +2175,7 @@ double	*xpos,*ypos;	/* RA and Dec in degrees (returned) */
     /* Use Mark Calabretta's WCSLIB projections */
     else if (wcspos (xpi, ypi, wcs, &xp, &yp))
 	wcs->offscl = 1;
-	    	
+
 
     /* Do not change coordinates if offscale */
     if (wcs->offscl) {
@@ -2246,7 +2246,7 @@ int	*offscl;	/* 0 if within bounds, else off scale */
     double xp, yp, xpi, ypi;
     double eqin, eqout;
     int sysin;
-    int wcspix();
+    int wcspix(double, double, struct WorldCoor *, double *, double *);
 
     if (nowcs (wcs))
 	return;
@@ -2351,10 +2351,10 @@ double  *ypos;           /* y (dec) coordinate (deg) */
 {
     int offscl;
     int i;
-    int wcsrev();
+    int wcsrev(const char ctype[][16], struct wcsprm *, const double pixcrd[], struct linprm *, double imgcrd[], struct prjprm *, double *, double *, const double crval[], struct celprm *, double world[]);
     double wcscrd[4], imgcrd[4], pixcrd[4];
     double phi, theta;
-    
+
     *xpos = 0.0;
     *ypos = 0.0;
 
@@ -2392,7 +2392,7 @@ double  *ypix;          /* y pixel number  (dec or lat without rotation) */
 
 {
     int offscl;
-    int wcsfwd();
+    int wcsfwd(const char ctype[][16], struct wcsprm *, const double world[], const double crval[], struct celprm *, double *, double *, struct prjprm *, double imgcrd[], struct linprm *, double pixcrd[]);
     double wcscrd[4], imgcrd[4], pixcrd[4];
     double phi, theta;
 
@@ -2708,7 +2708,7 @@ char *cwcs;	/* Keyword suffix character for output WCS */
 	header = &newhead;
 	free (oldhead);
 	}
-    
+
     /* Copy keywords to new WCS ID in header */
     nkwdw = 0;
     for (i = 0; i < nkwd; i++) {
@@ -2743,7 +2743,7 @@ char *cwcs;	/* Keyword suffix character for output WCS */
 		}
 	    }
 	}
-    
+
     /* Free keyword list array */
     for (ikwd = 0; ikwd < maxnkwd; ikwd++)
 	free (kwd[ikwd]);
@@ -3015,4 +3015,7 @@ char *cwcs;	/* Keyword suffix character for output WCS */
  * Jun  8 2016	Increase ctype, ctype1, and ctype2 to 16 characters for distortion
  * Jun 23 2016	Set initial allocation of keyword arrays to MAXNKWD instead of 100 in cpwcs()
  * Jun 24 2016	wcs->ptype contains only 3-letter projection code
+
+ * Mar 12 2026  Minimal change to support -std=c23
+
  */

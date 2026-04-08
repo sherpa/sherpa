@@ -1,5 +1,5 @@
 /*** File libwcs/hput.c
- *** September 9, 2011
+ *** March 12, 2026
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
  *** Copyright (C) 1995-2011
@@ -14,7 +14,7 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-    
+
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -58,7 +58,7 @@
 
 static int verbose=0;	/* Set to 1 to print error messages and other info */
 
-static void fixnegzero();
+static void fixnegzero(char *);
 
 
 /*  HPUTI4 - Set int keyword = ival in FITS header string */
@@ -416,10 +416,10 @@ const char *value; /* character string containing the value for variable
     /*  If COMMENT or HISTORY, always add it just before the END */
     if (lkeyword == 7 && (strncmp (keyword,"COMMENT",7) == 0 ||
 	strncmp (keyword,"HISTORY",7) == 0)) {
-	
+
 	/* First look for blank lines before END */
         v1 = blsearch (hstring, "END");
-    
+
 	/*  Otherwise, create a space for it at the end of the header */
 	if (v1 == NULL) {
 
@@ -467,10 +467,10 @@ const char *value; /* character string containing the value for variable
 
     /*  If parameter is not found, find a place to put it */
     if (v1 == NULL) {
-	
+
 	/* First look for blank lines before END */
         v1 = blsearch (hstring, "END");
-    
+
 	/*  Otherwise, create a space for it at the end of the header */
 	if (v1 == NULL) {
 	    ve = ksearch (hstring,"END");
@@ -1313,4 +1313,7 @@ int	ndec;		/* Number of decimal places in degree string */
  * Aug 22 2007	If closing quote not found, make one up
  *
  * Sep  9 2011	Always initialize q2 and lroot
+
+ * Mar 12 2026  Minimal change to support -std=c23
+
  */

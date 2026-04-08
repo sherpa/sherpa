@@ -1,5 +1,5 @@
 /*** File wcslib/zpxpos.c
- *** October 31, 2012
+ *** March 12. 2026
  *** By Frank Valdes, valdes@noao.edu
  *** Modified from tnxpos.c by Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
@@ -16,7 +16,7 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-    
+
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -50,7 +50,7 @@
 
 #define	max_niter	500
 #define	SZ_ATSTRING	2000
-static void wf_gsclose();
+static void wf_gsclose(struct IRAFsurface *);
 
 /* zpxinit -- initialize the zenithal/azimuthal polynomial forward or
  * inverse transform. initialization for this transformation consists of,
@@ -81,10 +81,10 @@ const char *header;	/* FITS header */
 struct WorldCoor *wcs;	/* pointer to WCS structure */
 {
     int i, j;
-    struct IRAFsurface *wf_gsopen();
+    struct IRAFsurface *wf_gsopen(char *);
     char key[8], *str1, *str2, *lngstr, *latstr, *header1;
     double zd1, d1, zd2,d2, zd, d, r;
-    extern void wcsrotset();
+    extern void wcsrotset(struct WorldCoor *);
 
     /* allocate space for the attribute strings */
     str1 = malloc (SZ_ATSTRING);
@@ -99,7 +99,7 @@ struct WorldCoor *wcs;	/* pointer to WCS structure */
 	 *  index of the header string so that the added cards are also
 	 *  found.
 	 */
-	
+
 	header1 = malloc (strlen(header)+200);
         strcpy (header1, "WAT1_001= 'wtype=zpx axtype=ra projp0=0. projp1=1. projp2=0. projp3=337.74 proj'WAT2_001= 'wtype=zpx axtype=dec projp0=0. projp1=1. projp2=0. projp3=337.74 pro'");
 	strcat (header1, header);
@@ -211,7 +211,7 @@ struct WorldCoor *wcs;	/* pointer to WCS structure */
 	    }
 
 	/* No negative derivative. */
-	else 
+	else
 	    zd = PI;
 
 	r = 0.;
@@ -252,7 +252,7 @@ double	*xpos, *ypos;	/*o world coordinates (ra, dec) */
     double colatp, coslatp, sinlatp, longp;
     double xs, ys, ra, dec, xp, yp;
     double a, b, c, d, zd, zd1, zd2, r1, r2, rt, lambda;
-    double wf_gseval();
+    double wf_gseval(struct IRAFsurface *, double, double);
 
     /* Convert from pixels to image coordinates */
     xpix = xpix - wcs->crpix[0];
@@ -520,7 +520,7 @@ double	*xpix, *ypix;	/*o physical coordinates (x, y) */
     double s, r, dphi, z, dpi, dhalfpi, twopi, tx;
     double xm, ym, f, fx, fy, g, gx, gy, denom, dx, dy;
     double colatp, coslatp, sinlatp, longp, sphtol;
-    double wf_gseval(), wf_gsder();
+    double wf_gseval(struct IRAFsurface *, double, double), wf_gsder(struct IRAFsurface *, double, double, int, int);
 
     /* get the axis numbers */
     if (wcs->coorflip) {
@@ -732,4 +732,7 @@ struct IRAFsurface *sf;	/* the surface descriptor */
  * Mar  8 2011  Created from tnxpos.c and wfzpx.x
  *
  * Oct 31 2012	End comment on line 346 after pole; fix code thereafter
+
+ * Mar 12 2026  Minimal change to support -std=c23
+
  */
