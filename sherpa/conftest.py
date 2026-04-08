@@ -852,6 +852,18 @@ def set_xspec_atomdb_version():
     if not has_xspec:
         return
 
+    xsver = xspec.get_xsversion()
+
+    # XSPEC 12.15.1 switches to AtomDB version to 3.1.3 and completely
+    # removes the 3.0.9 files packaged in later versions of 12.14.n and
+    # 12.15.0 causing tests to fail. 
+    #
+    if xsver > "12.15.0":
+        xsatomdb = { "APECROOT" : "3.1.3",
+                     "NEIAPECROOT" : "3.1.3",
+                     "NEIVERS" : "3.1.0" # the NEIVERS value is associated with the eigenvector file
+                    }
+    #
     # XSPEC 12.15.0 switches the AtomDB version from 3.0.9 to 3.1.2
     # and this can cause tests to fail. The tolerances could be
     # changed but instead try setting the AtomDB
@@ -859,10 +871,15 @@ def set_xspec_atomdb_version():
     # (see #2216), so this is done globally. Eventually this will
     # (hopefully) be removed, or the settings updated.
     #
-    xspec.set_xsxset("APECROOT", "3.0.9")
-    xspec.set_xsxset("NEIAPECROOT", "3.0.9")
-    xspec.set_xsxset("NEIVERS", "3.0.4")
+    else:
+        xsatomdb = { "APECROOT" : "3.0.9",
+                     "NEIAPECROOT" : "3.0.9",
+                     "NEIVERS" : "3.0.4" # the NEIVERS value is associated with the eigenvector file
+                    }
 
+    for xsetkey, xsetval in xsatomdb.items():
+        xspec.set_xsxset(xsetkey, xsetval)
+        
 
 # Fixtures that control access to the tests, based on the availability
 # of external "features" (normally this is the presence of optional
