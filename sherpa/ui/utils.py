@@ -31,7 +31,8 @@ import logging
 import os
 import pickle
 import sys
-from typing import Any, Literal, TypeVar, overload
+from typing import Any, Literal, TypeGuard, TypeVar, \
+    cast, overload
 
 import numpy as np
 
@@ -44,20 +45,20 @@ import sherpa.all
 from sherpa import get_config
 
 import sherpa.data
-from sherpa.data import Data, DataSimulFit
+from sherpa.data import Data, DataSimulFit, Data1D, Data1DInt
 import sherpa.estmethods
 from sherpa.estmethods import EstMethod
-from sherpa.fit import Fit, FitResults
-import sherpa.instrument
+from sherpa.fit import ErrorEstResults, Fit, FitResults, StatInfoResults
+from sherpa.instrument import ConvolutionKernel, PSFKernel, PSFModel
 import sherpa.io
 import sherpa.image
 import sherpa.models
 from sherpa.models.basic import TableModel
 import sherpa.models.model
-from sherpa.models.model import Model, SimulFitModel
+from sherpa.models.model import ArithmeticModel, Model, SimulFitModel
 from sherpa.models.parameter import Parameter
-from sherpa.models.template import add_interpolator, create_template_model, \
-    reset_interpolators
+from sherpa.models.template import TemplateModel, add_interpolator, \
+    create_template_model, reset_interpolators
 import sherpa.optmethods
 from sherpa.optmethods import OptMethod
 import sherpa.plot
@@ -65,11 +66,12 @@ from sherpa.plot import Plot, HistogramPlot, MultiPlot, \
     set_backend, get_per_plot_kwargs
 import sherpa.sim
 from sherpa.sim.sample import ClipValue
+from sherpa.sim.simulate import LikelihoodRatioResults
 import sherpa.stats
 from sherpa.stats import Stat, UserStat
 import sherpa.utils
-from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
-    is_iterable_not_str, export_method, send_to_pager
+from sherpa.utils import NoNewAttributesAfterInit, bool_cast_scalar, \
+    is_subclass, is_iterable_not_str, export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
@@ -107,6 +109,12 @@ T = TypeVar("T")
 
 
 def _check_type(arg, argtype, argname: str, argdesc: str) -> None:
+    """Validate that arg matches the expected type
+
+    At the moment the caller is expected to use cast(T, arg) to
+    reflect any type restriction.
+
+    """
     if isinstance(arg, argtype):
         return
 
@@ -114,20 +122,23 @@ def _check_type(arg, argtype, argname: str, argdesc: str) -> None:
 
 
 def _check_str_type(arg: str, argname: str) -> None:
-    """Ensure that arg (with name argname) is a string"""
+    """Ensure that arg (with name argname) is a string.
+
+    At the moment the caller is expected to use cast(T, arg) to
+    reflect any type restriction.
+
+    """
     if _is_str(arg):
         return
 
     raise ArgumentTypeErr('badarg', argname, "a string")
 
 
-# With Python 3.10 these can return TypeGuard annotations.
-#
-def _is_integer(val):
+def _is_integer(val: Any) -> bool:  # how best to use TypeGuard?
     return isinstance(val, (int, np.integer))
 
 
-def _is_str(val):
+def _is_str(val: Any) -> TypeGuard[str]:
     return isinstance(val, (str, ))
 
 
@@ -151,7 +162,7 @@ def get_plot_prefs(plotobj) -> PrefsType:
             raise AttributeError("plot object has no preferences") from None
 
 
-def _get_filter(data):
+def _get_filter(data: Data) -> str | None:
     """Report the filter for report_filter_change.
 
     This takes care of calling get_filter with the correct
@@ -162,7 +173,7 @@ def _get_filter(data):
 
     Parameters
     ----------
-    data : sherpa.data.Data1D instance
+    data
 
     Returns
     -------
@@ -296,7 +307,7 @@ def report_filter_change(idstr: str,
 
 def notice_data_range(get_data: Callable[[IdType], Data],
                       ids: IdTypes,
-                      lo, hi,
+                      lo: float | None, hi: float | None,
                       kwargs) -> None:
     """Filter each dataset and report the change in filter.
 
@@ -352,19 +363,29 @@ def notice_data_range(get_data: Callable[[IdType], Data],
 
 @overload
 def calc_multiplot_size(rows: int,
-                        cols: int | None,
-                        nplots: int
-                        ) -> tuple[int, int]:
-    ...
-
-@overload
-def calc_multiplot_size(rows: int | None,
                         cols: int,
                         nplots: int
                         ) -> tuple[int, int]:
     ...
 
-def calc_multiplot_size(rows, cols, nplots):
+@overload
+def calc_multiplot_size(rows: int,
+                        cols: None,
+                        nplots: int
+                        ) -> tuple[int, int]:
+    ...
+
+@overload
+def calc_multiplot_size(rows: None,
+                        cols: int,
+                        nplots: int
+                        ) -> tuple[int, int]:
+    ...
+
+def calc_multiplot_size(rows: int | None,
+                        cols: int | None,
+                        nplots: int
+                        ) -> tuple[int, int]:
     """How many rows and columns to use for multi plot/contours?
 
     Parameters
@@ -383,10 +404,12 @@ def calc_multiplot_size(rows, cols, nplots):
     def get(n: int) -> int:
         return int(np.ceil(nplots / n))
 
-    # Since at least one of rows or cols must be set.
+    # Since at least one of rows or cols must be set. However, even
+    # with the overload statements, the typing code does not recognize
+    # this, hence the need for cast.
     #
-    nrows = rows if rows is not None else get(cols)
-    ncols = cols if cols is not None else get(rows)
+    nrows = rows if rows is not None else get(cast(int, cols))
+    ncols = cols if cols is not None else get(cast(int, rows))
 
     if nrows * ncols < nplots:
         # Go for the nearest (upper) square value for the number
@@ -397,6 +420,31 @@ def calc_multiplot_size(rows, cols, nplots):
         nrows = get(ncols)
 
     return nrows, ncols
+
+
+# These overload lines do not seem to help, but leave in as a comment.
+#
+#@overload
+#def separate_id_from_arg(arg1: IdType, arg2: T) -> tuple[IdType, T]:
+#    ...
+#
+#@overload
+#def separate_id_from_arg(arg1: None, arg2: T) -> tuple[None, T]:
+#    ...
+#
+#@overload
+#def separate_id_from_arg(arg1: T, arg2: None) -> tuple[None, T]:
+#    ...
+#
+def separate_id_from_arg(arg1: IdType | T | None,
+                         arg2: T | None
+                         ) -> tuple[IdType | None, T]:
+    """Allow typing of '(id, val=None, ...)' routines."""
+
+    if arg2 is None:
+        return None, cast(T, arg1)
+
+    return cast(IdType | None, arg1), arg2
 
 
 ###############################################################################
@@ -433,10 +481,13 @@ copy_reg.pickle(np.ufunc, reduce_ufunc)
 ###############################################################################
 
 
-def read_template_model(modelname, templatefile,
-                        sep=' ', comment='#',
-                        method=sherpa.utils.linear_interp,
-                        template_interpolator_name='default'):
+def read_template_model(modelname: str,
+                        templatefile: str,
+                        sep: str = ' ',
+                        comment: str = '#',
+                        method: Callable = sherpa.utils.linear_interp,
+                        template_interpolator_name: str = 'default'
+                        ) -> TemplateModel:
     """Read in a set of templates and create a template model.
 
     Parameters
@@ -562,8 +613,10 @@ class ModelWrapper(NoNewAttributesAfterInit):
     #
     def __init__(self,
                  session: Session,
-                 modeltype,
-                 args=(), kwargs=None) -> None:
+                 modeltype: type[Model],
+                 args=(),
+                 kwargs=None
+                 ) -> None:
         # This is an internal class so do not bother with
         # sherpa.utils.err exceptions.
         #
@@ -627,10 +680,9 @@ class ModelWrapper(NoNewAttributesAfterInit):
         NoNewAttributesAfterInit.__init__(self)
 
     # TODO: can we say that this is the same class as sent to
-    # the constructor? A TypeVar could be used, but how do we
-    # constrain it to Model?
+    # the constructor?
     #
-    def __call__(self, name):
+    def __call__(self, name: str) -> Model:
         _check_str_type(name, "name")
 
         m = self._session._get_model_component(name)
@@ -641,7 +693,7 @@ class ModelWrapper(NoNewAttributesAfterInit):
         self._session._add_model_component(m)
         return m
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Model:
         if name.startswith('_'):
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
@@ -706,7 +758,7 @@ def _remove_obj_from_main(name: str) -> None:
             pass
 
 
-def set_dep(data, val) -> None:
+def set_dep(data: Data, val: float | ArrayType) -> None:
     """Set the dependent axis.
 
     Parameters
@@ -720,13 +772,19 @@ def set_dep(data, val) -> None:
     if np.iterable(val):
         dep = np.asarray(val, SherpaFloat)
     else:
+        if data.size is None:
+            raise DataErr("sizenotset", data.name)
+
         val = SherpaFloat(val)
-        dep = np.array([val] * data.size)
+        dep = np.full(data.size, val)
 
     data.dep = dep
 
 
-def set_error(data, field, val, fractional=False) -> None:
+def set_error(data: Data,
+              field: Literal["staterror"] | Literal["syserror"],
+              val: float | ArrayType | None,
+              fractional: bool = False) -> None:
     """Set the error field.
 
     Parameters
@@ -754,15 +812,24 @@ def set_error(data, field, val, fractional=False) -> None:
 
     else:
         val = SherpaFloat(val)
-        if sherpa.utils.bool_cast(fractional):
-            err = val * data.get_dep()
+        if fractional:
+            dep = data.get_dep()
+            if dep is None:
+                raise DataErr('no dependent axis to scale')
+
+            err = val * dep
+        elif data.size is not None:
+            err = np.full(data.size, val)
+
         else:
-            err = np.array([val] * data.size)
+            raise DataErr("sizenotset", data.name)
 
     setattr(data, field, err)
 
 
-def set_filter(data, val, ignore=False) -> None:
+def set_filter(data: Data,
+               val: ArrayType,
+               ignore: bool = False) -> None:
     """Set the filter field.
 
     Parameters
@@ -788,12 +855,12 @@ def set_filter(data, val, ignore=False) -> None:
     # Note that we do not use data.size as the check, as that fails
     # for grouped PHA data. Is there some way to have an "effective
     # size" value?
-    #
-    nexp = len(data.get_y(False))
     if np.iterable(data.mask):
+        # If mask is an array then there must be independent/y values,
+        # so get_y can not return None, hence the cast.
+        nexp = len(cast(np.ndarray, data.get_y(False)))
         if nexp != nval:
-            raise sherpa.utils.err.DataErr('mismatchn', 'data', 'filter',
-                                           nexp, nval)
+            raise DataErr('mismatchn', 'data', 'filter', nexp, nval)
 
         if not ignore:
             data.mask |= val
@@ -819,7 +886,7 @@ class FitStore:
     model : Model
 
 
-def get_components_helper(getfunc: Callable[..., Plot],
+def get_components_helper(getfunc: Callable[..., Plot | HistogramPlot],
                           model: Model,
                           idval: IdType) -> MultiPlot:
     """Handle get_source/model_components_plot.
@@ -877,7 +944,7 @@ class Session(NoNewAttributesAfterInit):
     # High-level utilities
     ###########################################################################
 
-    def _export_names(self, gdict):
+    def _export_names(self, gdict) -> list[str]:
         allnames = []
 
         for name in dir(self):
@@ -995,17 +1062,17 @@ class Session(NoNewAttributesAfterInit):
         self._tbl_models: list[Model] = []
         self._psf_models: list[Model] = []
 
-        self._model_autoassign_func = _assign_model_to_main
+        self._model_autoassign_func: Callable[[str, Model], None] | None = _assign_model_to_main
         self._model_components: dict[str, Model] = {}
         self._models: dict[IdType, Model] = {}
         self._sources: dict[IdType, Model] = {}
 
-        self._fit_results = None
-        self._pvalue_results = None
+        self._fit_results: FitResults | None = None
+        self._pvalue_results: LikelihoodRatioResults | None = None
 
-        self._covariance_results = None
-        self._confidence_results = None
-        self._projection_results = None
+        self._covariance_results: ErrorEstResults | None = None
+        self._confidence_results: ErrorEstResults | None = None
+        self._projection_results: ErrorEstResults | None = None
 
         self._pyblocxs = sherpa.sim.MCMC()
 
@@ -1060,14 +1127,21 @@ class Session(NoNewAttributesAfterInit):
         # as a single-element list, but it was felt that having a
         # consistent access pattern was cleaner.
         #
+        # The type is close to Plot | HistogramPlot | MultiPlot, but
+        # not exactly, as we need to use something that supports the
+        # prepare method for Plot, and at the moment the plot
+        # hierarchy does not have a way to express this requirement.
+        # Using a Protocol is hard since there are different ways to
+        # call prepare, depending on the class.
+        #
         self._plot_types: dict[str, list[Any]] = {
             'data': [sherpa.plot.DataPlot(), sherpa.plot.DataHistogramPlot()],
             'model': [sherpa.plot.ModelPlot(), sherpa.plot.ModelHistogramPlot()],
             'model_component': [sherpa.plot.ComponentModelPlot(), sherpa.plot.ComponentModelHistogramPlot()],
-            'model_components': [sherpa.plot.MultiPlot()],
+            'model_components': [MultiPlot()],
             'source': [sherpa.plot.SourcePlot(), sherpa.plot.SourceHistogramPlot()],
             'source_component': [sherpa.plot.ComponentSourcePlot(), sherpa.plot.ComponentSourceHistogramPlot()],
-            'source_components': [sherpa.plot.MultiPlot()],
+            'source_components': [MultiPlot()],
             'fit': [sherpa.plot.FitPlot()],
             'resid': [sherpa.plot.ResidPlot(), sherpa.plot.ResidHistogramPlot()],
             'ratio': [sherpa.plot.RatioPlot(), sherpa.plot.RatioHistogramPlot()],
@@ -1199,7 +1273,9 @@ class Session(NoNewAttributesAfterInit):
         self._set_plot_types()
         self._set_contour_types()
 
-    def save(self, filename='sherpa.save', clobber=False) -> None:
+    def save(self,
+             filename: str = 'sherpa.save',
+             clobber: bool = False) -> None:
         """Save the current Sherpa session to a file.
 
         Parameters
@@ -1246,19 +1322,14 @@ class Session(NoNewAttributesAfterInit):
         """
 
         _check_str_type(filename, "filename")
-        clobber = sherpa.utils.bool_cast(clobber)
-
-        if os.path.isfile(filename) and not clobber:
+        if os.path.isfile(filename) and not bool_cast_scalar(clobber):
             raise IOErr("filefound", filename)
 
-        fout = open(filename, 'wb')
-        try:
+        with open(filename, 'wb') as fout:
             # Use the default version rather than fix a version
             pickle.dump(self, fout)
-        finally:
-            fout.close()
 
-    def restore(self, filename='sherpa.save') -> None:
+    def restore(self, filename: str = 'sherpa.save') -> None:
         """Load in a Sherpa session from a file.
 
         .. warning::
@@ -1470,7 +1541,7 @@ class Session(NoNewAttributesAfterInit):
         covar_str += self.get_covar_results().format() + '\n\n'
         return covar_str
 
-    def show_stat(self, outfile=None, clobber=False) -> None:
+    def show_stat(self, outfile=None, clobber: bool = False) -> None:
         """Display the current fit statistic.
 
         Parameters
@@ -1509,7 +1580,7 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_stat()
         send_to_pager(txt, outfile, clobber)
 
-    def show_method(self, outfile=None, clobber=False) -> None:
+    def show_method(self, outfile=None, clobber: bool = False) -> None:
         """Display the current optimization method and options.
 
         Parameters
@@ -1554,7 +1625,7 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_method()
         send_to_pager(txt, outfile, clobber)
 
-    def show_fit(self, outfile=None, clobber=False) -> None:
+    def show_fit(self, outfile=None, clobber: bool = False) -> None:
         """Summarize the fit results.
 
         Display the results of the last call to `fit`, including:
@@ -1593,7 +1664,7 @@ class Session(NoNewAttributesAfterInit):
 
     def show_data(self,
                   id: IdType | None = None,
-                  outfile=None, clobber=False) -> None:
+                  outfile=None, clobber: bool = False) -> None:
         """Summarize the available data sets.
 
         Display information on the data sets that have been
@@ -1631,7 +1702,7 @@ class Session(NoNewAttributesAfterInit):
 
     def show_filter(self,
                     id: IdType | None = None,
-                    outfile=None, clobber=False) -> None:
+                    outfile=None, clobber: bool = False) -> None:
         """Show any filters applied to a data set.
 
         Display any filters that have been applied to the independent
@@ -1672,7 +1743,7 @@ class Session(NoNewAttributesAfterInit):
 
     def show_model(self,
                    id: IdType | None = None,
-                   outfile=None, clobber=False) -> None:
+                   outfile=None, clobber: bool = False) -> None:
         """Display the model expression used to fit a data set.
 
         This displays the model used to fit the data set, that is,
@@ -1716,7 +1787,7 @@ class Session(NoNewAttributesAfterInit):
 
     def show_source(self,
                     id: IdType | None = None,
-                    outfile=None, clobber=False) -> None:
+                    outfile=None, clobber: bool = False) -> None:
         """Display the source model expression for a data set.
 
         This displays the source model for a data set, that is, the
@@ -1760,7 +1831,7 @@ class Session(NoNewAttributesAfterInit):
     # as the Notes section below is inadequate
     def show_kernel(self,
                     id: IdType | None = None,
-                    outfile=None, clobber=False) -> None:
+                    outfile=None, clobber: bool = False) -> None:
         """Display any kernel applied to a data set.
 
         The kernel represents the subset of the PSF model that is used
@@ -1817,7 +1888,7 @@ class Session(NoNewAttributesAfterInit):
     # as the Notes section below is inadequate
     def show_psf(self,
                  id: IdType | None = None,
-                 outfile=None, clobber=False) -> None:
+                 outfile=None, clobber: bool = False) -> None:
         """Display any PSF model applied to a data set.
 
         The PSF model represents the full model or data set that is
@@ -1870,7 +1941,7 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_psf(id)
         send_to_pager(txt, outfile, clobber)
 
-    def show_conf(self, outfile=None, clobber=False) -> None:
+    def show_conf(self, outfile=None, clobber: bool = False) -> None:
         """Display the results of the last conf evaluation.
 
         The output includes the best-fit model parameter values,
@@ -1903,7 +1974,7 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_conf()
         send_to_pager(txt, outfile, clobber)
 
-    def show_proj(self, outfile=None, clobber=False) -> None:
+    def show_proj(self, outfile=None, clobber: bool = False) -> None:
         """Display the results of the last proj evaluation.
 
         The output includes the best-fit model parameter values,
@@ -1936,7 +2007,7 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_proj()
         send_to_pager(txt, outfile, clobber)
 
-    def show_covar(self, outfile=None, clobber=False) -> None:
+    def show_covar(self, outfile=None, clobber: bool = False) -> None:
         """Display the results of the last covar evaluation.
 
         The output includes the best-fit model parameter values,
@@ -1971,7 +2042,7 @@ class Session(NoNewAttributesAfterInit):
 
     def show_all(self,
                  id: IdType | None = None,
-                 outfile=None, clobber=False) -> None:
+                 outfile=None, clobber: bool = False) -> None:
         """Report the current state of the Sherpa session.
 
         Display information about one or all of the data sets that
@@ -2048,7 +2119,7 @@ class Session(NoNewAttributesAfterInit):
                 funcs.append(func)
         return funcs
 
-    def list_functions(self, outfile=None, clobber=False) -> None:
+    def list_functions(self, outfile=None, clobber: bool = False) -> None:
         """Display the functions provided by Sherpa.
 
         Unlike the other ``list_xxx`` commands, this does not
@@ -2087,7 +2158,7 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
     @staticmethod
-    def _valid_id(id: Any) -> bool:  # TODO: mark as TypeGuard[IdType] instead
+    def _valid_id(id: Any) -> TypeGuard[IdType]:
         """Is the identifier valid for Sherpa?
 
         This does not treat None as a valid identifier.
@@ -2141,6 +2212,7 @@ class Session(NoNewAttributesAfterInit):
         if _is_integer(id):
             return id
 
+        id = cast(str, id)
         if self._check_plottype(id) or self._check_contourtype(id):
             raise IdentifierErr("badid", id)
 
@@ -2169,7 +2241,7 @@ class Session(NoNewAttributesAfterInit):
 
             return out
 
-        return [self._fix_id(idvals)]
+        return [self._fix_id(cast(IdType | None, idvals))]
 
     def _get_plottype(self, plottype: str) -> str:
         """Return the name to refer to a given plot type.
@@ -2219,7 +2291,7 @@ class Session(NoNewAttributesAfterInit):
         return plottype in self._plot_types or \
             plottype in self._plot_types_alias
 
-    def _get_contourtype(self, plottype: str):
+    def _get_contourtype(self, plottype: str) -> str:
         """Return the name to refer to a given contour type."""
 
         if plottype in self._contour_types:
@@ -2242,10 +2314,10 @@ class Session(NoNewAttributesAfterInit):
                   itemdesc: str,
                   errdesc: str
                   ) -> T:
-        id = self._fix_id(id)
-        item = itemdict.get(id)
+        idval = self._fix_id(id)
+        item = itemdict.get(idval)
         if item is None:
-            raise IdentifierErr('getitem', itemdesc, id, errdesc)
+            raise IdentifierErr('getitem', itemdesc, idval, errdesc)
         return item
 
     def _set_item(self,
@@ -2256,9 +2328,9 @@ class Session(NoNewAttributesAfterInit):
                   itemname: str,
                   itemdesc: str
                   ) -> None:
-        id = self._fix_id(id)
+        idval = self._fix_id(id)
         _check_type(item, itemtype, itemname, itemdesc)
-        itemdict[id] = item
+        itemdict[idval] = item
 
     def get_default_id(self) -> IdType:
         """Return the default data set identifier.
@@ -2544,7 +2616,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             _check_type(meth, OptMethod, 'meth',
                         'a method name or object')
-            method = meth
+            method = cast(OptMethod, meth)
 
         self._current_method = method
 
@@ -3160,7 +3232,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             _check_type(stat, Stat, 'stat',
                         'a statistic name or object')
-            statobj = stat
+            statobj = cast(Stat, stat)
 
         self._current_stat = statobj
 
@@ -3269,7 +3341,10 @@ class Session(NoNewAttributesAfterInit):
         return self._data.get(self._fix_id(id))
 
     # DOC-TODO: terrible synopsis
-    def set_data(self, id, data=None) -> None:
+    def set_data(self,
+                 id: IdType | Data | None,
+                 data: Data | None = None
+                 ) -> None:
 
         """Set a data set.
 
@@ -3312,18 +3387,24 @@ class Session(NoNewAttributesAfterInit):
         >>> set_data('bkg', get_bkg())
 
         """
-        if data is None:
-            id, data = data, id
-        self._set_item(id, data, self._data, sherpa.data.Data, 'data',
-                       'a data set')
+        idarg, dataarg = separate_id_from_arg(id, data)
+        self._set_item(idarg, dataarg, self._data, Data,
+                       'data', 'a data set')
 
-    def _read_error(self, filename, *args, **kwargs):
+    def _read_error(self,
+                    filename: str,
+                    *args, **kwargs
+                    ) -> np.ndarray:
+        """Return the last column of data"""
         err = sherpa.io.get_ascii_data(filename, *args, **kwargs)[1].pop()
         return err
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
-    def load_staterror(self, id, filename=None, ncols=2,
+    def load_staterror(self,
+                       id: IdType | None,
+                       filename: str | None = None,
+                       ncols: int = 2,
                        *args, **kwargs) -> None:
         """Load the statistical errors from an ASCII file.
 
@@ -3388,15 +3469,16 @@ class Session(NoNewAttributesAfterInit):
         >>> load_staterror('core', 'errors.dat')
 
         """
-        if filename is None:
-            id, filename = filename, id
-
-        self.set_staterror(id, self._read_error(filename, ncols=ncols,
-                                                *args, **kwargs))
+        idarg, filearg = separate_id_from_arg(id, filename)
+        errs = self._read_error(filearg, ncols=ncols, *args, **kwargs)
+        self.set_staterror(idarg, errs)
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
-    def load_syserror(self, id, filename=None, ncols=2,
+    def load_syserror(self,
+                      id: IdType | None,
+                      filename: str | None = None,
+                      ncols: int = 2,
                       *args, **kwargs) -> None:
         """Load the systematic errors from an ASCII file.
 
@@ -3458,15 +3540,17 @@ class Session(NoNewAttributesAfterInit):
         >>> load_syserror('core', 'errors.dat')
 
         """
-        if filename is None:
-            id, filename = filename, id
-
-        self.set_syserror(id, self._read_error(filename, ncols=ncols,
-                                               *args, **kwargs))
+        idarg, filearg = separate_id_from_arg(id, filename)
+        errs = self._read_error(filearg, ncols=ncols, *args, **kwargs)
+        self.set_syserror(idarg, errs)
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
-    def load_filter(self, id, filename=None, ignore=False, ncols=2,
+    def load_filter(self,
+                    id: IdType | None,
+                    filename: str | None = None,
+                    ignore: bool = False,
+                    ncols: int = 2,
                     *args, **kwargs) -> None:
         """Load the filter array from an ASCII file and add to a data set.
 
@@ -3524,15 +3608,14 @@ class Session(NoNewAttributesAfterInit):
         >>> load_filter(2, 'filt.dat', colkeys=['FILTER'])
 
         """
-        if filename is None:
-            id, filename = filename, id
+        idarg, filearg = separate_id_from_arg(id, filename)
+        fvals = self._read_error(filearg, ncols=ncols, *args, **kwargs)
+        self.set_filter(idarg, fvals, ignore=ignore)
 
-        self.set_filter(id,
-                        self._read_error(
-                            filename, ncols=ncols, *args, **kwargs),
-                        ignore=ignore)
-
-    def set_filter(self, id, val=None, ignore=False) -> None:
+    def set_filter(self,
+                   id: IdType | ArrayType | None,
+                   val: ArrayType | None = None,
+                   ignore: bool = False) -> None:
         """Set the filter array of a data set.
 
         Parameters
@@ -3574,14 +3657,15 @@ class Session(NoNewAttributesAfterInit):
         >>> set_filter(d >= 20)
 
         """
-        if val is None:
-            val, id = id, val
-
-        d = self.get_data(id)
-        set_filter(d, val, ignore=ignore)
+        idarg, valarg = separate_id_from_arg(id, val)
+        d = self.get_data(idarg)
+        set_filter(d, valarg, ignore=ignore)
 
     # also in sherpa.astro.utils
-    def set_dep(self, id, val=None) -> None:
+    def set_dep(self,
+                id: IdType | float | ArrayType | None,
+                val: float | ArrayType | None = None
+                ) -> None:
         """Set the dependent axis of a data set.
 
         Parameters
@@ -3622,14 +3706,15 @@ class Session(NoNewAttributesAfterInit):
         >>> set_dep('src', y1)
 
         """
-        if val is None:
-            val, id = id, val
-        d = self.get_data(id)
-
-        set_dep(d, val)
+        idarg, valarg = separate_id_from_arg(id, val)
+        d = self.get_data(idarg)
+        set_dep(d, valarg)
 
     # DOC-NOTE: also in sherpa.utils
-    def set_staterror(self, id, val=None, fractional=False) -> None:
+    def set_staterror(self,
+                      id: IdType | float | ArrayType | None,
+                      val: float | ArrayType | None = None,
+                      fractional: bool = False) -> None:
         """Set the statistical errors on the dependent axis of a data set.
 
         These values override the errors calculated by any statistic,
@@ -3680,14 +3765,15 @@ class Session(NoNewAttributesAfterInit):
         >>> set_staterror('core', 0.05, fractional=True)
 
         """
-        if val is None:
-            val, id = id, val
-
-        d = self.get_data(id)
-        set_error(d, "staterror", val, fractional=fractional)
+        idarg, valarg = separate_id_from_arg(id, val)
+        d = self.get_data(idarg)
+        set_error(d, "staterror", valarg, fractional=bool_cast_scalar(fractional))
 
     # DOC-NOTE: also in sherpa.astro.utils
-    def set_syserror(self, id, val=None, fractional=False) -> None:
+    def set_syserror(self,
+                     id: IdType | float | ArrayType | None,
+                     val: float | ArrayType | None = None,
+                     fractional: bool = False) -> None:
         """Set the systematic errors on the dependent axis of a data set.
 
         Parameters
@@ -3735,16 +3821,14 @@ class Session(NoNewAttributesAfterInit):
         >>> set_syserror('core', 0.05, fractional=True)
 
         """
-        if val is None:
-            val, id = id, val
-
-        d = self.get_data(id)
-        set_error(d, "syserror", val, fractional=fractional)
+        idarg, valarg = separate_id_from_arg(id, val)
+        d = self.get_data(idarg)
+        set_error(d, "syserror", valarg, fractional=bool_cast_scalar(fractional))
 
     # DOC-NOTE: also in sherpa.astro.utils
     def get_staterror(self,
                       id: IdType | None = None,
-                      filter=False):
+                      filter: bool = False) -> np.ndarray:
         """Return the statistical error on the dependent axis of a data set.
 
         The function returns the statistical errors on the values
@@ -3819,13 +3903,17 @@ class Session(NoNewAttributesAfterInit):
         array([2, 3, 5])
 
         """
-        return self.get_data(id).get_staterror(filter,
-                                               self.get_stat().calc_staterror)
+        idarg = self._fix_id(id)
+        data = self.get_data(idarg)
+        evals = data.get_staterror(filter, self.get_stat().calc_staterror)
+        if evals is None:
+            raise DataErr(f"No statistical error is provided for dataset {idarg}")
+        return np.asarray(evals)
 
     # DOC-NOTE: also in sherpa.astro.utils
     def get_syserror(self,
                      id: IdType | None = None,
-                     filter=False):
+                     filter: bool = False) -> np.ndarray:
         """Return the systematic error on the dependent axis of a data set.
 
         The function returns the systematic errors on the values
@@ -3898,7 +3986,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def get_error(self,
                   id: IdType | None = None,
-                  filter=False):
+                  filter: bool = False) -> ArrayType | None:
         """Return the errors on the dependent axis of a data set.
 
         The function returns the total errors (a quadrature addition
@@ -3963,13 +4051,15 @@ class Session(NoNewAttributesAfterInit):
         >>> err = get_error('core', filter=True)
 
         """
-        return self.get_data(id).get_error(filter,
-                                           self.get_stat().calc_staterror)
+        statfunc = self.get_stat().calc_staterror
+        return self.get_data(id).get_error(filter=filter,
+                                           staterrfunc=statfunc)
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-NOTE: shouldn't this expose a filter parameter?
     def get_indep(self,
-                  id: IdType | None = None):
+                  id: IdType | None = None
+                  ) -> tuple[np.ndarray, ...] | tuple[None, ...]:
         """Return the independent axes of a data set.
 
         This function returns the coordinates of each point, or pixel,
@@ -4022,7 +4112,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def get_dep(self,
                 id: IdType | None = None,
-                filter=False):
+                filter: bool = False) -> np.ndarray | None:
         """Return the dependent axis of a data set.
 
         This function returns the data values (the dependent axis)
@@ -4080,11 +4170,11 @@ class Session(NoNewAttributesAfterInit):
         array([4, 5])
 
         """
-        return self.get_data(id).get_y(filter)
+        return self.get_data(id).get_y(filter=filter)
 
     def get_dims(self,
                  id: IdType | None = None,
-                 filter=False):
+                 filter: bool = False) -> tuple[int, ...]:
         """Return the dimensions of the data set.
 
         Parameters
@@ -4121,7 +4211,7 @@ class Session(NoNewAttributesAfterInit):
         >>> nfilt = get_dims('a2543', filter=True)
 
         """
-        return self.get_data(id).get_dims(filter)
+        return self.get_data(id).get_dims(filter=filter)
 
     # DOC-NOTE: should there be a version in sherpa.astro.utils with a bkg_id
     # parameter?
@@ -4339,9 +4429,13 @@ class Session(NoNewAttributesAfterInit):
         self._data.pop(idval, None)
 
     # DOC-NOTE: also in sherpa.astro.utils
-    def dataspace1d(self, start, stop, step=1, numbins=None,
+    def dataspace1d(self,
+                    start: float,
+                    stop: float,
+                    step: float = 1,
+                    numbins: int | None = None,
                     id: IdType | None = None,
-                    dstype=sherpa.data.Data1DInt
+                    dstype=Data1DInt
                     ) -> None:
         """Create the independent axis for a 1D data set.
 
@@ -4414,20 +4508,21 @@ class Session(NoNewAttributesAfterInit):
 
         """
         # support non-integrated grids with inclusive boundaries
-        if dstype in (sherpa.data.Data1D,):
+        if dstype in (Data1D,):
             stop += step
 
         xlo, xhi, y = sherpa.utils.dataspace1d(start, stop, step=step,
                                                numbins=numbins)
         args = [xlo, xhi, y]
 
-        if dstype is not sherpa.data.Data1DInt:
+        if dstype is not Data1DInt:
             args = [xlo, y]
 
         self.set_data(id, dstype('dataspace1d', *args))
 
     # DOC-NOTE: also in sherpa.astro.utils
-    def dataspace2d(self, dims,
+    def dataspace2d(self,
+                    dims: Sequence[int],
                     id: IdType | None = None,
                     dstype=sherpa.data.Data2D
                     ) -> None:
@@ -4483,7 +4578,7 @@ class Session(NoNewAttributesAfterInit):
 
     def fake(self,
              id: IdType | None = None,
-             method=sherpa.utils.poisson_noise
+             method: Callable = sherpa.utils.poisson_noise
              ) -> None:
         """Simulate a data set.
 
@@ -4560,14 +4655,9 @@ class Session(NoNewAttributesAfterInit):
         ndep = method(data.eval_model(model), rng=self.get_rng())
         self.set_dep(id, ndep)
 
-    @staticmethod
-    def _read_data(readfunc, filename, *args, **kwargs):
-        _check_str_type(filename, "filename")
-        return readfunc(filename, *args, **kwargs)
-
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: What data types are supported here?
-    def unpack_arrays(self, *args):
+    def unpack_arrays(self, *args) -> Data:
         """Create a sherpa data object from arrays of data.
 
         The object returned by `unpack_arrays` can be used in a
@@ -4624,9 +4714,15 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.utils
 
-    def unpack_data(self, filename, ncols=2, colkeys=None,
-                    dstype=sherpa.data.Data1D, sep=' ', comment='#',
-                    require_floats=True):
+    def unpack_data(self,
+                    filename: str,
+                    ncols: int = 2,
+                    colkeys: Sequence[str] | None  =None,
+                    dstype=Data1D,
+                    sep: str = ' ',
+                    comment: str = '#',
+                    require_floats: bool = True
+                    ) -> Data:
         """Create a sherpa data object from an ASCII file.
 
         This function is used to read in columns from an ASCII
@@ -4728,13 +4824,23 @@ class Session(NoNewAttributesAfterInit):
         ...                    dstype=ui.Data1DInt)
 
         """
-        return self._read_data(sherpa.io.read_data, filename, ncols, colkeys,
-                               sep, dstype, comment, require_floats)
+        _check_str_type(filename, "filename")
+        return sherpa.io.read_data(filename, ncols=ncols,
+                                   colkeys=colkeys, sep=sep,
+                                   dstype=dstype, comment=comment,
+                                   require_floats=require_floats)
 
     # DOC-NOTE: also in sherpa.astro.utils
-    def load_data(self, id, filename=None, ncols=2, colkeys=None,
-                  dstype=sherpa.data.Data1D, sep=' ', comment='#',
-                  require_floats=True) -> None:
+    def load_data(self,
+                  id: IdType | None,
+                  filename: str | None = None,
+                  ncols: int = 2,
+                  colkeys: Sequence[str] | None = None,
+                  dstype=Data1D,
+                  sep: str = ' ',
+                  comment: str = '#',
+                  require_floats: bool = True
+                  ) -> None:
         """Load a data set from an ASCII file.
 
         Parameters
@@ -4798,16 +4904,15 @@ class Session(NoNewAttributesAfterInit):
         >>> load_data(2, 'profile.dat', colkeys=cols)
 
         """
-        if filename is None:
-            id, filename = filename, id
-        self.set_data(id, self.unpack_data(filename, ncols=ncols,
-                                           colkeys=colkeys, dstype=dstype,
-                                           sep=sep, comment=comment,
-                                           require_floats=require_floats))
+        idarg, filearg = separate_id_from_arg(id, filename)
+        data = self.unpack_data(filearg, ncols=ncols,
+                                colkeys=colkeys, dstype=dstype,
+                                sep=sep, comment=comment,
+                                require_floats=require_floats)
+        self.set_data(idarg, data)
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: rework the Data type notes section (also needed by unpack_arrays)
-    # @loggable(with_id = True)
     def load_arrays(self,
                     id: IdType,
                     *args) -> None:
@@ -4881,14 +4986,16 @@ class Session(NoNewAttributesAfterInit):
         """
         self.set_data(id, self.unpack_arrays(*args))
 
-    def _save_type(self, objtype: str,
-                   id, filename, **kwargs) -> None:
-        if filename is None:
-            id, filename = filename, id
+    def _save_type(self,
+                   objtype: str,
+                   id: IdType | None,
+                   filename: str | None,
+                   **kwargs) -> None:
+        """Write out data"""
 
-        _check_str_type(filename, "filename")
-
-        d = self.get_data(id)
+        idarg, filearg = separate_id_from_arg(id, filename)
+        _check_str_type(filearg, "filename")
+        d = self.get_data(idarg)
 
         args = None
         fields = None
@@ -4902,7 +5009,7 @@ class Session(NoNewAttributesAfterInit):
             funcname = f"get_{objtype}_image"
             imgtype = getattr(self, funcname)
 
-            obj = imgtype(id)
+            obj = imgtype(idarg)
             args = [obj.y]
             fields = [str(objtype).upper()]
 
@@ -4910,15 +5017,22 @@ class Session(NoNewAttributesAfterInit):
             funcname = f"get_{objtype}_plot"
             plottype = getattr(self, funcname)
 
-            obj = plottype(id)
+            obj = plottype(idarg)
             args = [obj.x, obj.y]
             fields = ["X", str(objtype).upper()]
 
-        sherpa.io.write_arrays(filename, args, fields, **kwargs)
+        sherpa.io.write_arrays(filearg, args, fields, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    def save_arrays(self, filename, args, fields=None, clobber=False, sep=' ',
-                    comment='#', linebreak='\n', format='%g'
+    def save_arrays(self,
+                    filename: str,
+                    args: Sequence,
+                    fields: Sequence[str] | None = None,
+                    clobber: bool = False,
+                    sep: str = ' ',
+                    comment: str = '#',
+                    linebreak: str = '\n',
+                    format: str = '%g'
                     ) -> None:
         """Write a list of arrays to an ASCII file.
 
@@ -4970,14 +5084,21 @@ class Session(NoNewAttributesAfterInit):
         ...             clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
         _check_str_type(filename, "filename")
-        sherpa.io.write_arrays(filename, args, fields, sep, comment, clobber,
-                               linebreak, format)
+        sherpa.io.write_arrays(filename, args, fields=fields, sep=sep,
+                               comment=comment,
+                               clobber=bool_cast_scalar(clobber),
+                               linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_source(self, id, filename=None, clobber=False, sep=' ',
-                    comment='#', linebreak='\n', format='%g'
+    def save_source(self,
+                    id: IdType | None,
+                    filename: str | None = None,
+                    clobber: bool = False,
+                    sep: str = ' ',
+                    comment: str = '#',
+                    linebreak: str = '\n',
+                    format: str = '%g'
                     ) -> None:
         """Save the model values to a file.
 
@@ -5047,13 +5168,20 @@ class Session(NoNewAttributesAfterInit):
         >>> save_source('jet', "jet.mdl", clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        self._save_type('source', id, filename, clobber=clobber, sep=sep,
-                        comment=comment, linebreak=linebreak, format=format)
+        self._save_type('source', id, filename,
+                        clobber=bool_cast_scalar(clobber), sep=sep,
+                        comment=comment, linebreak=linebreak,
+                        format=format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_model(self, id, filename=None, clobber=False, sep=' ',
-                   comment='#', linebreak='\n', format='%g'
+    def save_model(self,
+                   id: IdType | None,
+                   filename: str | None = None,
+                   clobber: bool = False,
+                   sep: str = ' ',
+                   comment: str = '#',
+                   linebreak: str = '\n',
+                   format: str = '%g'
                    ) -> None:
         """Save the model values to a file.
 
@@ -5124,13 +5252,20 @@ class Session(NoNewAttributesAfterInit):
         >>> save_model('jet', "jet.mdl", clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        self._save_type('model', id, filename, clobber=clobber, sep=sep,
-                        comment=comment, linebreak=linebreak, format=format)
+        self._save_type('model', id, filename,
+                        clobber=bool_cast_scalar(clobber), sep=sep,
+                        comment=comment, linebreak=linebreak,
+                        format=format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_resid(self, id, filename=None, clobber=False, sep=' ',
-                   comment='#', linebreak='\n', format='%g'
+    def save_resid(self,
+                   id: IdType | None,
+                   filename: str | None = None,
+                   clobber: bool = False,
+                   sep: str = ' ',
+                   comment: str = '#',
+                   linebreak: str = '\n',
+                   format: str = '%g'
                    ) -> None:
         """Save the residuals (data-model) to a file.
 
@@ -5195,13 +5330,20 @@ class Session(NoNewAttributesAfterInit):
         >>> save_resid('jet', "resid.dat", clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        self._save_type('resid', id, filename, clobber=clobber, sep=sep,
-                        comment=comment, linebreak=linebreak, format=format)
+        self._save_type('resid', id, filename,
+                        clobber=bool_cast_scalar(clobber), sep=sep,
+                        comment=comment, linebreak=linebreak,
+                        format=format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_delchi(self, id, filename=None, clobber=False, sep=' ',
-                    comment='#', linebreak='\n', format='%g'
+    def save_delchi(self,
+                    id: IdType | None,
+                    filename: str | None = None,
+                    clobber: bool = False,
+                    sep: str = ' ',
+                    comment: str = '#',
+                    linebreak: str = '\n',
+                    format: str = '%g'
                     ) -> None:
         """Save the ratio of residuals (data-model) to error to a file.
 
@@ -5266,13 +5408,21 @@ class Session(NoNewAttributesAfterInit):
         >>> save_resid('jet', "delchi.dat", clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        self._save_type('delchi', id, filename, clobber=clobber, sep=sep,
-                        comment=comment, linebreak=linebreak, format=format)
+        self._save_type('delchi', id, filename,
+                        clobber=bool_cast_scalar(clobber), sep=sep,
+                        comment=comment, linebreak=linebreak,
+                        format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils
-    def save_data(self, id, filename=None, fields=None, sep=' ', comment='#',
-                  clobber=False, linebreak='\n', format='%g'
+    def save_data(self,
+                  id: IdType | None,
+                  filename: str | None = None,
+                  fields: Sequence[str] | None = None,
+                  sep: str = ' ',
+                  comment: str = '#',
+                  clobber: bool = False,
+                  linebreak: str = '\n',
+                  format: str = '%g'
                   ) -> None:
         """Save the data to a file.
 
@@ -5345,17 +5495,23 @@ class Session(NoNewAttributesAfterInit):
         ...           fields=['x', 'y', 'staterror'])
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        if filename is None:
-            id, filename = filename, id
-
-        _check_str_type(filename, "filename")
-        sherpa.io.write_data(filename, self.get_data(id), fields, sep,
-                             comment, clobber, linebreak, format)
+        clob = bool_cast_scalar(clobber)
+        idarg, filearg = separate_id_from_arg(id, filename)
+        _check_str_type(filearg, "filename")
+        sherpa.io.write_data(filearg, self.get_data(idarg),
+                             fields=fields, sep=sep, comment=comment,
+                             clobber=clob, linebreak=linebreak,
+                             format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    def save_filter(self, id, filename=None, clobber=False, sep=' ',
-                    comment='#', linebreak='\n', format='%g'
+    def save_filter(self,
+                    id: IdType | None,
+                    filename: str | None = None,
+                    clobber: bool = False,
+                    sep: str = ' ',
+                    comment: str = '#',
+                    linebreak: str = '\n',
+                    format: str = '%g'
                     ) -> None:
         """Save the filter array to a file.
 
@@ -5414,28 +5570,31 @@ class Session(NoNewAttributesAfterInit):
         >>> save_filter('filt.dat')
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        if filename is None:
-            id, filename = filename, id
-
-        _check_str_type(filename, "filename")
-        d = self.get_data(id)
-        id = self._fix_id(id)
-
+        clob = bool_cast_scalar(clobber)
+        idarg, filearg = separate_id_from_arg(id, filename)
+        _check_str_type(filearg, "filename")
+        idval = self._fix_id(idarg)
+        d = self.get_data(idval)
         if d.mask is False:
             raise sherpa.utils.err.DataErr('notmask')
         if not np.iterable(d.mask):
-            raise sherpa.utils.err.DataErr('nomask', id)
+            raise sherpa.utils.err.DataErr('nomask', idval)
 
         x = d.get_indep(filter=False)[0]
         mask = np.asarray(d.mask, int)
-        self.save_arrays(filename, [x, mask], fields=['X', 'FILTER'],
-                         clobber=clobber, sep=sep, comment=comment,
+        self.save_arrays(filearg, [x, mask], fields=['X', 'FILTER'],
+                         clobber=clob, sep=sep, comment=comment,
                          linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    def save_staterror(self, id, filename=None, clobber=False, sep=' ',
-                       comment='#', linebreak='\n', format='%g'
+    def save_staterror(self,
+                       id: IdType | None,
+                       filename: str | None = None,
+                       clobber: bool = False,
+                       sep: str = ' ',
+                       comment: str = '#',
+                       linebreak: str = '\n',
+                       format: str = '%g'
                        ) -> None:
         """Save the statistical errors to a file.
 
@@ -5503,20 +5662,25 @@ class Session(NoNewAttributesAfterInit):
         >>> save_staterror('jet', 'err.out', clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        if filename is None:
-            id, filename = filename, id
-
-        _check_str_type(filename, "filename")
-        x = self.get_data(id).get_indep(filter=False)[0]
-        err = self.get_staterror(id, filter=False)
-        self.save_arrays(filename, [x, err], fields=['X', 'STAT_ERR'],
-                         clobber=clobber, sep=sep, comment=comment,
+        clob = bool_cast_scalar(clobber)
+        idarg, filearg = separate_id_from_arg(id, filename)
+        _check_str_type(filearg, "filename")
+        idval = self._fix_id(idarg)
+        x = self.get_data(idval).get_indep(filter=False)[0]
+        err = self.get_staterror(idval, filter=False)
+        self.save_arrays(filearg, [x, err], fields=['X', 'STAT_ERR'],
+                         clobber=clob, sep=sep, comment=comment,
                          linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    def save_syserror(self, id, filename=None, clobber=False, sep=' ',
-                      comment='#', linebreak='\n', format='%g'
+    def save_syserror(self,
+                      id: IdType | None,
+                      filename: str | None = None,
+                      clobber: bool = False,
+                      sep: str = ' ',
+                      comment: str = '#',
+                      linebreak: str = '\n',
+                      format: str = '%g'
                       ) -> None:
         """Save the statistical errors to a file.
 
@@ -5582,20 +5746,25 @@ class Session(NoNewAttributesAfterInit):
         >>> save_syserror('jet', 'err.out', clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        if filename is None:
-            id, filename = filename, id
-
-        _check_str_type(filename, "filename")
-        x = self.get_data(id).get_indep(filter=False)[0]
-        err = self.get_syserror(id, filter=False)
-        self.save_arrays(filename, [x, err], fields=['X', 'SYS_ERR'],
-                         clobber=clobber, sep=sep, comment=comment,
+        clob = bool_cast_scalar(clobber)
+        idarg, filearg = separate_id_from_arg(id, filename)
+        _check_str_type(filearg, "filename")
+        idval = self._fix_id(idarg)
+        x = self.get_data(idval).get_indep(filter=False)[0]
+        err = self.get_syserror(idval, filter=False)
+        self.save_arrays(filearg, [x, err], fields=['X', 'SYS_ERR'],
+                         clobber=clob, sep=sep, comment=comment,
                          linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    def save_error(self, id, filename=None, clobber=False, sep=' ',
-                   comment='#', linebreak='\n', format='%g'
+    def save_error(self,
+                   id: IdType | None,
+                   filename: str | None = None,
+                   clobber: bool = False,
+                   sep: str = ' ',
+                   comment: str = '#',
+                   linebreak: str = '\n',
+                   format: str = '%g'
                    ) -> None:
         """Save the errors to a file.
 
@@ -5668,19 +5837,18 @@ class Session(NoNewAttributesAfterInit):
         >>> save_error('jet', 'err.out', clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        if filename is None:
-            id, filename = filename, id
-
-        _check_str_type(filename, "filename")
-        x = self.get_data(id).get_indep(filter=False)[0]
-        err = self.get_error(id, filter=False)
-        self.save_arrays(filename, [x, err], fields=['X', 'ERR'],
-                         clobber=clobber, sep=sep, comment=comment,
+        clob = bool_cast_scalar(clobber)
+        idarg, filearg = separate_id_from_arg(id, filename)
+        _check_str_type(filearg, "filename")
+        idval = self._fix_id(idarg)
+        x = self.get_data(idval).get_indep(filter=False)[0]
+        err = self.get_error(idval, filter=False)
+        self.save_arrays(filearg, [x, err], fields=['X', 'ERR'],
+                         clobber=clob, sep=sep, comment=comment,
                          linebreak=linebreak, format=format)
 
     def _notice_expr(self,
-                     expr: str | None = None,
+                     expr: str,
                      **kwargs) -> None:
         ids = self.list_data_ids()
         for vals in sherpa.utils.parse_expr(expr):
@@ -5688,7 +5856,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _notice_expr_id(self,
                         ids: IdType | IdTypes,
-                        expr: str | None = None,
+                        expr: str,
                         **kwargs) -> None:
         for vals in sherpa.utils.parse_expr(expr):
             self.notice_id(ids, *vals, **kwargs)
@@ -5697,7 +5865,10 @@ class Session(NoNewAttributesAfterInit):
     # should only be in the sherpa.astro.ui version, but it is not
     # worth creating a copy of the routine just for this.
     #
-    def notice(self, lo=None, hi=None, **kwargs) -> None:
+    def notice(self,
+               lo: float | str | None = None,
+               hi: float | None = None,
+               **kwargs) -> None:
         """Include data in the fit.
 
         Select one or more ranges of data to include by filtering on
@@ -5831,7 +6002,10 @@ class Session(NoNewAttributesAfterInit):
     # should only be in the sherpa.astro.ui version, but it is not
     # worth creating a copy of the routine just for this.
     #
-    def ignore(self, lo=None, hi=None, **kwargs) -> None:
+    def ignore(self,
+               lo: float | str | None = None,
+               hi: float | None = None,
+               **kwargs) -> None:
         """Exclude data from the fit.
 
         Select one or more ranges of data to exclude by filtering on
@@ -5943,7 +6117,8 @@ class Session(NoNewAttributesAfterInit):
     #
     def notice_id(self,
                   ids: IdType | IdTypes,
-                  lo=None, hi=None, **kwargs
+                  lo: float | str | None = None,
+                  hi: float | None = None, **kwargs
                   ) -> None:
         """Include data from the fit for a data set.
 
@@ -6037,7 +6212,7 @@ class Session(NoNewAttributesAfterInit):
             idvals = (ids,)
         else:
             try:
-                idvals = tuple(ids)
+                idvals = tuple(cast(IdTypes, ids))
             except TypeError:
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
@@ -6058,7 +6233,9 @@ class Session(NoNewAttributesAfterInit):
     #
     def ignore_id(self,
                   ids: IdType | IdTypes,
-                  lo=None, hi=None, **kwargs
+                  lo: float | str | None = None,
+                  hi: float | None = None,
+                  **kwargs
                   ) -> None:
         """Exclude data from the fit for a data set.
 
@@ -6150,7 +6327,7 @@ class Session(NoNewAttributesAfterInit):
     # Models
     ###########################################################################
 
-    def paramprompt(self, val=False) -> None:
+    def paramprompt(self, val: bool = False) -> None:
         """Should the user be asked for the parameter values when creating a model?
 
         When `val` is ``True``, calls to `set_model` will cause the user
@@ -6210,10 +6387,10 @@ class Session(NoNewAttributesAfterInit):
         gline.ampl parameter value [1] 1.0e-3,1.0e-7,1
 
         """
-        self._paramprompt = sherpa.utils.bool_cast(val)
+        self._paramprompt = bool_cast_scalar(val)
 
     def _add_model_types(self, module,
-                         baselist=(sherpa.models.ArithmeticModel,)
+                         baselist=(ArithmeticModel,)
                          ) -> None:
         if not isinstance(baselist, tuple):
             baselist = (baselist,)
@@ -6231,7 +6408,11 @@ class Session(NoNewAttributesAfterInit):
             self._model_types[name] = ModelWrapper(self, cls)
             self._model_globals.update(self._model_types)
 
-    def add_model(self, modelclass, args=(), kwargs={}) -> None:
+    def add_model(self,
+                  modelclass: type[Model],
+                  args=(),
+                  kwargs={}
+                  ) -> None:
         """Create a user-defined model class.
 
         Create a model from a class. The name of the class can then be
@@ -6241,9 +6422,8 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         modelclass
-           A class derived from `sherpa.models.model.ArithmeticModel`. This
-           class defines the functional form and the parameters of the
-           model.
+           A class derived from `ArithmeticModel`. This class defines
+           the functional form and the parameters of the model.
         args
            Arguments for the class constructor.
         kwargs
@@ -6285,7 +6465,7 @@ class Session(NoNewAttributesAfterInit):
         """
         name = modelclass.__name__.lower()
 
-        if not is_subclass(modelclass, sherpa.models.ArithmeticModel):
+        if not is_subclass(modelclass, ArithmeticModel):
             raise TypeError(f"model class '{name}' is not a derived class "
                             "from sherpa.models.ArithmeticModel")
 
@@ -6298,7 +6478,7 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def get_model_autoassign_func(self
-                                  ) -> Callable[[str, Model], None]:
+                                  ) -> Callable[[str, Model], None] | None:
         """Return the method used to create model component identifiers.
 
         Provides access to the function which is used by
@@ -6504,7 +6684,7 @@ class Session(NoNewAttributesAfterInit):
     @overload
     def _get_model_component(self,
                              name: str,
-                             require: Literal[False]
+                             require: Literal[False] = False
                              ) -> Model | None:
         ...
 
@@ -6541,8 +6721,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         cmpt = self._model_components.get(name)
-        require = sherpa.utils.bool_cast(require)
-        if require and (cmpt is None):
+        if bool_cast_scalar(require) and cmpt is None:
             raise IdentifierErr('nomodelcmpt', name)
         return cmpt
 
@@ -6606,7 +6785,24 @@ class Session(NoNewAttributesAfterInit):
         _check_str_type(name, "name")
         return self._get_model_component(name, require=True)
 
-    def create_model_component(self, typename=None, name=None):
+    @overload
+    def create_model_component(self,
+                               typename: Model,
+                               name: None
+                               ) -> Model:
+        ...
+
+    @overload
+    def create_model_component(self,
+                               typename: str,
+                               name: str
+                               ) -> Model:
+        ...
+
+    def create_model_component(self,
+                               typename: str | Model,
+                               name: str | None = None
+                               ) -> Model:
         """Create a model component.
 
         Model components created by this function are set to their
@@ -6629,7 +6825,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        model : the sherpa.models.Model object created
+        model : the Model object created
 
         See Also
         --------
@@ -6677,6 +6873,8 @@ class Session(NoNewAttributesAfterInit):
         if isinstance(typename, Model) and name is None:
             return typename
 
+        typename = cast(str, typename)
+        name = cast(str, name)
         _check_str_type(typename, "typename")
         _check_str_type(name, "name")
 
@@ -6689,7 +6887,8 @@ class Session(NoNewAttributesAfterInit):
         self._model_components[name] = model
         return model
 
-    def reset(self, model=None,
+    def reset(self,
+              model: Model | None = None,
               id: IdType | None = None
               ) -> None:
         """Reset the model parameters to their default settings.
@@ -6823,7 +7022,12 @@ class Session(NoNewAttributesAfterInit):
     # Source models
     #
 
-    def _eval_model_expression(self, expr, typestr='model'):
+    # At the moment it is not clear whether we can guarantee the
+    # return type.
+    #
+    def _eval_model_expression(self,
+                               expr: str,
+                               typestr: str = 'model') -> Any:
         try:
             return eval(expr, self._model_globals, self._model_components)
         except Exception as exc:
@@ -6854,7 +7058,8 @@ class Session(NoNewAttributesAfterInit):
     # Return full model for fitting, plotting, etc.  Expects a corresponding
     # data set to be available.
     def _get_model_status(self,
-                          id: IdType | None = None):
+                          id: IdType | None = None
+                          ) -> tuple[Model, bool]:
         id = self._fix_id(id)
         src = self._sources.get(id)
         mdl = self._models.get(id)
@@ -6862,18 +7067,21 @@ class Session(NoNewAttributesAfterInit):
         if src is None and mdl is None:
             raise IdentifierErr('getitem', 'model', id, 'has not been set')
 
-        model = mdl
-        is_source = False
-
-        if mdl is None and src is not None:
+        if mdl is None:
             is_source = True
-            model = src
+            model = cast(Model, src)
+        else:
+            is_source = False
+            model = mdl
 
         return (model, is_source)
 
     def _add_convolution_models(self,
                                 id: IdType | None,
-                                data, model, is_source):
+                                data: Data,
+                                model: Model,
+                                is_source: bool
+                                ) -> Model:
         """Add in "hidden" components to the model expression.
 
         This handles PSF and table models (ensuring that the
@@ -6912,7 +7120,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        model : a sherpa.models.Model object
+        model : a Model object
            This can contain multiple model components. Changing
            attributes of this model changes the model used by the data
            set.
@@ -7008,7 +7216,10 @@ class Session(NoNewAttributesAfterInit):
         model, is_source = self._get_model_status(id)
         return self._add_convolution_models(id, data, model, is_source)
 
-    def _runparamprompt(self, pars):
+    def _runparamprompt(self,
+                        pars: Sequence[Parameter]
+                        ) -> None:
+        """Ask the user for the parameter values."""
 
         if not self._paramprompt:
             return
@@ -7059,10 +7270,11 @@ class Session(NoNewAttributesAfterInit):
                     continue
 
     # DOC-NOTE: also in sherpa.astro.utils
-    # DOC-TODO: what examples/info should be talked about here?
-    # (e.g. no PHA/ARF/RMF)
-    # @loggable(with_id=True, with_keyword='model')
-    def set_full_model(self, id, model=None):
+    #
+    def set_full_model(self,
+                       id: IdType | Model | None,
+                       model: Model | None = None
+                       ) -> None:
         """Define the convolved model expression for a data set.
 
         The model expression created by `set_model` can be modified by
@@ -7078,7 +7290,7 @@ class Session(NoNewAttributesAfterInit):
            The data set containing the source expression. If not given
            then the default identifier is used, as returned by
            `get_default_id`.
-        model : str or sherpa.models.Model object
+        model : str or Model object
            This defines the model used to fit the data. It can be a
            Python expression or a string version of it.
 
@@ -7112,17 +7324,16 @@ class Session(NoNewAttributesAfterInit):
         >>> set_full_model("src", smodel)
 
         """
-        if model is None:
-            id, model = model, id
+        idarg, modelarg = separate_id_from_arg(id, model)
+        modelval = self._check_model(modelarg)
+        idval = self._fix_id(idarg)
+        self._models[idval] = modelval
+        self._runparamprompt(modelval.pars)
 
-        model = self._check_model(model)
-        idval = self._fix_id(id)
-        self._models[idval] = model
-        self._runparamprompt(model.pars)
-
-    # DOC-TODO: the .cache value appears to default to 5
-    # @loggable(with_id=True, with_keyword="model")
-    def set_model(self, id, model=None):
+    def set_model(self,
+                  id: IdType | Model | None,
+                  model: Model | None = None
+                  ) -> None:
         """Set the source model expression for a data set.
 
         The function is available as both `set_model` and
@@ -7237,11 +7448,9 @@ class Session(NoNewAttributesAfterInit):
         >>> gal.cache = 1
 
         """
-        if model is None:
-            id, model = model, id
-
-        model = self._check_model(model)
-        idval = self._fix_id(id)
+        idarg, modelarg = separate_id_from_arg(id, model)
+        modelval = self._check_model(modelarg)
+        idval = self._fix_id(idarg)
 
         # Fit(data, model) does the dimensionality validation. Note
         # that we assume that any convolution-style model (e.g. a PSF
@@ -7249,10 +7458,10 @@ class Session(NoNewAttributesAfterInit):
         #
         data = self._data.get(idval)
         if data is not None:
-            Fit(data, model)
+            Fit(data, modelval)
 
-        self._sources[idval] = model
-        self._runparamprompt(model.pars)
+        self._sources[idval] = modelval
+        self._runparamprompt(modelval.pars)
 
         # Delete any previous model set with set_full_model()
         mdl = self._models.pop(idval, None)
@@ -7310,11 +7519,11 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        model : `str` or a `sherpa.models.model.Model` object
+        model : `str` or a `Model` object
 
         Returns
         -------
-        model : `sherpa.models.model.Model` instance
+        model : `Model` instance
 
         Raises
         ------
@@ -7328,16 +7537,19 @@ class Session(NoNewAttributesAfterInit):
             mdl = self._eval_model_expression(model)
         else:
             mdl = model
+
         _check_type(mdl, Model, 'model',
                     'a model object or model expression string')
-        return mdl
+        return cast(Model, mdl)
 
-    def get_model_type(self, model):
+    def get_model_type(self,
+                       model: Model
+                       ) -> str:
         """Describe a model expression.
 
         Parameters
         ----------
-        model : str or a sherpa.models.model.Model object
+        model : `str` or a `Model` object
 
         Returns
         -------
@@ -7594,10 +7806,16 @@ class Session(NoNewAttributesAfterInit):
     # "Special" models (user and table models)
     #
 
-    def _read_user_model(self, filename, ncols=2, colkeys=None,
-                         dstype=sherpa.data.Data1D, sep=' ', comment='#'):
-        x = None
-        y = None
+    def _read_user_model(self,
+                         filename: str,
+                         ncols: int = 2,
+                         colkeys: Sequence[str] | None = None,
+                         dstype=Data1D,
+                         sep: str = ' ',
+                         comment: str = '#'
+                         ) -> tuple[np.ndarray | None, np.ndarray]:
+        """Read in the data."""
+
         try:
             data = self.unpack_data(filename, ncols, colkeys,
                                     dstype, sep, comment)
@@ -7607,16 +7825,26 @@ class Session(NoNewAttributesAfterInit):
         except TypeError:
             # we have to check for the case of a *single* column in the file
             # extract the single array from the read and bypass the dataset
+            x = None
             y = sherpa.io.get_ascii_data(filename, ncols=1, colkeys=colkeys,
                                          sep=sep, dstype=dstype,
                                          comment=comment)[1].pop()
 
-        return (x, y)
+        # y must contain at least 1 element, thanks to how sherpa.io
+        # works, but the types do not know this, hence the cast.
+        return (x, cast(np.ndarray, y))
 
     # DOC-TODO: I am not sure I have the data format correct.
     # DOC-TODO: description of template interpolation needs a lot of work.
-    def load_template_model(self, modelname, templatefile, dstype=sherpa.data.Data1D,
-                            sep=' ', comment='#', method=sherpa.utils.linear_interp, template_interpolator_name='default'):
+    def load_template_model(self,
+                            modelname: str,
+                            templatefile: str,
+                            dstype=Data1D,
+                            sep: str = ' ',
+                            comment: str = '#',
+                            method: Callable = sherpa.utils.linear_interp,
+                            template_interpolator_name: str = 'default'
+                            ) -> None:
         """Load a set of templates and use it as a model component.
 
         A template model can be considered to be an extension
@@ -7725,8 +7953,11 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(templatemodel)
 
     # DOC-TODO: description of template interpolation needs a lot of work.
-    # @loggable()
-    def load_template_interpolator(self, name, interpolator_class, **kwargs):
+    def load_template_interpolator(self,
+                                   name: str,
+                                   interpolator_class,
+                                   **kwargs
+                                   ) -> None:
         """Set the template interpolation scheme.
 
         Parameters
@@ -7754,9 +7985,16 @@ class Session(NoNewAttributesAfterInit):
         """
         add_interpolator(name, interpolator_class, **kwargs)
 
-    def load_table_model(self, modelname, filename, ncols=2, colkeys=None,
-                         dstype=sherpa.data.Data1D, sep=' ', comment='#',
-                         method=sherpa.utils.linear_interp):
+    def load_table_model(self,
+                         modelname: str,
+                         filename: str,
+                         ncols: int = 2,
+                         colkeys: Sequence[str] | None = None,
+                         dstype=Data1D,
+                         sep: str = ' ',
+                         comment: str = '#',
+                         method: Callable = sherpa.utils.linear_interp
+                         ) -> None:
         """Load ASCII tabular data and use it as a model component.
 
         A table model is defined on a grid of points which is
@@ -7850,10 +8088,16 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils
     # DOC-TODO: how is the _y value used if set
-    # @loggable()
-    def load_user_model(self, func, modelname, filename=None, ncols=2,
-                        colkeys=None, dstype=sherpa.data.Data1D,
-                        sep=' ', comment='#'):
+    def load_user_model(self,
+                        func: Callable,
+                        modelname: str,
+                        filename: str | None = None,
+                        ncols: int = 2,
+                        colkeys: Sequence[str] | None = None,
+                        dstype=Data1D,
+                        sep: str = ' ',
+                        comment: str = '#'
+                        ) -> None:
         """Create a user-defined model.
 
         Assign a name to a function; this name can then be used as any
@@ -7953,10 +8197,14 @@ class Session(NoNewAttributesAfterInit):
                                                     dstype, sep, comment)
         self._add_model_component(usermodel)
 
-    # @loggable()
-    def add_user_pars(self, modelname, parnames,
-                      parvals=None, parmins=None, parmaxs=None,
-                      parunits=None, parfrozen=None
+    def add_user_pars(self,
+                      modelname: str,
+                      parnames: Sequence[str],
+                      parvals: Sequence[float] | None = None,
+                      parmins: Sequence[float] | None = None,
+                      parmaxs: Sequence[float] | None = None,
+                      parunits: Sequence[str] | None = None,
+                      parfrozen: Sequence[bool] | None = None
                       ) -> None:
         """Add parameter information to a user model.
 
@@ -8045,16 +8293,16 @@ class Session(NoNewAttributesAfterInit):
             frozen = list(parfrozen)
 
         for name in parnames:
-            par = sherpa.models.Parameter(modelname, name, 0.0)
-            if parvals is not None:
+            par = Parameter(modelname, name, 0.0)
+            if vals is not None:
                 par.val = vals.pop(0)
-            if parmins is not None:
+            if mins is not None:
                 par.min = mins.pop(0)
-            if parmaxs is not None:
+            if maxs is not None:
                 par.max = maxs.pop(0)
-            if parunits is not None:
+            if units is not None:
                 par.units = units.pop(0)
-            if parfrozen is not None:
+            if frozen is not None:
                 par.frozen = frozen.pop(0)
             pars.append(par)
 
@@ -8072,7 +8320,10 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(newusermodel)
 
     # DOC-TODO: Improve priors documentation
-    def load_user_stat(self, statname, calc_stat_func, calc_err_func=None,
+    def load_user_stat(self,
+                       statname: str,
+                       calc_stat_func: Callable,
+                       calc_err_func: Callable | None = None,
                        priors={}
                        ) -> None:
         """Create a user-defined statistic.
@@ -8144,7 +8395,7 @@ class Session(NoNewAttributesAfterInit):
             assert False
             # TODO: clean this up
             pars = [(key, priors.pop(key)) for key in priors.keys()
-                    if isinstance(priors[key], sherpa.models.Parameter)]
+                    if isinstance(priors[key], Parameter)]
             kwargs = dict(pars)
             userstat = sherpa.logposterior.Prior(calc_stat_func, priors, kwargs)
 
@@ -8167,8 +8418,12 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: why isn't the "flux" of the convolved model ~
     # that of the unconvolved model?
     # DOC-NOTE: better description of conv vs psf
-    # @loggable()
-    def load_conv(self, modelname, filename_or_model, *args, **kwargs):
+    def load_conv(self,
+                  modelname: str,
+                  filename_or_model,
+                  *args,
+                  **kwargs
+                  ) -> None:
         """Load a 1D convolution model.
 
         The convolution model can be defined either by a data set,
@@ -8236,14 +8491,19 @@ class Session(NoNewAttributesAfterInit):
                 kernel = self.unpack_data(filename_or_model,
                                           *args, **kwargs)
 
-        conv = sherpa.instrument.ConvolutionKernel(kernel, modelname)
+        conv = ConvolutionKernel(kernel, modelname)
         self._add_model_component(conv)
 
     #
     # PSF1
     #
 
-    def load_psf(self, modelname, filename_or_model, *args, **kwargs):
+    def load_psf(self,
+                 modelname: str,
+                 filename_or_model,
+                 *args,
+                 **kwargs
+                 ) -> None:
         """Create a PSF model.
 
         Create a PSF model representing either an array of data, read
@@ -8300,13 +8560,15 @@ class Session(NoNewAttributesAfterInit):
                 kernel = self.unpack_data(filename_or_model,
                                           *args, **kwargs)
 
-        psf = sherpa.instrument.PSFModel(modelname, kernel)
+        psf = PSFModel(modelname, kernel)
         self._add_model_component(psf)
         self._psf_models.append(psf)
 
     # DOC-TODO: am I correct about the multiple use warning?
-    # @loggable(with_id=True, with_keyword='psf')
-    def set_psf(self, id, psf=None):
+    def set_psf(self,
+                id: IdType | Model | None,  # should use PSFModel
+                psf: Model | None = None
+                ) -> None:
         """Add a PSF model to a data set.
 
         After this call, the model that is fit to the data (as set by
@@ -8321,7 +8583,7 @@ class Session(NoNewAttributesAfterInit):
         id : int or str, optional
            The data set. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        psf : str or `sherpa.instrument.PSFModel` instance
+        psf : str or `PSFModel` instance
            The PSF model created by `load_psf`.
 
         See Also
@@ -8416,22 +8678,21 @@ class Session(NoNewAttributesAfterInit):
         >>> image_kernel(newframe=True, tile=True)
 
         """
-        if psf is None:
-            id, psf, = psf, id
-        id = self._fix_id(id)
+        idarg, psfarg = separate_id_from_arg(id, psf)
+        idval = self._fix_id(idarg)
 
-        if _is_str(psf):
-            psf = self._eval_model_expression(psf)
+        if _is_str(psfarg):
+            psfmdl = self._eval_model_expression(psfarg)
+        else:
+            psfmdl = psfarg
 
-        self._set_item(id, psf, self._psf, sherpa.instrument.PSFModel, 'psf',
+        self._set_item(idval, psfmdl, self._psf, PSFModel, 'psf',
                        'a PSF model object or PSF model expression string')
 
         # fold the PSF with data and model if available, if not pass
         try:
-            data = self.get_data(id)
-            psf = self._psf.get(id, None)
-            if psf is not None:
-                psf.fold(data)
+            data = self.get_data(idval)
+            psfmdl.fold(data)
 
         except IdentifierErr:
             pass
@@ -8440,20 +8701,24 @@ class Session(NoNewAttributesAfterInit):
         # attribute, then populate the model position parameters
         # using the PSF center if the user has not already done so.
         # Note: PSFKernel only.
-        if (psf.kernel is not None and callable(psf.kernel) and
-                psf.model is not None and isinstance(psf.model, sherpa.instrument.PSFKernel)):
+        if psfmdl.kernel is not None and \
+           psfmdl.model is not None and \
+           callable(psfmdl.kernel) and \
+           isinstance(psfmdl.model, PSFKernel):
 
-            psf_center = psf.center
+            psf_center = psfmdl.center
             if np.isscalar(psf_center):
                 psf_center = [psf_center]
             try:
-                center = psf.kernel.get_center()
+                center = psfmdl.kernel.get_center()
                 if (np.asarray(center) == 0.0).all():
-                    psf.kernel.set_center(*psf_center, values=True)
+                    psfmdl.kernel.set_center(*psf_center, values=True)
             except NotImplementedError:
                 pass
 
-    def get_psf(self, id: IdType | None = None):
+    def get_psf(self,
+                id: IdType | None = None
+                ) -> Model:
         """Return the PSF model defined for a data set.
 
         Return the parameter settings for the PSF model assigned to
@@ -8467,7 +8732,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        psf : a `sherpa.instrument.PSFModel` instance
+        psf : a `PSFModel` instance
 
         Raises
         ------
@@ -8545,13 +8810,23 @@ class Session(NoNewAttributesAfterInit):
         keys = list(self._psf.keys())
         return sorted(keys, key=str)
 
-    def _add_psf(self, id: IdType | None, data, model):
+    # This returns the original model or a ConvolutionModel. For now
+    # treat the return value just as Model.
+    #
+    def _add_psf(self,
+                 id: IdType | None,
+                 data: Data,
+                 model: Model
+                 ) -> Model:
+        """Add any PSF convolution, if necessary."""
+
         idval = self._fix_id(id)
         psf = self._psf.get(idval, None)
+        if psf is None:
+            return model
 
-        if psf is not None:
-            model = psf(model)
-            psf.fold(data)
+        model = psf(model)  # Model is not enough to type this
+        psf.fold(data)
         return model
 
     #
@@ -8566,7 +8841,7 @@ class Session(NoNewAttributesAfterInit):
             par = self._eval_model_expression(par, 'parameter')
         _check_type(par, Parameter, argname,
                     'a parameter object or parameter expression string')
-        return par
+        return cast(Parameter, par)
 
     def get_par(self, par: str | Parameter) -> Parameter:
         """Return a parameter of a model component.
@@ -8579,7 +8854,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        par : a `sherpa.models.parameter.Parameter` instance
+        par : a `Parameter` instance
            The parameter values - e.g. current value, limits, and
            whether it is frozen - can be changed using this
            object.
@@ -8673,7 +8948,9 @@ class Session(NoNewAttributesAfterInit):
         """
         self._check_par(par).set(val, min, max, frozen)
 
-    def freeze(self, *args) -> None:
+    def freeze(self,
+               *args: str | Parameter | Model
+               ) -> None:
         """Fix model parameters so they are not changed by a fit.
 
         The arguments can be parameters or models, in which case all
@@ -8721,17 +8998,22 @@ class Session(NoNewAttributesAfterInit):
         >>> freeze(gal.nh, src.abund)
 
         """
-        for par in list(args):
-            if _is_str(par):
-                par = self._eval_model_expression(par, 'parameter or model')
+        for arg in list(args):
+            if _is_str(arg):
+                obj = self._eval_model_expression(arg, 'parameter or model')
+            else:
+                obj = arg
 
+            obj = cast(Parameter | Model, obj)
             try:
-                par.freeze()
+                obj.freeze()
             except AttributeError as exc:
                 raise ArgumentTypeErr('badarg', 'par',
                                       'a parameter or model object or expression string') from exc
 
-    def thaw(self, *args) -> None:
+    def thaw(self,
+             *args: str | Parameter | Model
+             ) -> None:
         """Allow model parameters to be varied during a fit.
 
         The arguments can be parameters or models, in which case all
@@ -8784,12 +9066,15 @@ class Session(NoNewAttributesAfterInit):
         >>> thaw(gal.nh, src.abund)
 
         """
-        for par in list(args):
-            if _is_str(par):
-                par = self._eval_model_expression(par, 'parameter or model')
+        for arg in list(args):
+            if _is_str(arg):
+                obj = self._eval_model_expression(arg, 'parameter or model')
+            else:
+                obj = arg
 
+            obj = cast(Parameter | Model, obj)
             try:
-                par.thaw()
+                obj.thaw()
             except AttributeError as exc:
                 raise ArgumentTypeErr('badarg', 'par',
                                       'a parameter or model object or expression string') from exc
@@ -9101,7 +9386,7 @@ class Session(NoNewAttributesAfterInit):
         store = self._prepare_fit(id, otherids)
         return self._get_fit_obj(store, estmethod, numcores)
 
-    def _get_stat_info(self):
+    def _get_stat_info(self) -> list[StatInfoResults]:
         """Return the stat info structures.
 
         For each identifier with a dataset and model, calculate the
@@ -9111,7 +9396,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        stats : list of `sherpa.Fit.StatInfoResults`
+        stats : list of `StatInfoResults`
 
         Raises
         ------
@@ -9148,7 +9433,7 @@ class Session(NoNewAttributesAfterInit):
         output.append(statinfo)
         return output
 
-    def calc_stat_info(self):
+    def calc_stat_info(self) -> None:
         """Display the statistic values for the current models.
 
         Displays the statistic value for each data set, and the
@@ -9214,7 +9499,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             info(output[0])
 
-    def get_stat_info(self):
+    def get_stat_info(self) -> list[StatInfoResults]:
         """Return the statistic values for the current models.
 
         Calculate the statistic value for each data set, and the
@@ -9223,7 +9508,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        stats : array of `sherpa.fit.StatInfoResults`
+        stats : array of `StatInfoResults`
            The values for each data set. If there are multiple model
            expressions then the last element will be the value for the
            combined data sets.
@@ -9406,7 +9691,12 @@ class Session(NoNewAttributesAfterInit):
 
         return self._fit_results
 
-    def guess(self, id=None, model=None, limits=True, values=True):
+    def guess(self,
+              id: IdType | Model | None = None,
+              model: Model | None = None,
+              limits: bool = True,
+              values: bool = True
+              ) -> None:
         """Estimate the parameter values and ranges given the loaded data.
 
         The guess function can change the parameter values and
@@ -9515,20 +9805,22 @@ class Session(NoNewAttributesAfterInit):
         #       -> is this id=X or model=X
         #    id=X, model=Y
         #
-        if model is None:
-            # Try to find out if this is a known identifier
-            if id not in self.list_data_ids():
-                id, model = model, id
+        if model is None and id not in self.list_data_ids():
+            idarg = None
+            modelarg = cast(Model | None, id)
+        else:
+            idarg = cast(IdType | None, id)
+            modelarg = cast(Model | None, model)
 
-        idval = self._fix_id(id)
+        idval = self._fix_id(idarg)
         kwargs = {'limits': limits, 'values': values}
 
-        if model is not None:
-            model = self._check_model(model)
+        if modelarg is not None:
+            modelval = self._check_model(modelarg)
             try:
-                model.guess(*self.get_data(idval).to_guess(), **kwargs)
+                modelval.guess(*self.get_data(idval).to_guess(), **kwargs)
             except NotImplementedError:
-                warning('No guess found for %s', model.name)
+                warning('No guess found for %s', modelval.name)
             return
 
         ids, f = self._get_fit(idval)
@@ -9539,7 +9831,8 @@ class Session(NoNewAttributesAfterInit):
 
     def calc_stat(self,
                   id: IdType | None = None,
-                  *otherids: IdType):
+                  *otherids: IdType
+                  ) -> float:
         """Calculate the fit statistic for a data set.
 
         Evaluate the model for one or more data sets, compare it to
@@ -9598,7 +9891,8 @@ class Session(NoNewAttributesAfterInit):
 
     def calc_chisqr(self,
                     id: IdType | None = None,
-                    *otherids: IdType):
+                    *otherids: IdType
+                    ) -> np.ndarray | None:
         """Calculate the per-bin chi-squared statistic.
 
         Evaluate the model for one or more data sets, compare it to the
@@ -9789,7 +10083,10 @@ class Session(NoNewAttributesAfterInit):
         """
         ids, f = self._get_fit(id, otherids)
         res = f.fit(**kwargs)
-        res.datasets = ids
+        # Rather than convert to a list, leave as a tuple but pretend
+        # it is a tuple. Users may be expecting a tuple rather than
+        # list here.
+        res.datasets = cast(list[IdType], ids)
         self._fit_results = res
         info(res.format())
 
@@ -9801,7 +10098,7 @@ class Session(NoNewAttributesAfterInit):
     # Simulation functions
     #
 
-    def get_pvalue_results(self):
+    def get_pvalue_results(self) -> LikelihoodRatioResults | None:
         """Return the data calculated by the last plot_pvalue call.
 
         The `get_pvalue_results` function returns the likelihood ratio test
@@ -9821,10 +10118,10 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        plot : None or a `sherpa.sim.simulate.LikelihoodRatioResults` instance
+        plot : None or a `LikelihoodRatioResults` instance
            If `plot_pvalue` or `get_pvalue_plot` have been called then
-           the return value is a `sherpa.sim.simulate.LikelihoodRatioResults`
-           instance, otherwise `None` is returned.
+           the return value is a `LikelihoodRatioResults` instance,
+           otherwise `None` is returned.
 
         See Also
         --------
@@ -9908,7 +10205,10 @@ class Session(NoNewAttributesAfterInit):
     #
     # For now do not try to support multiple identifiers.
     #
-    def plot_pvalue(self, null_model, alt_model, conv_model=None,
+    def plot_pvalue(self,
+                    null_model: Model,
+                    alt_model: Model,
+                    conv_model=None,
                     id: IdType = 1,
                     otherids: IdTypes = (),
                     num: int = 500,
@@ -10022,13 +10322,17 @@ class Session(NoNewAttributesAfterInit):
         self._plot(lrplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
+    def get_pvalue_plot(self,
+                        null_model: Model | None = None,  # why allow None?
+                        alt_model: Model | None = None,
+                        conv_model=None,
                         id: IdType = 1,
                         otherids: IdTypes = (),
                         num: int = 500,
                         bins: int = 25,
                         numcores: int | None = None,
-                        recalc: bool = False):
+                        recalc: bool = False
+                        ) -> sherpa.plot.LRHistogram:
         """Return the data used by plot_pvalue.
 
         Access the data arrays and preferences defining the histogram plot
@@ -10419,7 +10723,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: how best to document the settings?
     # DOC-TODO: have I got soft_limits described correctly?
-    def get_covar(self):
+    def get_covar(self) -> EstMethod:
         """Return the covariance estimation object.
 
         Returns
@@ -10476,7 +10780,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: have I got soft_limits described correctly?
     # DOC-TODO: when verbose=True how is extra output displayed?
     # stdout, stderr, sherpa logging?
-    def get_conf(self):
+    def get_conf(self) -> EstMethod:
         """Return the confidence-interval estimation object.
 
         Returns
@@ -10581,7 +10885,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._estmethods['confidence']
 
-    def get_proj(self):
+    def get_proj(self) -> EstMethod:
         """Return the confidence-interval estimation object.
 
         .. note:: The `conf` function should be used instead of `proj`.
@@ -10676,12 +10980,14 @@ class Session(NoNewAttributesAfterInit):
     # New "wrappers" to access estimation methods without calling
     # get_proj(), etc.
 
-    def _check_estmethod_opt(self, estmethod, optname):
+    def _check_estmethod_opt(self, estmethod: EstMethod, optname: str) -> None:
         _check_str_type(optname, "optname")
         if optname not in estmethod.config:
             raise ArgumentErr('badopt', optname, estmethod.name)
 
-    def _get_estmethod_opt(self, methodname, optname=None):
+    def _get_estmethod_opt(self,
+                           methodname: str,
+                           optname: str | None = None) -> Any:
         meth = self._estmethods.get(methodname.lower())
         if meth is None:
             raise ArgumentErr('badconf', methodname)
@@ -10690,14 +10996,17 @@ class Session(NoNewAttributesAfterInit):
         self._check_estmethod_opt(meth, optname)
         return meth.config[optname]
 
-    def _set_estmethod_opt(self, methodname, optname, val):
+    def _set_estmethod_opt(self,
+                           methodname: str,
+                           optname: str,
+                           val: Any) -> None:
         meth = self._estmethods.get(methodname.lower())
         if meth is None:
             raise ArgumentErr('badconf', methodname)
         self._check_estmethod_opt(meth, optname)
         meth.config[optname] = val
 
-    def get_covar_opt(self, name=None):
+    def get_covar_opt(self, name: str | None = None) -> Any:
         """Return one or all of the options for the covariance
         method.
 
@@ -10738,7 +11047,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_estmethod_opt('covariance', name)
 
-    def get_conf_opt(self, name=None):
+    def get_conf_opt(self, name: str | None = None) -> Any:
         """Return one or all of the options for the confidence interval
         method.
 
@@ -10779,7 +11088,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_estmethod_opt('confidence', name)
 
-    def get_proj_opt(self, name=None):
+    def get_proj_opt(self, name: str | None = None) -> Any:
         """Return one or all of the options for the confidence interval
         method.
 
@@ -10823,7 +11132,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._get_estmethod_opt('projection', name)
 
-    def set_covar_opt(self, name, val):
+    def set_covar_opt(self, name: str, val) -> None:
         """Set an option for the covariance method.
 
         This is a helper function since the options can also
@@ -10857,7 +11166,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_estmethod_opt('covariance', name, val)
 
-    def set_conf_opt(self, name, val):
+    def set_conf_opt(self, name: str, val: Any) -> None:
         """Set an option for the confidence interval method.
 
         This is a helper function since the options can also
@@ -10891,7 +11200,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_estmethod_opt('confidence', name, val)
 
-    def set_proj_opt(self, name, val):
+    def set_proj_opt(self, name: str, val: Any) -> None:
         """Set an option for the projection method.
 
         .. note:: The `conf` function should be used instead of `proj`.
@@ -10928,12 +11237,12 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_estmethod_opt('projection', name, val)
 
-    def get_covar_results(self):
+    def get_covar_results(self) -> ErrorEstResults:
         """Return the results of the last `covar` run.
 
         Returns
         -------
-        results : sherpa.fit.ErrorEstResults object
+        results : `ErrorEstResults` object
 
         Raises
         ------
@@ -11024,12 +11333,12 @@ class Session(NoNewAttributesAfterInit):
 
         return self._covariance_results
 
-    def get_conf_results(self):
+    def get_conf_results(self) -> ErrorEstResults:
         """Return the results of the last `conf` run.
 
         Returns
         -------
-        results : sherpa.fit.ErrorEstResults object
+        results : `ErrorEstResults` object
 
         Raises
         ------
@@ -11121,14 +11430,14 @@ class Session(NoNewAttributesAfterInit):
 
         return self._confidence_results
 
-    def get_proj_results(self):
+    def get_proj_results(self) -> ErrorEstResults:
         """Return the results of the last `proj` run.
 
         .. note:: The `conf` function should be used instead of `proj`.
 
         Returns
         -------
-        results : sherpa.fit.ErrorEstResults object
+        results : `ErrorEstResults` object
 
         Raises
         ------
@@ -11212,7 +11521,10 @@ class Session(NoNewAttributesAfterInit):
 
         return self._projection_results
 
-    def _est_errors(self, args, methodname):
+    def _est_errors(self,
+                    args,
+                    methodname: str
+                    ) -> ErrorEstResults:
         """Evaluate the errors for the given arguments.
 
         The formatted output of the estimation is logged at the
@@ -11220,7 +11532,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        args : sequence of sherpa.models.Parameter, sherpa.models.Model, int, or str
+        args : sequence of Parameter, Model, int, or str
             The dataset (when an integer or str) to evaluate, the
             model parameter to apply the error estimate on (must be
             thawed), or a model from which all the thawed parameters
@@ -11231,7 +11543,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        result : sherpa.fit.ErrorEstResults instance
+        result : `ErrorEstResults` instance
 
         """
 
@@ -11239,7 +11551,7 @@ class Session(NoNewAttributesAfterInit):
         parlist = []
         otherids = []
         for arg in args:
-            if isinstance(arg, sherpa.models.Parameter):
+            if isinstance(arg, Parameter):
                 if arg.frozen:
                     raise ParameterErr('frozen', arg.fullname)
 
@@ -11273,12 +11585,15 @@ class Session(NoNewAttributesAfterInit):
 
         ids, f = self._get_fit(id, otherids, self._estmethods[methodname])
         res = f.est_errors(self._methods, parlist)
-        res.datasets = ids
+        # Rather than convert to a list, leave as a tuple but pretend
+        # it is a tuple. Users may be expecting a tuple rather than
+        # list here.
+        res.datasets = cast(list[IdType], ids)
         info(res.format())
         return res
 
     # DOC-TODO: include screen output of covar() ?
-    def covar(self, *args):
+    def covar(self, *args) -> None:
         """Estimate parameter confidence intervals using the covariance method.
 
         The `covar` command computes confidence interval bounds for
@@ -11296,7 +11611,7 @@ class Session(NoNewAttributesAfterInit):
            The data set, or sets, that provides the data. If not given
            then all data sets with an associated model are used
            simultaneously.
-        parameter : sherpa.models.parameter.Parameter, optional
+        parameter : Parameter, optional
            The default is to calculate the confidence limits on all
            thawed parameters of the model, or models, for all the data
            sets. The evaluation can be restricted by listing the
@@ -11394,7 +11709,7 @@ class Session(NoNewAttributesAfterInit):
         Change the limits to be 1.6 sigma (90%) rather than the default
         1 sigma.
 
-        >>> set_covar_ope('sigma', 1.6)
+        >>> set_covar_opt('sigma', 1.6)
         >>> covar()
 
         Only evaluate the ``clus.kt`` parameter for the data sets with
@@ -11423,7 +11738,7 @@ class Session(NoNewAttributesAfterInit):
         self._covariance_results = self._est_errors(args, 'covariance')
 
     # DOC-TODO: include screen output of conf() ?
-    def conf(self, *args):
+    def conf(self, *args) -> None:
         """Estimate parameter confidence intervals using the confidence method.
 
         The `conf` command computes confidence interval bounds for the
@@ -11443,7 +11758,7 @@ class Session(NoNewAttributesAfterInit):
            The data set, or sets, that provides the data. If not given
            then all data sets with an associated model are used
            simultaneously.
-        parameter : sherpa.models.parameter.Parameter, optional
+        parameter : Parameter, optional
            The default is to calculate the confidence limits on all
            thawed parameters of the model, or models, for all the data
            sets. The evaluation can be restricted by listing the
@@ -11645,7 +11960,7 @@ class Session(NoNewAttributesAfterInit):
         self._confidence_results = self._est_errors(args, 'confidence')
 
     # DOC-TODO: add a deprecation note?
-    def proj(self, *args):
+    def proj(self, *args) -> None:
         """Estimate parameter confidence intervals using the projection method.
 
         .. note:: The `conf` function should be used instead of `proj`.
@@ -11667,7 +11982,7 @@ class Session(NoNewAttributesAfterInit):
            The data set, or sets, that provides the data. If not given
            then all data sets with an associated model are used
            simultaneously.
-        parameter : sherpa.models.parameter.Parameter, optional
+        parameter : Parameter, optional
            The default is to calculate the confidence limits on all
            thawed parameters of the model, or models, for all the data
            sets. The evaluation can be restricted by listing the
@@ -11762,7 +12077,7 @@ class Session(NoNewAttributesAfterInit):
     #           to avoid copying the docs?
     ###########################################################################
 
-    def set_sampler_opt(self, opt, value):
+    def set_sampler_opt(self, opt: str, value: Any) -> None:
         """Set an option for the current MCMC sampler.
 
         Parameters
@@ -11821,7 +12136,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._pyblocxs.set_sampler_opt(opt, value)
 
-    def get_sampler_opt(self, opt):
+    def get_sampler_opt(self, opt: str) -> Any:
         """Return an option of the current MCMC sampler.
 
         Returns
@@ -11844,7 +12159,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.get_sampler_opt(opt)
 
-    def get_sampler_name(self):
+    def get_sampler_name(self) -> str:
         """Return the name of the current MCMC sampler.
 
         Returns
@@ -11865,7 +12180,11 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.get_sampler_name()
 
-    def set_sampler(self, sampler):
+    # Technically sampler can also be type[Sampler], but there are
+    # currently problems with this, so leave with sampler just
+    # accepting a string.
+    #
+    def set_sampler(self, sampler: str) -> None:
         """Set the MCMC sampler.
 
         The sampler determines the type of jumping rule to
@@ -11873,10 +12192,10 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        sampler : str or `sherpa.sim.Sampler` instance
-           When a string, the name of the sampler to use (case
-           insensitive). The supported options are given by the
-           `list_samplers` function.
+        sampler : str
+           The name of the sampler to use (case insensitive). The
+           supported options are given by the `list_samplers`
+           function.
 
         See Also
         --------
@@ -11923,7 +12242,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._pyblocxs.set_sampler(sampler)
 
-    def get_sampler(self):
+    def get_sampler(self) -> dict[str, Any]:
         """Return the current MCMC sampler options.
 
         Returns the options for the current pyBLoCXS MCMC sampling
@@ -11952,7 +12271,10 @@ class Session(NoNewAttributesAfterInit):
         return self._pyblocxs.get_sampler()
 
     # DOC-TODO: should set_sampler_opt be mentioned here?
-    def set_prior(self, par, prior):
+    def set_prior(self,
+                  par: Parameter,
+                  prior: Callable
+                  ) -> None:
         """Set the prior function to use with a parameter.
 
         The default prior used by `get_draws` for each parameter
@@ -11965,7 +12287,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        par : a `sherpa.models.parameter.Parameter` instance
+        par : a `Parameter` instance
            A parameter of a model instance.
         prior : function or sherpa.models.model.Model instance
            The function to use for a prior. It must accept a
@@ -12014,7 +12336,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._pyblocxs.set_prior(par, prior)
 
-    def get_prior(self, par):
+    def get_prior(self, par: Parameter) -> Callable:
         """Return the prior function for a parameter (MCMC).
 
         The default behavior of the pyBLoCXS MCMC sampler (run by the
@@ -12024,7 +12346,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        par : a `sherpa.models.parameter.Parameter` instance
+        par : a `Parameter` instance
            A parameter of a model instance.
 
         Returns
@@ -12051,7 +12373,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.get_prior(par)
 
-    def list_priors(self):
+    def list_priors(self) -> dict[str, Callable]:
         """Return the priors set for model parameters, if any.
 
         Returns
@@ -12077,7 +12399,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._pyblocxs.list_priors()
 
-    def list_samplers(self):
+    def list_samplers(self) -> list[str]:
         """List the MCMC samplers.
 
         Returns
@@ -12243,7 +12565,7 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def _get_plot_objects(self,
-                          ids: IdType | IdTypes,
+                          ids: IdType | IdTypes | None,
                           getfunc: Callable[..., Plot | HistogramPlot],
                           *,
                           recalc: bool = True,
@@ -12306,7 +12628,7 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
-    def get_split_plot(self):
+    def get_split_plot(self) -> sherpa.plot.SplitPlot:
         """Return the plot attributes for displays with multiple plots.
 
         Returns
@@ -12332,7 +12654,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_data_plot(self,
                       id: IdType | None = None,
-                      recalc: bool = True):
+                      recalc: bool = True
+                      ) -> sherpa.plot.DataPlot | sherpa.plot.DataHistogramPlot:
         """Return the data used by plot_data.
 
         Parameters
@@ -12376,7 +12699,7 @@ class Session(NoNewAttributesAfterInit):
 
         # This uses the implicit conversion of bool to 0 or 1.
         #
-        idx = isinstance(data, sherpa.data.Data1DInt)
+        idx = isinstance(data, Data1DInt)
         plotobj = self._plot_types["data"][idx]
         if recalc:
             plotobj.prepare(data, self.get_stat())
@@ -12566,7 +12889,8 @@ class Session(NoNewAttributesAfterInit):
     # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self,
                        id: IdType | None = None,
-                       recalc: bool = True):
+                       recalc: bool = True
+                       ) -> sherpa.plot.ModelPlot | sherpa.plot.ModelHistogramPlot:
         """Return the data used to create the model plot.
 
         Parameters
@@ -12604,7 +12928,7 @@ class Session(NoNewAttributesAfterInit):
         else:
             data = self._get_data(id)
 
-        idx = isinstance(data, sherpa.data.Data1DInt)
+        idx = isinstance(data, Data1DInt)
         plotobj = self._plot_types["model"][idx]
         if recalc:
             plotobj.prepare(data, self.get_model(id), self.get_stat())
@@ -12614,7 +12938,8 @@ class Session(NoNewAttributesAfterInit):
     # also in sherpa.astro.utils (does not copy this docstring)
     def get_source_plot(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True
+                        ) -> sherpa.plot.SourcePlot | sherpa.plot.SourceHistogramPlot:
         """Return the data used to create the source plot.
 
         Parameters
@@ -12677,14 +13002,18 @@ class Session(NoNewAttributesAfterInit):
         else:
             data = self._get_data(idval)
 
-        idx = isinstance(data, sherpa.data.Data1DInt)
+        idx = isinstance(data, Data1DInt)
         plotobj = self._plot_types["source"][idx]
         if recalc:
             plotobj.prepare(data, self.get_source(idval), self.get_stat())
 
         return plotobj
 
-    def get_model_component_plot(self, id, model=None, recalc: bool = True):
+    def get_model_component_plot(self,
+                                 id: IdType | Model | None,
+                                 model: Model | None = None,
+                                 recalc: bool = True
+                                 ) -> sherpa.plot.ComponentModelPlot | sherpa.plot.ComponentModelHistogramPlot:
         """Return the data used to create the model-component plot.
 
         Parameters
@@ -12741,19 +13070,17 @@ class Session(NoNewAttributesAfterInit):
         >>> plot2 = get_model_component_plot('jet', gline*gal)
 
         """
-        if model is None:
-            id, model = model, id
-        model = self._check_model(model)
-
+        idarg, modelarg = separate_id_from_arg(id, model)
+        modelval = self._check_model(modelarg)
         if recalc:
-            data = self.get_data(id)
+            data = self.get_data(idarg)
         else:
-            data = self._get_data(id)
+            data = self._get_data(idarg)
 
-        idx = isinstance(data, sherpa.data.Data1DInt)
+        idx = isinstance(data, Data1DInt)
         plotobj = self._plot_types["model_component"][idx]
         if recalc:
-            plotobj.prepare(data, model, self.get_stat())
+            plotobj.prepare(data, modelval, self.get_stat())
 
         return plotobj
 
@@ -12804,7 +13131,11 @@ class Session(NoNewAttributesAfterInit):
                                      model=model, idval=idval)
 
     # sherpa.astro.utils version copies this docstring
-    def get_source_component_plot(self, id, model=None, recalc: bool = True):
+    def get_source_component_plot(self,
+                                  id: IdType | Model | None,
+                                  model: Model | None = None,
+                                  recalc: bool = True
+                                  ) -> sherpa.plot.ComponentSourcePlot | sherpa.plot.ComponentSourceHistogramPlot:
         """Return the data used by plot_source_component.
 
         Parameters
@@ -12861,23 +13192,21 @@ class Session(NoNewAttributesAfterInit):
         >>> plot2 = get_source_component_plot('jet', gline*gal)
 
         """
-        if model is None:
-            id, model = model, id
-        model = self._check_model(model)
-
+        idarg, modelarg = separate_id_from_arg(id, model)
+        modelval = self._check_model(modelarg)
         if recalc:
-            data = self.get_data(id)
+            data = self.get_data(idarg)
         else:
-            data = self._get_data(id)
+            data = self._get_data(idarg)
 
-        if isinstance(model, sherpa.models.TemplateModel):
+        if isinstance(modelval, sherpa.models.TemplateModel):
             plotobj = self._comptmplsrcplot
         else:
-            idx = isinstance(data, sherpa.data.Data1DInt)
+            idx = isinstance(data, Data1DInt)
             plotobj = self._plot_types["source_component"][idx]
 
         if recalc:
-            plotobj.prepare(data, model, self.get_stat())
+            plotobj.prepare(data, modelval, self.get_stat())
 
         return plotobj
 
@@ -12982,7 +13311,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_fit_plot(self,
                      id: IdType | None = None,
-                     recalc: bool = True):
+                     recalc: bool = True
+                     ) -> sherpa.plot.FitPlot:
         """Return the data used to create the fit plot.
 
         Parameters
@@ -13051,7 +13381,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_resid_plot(self,
                        id: IdType | None = None,
-                       recalc: bool = True):
+                       recalc: bool = True
+                       ) -> sherpa.plot.ResidPlot | sherpa.plot.ResidHistogramPlot:
         """Return the data used by plot_resid.
 
         Parameters
@@ -13118,7 +13449,7 @@ class Session(NoNewAttributesAfterInit):
 
         # This uses the implicit conversion of bool to 0 or 1.
         #
-        idx = isinstance(data, sherpa.data.Data1DInt)
+        idx = isinstance(data, Data1DInt)
         plotobj = self._plot_types["resid"][idx]
         if recalc:
             plotobj.prepare(data, self.get_model(id), self.get_stat())
@@ -13127,7 +13458,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_delchi_plot(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True
+                        ) -> sherpa.plot.DelchiPlot | sherpa.plot.DelchiHistogramPlot:
         """Return the data used by plot_delchi.
 
         Parameters
@@ -13195,7 +13527,7 @@ class Session(NoNewAttributesAfterInit):
 
         # This uses the implicit conversion of bool to 0 or 1.
         #
-        idx = isinstance(data, sherpa.data.Data1DInt)
+        idx = isinstance(data, Data1DInt)
         plotobj = self._plot_types["delchi"][idx]
         if recalc:
             plotobj.prepare(data, self.get_model(id), self.get_stat())
@@ -13204,7 +13536,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_chisqr_plot(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True
+                        ) -> sherpa.plot.ChisqrPlot | sherpa.plot.ChisqrHistogramPlot:
         """Return the data used by plot_chisqr.
 
         Parameters
@@ -13272,7 +13605,7 @@ class Session(NoNewAttributesAfterInit):
 
         # This uses the implicit conversion of bool to 0 or 1.
         #
-        idx = isinstance(data, sherpa.data.Data1DInt)
+        idx = isinstance(data, Data1DInt)
         plotobj = self._plot_types["chisqr"][idx]
         if recalc:
             plotobj.prepare(data, self.get_model(id), self.get_stat())
@@ -13281,7 +13614,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_ratio_plot(self,
                        id: IdType | None = None,
-                       recalc: bool = True):
+                       recalc: bool = True
+                       ) -> sherpa.plot.RatioPlot | sherpa.plot.RatioHistogramPlot:
         """Return the data used by plot_ratio.
 
         Parameters
@@ -13349,7 +13683,7 @@ class Session(NoNewAttributesAfterInit):
 
         # This uses the implicit conversion of bool to 0 or 1.
         #
-        idx = isinstance(data, sherpa.data.Data1DInt)
+        idx = isinstance(data, Data1DInt)
         plotobj = self._plot_types["ratio"][idx]
         if recalc:
             plotobj.prepare(data, self.get_model(id), self.get_stat())
@@ -13358,7 +13692,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_data_contour(self,
                          id: IdType | None = None,
-                         recalc: bool = True):
+                         recalc: bool = True
+                         ) -> sherpa.plot.DataContour:
         """Return the data used by contour_data.
 
         Parameters
@@ -13521,7 +13856,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_model_contour(self,
                           id: IdType | None = None,
-                          recalc: bool = True):
+                          recalc: bool = True
+                          ) -> sherpa.plot.ModelContour:
         """Return the data used by contour_model.
 
         Parameters
@@ -13572,7 +13908,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_source_contour(self,
                            id: IdType | None = None,
-                           recalc: bool = True):
+                           recalc: bool = True
+                           ) -> sherpa.plot.SourceContour:
         """Return the data used by contour_source.
 
         Parameters
@@ -13673,7 +14010,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_fit_contour(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True
+                        ) -> sherpa.plot.FitContour:
         """Return the data used by contour_fit.
 
         Parameters
@@ -13730,7 +14068,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_resid_contour(self,
                           id: IdType | None = None,
-                          recalc: bool = True):
+                          recalc: bool = True
+                          ) -> sherpa.plot.ResidContour:
         """Return the data used by contour_resid.
 
         Parameters
@@ -13782,7 +14121,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_ratio_contour(self,
                           id: IdType | None = None,
-                          recalc: bool = True):
+                          recalc: bool = True
+                          ) -> sherpa.plot.RatioContour:
         """Return the data used by contour_ratio.
 
         Parameters
@@ -13834,7 +14174,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_psf_contour(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True
+                        ) -> sherpa.plot.PSFContour:
         """Return the data used by contour_psf.
 
         Parameters
@@ -13881,7 +14222,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_kernel_contour(self,
                            id: IdType | None = None,
-                           recalc: bool = True):
+                           recalc: bool = True
+                           ) -> sherpa.plot.PSFKernelContour:
         """Return the data used by contour_kernel.
 
         Parameters
@@ -13929,7 +14271,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_psf_plot(self,
                      id: IdType | None = None,
-                     recalc: bool = True):
+                     recalc: bool = True
+                     ) -> sherpa.plot.PSFPlot:
         """Return the data used by plot_psf.
 
         Parameters
@@ -13975,7 +14318,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_kernel_plot(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True
+                        ) -> sherpa.plot.PSFKernelPlot:
         """Return the data used by plot_kernel.
 
         Parameters
@@ -14128,6 +14472,7 @@ class Session(NoNewAttributesAfterInit):
         largs = list(args)
         while largs:
             plottype = largs.pop(0)
+            plottype = cast(str, plottype)
             _check_str_type(plottype, "plottype")
             plottype = get(plottype.lower())
 
@@ -14262,6 +14607,11 @@ class Session(NoNewAttributesAfterInit):
                                                    ncols_orig, nplots)
 
         else:
+            # At this point either rows or cols is set, but the typing
+            # code does not know this and complains that there is no
+            # matching overload for calc_multiplot_size. For now, we
+            # do not rewrite the code to try and avoid this.
+            #
             nrows, ncols = calc_multiplot_size(rows, cols, nplots)
 
         plotfunc = getattr(sp, f"add{plotmeth}")
@@ -14310,7 +14660,7 @@ class Session(NoNewAttributesAfterInit):
             plotobj.plot(**kwargs)
 
     def _set_plot_item(self, plottype: str,
-                       item, value) -> None:
+                       item: str, value) -> None:
         """Change a plot setting.
 
         This will change all related plot classes; that is setting
@@ -15018,8 +15368,8 @@ class Session(NoNewAttributesAfterInit):
     # unclear how best to handle the coupling of id and model.
     #
     def plot_source_component(self,
-                              id,
-                              model=None,
+                              id: IdType | Model | None,
+                              model: Model | None = None,
                               replot: bool = False,
                               overplot: bool = False,
                               clearwindow: bool = True,
@@ -15083,10 +15433,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if model is None:
-            id, model = model, id
-
-        plotobj = self.get_source_component_plot(id, model,
+        idarg, modelarg = separate_id_from_arg(id, model)
+        plotobj = self.get_source_component_plot(idarg, modelarg,
                                                  recalc=not replot)
 
         # Note: if replot=True then the value of model is ignored,
@@ -15165,8 +15513,8 @@ class Session(NoNewAttributesAfterInit):
     # unclear how best to handle the coupling of id and model.
     #
     def plot_model_component(self,
-                             id,
-                             model=None,
+                             id: IdType | Model | None,
+                             model: Model | None = None,
                              replot: bool = False,
                              overplot: bool = False,
                              clearwindow: bool = True,
@@ -15248,10 +15596,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if model is None:
-            id, model = model, id
-
-        plotobj = self.get_model_component_plot(id, model,
+        idarg, modelarg = separate_id_from_arg(id, model)
+        plotobj = self.get_model_component_plot(idarg, modelarg,
                                                 recalc=not replot)
 
         # Note: if replot=True then the value of model is ignored,
@@ -15518,8 +15864,9 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self._get_plot_objects(id, self.get_fit_plot,
                                          recalc=not replot)
-        # We know plotobj.plots[0] exists
-        plotobj.title = plotobj.plots[0].dataplot.title
+        # We know plotobj.plots[0] exists and is a FitPlot
+        fitplot = cast(sherpa.plot.FitPlot, plotobj.plots[0])
+        plotobj.title = fitplot.dataplot.title
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
@@ -16000,7 +16347,9 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-    def _jointplot2(self, plot1, plot2,
+    def _jointplot2(self,
+                    plot1: MultiPlot,
+                    plot2: MultiPlot,
                     overplot: bool = False,
                     clearwindow: bool = True,
                     **kwargs) -> None:
@@ -16047,8 +16396,11 @@ class Session(NoNewAttributesAfterInit):
             p2prefs = get_plot_prefs(plot2)
             oldval = p2prefs['xlog']
 
-            dprefs = get_plot_prefs(plot1.plots[0].dataplot)
-            mprefs = get_plot_prefs(plot1.plots[0].modelplot)
+            # The first plot containse FitPlot objects but the types
+            # do not know this.
+            fitplot = cast(sherpa.plot.FitPlot, plot1.plots[0])
+            dprefs = get_plot_prefs(fitplot.dataplot)
+            mprefs = get_plot_prefs(fitplot.modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
                 p2prefs['xlog'] = True
@@ -16443,7 +16795,7 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-    def get_pdf_plot(self):
+    def get_pdf_plot(self) -> sherpa.plot.PDFPlot:
         """Return the data used to plot the last PDF.
 
         Returns
@@ -16517,7 +16869,7 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-    def get_cdf_plot(self):
+    def get_cdf_plot(self) -> sherpa.plot.CDFPlot:
         """Return the data used to plot the last CDF.
 
         Returns
@@ -16598,7 +16950,7 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-    def get_trace_plot(self):
+    def get_trace_plot(self) -> sherpa.plot.TracePlot:
         """Return the data used to plot the last trace.
 
         Returns
@@ -16678,7 +17030,7 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-    def get_scatter_plot(self):
+    def get_scatter_plot(self) -> sherpa.plot.ScatterPlot:
         """Return the data used to plot the last scatter plot.
 
         Returns
@@ -16699,7 +17051,10 @@ class Session(NoNewAttributesAfterInit):
     # Contours
     #
 
-    def _contour(self, plotobj, overcontour=False, **kwargs) -> None:
+    def _contour(self,
+                 plotobj,
+                 overcontour: bool = False,
+                 **kwargs) -> None:
         """Display a plot object
 
         Parameters
@@ -17272,7 +17627,8 @@ class Session(NoNewAttributesAfterInit):
                      delv: float | None = None,
                      fac: float = 1,
                      log: bool = False,
-                     numcores: int | None = None):
+                     numcores: int | None = None
+                     ) -> sherpa.plot.IntervalProjection:
         """Return the interval-projection object.
 
         This returns (and optionally calculates) the data used to
@@ -17373,7 +17729,10 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self._intproj
         if recalc:
-            par = self._check_par(par)
+            # Using @overload to say that par can not be None adds a
+            # lot of text and still seems to need the cast, so for now
+            # stick with just the cast.
+            par = self._check_par(cast(str | Parameter, par))
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
@@ -17396,7 +17755,8 @@ class Session(NoNewAttributesAfterInit):
                     delv: float | None = None,
                     fac: float = 1,
                     log: bool = False,
-                    numcores: int | None = None):
+                    numcores: int | None = None
+                    ) -> sherpa.plot.IntervalUncertainty:
         """Return the interval-uncertainty object.
 
         This returns (and optionally calculates) the data used to
@@ -17493,12 +17853,12 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self._intunc
         if recalc:
-            par = self._check_par(par)
+            par = self._check_par(cast(str | Parameter, par))
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
             plotobj.prepare(min=min, max=max, nloop=nloop, delv=delv,
-                            fac=fac, log=sherpa.utils.bool_cast(log),
+                            fac=fac, log=bool_cast_scalar(log),
                             numcores=numcores)
             plotobj.calc(fit, par)
 
@@ -17519,7 +17879,8 @@ class Session(NoNewAttributesAfterInit):
                      log=(False, False),
                      sigma=(1, 2, 3),
                      levels=None,
-                     numcores: int | None = None):
+                     numcores: int | None = None
+                     ) -> sherpa.plot.RegionProjection:
         """Return the region-projection object.
 
         This returns (and optionally calculates) the data used to
@@ -17633,8 +17994,8 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self._regproj
         if recalc:
-            par0 = self._check_par(par0, 'par0')
-            par1 = self._check_par(par1, 'par1')
+            par0 = self._check_par(cast(str | Parameter, par0), 'par0')
+            par1 = self._check_par(cast(str | Parameter, par1), 'par1')
             if otherids is None:
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
@@ -17660,7 +18021,8 @@ class Session(NoNewAttributesAfterInit):
                     log=(False, False),
                     sigma=(1, 2, 3),
                     levels=None,
-                    numcores: int | None = None):
+                    numcores: int | None = None
+                    ) -> sherpa.plot.RegionUncertainty:
         """Return the region-uncertainty object.
 
         This returns (and optionally calculates) the data used to
@@ -17774,8 +18136,8 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self._regunc
         if recalc:
-            par0 = self._check_par(par0, 'par0')
-            par1 = self._check_par(par1, 'par1')
+            par0 = self._check_par(cast(str | Parameter, par0), 'par0')
+            par1 = self._check_par(cast(str | Parameter, par1), 'par1')
 
             if otherids is None:
                 otherids = ()
@@ -18360,7 +18722,8 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def get_data_image(self,
-                       id: IdType | None = None):
+                       id: IdType | None = None
+                       ) -> sherpa.image.DataImage:
         """Return the data used by image_data.
 
         Parameters
@@ -18404,7 +18767,8 @@ class Session(NoNewAttributesAfterInit):
         return imageobj
 
     def get_model_image(self,
-                        id: IdType | None = None):
+                        id: IdType | None = None
+                        ) -> sherpa.image.ModelImage:
         """Return the data used by image_model.
 
         Evaluate the source expression for the image pixels -
@@ -18457,7 +18821,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: it looks like get_source_image doesn't raise DataErr with
     # a non-2D data set
     def get_source_image(self,
-                         id: IdType | None = None):
+                         id: IdType | None = None
+                         ) -> sherpa.image.SourceImage:
         """Return the data used by image_source.
 
         Evaluate the source expression for the image pixels - without
@@ -18503,7 +18868,10 @@ class Session(NoNewAttributesAfterInit):
         imageobj.prepare_image(data, source)
         return imageobj
 
-    def get_model_component_image(self, id, model=None):
+    def get_model_component_image(self,
+                                  id: IdType | Model | None,
+                                  model: Model | None = None
+                                  ) -> sherpa.image.ComponentModelImage:
         """Return the data used by image_model_component.
 
         Parameters
@@ -18554,21 +18922,24 @@ class Session(NoNewAttributesAfterInit):
         >>> minfo = get_model_component_image(2, bgnd)
 
         """
-        if model is None:
-            id, model = model, id
-        model = self._check_model(model)
+
+        idarg, modelarg = separate_id_from_arg(id, model)
+        modelval = self._check_model(modelarg)
 
         # Ensure the convolution models get applied
-        is_source = self._get_model_status(id)[1]
-        model = self._add_convolution_models(id, self.get_data(id),
-                                             model, is_source)
+        data = self.get_data(idarg)
+        is_source = self._get_model_status(idarg)[1]
+        convolved = self._add_convolution_models(idarg, data,
+                                                 modelval, is_source)
 
         imageobj = self._image_types['model_component']
-        data = self.get_data(id)
-        imageobj.prepare_image(data, model)
+        imageobj.prepare_image(data, convolved)
         return imageobj
 
-    def get_source_component_image(self, id, model=None):
+    def get_source_component_image(self,
+                                   id: IdType | Model | None,
+                                   model: Model | None = None
+                                   ) -> sherpa.image.ComponentSourceImage:
         """Return the data used by image_source_component.
 
         Parameters
@@ -18619,17 +18990,18 @@ class Session(NoNewAttributesAfterInit):
         >>> sinfo = get_source_component_image(2, bgnd)
 
         """
-        if model is None:
-            id, model = model, id
-        model = self._check_model(model)
+
+        idarg, modelarg = separate_id_from_arg(id, model)
+        modelval = self._check_model(modelarg)
 
         imageobj = self._image_types['source_component']
-        data = self.get_data(id)
-        imageobj.prepare_image(data, model)
+        data = self.get_data(idarg)
+        imageobj.prepare_image(data, modelval)
         return imageobj
 
     def get_ratio_image(self,
-                        id: IdType | None = None):
+                        id: IdType | None = None
+                        ) -> sherpa.image.RatioImage:
         """Return the data used by image_ratio.
 
         Parameters
@@ -18673,7 +19045,8 @@ class Session(NoNewAttributesAfterInit):
         return imageobj
 
     def get_resid_image(self,
-                        id: IdType | None = None):
+                        id: IdType | None = None
+                        ) -> sherpa.image.ResidImage:
         """Return the data used by image_resid.
 
         Parameters
@@ -18717,7 +19090,8 @@ class Session(NoNewAttributesAfterInit):
         return imageobj
 
     def get_psf_image(self,
-                      id: IdType | None = None):
+                      id: IdType | None = None
+                      ) -> sherpa.image.PSFImage:
         """Return the data used by image_psf.
 
         Parameters
@@ -18758,7 +19132,8 @@ class Session(NoNewAttributesAfterInit):
         return imageobj
 
     def get_kernel_image(self,
-                         id: IdType | None = None):
+                         id: IdType | None = None
+                         ) -> sherpa.image.PSFKernelImage:
         """Return the data used by image_kernel.
 
         Parameters
@@ -18933,7 +19308,9 @@ class Session(NoNewAttributesAfterInit):
         imageobj = self.get_model_image(id)
         imageobj.image(newframe=newframe, tile=tile)
 
-    def image_source_component(self, id, model=None,
+    def image_source_component(self,
+                               id: IdType | Model | None,
+                               model: Model | None = None,
                                newframe: bool = False,
                                tile: bool = False) -> None:
         """Display a component of the source expression in the image viewer.
@@ -19007,7 +19384,9 @@ class Session(NoNewAttributesAfterInit):
         imageobj = self.get_source_component_image(id, model)
         imageobj.image(newframe=newframe, tile=tile)
 
-    def image_model_component(self, id, model=None,
+    def image_model_component(self,
+                              id: IdType | Model | None,
+                              model: Model | None = None,
                               newframe: bool = False,
                               tile: bool = False) -> None:
         """Display a component of the model in the image viewer.
@@ -19218,10 +19597,10 @@ class Session(NoNewAttributesAfterInit):
         data = self.get_data_image(id)
         model = self.get_model_image(id)
         resid = self.get_resid_image(id)
-        deleteframes = sherpa.utils.bool_cast(deleteframes)
-        if deleteframes is True:
+        if bool_cast_scalar(deleteframes):
             sherpa.image.Image.open()
             sherpa.image.Image.delete_frames()
+
         data.image(None, False, tile)
         model.image(None, newframe, tile)
         resid.image(None, newframe, tile)
