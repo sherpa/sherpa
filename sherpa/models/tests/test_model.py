@@ -1090,7 +1090,7 @@ def test_guess_then_reset_defaults():
     assert not mdl.mean._guessed
     assert not mdl.ampl._guessed
 
-    mdl.guess(*data.to_guess())
+    mdl.guess_axes(*data.to_guess())
 
     # These values will need changing if the guess logic changes.
     assert mdl.mean.val == 1
@@ -1135,7 +1135,7 @@ def test_guess_then_reset_manual():
     assert not mdl.mean._guessed
     assert not mdl.ampl._guessed
 
-    mdl.guess(*data.to_guess())
+    mdl.guess_axes(*data.to_guess())
 
     # These values will need changing if the guess logic changes.
     assert mdl.mean.val == 1
