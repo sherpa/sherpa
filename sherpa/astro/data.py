@@ -3420,14 +3420,18 @@ It is an integer or string.
         1024
         >>> import numpy as np
         >>> dvals = np.arange(1, 1025)
-        >>> print(pha.apply_grouping(np.ones(1024)))
-        [ 17.   4.  11.  ...
-        >>> print(pha.apply_grouping(dvals, pha._min))
-        [  1.  18.  22.  ...
-        >>> print(pha.apply_grouping(dvals, pha._max))
-        [  17.   21.   32.   ...
-        >>> print(pha.apply_grouping(dvals, pha._middle))
-        [  9.   19.5  27.   ...
+        >>> g1 = pha.apply_grouping(np.ones(1024))
+        >>> g2 = pha.apply_grouping(dvals, pha._min)
+        >>> g3 = pha.apply_grouping(dvals, pha._max)
+        >>> g4 = pha.apply_grouping(dvals, pha._middle)
+        >>> print(g1[:3])
+        [17.  4. 11.]
+        >>> print(g2[:3])
+        [ 1 18 22]
+        >>> print(g3[:3])
+        [17 21 32]
+        >>> print(g4[:3])
+        [ 9.  19.5 27. ]
 
         The grouped data is not filtered (unless ignore_bad has been
         used):
