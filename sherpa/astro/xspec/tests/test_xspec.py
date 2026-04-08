@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015-2025
+#  Copyright (C) 2007, 2015-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -17,7 +17,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
 import inspect
+import operator
 import types
 
 import numpy
@@ -847,3 +849,58 @@ def test_apec_redshift_parameter_is_case_insensitive():
     mdl.REDshift = 0.2
     assert mdl.redshift.val == 0.2
     assert mdl.Redshift.val == 0.2
+
+
+@requires_xspec
+@pytest.mark.parametrize("op,opstr",
+                         [(operator.add, None),
+                          (operator.sub, None),
+                          (operator.mul, "\\*"),
+                          (operator.truediv, "/"),
+                          (operator.floordiv, "//")
+                          ])
+def test_can_combine_additive(op, opstr, xsmodel):
+    """Check can combine additive models."""
+
+    # Assume XSapec exists.
+    m1 = xsmodel("apec", "m1")
+
+    # Need to check can both "lhs" and "rhs" terms. It does not
+    # matter if the actual expression is sensible.
+    #
+    _ = op(m1, 2)
+    _ = op(2, m1)
+    if opstr is None:
+        _ = op(m1, m1)
+    else:
+        msg = f"^Invalid operation: XSapec {opstr} XSapec$"
+        with pytest.raises(TypeError, match=msg):
+            _ = op(m1, m1)
+
+
+@requires_xspec
+@pytest.mark.parametrize("op,opstr",
+                         [(operator.add, "\\+"),
+                          (operator.sub, "-"),
+                          (operator.mul, None),
+                          (operator.truediv, None),
+                          (operator.floordiv, None)
+                          ])
+def test_can_combine_multiplicative(op, opstr, xsmodel):
+    """Check can combine multiplicative models."""
+
+    # Assume XSphabs exists.
+    m1 = xsmodel("phabs", "m1")
+
+    # Need to check can both "lhs" and "rhs" terms. It does not
+    # matter if the actual expression is sensible.
+    #
+    _ = op(m1, 2)
+    _ = op(2, m1)
+    if opstr is None:
+        _ = op(m1, m1)
+
+    else:
+        msg = f"^Invalid operation: XSphabs {opstr} XSphabs$"
+        with pytest.raises(TypeError, match=msg):
+            _ = op(m1, m1)

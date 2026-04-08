@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2025
+#  Copyright (C) 2010, 2015-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -59,6 +59,14 @@ The additive [2]_, multiplicative [3]_, and convolution [4]_ models
 from the XSPEC model library are supported, except for the `polconst`,
 `pollin`, `polpow`, and `smaug` models [5]_, since they need
 information obtained from the XFLT keywords in the PHA file.
+
+Note that some, but not all, of the restrictions from XSPEC are
+enforced here when combining models:
+
+- additive models can not multiplied or divided together,
+
+- and multiplicative models can not be added or subtracted from each
+  other.
 
 XSPEC version
 -------------
@@ -1872,6 +1880,10 @@ class XSAdditiveModel(XSModel):
 
     The XSPEC additive models are listed at [1]_.
 
+    .. versionchanged:: 4.18.1
+       Additive models can no-longer be multiplied or divided by
+       another additive model.
+
     .. versionchanged:: 4.18.0
        The "norm" parameter is now handled in the `calc` method rather
        than in the compiled code.
@@ -1896,6 +1908,57 @@ class XSAdditiveModel(XSModel):
             pars = tuple(list(pars) + [self.norm])
 
         XSModel.__init__(self, name, pars)
+
+    # Invalidate multiplication and division. At present it is not
+    # worth handling the more esoteric options (e.g.  mod/pow).
+    #
+    def __mul__(self, rhs):
+        if isinstance(rhs, XSAdditiveModel):
+            raise TypeError("Invalid operation: "
+                            f"{self.__class__.__name__} * "
+                            f"{rhs.__class__.__name__}")
+
+        return super().__mul__(rhs)
+
+    def __rmul__(self, lhs):
+        if isinstance(lhs, XSAdditiveModel):
+            raise TypeError("Invalid operation: "
+                            f"{lhs.__class__.__name__} * "
+                            f"{self.__class__.__name__}")
+
+        return super().__rmul__(lhs)
+
+    def __truediv__(self, rhs):
+        if isinstance(rhs, XSAdditiveModel):
+            raise TypeError("Invalid operation: "
+                            f"{self.__class__.__name__} / "
+                            f"{rhs.__class__.__name__}")
+
+        return super().__truediv__(rhs)
+
+    def __rtruediv__(self, lhs):
+        if isinstance(lhs, XSAdditiveModel):
+            raise TypeError("Invalid operation: "
+                            f"{lhs.__class__.__name__} / "
+                            f"{self.__class__.__name__}")
+
+        return super().__rtruediv__(lhs)
+
+    def __floordiv__(self, rhs):
+        if isinstance(rhs, XSAdditiveModel):
+            raise TypeError("Invalid operation: "
+                            f"{self.__class__.__name__} // "
+                            f"{rhs.__class__.__name__}")
+
+        return super().__floordiv__(rhs)
+
+    def __rfloordiv__(self, lhs):
+        if isinstance(lhs, XSAdditiveModel):
+            raise TypeError("Invalid operation: "
+                            f"{lhs.__class__.__name__} // "
+                            f"{self.__class__.__name__}")
+
+        return super().__rfloordiv__(lhs)
 
     def guess(self, dep, *args, **kwargs):
         """Set an initial guess for the normalization.
@@ -1934,6 +1997,10 @@ class XSMultiplicativeModel(XSModel):
 
     The XSPEC multiplicative models are listed at [1]_.
 
+    .. versionchanged:: 4.18.1
+       Multiplicative models can no-longer be added or subtracted by
+       another mutiplicative model.
+
     References
     ----------
 
@@ -1941,7 +2008,40 @@ class XSMultiplicativeModel(XSModel):
 
     """
 
-    pass
+    # Invalidate addition and subtraction. At present it is not worth
+    # handling the more esoteric options (e.g.  mod/pow).
+    #
+    def __add__(self, rhs):
+        if isinstance(rhs, XSMultiplicativeModel):
+            raise TypeError("Invalid operation: "
+                            f"{self.__class__.__name__} + "
+                            f"{rhs.__class__.__name__}")
+
+        return super().__add__(rhs)
+
+    def __radd__(self, lhs):
+        if isinstance(lhs, XSMultiplicativeModel):
+            raise TypeError("Invalid operation: "
+                            f"{lhs.__class__.__name__} + "
+                            f"{self.__class__.__name__}")
+
+        return super().__radd__(lhs)
+
+    def __sub__(self, rhs):
+        if isinstance(rhs, XSMultiplicativeModel):
+            raise TypeError("Invalid operation: "
+                            f"{self.__class__.__name__} - "
+                            f"{rhs.__class__.__name__}")
+
+        return super().__sub__(rhs)
+
+    def __rsub__(self, lhs):
+        if isinstance(lhs, XSMultiplicativeModel):
+            raise TypeError("Invalid operation: "
+                            f"{lhs.__class__.__name__} - "
+                            f"{self.__class__.__name__}")
+
+        return super().__rsub__(lhs)
 
 
 class XSConvolutionKernel(XSModel):
