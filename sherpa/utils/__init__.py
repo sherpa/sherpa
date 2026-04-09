@@ -2631,25 +2631,6 @@ def func_counter(func):
     return nfev, func_counter_wrapper
 
 
-def is_in(arg, seq):
-    """DEPRECATED.
-
-    .. deprecated:: 4.17.0
-       Use the Python `in` operator instead.
-
-    """
-    # This is FutureWarning rather than DeprecationWarning to make
-    # sure users see the message.
-    #
-    warnings.warn("is_in is deprecated in 4.17.0: use Python's in instead",
-                  FutureWarning)
-    for x in seq:
-        if arg == x:
-            return True
-
-    return False
-
-
 def is_sequence(start, mid, end) -> bool:
     return start < mid < end
 
