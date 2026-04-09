@@ -2631,10 +2631,6 @@ def func_counter(func):
     return nfev, func_counter_wrapper
 
 
-def is_sequence(start, mid, end) -> bool:
-    return start < mid < end
-
-
 def Knuth_close(x, y, tol, myop=operator.__or__) -> bool:
     """Check whether two floating-point numbers are close together.
 
@@ -3343,7 +3339,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             else:
                 xminus = 1.0e128
 
-            if is_sequence(xa, xplus, xb):
+            if xa < xplus < xb:
                 x = xplus
             else:
                 x = xminus
@@ -3356,7 +3352,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             # print
 
             # sanity check
-            if not is_sequence(xa, x, xb):
+            if not (xa < x < xb):
                 x = (xa + xb) / 2.0
 
             y = myfcn(x, *args)
