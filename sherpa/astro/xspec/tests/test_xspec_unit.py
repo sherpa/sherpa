@@ -99,8 +99,10 @@ def test_chatter_default():
     assert oval == DEFAULT_CHATTER
 
 
+# We do not test name="spex" since that requires XSPEC 12.15.0 or later
 @requires_xspec
-def test_version():
+@pytest.mark.parametrize("name", [None, "atomdb", "nei"])
+def test_version(name):
     """Can we get at the XSPEC version?
 
     There is limited testing of the return value.
@@ -108,12 +110,62 @@ def test_version():
 
     from sherpa.astro import xspec
 
-    v = xspec.get_xsversion()
+    v = xspec.get_xsversion(name)
     assert isinstance(v, (str, ))
     assert len(v) > 0
+    # This could check the version matches a number-dotted string,
+    # but it is not worth it.
 
-    # Could check it's of the form a.b.c[optional] but leave that for
-    # now.
+
+@requires_xspec
+@pytest.mark.parametrize("name", ["", "ATOMDB", "", "not-a-library"])
+def test_version_error(name):
+    """Does this error out?"""
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match=f"^Unsupported option: name='{name}'$"):
+        xspec.get_xsversion(name)
+
+
+# We do not test name="spex" since that requires XSPEC 12.15.0 or later
+@requires_xspec
+@pytest.mark.parametrize("name", ["atomdb", "nei"])
+def test_set_version(name):
+    """Can we set the XSPEC database version?"""
+
+    from sherpa.astro import xspec
+
+    # Hopefully changing the version will not cause problems
+    # (e.g. with XSPEC prior to 12.15.1).
+    #
+    old = xspec.get_xsversion(name)
+
+    # Guess a version. At present there is no validation of the value,
+    # so it should not matter if it is not valid.
+    #
+    new= '3.0.0'
+    assert old != new  # no point in running if they are equal
+
+    try:
+        xspec.set_xsversion(name, new)
+        assert xspec.get_xsversion(name) == new
+
+    finally:
+        xspec.set_xsversion(name, old)
+
+
+@requires_xspec
+@pytest.mark.parametrize("name", ["", "ATOMDB", "", "not-a-library"])
+def test_set_version_error(name):
+    """Does this error out?"""
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match=f"^Unsupported option: name='{name}'$"):
+        xspec.set_xsversion(name, "1.2.3")
 
 
 @requires_xspec

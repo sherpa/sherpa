@@ -51,6 +51,7 @@ for a general description of the ``sherpa.astro.xspec`` module.
       set_xscosmo
       set_xspath_manager
       set_xsstate
+      set_xsversion
       set_xsxsect
       set_xsxset
 
