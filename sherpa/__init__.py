@@ -909,7 +909,12 @@ def smoke(verbosity: int = 0,
     smoke.run(verbosity=verbosity, require_failure=require_failure, fits=fits, xspec=xspec, ds9=ds9)
 
 
-def _smoke_cli(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
+def _smoke_cli(verbosity=0,
+               require_failure: bool = False,
+               fits=None,
+               xspec: bool = False,
+               ds9: bool = False
+               ) -> None:
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option("-v", "--verbosity", dest="verbosity",

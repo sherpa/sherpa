@@ -34,7 +34,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeGuard, TypeVar
 import warnings
 
 import numpy as np
@@ -100,7 +100,7 @@ T = TypeVar("T")
 # This logic was found in several modules so centralize it. Note that
 # this is not added to __all__.
 #
-def is_subclass(t1, t2):
+def is_subclass(t1, t2) -> bool:
     """Is t2 a subclass of t1 but not the same as t1?"""
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
@@ -1073,20 +1073,25 @@ def filter_bins(mins: Sequence[float | None],
     return mask
 
 
-def bool_cast(val):
-    """Convert a string to a boolean.
+# Sherpa has used bool_cast to deal with boolean conversion, and this
+# was to handle users of "old" Sherpa, and users of the S-Lang version
+# of Sherpa.
+#
+def bool_cast(val: Any) -> bool:
+    """Convert a scalar value to a boolean.
+
+    .. versionchanged:: 4.18.1
+       The input value must be a scalar. The support for converting an
+       array of values has been removed.
 
     Parameters
     ----------
-    val : bool, str or sequence
+    val : bool, str
        The input value to decode.
 
     Returns
     -------
-    flag : bool or ndarray
-       True or False if val is considered to be a true or false term.
-       If val is a sequence then the return value is an ndarray of
-       the same size.
+    flag : bool
 
     Notes
     -----
@@ -1099,10 +1104,7 @@ def bool_cast(val):
 
     """
 
-    if type(val) in (tuple, list, np.ndarray):
-        return np.asarray([bool_cast(item) for item in val], bool)
-
-    if type(val) == str:
+    if isinstance(val, str):
         # since built in bool() only returns false for empty strings
         vlo = val.lower()
         if vlo in ('false', 'off', 'no', '0', 'f', 'n'):
@@ -1111,6 +1113,12 @@ def bool_cast(val):
         if vlo in ('true', 'on', 'yes', '1', 't', 'y'):
             return True
 
+        raise TypeError(f"unknown boolean value: '{val}'")
+
+    # As bool([1, 2, 3]) is True (False if empty) protect against
+    # accidentally converting some form of a sequence.
+    #
+    if isinstance(val, Iterable):
         raise TypeError(f"unknown boolean value: '{val}'")
 
     # use built in bool cast
@@ -2642,14 +2650,21 @@ def is_in(arg, seq):
     return False
 
 
-def is_iterable(arg) -> bool:
-    return isinstance(arg, (list, tuple, np.ndarray)) or np.iterable(arg)
+# The TypeGuard signals intent, even if it is not quite what the code
+# does.
+#
+def is_iterable(arg) -> TypeGuard[Sequence]:
+    # This check used to be more-complex, but it has been simplified to
+    return isinstance(arg, Iterable)
 
 
-def is_iterable_not_str(arg: Any) -> bool:
+# The TypeGuard signals intent, even if it is not quite what the code
+# does.
+#
+def is_iterable_not_str(arg: Any) -> TypeGuard[Sequence]:
     """It is iterable but not a string."""
 
-    return not isinstance(arg, str) and isinstance(arg, Iterable)
+    return not isinstance(arg, str) and is_iterable(arg)
 
 
 def is_sequence(start, mid, end) -> bool:
@@ -3649,8 +3664,7 @@ def send_to_pager(txt: str,
         return
 
     # Assume a filename
-    clobber = bool_cast(clobber)
-    if os.path.isfile(filename) and not clobber:
+    if os.path.isfile(filename) and not bool_cast(clobber):
         raise IOErr('filefound', filename)
 
     with open(filename, 'w', encoding="UTF-8") as fh:

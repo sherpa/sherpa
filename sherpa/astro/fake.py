@@ -32,10 +32,17 @@ from sherpa.utils.random import poisson_noise
 __all__ = ('fake_pha', )
 
 
-def fake_pha(data, model,
-             is_source=None, pileup_model=None,
-             add_bkgs=None, bkg_models=None, id=None,
-             method=None, rng=None, include_bkg_data=False):
+def fake_pha(data,
+             model,
+             is_source=None,
+             pileup_model=None,
+             add_bkgs=None,
+             bkg_models=None,
+             id=None,
+             method=None,
+             rng=None,
+             include_bkg_data: bool = False
+             ):
     """Simulate a PHA data set from a model.
 
     This function replaces the counts in a PHA dataset with simulated

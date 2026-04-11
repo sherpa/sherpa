@@ -333,7 +333,13 @@ def range_overlap_1dint(axislist, lo, hi):
     return scale if ascending else scale[::-1]
 
 
-def _flux(data, lo, hi, src, eflux=False, srcflux=False):
+def _flux(data,
+          lo,
+          hi,
+          src,
+          eflux: bool = False,
+          srcflux: bool = False
+          ):
 
     if data.ndim != 1:
         raise DataErr("wrongdim", data.name, 1)

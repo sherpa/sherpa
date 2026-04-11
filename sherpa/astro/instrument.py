@@ -149,7 +149,7 @@ class RMFModel(CompositeModel, ArithmeticModel):
         # Used to rebin against finer or coarser energy grids
         self.rmfargs = ()
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False):
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
@@ -198,7 +198,7 @@ class ARFModel(CompositeModel, ArithmeticModel):
         # Used to rebin against finer or coarser energy grids
         self.arfargs = ()
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False):
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
@@ -251,7 +251,7 @@ class RSPModel(CompositeModel, ArithmeticModel):
         self.rmfargs = ()
         self.arfargs = ()
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False):
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
@@ -289,7 +289,7 @@ class RMFModelPHA(RMFModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False):
         rmf = self._rmf  # original
 
         # Create a view of original RMF
@@ -373,7 +373,7 @@ class ARFModelPHA(ARFModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False):
         arf = self._arf  # original
         pha = self.pha
 
@@ -474,7 +474,7 @@ class RSPModelPHA(RSPModel):
         if self.pha.units == 'wavelength':
             self.xlo, self.xhi = self.lo, self.hi
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False):
         arf = self._arf
         rmf = self._rmf
 
@@ -847,7 +847,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self.elo, self.ehi, self.table = compile_energy_grid(grid)
         self.lo, self.hi = hc / self.ehi, hc / self.elo
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False):
         pha = self.pha
         if np.iterable(pha.mask):
             pha.notice_response(True)
@@ -1001,7 +1001,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
                                 f'apply_rmf({self.model.name})',
                                 (self.model,))
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False):
         pha = self.pha
         pha.notice_response(False)
         self.channel = pha.get_noticed_channels()
@@ -1143,7 +1143,10 @@ class PSFModel(_PSFModel):
         if hasattr(self.kernel, "set_coord"):
             self.kernel.set_coord(data.coord)
 
-    def get_kernel(self, data, subkernel=True):
+    def get_kernel(self,
+                   data,
+                   subkernel: bool = True
+                   ):
 
         indep, dep, kshape, lo, hi = self._get_kernel_data(data, subkernel)
 
