@@ -312,6 +312,93 @@ More plot customization
 
    backends
 
+Plotting without Sherpa
+=======================
+Sometimes, the best plot is done outside of Sherpa. Sherpa makes it easy to
+obtain the underlying data values to feed into a plotting package that Sherpa
+itself does not support or to set up a plot in some innovative way that is
+vastly different from the standard plots that Sherpa provides.
+
+Inspect data and model objects
+------------------------------
+In many cases, it is the easiest to just read the data values from the Sherpa
+objects. `~sherpa.data.Data1D.get_indep` returns the independent variable
+(the "x" values in a 1D data set). The exact form depends on the data type.
+Above, we defined a `~sherpa.data.Data1DInt` object, which contains values
+integrated over a bin, so it returns two arrays, one for the lower bin
+edges and one for the upper bin edges.
+
+.. plot::
+   :context:
+   :include-source:
+   :nofigs:
+
+   >>> low_edge, hi_edge = d.get_indep()
+
+Here, `sherpa.data.Data2D.get_indep` returns two arrays, one for each of the 2D axes,
+`sherpa.data.Data2DInt.get_indep` returns four arrays, one for the lower
+and upper edges of each axis etc.
+
+Similarly, `sherpa.data.Data1D.get_dep` returns the dependent variable
+(the "y" values in a 1D data set).
+For a `sherpa.data.Data1DInt` object, this is the data in each interval:
+
+.. plot::
+   :context:
+   :include-source:
+   :nofigs:
+
+   >>> y = d.get_dep()
+
+If set, the error values can be obtained with `~sherpa.data.Data1D.get_staterr` and
+`~sherpa.data.Data1D.get_syserr`.
+
+Model values can be obtained by evaluating the model on a given grid. This can be,
+but doesn't have to be, the same grid as the data.
+
+.. plot::
+   :context:
+   :include-source:
+   :nofigs:
+
+   >>> t_model = mdl(*d.get_indep())
+
+Use the ``to_plot`` method
+--------------------------
+Data objects have a `~sherpa.data.Data1D.to_plot` method, which is used
+internally when a plot like `~sherpa.plot.DataPlot` is prepared, but it can also
+be used to obtain the data values in a form that is ready for plotting:
+
+.. plot::
+   :context:
+   :include-source:
+   :nofigs:
+
+   >>> x, y, yerr, x_half_width, xlabel, ylabel = d.to_plot()
+
+For integrated data, the ``x`` values are the bin centers, since that is the
+location where one would normally place a plot symbol.
+Note that the order of the errors with ``yerr`` before ``x_half_width``! That is because
+the ``yerr`` values are the actual data values, while the following entry represents
+the half-width of the bin values for integrated data, which are sometimes plotted as
+x-error bars to indicate the bin width.
+
+This mechanism can also be used to obtain values for a model, evaluated at the same
+location as the data bins, by passing the model to the ``yfunc`` argument:
+
+.. plot::
+   :context:
+   :include-source:
+   :nofigs:
+
+   >>> x, (y_data, y_model), yerr, x_half_width, xlabel, ylabel = d.to_plot(yfunc=mdl)
+
+The ``to_plot`` for PHA data
+----------------------------
+For the special class of `~sherpa.astro.data.DataPHA` described in
+:ref:`pha_data`, the use of `sherpa.astro.data.DataPHA.to_plot` the model
+function has to include the response of the instrument. See the
+`sherpa.astro.data.DataPHA.to_plot` documentation for an example.
 
 Reference/API
 =============

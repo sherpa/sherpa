@@ -5190,6 +5190,88 @@ It is an integer or string.
                 self.get_syserror(True))
 
     def to_plot(self, yfunc=None, staterrfunc=None, response_id=None):
+        """Get arrays required to make plots
+
+        This method returns all the ingredients to make a plot of the data.
+        It's used internally in Sherpa in the plotting functions, but can also
+        be called by users to obtain just the arrays to perform the
+        plotting themselves, for example with a different plotting package than
+        supported by Sherpa.
+
+        The return values are different from the "raw" values of the data in the
+        sense that filtering and binning are applied to x, y, and all errors.
+
+        Parameters
+        ----------
+        yfunc : callable or None, optional
+            If `None` the binned and filtered data values are returned. If ``yfunc``
+            is a function, this function is called with the bin positions and the
+            return values of that function are also returned. The purpose of this is to
+            obtain model values evaluated on the data grid.
+        staterrfunc : callable or None, optional
+            If no statistical error has been set, the errors will be calculated
+            by applying this function to the dependent axis of the data set.
+        response_id : int, str, None
+            Some analysis settings require translating channel numbers to energy or
+            wavelength. ``response_id`` selects one specific response to be used. The
+            default of `None` will select the default response for this dataset.
+
+        Returns
+        -------
+        x : ndarray
+            Bin mid-points after applying the filter
+        y : ndarray or tuple of two arrays
+            Values in each bin for data. If ``yfunc`` is given, then this is a tuple of
+            two arrays, where the first array holds the data and the second array the evaluated
+            ``yfunc``.
+        yerr : ndarray
+            Uncertainties for the data values
+        xerr : ndarray
+            Half-width of each bin
+        xlabel : str
+            Label for the x axis that describes the current settings for the
+            analysis, such as "energy (keV)"
+        ylabel : str
+            Label for the y axis that describes the current settings for the analysis
+
+        Example
+        -------
+        In this example, we first set up some data and a model, then we bin and filter
+        as we would with a real dataset and retrieve the values.
+        For this example, we load a datafile that is included in the Sherpa code. The
+        line with the ``with as_file(...)`` context manager locates that file in the Sherpa installation.
+
+            >>> from importlib.resources import files, as_file
+            >>> from sherpa.astro.io import read_pha
+            >>> with as_file(files('sherpa.astro.datastack.tests.data') / '3c273.pi') as phafile:
+            ...     pha = read_pha(str(phafile), use_errors=True)
+            >>> pha.set_analysis('energy')
+            >>> pha.notice(0.5, 7)
+            >>> pha.group_counts(25)
+            >>> x, y, xerr, yerr, xlabel, ylabel = pha.to_plot()
+            >>> print(f"{xlabel}, {ylabel}")
+            Energy (keV), Counts/sec/keV
+
+        We can compare the length of the original PHA data with `x` and we see that
+        after filtering and grouping the number of bins is much smaller:
+
+            >>> print("Number of bins:", len(pha.channel), "- Number of points to plot:", len(x))
+            Number of bins: 1024 - Number of points to plot: 26
+
+        Now, we define a model. Could a blackbody describe this spectrum?
+        When we evaluate the model with the ``yfunc`` argument, we need to
+        include the instrument response:
+
+            >>> from sherpa.astro.models import BBody
+            >>> bb = BBody()
+            >>> bb.kT = 0.5
+            >>> bb.ampl = 0.0005
+            >>> resp = pha.get_full_response(pileup_model=None)
+            >>> x, (ydata, ymodel), xerr, yerr, xlabel, ylabel = pha.to_plot(yfunc=resp(bb))
+
+        If you actually plot x/ydata and x/ymodel, you will see that a blackbody is not
+        a good description for this dataset.
+        """
         return (self.apply_filter(self.get_x(response_id=response_id),
                                   self._middle),
                 self.get_y(True, yfunc, response_id=response_id),
