@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018-2025
+#  Copyright (C) 2009, 2015, 2016, 2018-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -67,7 +67,7 @@ and then ends the session.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from configparser import ConfigParser
 import contextlib
 import copy
@@ -85,8 +85,7 @@ from sherpa.optmethods import LevMar, NelderMead
 from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
 from sherpa.stats import Stat, Likelihood, LeastSq, Chi2XspecVar
 from sherpa.utils import NoNewAttributesAfterInit, erf, \
-    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates, \
-    is_iterable_not_str
+    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
 from sherpa.utils.err import ArgumentTypeErr, ConfidenceErr, \
     IdentifierErr, PlotErr, StatErr
 from sherpa.utils.numeric_types import SherpaFloat
@@ -3956,7 +3955,7 @@ def get_per_plot_kwargs(nplots: int,
     ## kwstore: list[dict[str, Any]]
     kwstore = [{} for _ in range(nplots)]
     for key, val in kwargs.items():
-        if is_iterable_not_str(val):
+        if not isinstance(val, str) and isinstance(val, Iterable):
             nval = len(val)
             if nval != nplots:
                 raise ValueError(f"keyword '{key}': expected "

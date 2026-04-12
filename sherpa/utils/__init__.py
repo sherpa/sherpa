@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018-2025
+#  Copyright (C) 2007, 2015, 2016, 2018-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -100,7 +100,7 @@ T = TypeVar("T")
 # This logic was found in several modules so centralize it. Note that
 # this is not added to __all__.
 #
-def is_subclass(t1, t2):
+def is_subclass(t1, t2) -> bool:
     """Is t2 a subclass of t1 but not the same as t1?"""
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
@@ -1073,20 +1073,25 @@ def filter_bins(mins: Sequence[float | None],
     return mask
 
 
-def bool_cast(val):
-    """Convert a string to a boolean.
+# Sherpa has used bool_cast to deal with boolean conversion, and this
+# was to handle users of "old" Sherpa, and users of the S-Lang version
+# of Sherpa.
+#
+def bool_cast(val: Any) -> bool:
+    """Convert a scalar value to a boolean.
+
+    .. versionchanged:: 4.18.1
+       The input value must be a scalar. The support for converting an
+       array of values has been removed.
 
     Parameters
     ----------
-    val : bool, str or sequence
+    val : bool, str
        The input value to decode.
 
     Returns
     -------
-    flag : bool or ndarray
-       True or False if val is considered to be a true or false term.
-       If val is a sequence then the return value is an ndarray of
-       the same size.
+    flag : bool
 
     Notes
     -----
@@ -1099,10 +1104,7 @@ def bool_cast(val):
 
     """
 
-    if type(val) in (tuple, list, np.ndarray):
-        return np.asarray([bool_cast(item) for item in val], bool)
-
-    if type(val) == str:
+    if isinstance(val, str):
         # since built in bool() only returns false for empty strings
         vlo = val.lower()
         if vlo in ('false', 'off', 'no', '0', 'f', 'n'):
@@ -1111,6 +1113,12 @@ def bool_cast(val):
         if vlo in ('true', 'on', 'yes', '1', 't', 'y'):
             return True
 
+        raise TypeError(f"unknown boolean value: '{val}'")
+
+    # As bool([1, 2, 3]) is True (False if empty) protect against
+    # accidentally converting some form of a sequence.
+    #
+    if isinstance(val, Iterable):
         raise TypeError(f"unknown boolean value: '{val}'")
 
     # use built in bool cast
@@ -2623,39 +2631,6 @@ def func_counter(func):
     return nfev, func_counter_wrapper
 
 
-def is_in(arg, seq):
-    """DEPRECATED.
-
-    .. deprecated:: 4.17.0
-       Use the Python `in` operator instead.
-
-    """
-    # This is FutureWarning rather than DeprecationWarning to make
-    # sure users see the message.
-    #
-    warnings.warn("is_in is deprecated in 4.17.0: use Python's in instead",
-                  FutureWarning)
-    for x in seq:
-        if arg == x:
-            return True
-
-    return False
-
-
-def is_iterable(arg) -> bool:
-    return isinstance(arg, (list, tuple, np.ndarray)) or np.iterable(arg)
-
-
-def is_iterable_not_str(arg: Any) -> bool:
-    """It is iterable but not a string."""
-
-    return not isinstance(arg, str) and isinstance(arg, Iterable)
-
-
-def is_sequence(start, mid, end) -> bool:
-    return start < mid < end
-
-
 def Knuth_close(x, y, tol, myop=operator.__or__) -> bool:
     """Check whether two floating-point numbers are close together.
 
@@ -3364,7 +3339,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             else:
                 xminus = 1.0e128
 
-            if is_sequence(xa, xplus, xb):
+            if xa < xplus < xb:
                 x = xplus
             else:
                 x = xminus
@@ -3377,7 +3352,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             # print
 
             # sanity check
-            if not is_sequence(xa, x, xb):
+            if not (xa < x < xb):
                 x = (xa + xb) / 2.0
 
             y = myfcn(x, *args)
@@ -3649,8 +3624,7 @@ def send_to_pager(txt: str,
         return
 
     # Assume a filename
-    clobber = bool_cast(clobber)
-    if os.path.isfile(filename) and not clobber:
+    if os.path.isfile(filename) and not bool_cast(clobber):
         raise IOErr('filefound', filename)
 
     with open(filename, 'w', encoding="UTF-8") as fh:
