@@ -22,10 +22,11 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from contextlib import suppress
+import copy
 from dataclasses import dataclass
 import logging
 import os
-from typing import Any, Type
+from typing import Any, Literal, Type
 import sys
 
 import numpy as np
@@ -49,6 +50,7 @@ import sherpa.astro.io
 import sherpa.astro.plot
 import sherpa.astro.sim
 from sherpa.astro.ui import serialize
+from sherpa.astro.ui.serialize import FileStore
 import sherpa.astro.utils
 
 import sherpa.data
@@ -67,8 +69,8 @@ import sherpa.ui.utils
 from sherpa.ui.utils import _check_type, _check_str_type, _is_str
 
 import sherpa.utils
-from sherpa.utils import bool_cast, get_error_estimates, is_subclass, \
-    sao_arange, send_to_pager
+from sherpa.utils import bool_cast, get_error_estimates, \
+    is_subclass, sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
@@ -79,6 +81,12 @@ info = logging.getLogger(__name__).info
 
 
 __all__ = ('Session',)
+
+
+# FileStores are indexed by IdType, but it can be an id,
+# resp_id, or bkg_id.
+#
+FileDict = dict[IdType, FileStore]
 
 
 def _get_image_filter(data: DataIMG) -> str:
@@ -359,26 +367,39 @@ class Session(sherpa.ui.utils.Session):
         self._energyfluxplot = sherpa.astro.plot.EnergyFluxHistogram()
         self._photonfluxplot = sherpa.astro.plot.PhotonFluxHistogram()
 
-        # Used to identify PHA datasets.
-        #
         # These dictionaries are always cleared by set_data/bkg for
         # the IdType value, and a few other commands
         # (e.g. delete_data, delete_bkg, copy_data). Data is stored by
         # the relevant load_pha/data/bkg commands after they call
         # set_data/bkg.  This information is used by
         # .serialize.save_all to re-create the relevant load_xxx
-        # command. At present this is restricted to PHA data but could
-        # be extended for the other types (e.g. tables, images).  The
-        # value type of "dict[str, Any]" could have better typing, but
-        # leave as this generic form for now.
+        # command.
         #
         # Note that the automatically-loaded ancillary data for PHA
         # files (background, ARF, RMF) are included in this store so
         # that save_all knows that these files do not need to be
         # explicitly loaded.
         #
-        self._load_data_store: dict[IdType, dict[str, Any]] = {}
-        self._load_bkg_store: dict[IdType, dict[IdType, dict[str, Any]]] = {}
+        self._load_data_store: FileDict = {}
+
+        # This needs keys for idval and bkg_id.
+        #
+        self._load_bkg_store: dict[IdType, FileDict] = {}
+
+        # For responses we need idval, resp_id and for backgrounds it
+        # is idval, bkg_id, resp_id,
+        #
+        self._load_arf_store: dict[IdType, FileDict] = {}
+        self._load_rmf_store: dict[IdType, FileDict] = {}
+        self._load_bkg_arf_store: dict[IdType, dict[IdType, FileDict]] = {}
+        self._load_bkg_rmf_store: dict[IdType, dict[IdType, FileDict]] = {}
+
+        # PHA2 files need to be handled differently since
+        # - a single call creates multiple datasets
+        # - if one of these datasets is deleted it would be good to be
+        #   able to include this in the serialization.
+        #
+        self._multi_data_store: dict[IdType, tuple(FileStore, list[IdType])] = {}  # TODO: check typing
 
         # This is a new dictionary of XSPEC module settings.  It
         # is meant only to be populated by the save function, so
@@ -1043,24 +1064,41 @@ class Session(sherpa.ui.utils.Session):
         idval = self._fix_id(id)
         super().delete_data(idval)
 
-        # Ensure the load-bkg/data stores are cleared.
-        #
         with suppress(KeyError):
             del self._load_bkg_store[idval]
 
         with suppress(KeyError):
+            del self._load_bkg_arf_store[idval]
+
+        with suppress(KeyError):
+            del self._load_bkg_rmf_store[idval]
+
+        with suppress(KeyError):
+            del self._load_arf_store[idval]
+
+        with suppress(KeyError):
+            del self._load_rmf_store[idval]
+
+        with suppress(KeyError):
             del self._load_data_store[idval]
+
+        with suppress(KeyError):
+            del self._multi_data_store[idval]
 
     delete_data.__doc__ = sherpa.ui.utils.Session.delete_data.__doc__
 
-    def set_data(self, id, data=None) -> None:
+    def set_data(self,
+                 id: IdType | Data | None,
+                 data: Data | None = None
+                 ) -> None:
         if data is None:
             idval = self.get_default_id()
-            data = id
+            dval = id
         else:
             idval = self._fix_id(id)
+            dval = data
 
-        super().set_data(idval, data=data)
+        super().set_data(idval, data=dval)
 
         # Ensure the load-bkg/data stores are cleared.
         #
@@ -1068,30 +1106,102 @@ class Session(sherpa.ui.utils.Session):
             del self._load_bkg_store[idval]
 
         with suppress(KeyError):
+            del self._load_bkg_arf_store[idval]
+
+        with suppress(KeyError):
+            del self._load_bkg_rmf_store[idval]
+
+        with suppress(KeyError):
+            del self._load_arf_store[idval]
+
+        with suppress(KeyError):
+            del self._load_rmf_store[idval]
+
+        with suppress(KeyError):
             del self._load_data_store[idval]
+
+        with suppress(KeyError):
+            del self._multi_data_store[idval]
 
     set_data.__doc__ = sherpa.ui.utils.Session.set_data.__doc__
 
+    # TODO: should we really do this, rather than perhaps just
+    # recording that a copy was made (as technically re-loading the
+    # data is different to calling copy_data).
+    #
     def copy_data(self, fromid: IdType, toid: IdType) -> None:
         super().copy_data(fromid, toid)
 
-        # Copy over the load-data information if it exists, otherwise
-        # ensure it is cleared out.
+        # Remove any filestore info for the toid.
         #
-        try:
+        with suppress(KeyError):
+            del self._load_bkg_store[toid]
+
+        with suppress(KeyError):
+            del self._load_bkg_arf_store[toid]
+
+        with suppress(KeyError):
+            del self._load_bkg_rmf_store[toid]
+
+        with suppress(KeyError):
+            del self._load_arf_store[toid]
+
+        with suppress(KeyError):
+            del self._load_rmf_store[toid]
+
+        with suppress(KeyError):
+            del self._load_data_store[toid]
+
+        with suppress(KeyError):
+            del self._multi_data_store[toid]
+
+        def copy_store(old: FileStore) -> FileStore:
+            # Update the id value.
+            store = copy.copy(old)
+            store.idval = toid
+            return store
+
+        # Copy over the load-data information if it exists.
+        #
+        with suppress(KeyError):
             old = self._load_data_store[fromid]
+            self._load_data_store[toid] = copy_store(old)
 
-            # Copy the dict rather than share a reference.
-            #
-            self._load_data_store[toid] = {k: v for k, v in old.items()}
-            self._load_data_store[toid]["id"] = toid
+        # Copy over any filestores for PHA responses.
+        # This is a bit messy.
+        #
+        with suppress(KeyError):
+            newvals = {bkg_id: copy_store(old)
+                       for bkg_id, old in self._load_bkg_store[fromid].items()}
+            self._load_bkg_store[toid] = newvals
 
-        except KeyError:
-            with suppress(KeyError):
-                del self._load_bkg_store[toid]
+        with suppress(KeyError):
+            newvals = {resp_id: copy_store(old)
+                       for resp_id, old in self._load_arf_store[fromid].items()}
+            self._load_arf_store[toid] = newvals
 
-            with suppress(KeyError):
-                del self._load_data_store[toid]
+        with suppress(KeyError):
+            newvals = {resp_id: copy_store(old)
+                       for resp_id, old in self._load_rmf_store[fromid].items()}
+            self._load_rmf_store[toid] = newvals
+
+        with suppress(KeyError):
+            newvals = {}
+            for bkg_id, oldvals in self._load_bkg_arf_store[fromid].items():
+                newvals[bkg_id] = {}
+                for resp_id, old in oldvals.items():
+                    newvals[bkg_id][resp_id] = copy_store(old)
+
+            self._load_bkg_arf_store[toid] = newvals
+
+        with suppress(KeyError):
+            newvals = {}
+            for bkg_id, oldvals in self._load_bkg_rmf_store[fromid].items():
+                newvals[bkg_id] = {}
+                for resp_id, old in oldvals.items():
+                    newvals[bkg_id][resp_id] = copy_store(old)
+
+            self._load_bkg_rmf_store[toid] = newvals
 
     copy_data.__doc__ = sherpa.ui.utils.Session.copy_data.__doc__
 
@@ -1663,6 +1773,12 @@ class Session(sherpa.ui.utils.Session):
         data = self.unpack_table(filename, ncols, colkeys, dstype)
         self.set_data(idval, data)
 
+        kwargs = {"ncols": ncols, "colkeys": colkeys,
+                  "dstype": dstype}
+        store = FileStore(self.load_table, idval, filename, args=(),
+                          kwargs=kwargs)
+        self._load_data_store[idval] = store
+
     # DOC-TODO: should unpack_ascii be merged into unpack_table?
     # DOC-TODO: I am going to ignore the crates support here as
     # it is somewhat meaningless, since the crate could
@@ -1869,10 +1985,17 @@ class Session(sherpa.ui.utils.Session):
         else:
             idval = self._fix_id(id)
 
-        data = self.unpack_ascii(filename, ncols=ncols,
-                                 colkeys=colkeys, dstype=dstype,
-                                 sep=sep, comment=comment)
+        # This could remove default valus for unpack_ascii so that
+        # the serialization does not include them.
+        #
+        kwargs = {"ncols": ncols, "colkeys": colkeys,
+                  "dstype": dstype, "sep": sep, "comment": comment}
+        data = self.unpack_ascii(filename, **kwargs)
         self.set_data(idval, data)
+
+        store = FileStore(self.load_ascii, idval, filename, args=(),
+                          kwargs=kwargs)
+        self._load_data_store[idval] = store
 
     # DOC-NOTE: also in sherpa.utils
     def unpack_data(self, filename, *args, **kwargs):
@@ -2048,10 +2171,10 @@ class Session(sherpa.ui.utils.Session):
         else:
             idval = self._fix_id(id)
 
+        kwargs = {"colkeys": colkeys, "sep": sep, "comment": comment}
         data = self.unpack_ascii(filename, ncols=4,
-                                 colkeys=colkeys,
                                  dstype=Data1DAsymmetricErrs,
-                                 sep=sep, comment=comment)
+                                 **kwargs)
         self.set_data(idval, data)
 
         if not delta:
@@ -2065,123 +2188,63 @@ class Session(sherpa.ui.utils.Session):
 
         data.staterror = staterror
 
-    def _load_data(self,
-                   id: IdType | None,
-                   datasets: Data | Sequence[Data],
-                   filename: str,
-                   kwargs: dict[str, Any]
-                   ) -> None:
-        """Load one or more datasets.
+        kwargs["func"] = func
+        kwargs["delta"] = delta
+        store = FileStore(self.load_ascii_with_errors, idval, filename,
+                          args=(), kwargs=kwargs)
+        self._load_data_store[idval] = store
+
+    def _load_datas(self,
+                    idval: IdType,
+                    datasets: Sequence[DataPHA],
+                    store: FileStore,
+                    use_errors: bool
+                    ) -> None:
+        """Load in multiple datasets (at present PHA2 files).
 
         Used by load_data and load_pha.
 
         Parameters
         ----------
-        id : int, str, or None
-           The identifier for the data set to use. For multi-dataset
-           files, currently only PHA2, the id value indicates the
-           first dataset: if it is an integer then the numbering
-           starts at id, and if a string then a suffix of 1 to n is
-           added.  If not given then the default identifier is used,
-           as returned by `get_default_id`.
-        datasets : Data instance or iterable of Data instances
+        id : int, str
+           The identifier for the "first" data set to use: if it is an
+           integer then the numbering starts at id, and if a string
+           then a suffix of 1 to n is added.
+        datasets : iterable of DataPHA instances
            The data to load, either as a single item or, for
            multiple-dataset files, an iterable of them.
-        filename : str
-           The name of the file used to load the data (only used
-           when datasets is a sequence, which implies a PHA2 file).
-        kwargs : dict
-           The keyword arguments used in the load call (only used
-           for PHA2 data).
+        store
+           How was the file loaded?
 
         """
 
-        if id is None:
-            idval = self.get_default_id()
-        else:
-            idval = self._fix_id(id)
-
-        def mk_pha_store(data: DataPHA) -> dict[str, Any]:
-            """The basic storage information for a PHA file."""
-
-            store = {"id": idval,
-                     "filename": filename,
-                     "kwargs": kwargs}
-
-            # What files were automatically loaded? Track the
-            # identifier and file name in case the user loads
-            # something different. If the code tracks the load
-            # commands then this logic could be removed.
-            #
-            # The responses can be None, so strip them out.
-            #
-            store["arf_ids"] = {}
-            store["rmf_ids"] = {}
-            for resp_id in data.response_ids:
-                arf, rmf = data.get_response(resp_id)
-                if arf is not None:
-                    store["arf_ids"][resp_id] = arf.name
-                if rmf is not None:
-                    store["rmf_ids"][resp_id] = rmf.name
-
-            store["bkg_ids"] = {
-                bkg_id: data.get_background(bkg_id).name
-                for bkg_id in data.background_ids
-            }
-
-            # The backgrounds can have responses.
-            #
-            store["bkg_arf_ids"] = {}
-            store["bkg_rmf_ids"] = {}
-            for bkg_id in data.background_ids:
-                bkg = data.get_background(bkg_id)
-                bkg_arfs = {}
-                bkg_rmfs = {}
-                for resp_id in bkg.response_ids:
-                    barf, brmf = bkg.get_response(resp_id)
-                    if barf is not None:
-                        bkg_arfs[resp_id] = barf.name
-                    if brmf is not None:
-                        bkg_rmfs[resp_id] = brmf.name
-
-                store["bkg_arf_ids"][bkg_id] = bkg_arfs
-                store["bkg_rmf_ids"][bkg_id] = bkg_rmfs
-
-            return store
-
-        if not np.iterable(datasets):
-            # set_data clears _load_data_store
-            self.set_data(idval, datasets)
-            if isinstance(datasets, DataPHA):
-                self._load_data_store[idval] = mk_pha_store(datasets)
-
-            return
-
-        # One issue with the following is that if there's
-        # only one dataset in phasets and id is a string then the
-        # output will be "foo1" rather than "foo" (when
-        # id="foo").  DJB thinks we can live with this.
+        # One issue with the following is that if there's only one
+        # dataset in phasets and id is a string then the output will
+        # be "foo1" rather than "foo" (when id="foo").
         #
         num = len(datasets)
         ids = []
-        for ctr, data in enumerate(datasets):
+        for ctr in range(num):
             try:
-                id_ = idval + ctr
+               ids.append(idval + ctr)
             except TypeError:
-                # id is assumed to be a string
-                id_ = idval + str(ctr + 1)
+                # Assume idval is a string
+                ids.append(f"{idval}{ctr + 1}")
 
+        # Note that store.idval is not guaranteed to match id_ in this
+        # loop.
+        #
+        # This slightly extends the meaning of the autoloaded flag but
+        # it indicates in the FileStore object that something is
+        # different here.
+        #
+        store.autoloaded = True
+        for id_, data in zip(ids, datasets):
             self.set_data(id_, data)
-            ids.append(id_)
-
-            store = mk_pha_store(data)
-
-            # Note that since ids is a mutable argument, the final
-            # value stored in idvals will list all related
-            # identifiers.
-            #
-            store["idvals"] = ids
             self._load_data_store[id_] = store
+            self._multi_data_store[id_] = (store, ids)
+
+            self._pha_filestore(id_, data, use_errors=use_errors)
 
         if num > 1:
             info("Multiple data sets have been input: %s-%s",
@@ -2270,7 +2333,38 @@ class Session(sherpa.ui.utils.Session):
             idval = self._fix_id(id)
 
         datasets = self.unpack_data(filename, *args, **kwargs)
-        self._load_data(idval, datasets, filename=filename, kwargs=kwargs)
+
+        # We record the load_data call, not the underlying "load_xxx"
+        # call.
+        #
+        store = FileStore(self.load_data, idval, filename, args=args,
+                          kwargs=kwargs)
+
+        try:
+            use_errors = kwargs["use_errors"]
+        except:
+            # This is only needed for PHA calls but set it here
+            # whatever the dataset. It should match the default for
+            # load_pha (it would be better to ask for this value
+            # rather than hard-code it but let the tests catch any
+            # drift in the code).
+            #
+            use_errors = False
+
+        if not np.iterable(datasets):
+            self.set_data(idval, datasets)
+            self._load_data_store[idval] = store
+
+            # If this is a PHA then hide the automatically-loaded
+            # responses (backround, arf/rmf, and background arf/rmf).
+            # We also need to know if the use_errors option was set.
+            #
+            if isinstance(datasets, DataPHA):
+                self._pha_filestore(idval, datasets, use_errors=use_errors)
+
+            return
+
+        self._load_datas(idval, datasets, store, use_errors=use_errors)
 
     def unpack_image(self, arg, coord='logical',
                      dstype=DataIMG):
@@ -2407,6 +2501,18 @@ class Session(sherpa.ui.utils.Session):
         data = self.unpack_image(arg, coord, dstype)
         self.set_data(idval, data)
 
+        # For now only store if the argument is a string.
+        # TODO: should this be done for all the load_xxx calls
+        # to reflect the argument maybe a IO/backend value?
+        #
+        if not isinstance(arg, str):
+            return
+
+        kwargs = {"coord": coord, "dstype": dstype}
+        store = FileStore(self.load_image, idval, arg, args=(),
+                          kwargs=kwargs)
+        self._load_data_store[idval] = store
+
     # DOC-TODO: what does this return when given a PHA2 file?
     def unpack_pha(self, arg, use_errors: bool = False):
         """Create a PHA data structure.
@@ -2511,6 +2617,82 @@ class Session(sherpa.ui.utils.Session):
         use_errors = bool_cast(use_errors)
         return sherpa.astro.io.read_pha(arg, use_errors=use_errors,
                                         use_background=True)
+
+    def _pha_filestore(self,
+                       idval: IdType,
+                       data: DataPHA,
+                       use_errors: bool
+                       ) -> None:
+        """Record the automatically loaded files.
+
+        Update the file store with information on what response files
+        were automatically loaded via the ANCRFILE, BACKFILE, and
+        RESPFILE keywords, and how they were loaded.
+
+        """
+
+        # Keys are resp_id
+        arfs = {}
+        rmfs = {}
+
+        # Keys are bkg_id and then resp_id
+        bkg_arfs = {}
+        bkg_rmfs = {}
+
+        # Keys are bkg_id
+        bkgs = {}
+
+        # We need to create the FileStore values for the
+        # automatically-loaded files.
+        #
+        for resp_id in data.response_ids:
+            marf, mrmf = data.get_response(resp_id)
+            kwargs = {"resp_id": resp_id}
+            if marf is not None:
+                arfs[resp_id] = FileStore(self.load_arf, idval, marf.name,
+                                          args=(), kwargs=kwargs, autoloaded=True)
+
+            if mrmf is not None:
+                rmfs[resp_id] = FileStore(self.load_rmf, idval, mrmf.name,
+                                          args=(), kwargs=kwargs, autoloaded=True)
+
+        for bkg_id in data.background_ids:
+            # At this point we know bkg is not None but the API does
+            # not let us assert this, hence the need for a manual
+            # check.
+            #
+            bkg = data.get_background(bkg_id)
+            assert bkg is not None
+
+            kwargs = {"bkg_id": bkg_id, "use_errors": use_errors}
+            bkgs[bkg_id] = FileStore(self.load_bkg, idval, bkg.name,
+                                     args=(), kwargs=kwargs, autoloaded=True)
+
+            bkg_arfs[bkg_id] = {}
+            bkg_rmfs[bkg_id] = {}
+
+            # Note that load_bkg_arf and load_bkg_rmf only change the
+            # default response_id, so use the load_arf and load_rmf calls
+            # instead.
+            #
+            for resp_id in bkg.response_ids:
+                marf, mrmf = bkg.get_response(resp_id)
+                kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
+                if marf is not None:
+                    store = FileStore(self.load_arf, idval, marf.name,
+                                      args=(), kwargs=kwargs, autoloaded=True)
+                    bkg_arfs[bkg_id][resp_id] = store
+
+                if mrmf is not None:
+                    store = FileStore(self.load_rmf, idval, mrmf.name,
+                                      args=(), kwargs=kwargs, autoloaded=True)
+                    bkg_rmfs[bkg_id][resp_id] = store
+
+        self._load_arf_store[idval] = arfs
+        self._load_rmf_store[idval] = rmfs
+        self._load_bkg_arf_store[idval] = bkg_arfs
+        self._load_bkg_rmf_store[idval] = bkg_rmfs
+        self._load_bkg_store[idval] = bkgs
 
     # DOC-TODO: how best to include datastack support?
     def load_pha(self,
@@ -2677,13 +2859,18 @@ class Session(sherpa.ui.utils.Session):
 
         phasets = self.unpack_pha(arg, use_errors)
 
-        # Only store the use_errors call if set (i.e. not the default).
-        #
-        kwargs = {}
-        if use_errors:
-            kwargs["use_errors"] = True
+        kwargs = {"use_errors": use_errors}
+        store = FileStore(self.load_pha, idval, arg, args=(),
+                          kwargs=kwargs)
 
-        self._load_data(idval, phasets, filename=arg, kwargs=kwargs)
+        if not np.iterable(phasets):
+            self.set_data(idval, phasets)
+
+            self._load_data_store[idval] = store
+            self._pha_filestore(idval, phasets, use_errors=use_errors)
+            return
+
+        self._load_datas(idval, phasets, store, use_errors=use_errors)
 
     def _get_pha_data(self,
                       id: IdType | None,
@@ -2855,8 +3042,9 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
 
-        self.set_filter(id, self._read_user_model(filename, *args, **kwargs)[1],
-                        bkg_id=bkg_id, ignore=ignore)
+        idval = self._fix_id(id)
+        filt = self._read_user_model(filename, *args, **kwargs)[1]
+        self.set_filter(idval, filt, bkg_id=bkg_id, ignore=ignore)
 
     # DOC-TODO: does ncols make sense here? (have removed for now)
     # DOC-TODO: prob. needs a review as the existing ahelp documentation
@@ -2948,8 +3136,9 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
 
+        idval = self._fix_id(id)
         grouping = self._read_user_model(filename, *args, **kwargs)[1]
-        self.set_grouping(id, grouping, bkg_id=bkg_id)
+        self.set_grouping(idval, grouping, bkg_id=bkg_id)
 
     def load_quality(self, id, filename=None,
                      bkg_id: IdType | None = None,
@@ -3027,8 +3216,9 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
 
+        idval = self._fix_id(id)
         mdata = self._read_user_model(filename, *args, **kwargs)
-        self.set_quality(id, mdata[1], bkg_id=bkg_id)
+        self.set_quality(idval, mdata[1], bkg_id=bkg_id)
 
     def set_filter(self, id, val=None,
                    bkg_id: IdType | None = None,
@@ -3170,8 +3360,9 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
 
-        self.set_staterror(id,
-                           self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
+        idval = self._fix_id(id)
+        staterr = self._read_user_model(filename, *args, **kwargs)[1]
+        self.set_staterror(idval, staterr, bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
@@ -3257,8 +3448,9 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
 
-        self.set_syserror(id,
-                          self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
+        idval = self._fix_id(id)
+        syserr = self._read_user_model(filename, *args, **kwargs)[1]
+        self.set_syserror(idval, syserr, bkg_id=bkg_id)
 
     # also in sherpa.utils
     def set_dep(self, id, val=None,
@@ -6426,9 +6618,35 @@ class Session(sherpa.ui.utils.Session):
 
         data = self._get_pha_data(idval, bkg_id)
         data.set_arf(arf, id=resp_id)
+
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
             data._set_initial_quantity()
+
+        # Ensure resp_id is not None for the key.
+        if resp_id is None:
+            resp_id = data.primary_response_id
+
+        # Delete the entry if it exists but make sure that there is
+        # a dictionary element for idval (or idval/bkg_id).
+        #
+        if bkg_id is None:
+            if idval in self._load_arf_store:
+                with suppress(KeyError):
+                    del self._load_arf_store[idval][resp_id]
+            else:
+                self._load_arf_store[idval] = {}
+
+        else:
+            if idval in self._load_bkg_arf_store:
+                if bkg_id in self._load_bkg_arf_store[idval]:
+                    with suppress(KeyError):
+                        del self._load_arf_store[idval][resp_id]
+                else:
+                    self._load_bkg_arf_store[idval][bkg_id] = {}
+
+            else:
+                self._load_bkg_arf_store[idval] = {bkg_id: {}}
 
     def unpack_arf(self, arg):
         """Create an ARF data structure.
@@ -6573,6 +6791,27 @@ class Session(sherpa.ui.utils.Session):
         arf = self.unpack_arf(arg)
         self.set_arf(idval, arf, resp_id=resp_id, bkg_id=bkg_id)
 
+        kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
+        store = FileStore(self.load_arf, idval, arg, args=(),
+                          kwargs=kwargs)
+
+        # Ensure resp_id is not None for the key.
+        if resp_id is None:
+            data = self._get_pha_data(idval, bkg_id)
+            resp_id = data.primary_response_id
+
+        # TODO: what happens if the idval/bkg_id is not known?
+        if bkg_id is None:
+            if idval not in self._load_arf_store:
+                self._load_arf_store[idval] = {}
+
+            self._load_arf_store[idval][resp_id] = store
+        else:
+            if idval not in self._load_bkg_arf_store:
+                self._load_bkg_arf_store[idval] = {}
+
+            self._load_bkg_arf_store[idval][bkg_id][resp_id] = store
+
     def get_bkg_arf(self,
                     id: IdType | None = None):
         """Return the background ARF associated with a PHA data set.
@@ -6697,6 +6936,14 @@ class Session(sherpa.ui.utils.Session):
         arf = self.unpack_arf(arg)
         self.set_arf(idval, arf, resp_id=resp_id, bkg_id=bkg_id)
 
+        store = FileStore(self.load_bkg_arf, idval, arg, args=(),
+                          kwargs={})
+
+        if idval not in self._load_bkg_arf_store:
+            self._load_bkg_arf_store[idval] = {}
+
+        self._load_bkg_arf_store[idval][bkg_id][resp_id] = store
+
     def load_multi_arfs(self, id, filenames, resp_ids=None) -> None:
         """Load multiple ARFs for a PHA data set.
 
@@ -6766,6 +7013,9 @@ class Session(sherpa.ui.utils.Session):
 
         idval = self._fix_id(id)
         for filename, resp_id in zip(filenames, resp_ids):
+            # Note that the save_all <serialization will store these
+            # individual calls, not the load_multi_arf call.
+            #
             self.load_arf(idval, filename, resp_id=resp_id)
 
     def get_rmf(self,
@@ -6922,9 +7172,35 @@ class Session(sherpa.ui.utils.Session):
 
         data = self._get_pha_data(idval, bkg_id)
         data.set_rmf(rmf, id=resp_id)
+
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
             data._set_initial_quantity()
+
+        # Ensure resp_id is not None for the key.
+        if resp_id is None:
+            resp_id = data.primary_response_id
+
+        # Delete the entry if it exists but make sure that there is
+        # a dictionary element for idval (or idval/bkg_id).
+        #
+        if bkg_id is None:
+            if idval in self._load_rmf_store:
+                with suppress(KeyError):
+                    del self._load_rmf_store[idval][resp_id]
+            else:
+                self._load_rmf_store[idval] = {}
+
+        else:
+            if idval in self._load_bkg_rmf_store:
+                if bkg_id in self._load_bkg_rmf_store[idval]:
+                    with suppress(KeyError):
+                        del self._load_rmf_store[idval][resp_id]
+                else:
+                    self._load_bkg_rmf_store[idval][bkg_id] = {}
+
+            else:
+                self._load_bkg_rmf_store[idval] = {bkg_id: {}}
 
     def unpack_rmf(self, arg):
         """Create a RMF data structure.
@@ -7079,6 +7355,27 @@ class Session(sherpa.ui.utils.Session):
         rmf = self.unpack_rmf(arg)
         self.set_rmf(idval, rmf, resp_id=resp_id, bkg_id=bkg_id)
 
+        kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
+        store = FileStore(self.load_rmf, idval, arg, args=(),
+                          kwargs=kwargs)
+
+        # Ensure resp_id is not None for the key.
+        if resp_id is None:
+            data = self._get_pha_data(idval, bkg_id)
+            resp_id = data.primary_response_id
+
+        # TODO: what happens if the idval/bkg_id is not known?
+        if bkg_id is None:
+            if idval not in self._load_rmf_store:
+                self._load_rmf_store[idval] = {}
+
+            self._load_rmf_store[idval][resp_id] = store
+        else:
+            if idval not in self._load_bkg_rmf_store:
+                self._load_bkg_rmf_store[idval] = {}
+
+            self._load_bkg_rmf_store[idval][bkg_id][resp_id] = store
+
     def get_bkg_rmf(self,
                     id: IdType | None = None):
         """Return the background RMF associated with a PHA data set.
@@ -7198,6 +7495,14 @@ class Session(sherpa.ui.utils.Session):
         rmf = self.unpack_rmf(arg)
         self.set_rmf(idval, rmf, resp_id=resp_id, bkg_id=bkg_id)
 
+        store = FileStore(self.load_bkg_rmf, idval, arg, args=(),
+                          kwargs={})
+
+        if idval not in self._load_bkg_rmf_store:
+            self._load_bkg_rmf_store[idval] = {}
+
+        self._load_bkg_rmf_store[idval][bkg_id][resp_id] = store
+
     def load_multi_rmfs(self, id, filenames, resp_ids=None) -> None:
         """Load multiple RMFs for a PHA data set.
 
@@ -7267,6 +7572,9 @@ class Session(sherpa.ui.utils.Session):
 
         idval = self._fix_id(id)
         for filename, resp_id in zip(filenames, resp_ids):
+            # Note that the save_all <serialization will store these
+            # individual calls, not the load_multi_rmf call.
+            #
             self.load_rmf(idval, filename, resp_id=resp_id)
 
     def get_bkg(self,
@@ -8480,43 +8788,16 @@ class Session(sherpa.ui.utils.Session):
 
         bkgsets = self.unpack_bkg(arg, use_errors)
 
-        def mk_pha_store(data: DataPHA) -> dict[str, Any]:
-            """The basic storage information for a PHA file."""
-
-            store = {"id": idval,
-                     "filename": arg,
-                     }
-            if use_errors:
-                store["use_errors"] = use_errors
-
-            # What files were automatically loaded? Track the
-            # identifier and file name in case the user loads
-            # something different. If the code tracks the load
-            # commands then this logic could be removed.
-            #
-            # The responses can be None, so strip them out.
-            #
-            store["arf_ids"] = {}
-            store["rmf_ids"] = {}
-            for resp_id in data.response_ids:
-                arf, rmf = data.get_response(resp_id)
-                if arf is not None:
-                    store["arf_ids"][resp_id] = arf.name
-                if rmf is not None:
-                    store["rmf_ids"][resp_id] = rmf.name
-
-            # Unlike the load_pha/data case, there is no need
-            # to track background information here (as this is
-            # the background).
-            #
-            return store
-
         # Store values for each bkg_id value, hence the idval is a
         # dict of dicts, unlike the _load_data_store, which is just a
         # dict.
         #
         fullstore = {}
         self._load_bkg_store[idval] = fullstore
+
+        kwargs = {"bkg_id": bkg_id, "use_errors": use_errors}
+        store = FileStore(self.load_bkg, idval, arg, args=(),
+                          kwargs=kwargs)
 
         if np.iterable(bkgsets):
             # QUS: do we support PHA2 background files? Technically
@@ -8529,21 +8810,12 @@ class Session(sherpa.ui.utils.Session):
                 self.set_bkg(idval, bkg, bkgid)
                 bkgids.append(bkgid)
 
-                store = mk_pha_store(bkg)
-                store["bkg_id"] = bkgid
-
-                # Note that since bkgids is a mutable argument, the
-                # final value stored in bkgidvals will list all
-                # related identifiers.
-                #
                 fullstore[bkg_id] = store
 
         else:
             bkg_idval = self._fix_background_id(idval, bkg_id)
             self.set_bkg(idval, bkgsets, bkg_idval)
 
-            store = mk_pha_store(bkgsets)
-            store["bkg_id"] = bkg_idval
             fullstore[bkg_idval] = store
 
     def group(self,
