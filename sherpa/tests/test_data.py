@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2022, 2024
+#  Copyright (C) 2019-2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -310,8 +310,15 @@ def test_data_change_ylabel(data, label):
 
 
 @pytest.mark.parametrize("data", (Data, ), indirect=True)
-def test_data_get_dims(data):
-    assert data.get_dims() == ((X_ARRAY.size, ), X_ARRAY.size)
+@pytest.mark.parametrize("method", ["get_dims",
+                                    "get_filter",
+                                    "get_filter_expr"
+                                    ])
+def test_data_not_implemented(data, method):
+    """What methods (with no arguments) need to be over-ridden?"""
+    func = getattr(data, method)
+    with pytest.raises(NotImplementedError):
+        func()
 
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)

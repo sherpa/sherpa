@@ -1010,6 +1010,20 @@ def test_set_dep_scalar(clean_ui):
     assert ui.get_dep() == pytest.approx(3 * ones)
 
 
+def test_set_dep_scalar_empty(clean_ui):
+    """What happens if set_dep is called with a scalar but no data
+
+    This is a corner case (since we may decide to remove Data arrays
+    with no data).
+    """
+
+    ui.set_data(ui.Data1D("x", None, None))
+    with pytest.raises(TypeError):
+        # The message is some variant of:
+        # "can't multiply sequence by non-int of type 'NoneType'"
+        ui.set_dep(3)
+
+
 def test_set_dep_array(clean_ui):
     """What happens if set_dep is called with an array?"""
 
@@ -1199,6 +1213,18 @@ def test_set_error_array_wrong(field, clean_ui):
     with pytest.raises(DataErr,
                        match=f"size mismatch between independent axis and {field}: 3 vs 4"):
         setfunc(np.asarray([1, 2, 3, 4]))
+
+
+@pytest.mark.parametrize("fractional", [False, True])
+def test_set_staterr_scalar_nodep(fractional, clean_ui):
+    """Corner case: set_staterror with scalar and no data."""
+
+    ui.set_data(ui.Data1D("x", None, None))
+    with pytest.raises(TypeError):
+        # The errors are some variant of:
+        # "can't multiply sequence by non-int of type 'NoneType'"
+        # "unsupported operand type(s) for *: 'float' and 'NoneType'"
+        ui.set_staterror(2.3, fractional=fractional)
 
 
 @pytest.mark.parametrize("ignore", [False, True])
