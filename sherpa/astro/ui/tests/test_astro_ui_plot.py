@@ -5112,3 +5112,194 @@ def test_plot_multiple_with_fit_resid_kwargs_ids(clean_astro_ui, requires_pylab)
             ids=ids, alpha=0.5, xlog=True)
 
     validate_fit_resid_multiple("Energy (keV)")
+
+
+@pytest.mark.parametrize("idval", [None, 2])
+def test_plot_model_components_pha_no_bgnd(idval, clean_astro_ui):
+    """See issue #2400: things work with no background model"""
+
+    # Replace the model with multiple components.  Note that we use
+    # setup_example_bkg to make sure there's background data, even if
+    # we do not include a model.
+    #
+    setup_example_bkg(idval)
+    m1 = ui.box1d.m1
+    m2 = ui.box1d.m2
+    m1.xlow = 0.7
+    m1.xhi = 1.15
+    m1.ampl = 2
+    m2.xlow = 0.95
+    m2.xhi = 1.35
+    m2.ampl = 4
+    ui.set_source(id=idval, model=m1 + m2)
+
+    # Delete the background model
+    ui.delete_bkg_model(id=idval)
+
+    # Check this now errors out
+    with pytest.raises(ModelErr):
+        _ = ui.get_bkg_model(id=idval)
+
+    mp = ui.get_model_components_plot(idval)
+    assert mp.title == "Component plot"
+    assert len(mp.plots) == 2
+
+    # Basic check the two plots contain the expected data
+    p1 = mp.plots[0]
+    p2 = mp.plots[1]
+
+    assert p1.title == "Model component: apply_rmf(apply_arf(1201.0 * box1d.m1))"
+    assert p2.title == "Model component: apply_rmf(apply_arf(1201.0 * box1d.m2))"
+
+    for p in mp.plots:
+        assert p.xlabel == "Channel"
+        assert p.ylabel == "Counts/sec/channel"
+
+    # Access the data from the RMF and ARF rather than hard-coding it.
+    rmf = ui.get_rmf(idval)
+    elo = rmf.e_min
+    ehi = rmf.e_max
+
+    arf = ui.get_arf(idval).specresp
+    norm = arf
+
+    # Calculate the expected values.
+    y1 = m1(elo, ehi) * norm
+    y2 = m2(elo, ehi) * norm
+
+    assert p1.y == pytest.approx(y1)
+    assert p2.y == pytest.approx(y2)
+
+
+@pytest.mark.parametrize("idval", [None, 2])
+def test_plot_model_components_pha_with_bgnd_scalar(idval, clean_astro_ui):
+    """See issue #2400
+
+    The background scaling is with a scalar.
+    """
+
+    # Replace the model with multiple components, also replace
+    # the backbround model.
+    #
+    setup_example_bkg(idval)
+    m1 = ui.box1d.m1
+    m2 = ui.box1d.m2
+    m1.xlow = 0.7
+    m1.xhi = 1.15
+    m1.ampl = 2
+    m2.xlow = 0.95
+    m2.xhi = 1.35
+    m2.ampl = 4
+    ui.set_source(id=idval, model=m1 + m2)
+
+    bm = ui.box1d.bm
+    bm.xlow = 0.65
+    bm.xhi = 1.25
+    ui.set_bkg_source(id=idval, model=bm)
+
+    mp = ui.get_model_components_plot(idval)
+    assert mp.title == "Component plot"
+    assert len(mp.plots) == 3
+
+    # Basic check the plots contain the expected data
+    p1 = mp.plots[0]
+    p2 = mp.plots[1]
+    p3 = mp.plots[2]
+
+    assert p1.title == "Model component: apply_rmf(apply_arf(1201.0 * box1d.m1))"
+    assert p2.title == "Model component: apply_rmf(apply_arf(1201.0 * box1d.m2))"
+    assert p3.title == "Model component: apply_rmf(apply_arf(1201.0 * 0.5 * box1d.bm))"
+
+    for p in mp.plots:
+        assert p.xlabel == "Channel"
+        assert p.ylabel == "Counts/sec/channel"
+
+    # Access the data from the RMF and ARF rather than hard-coding it.
+    rmf = ui.get_rmf(idval)
+    elo = rmf.e_min
+    ehi = rmf.e_max
+
+    arf = ui.get_arf(idval).specresp
+    norm = arf
+
+    # Calculate the expected values.
+    y1 = m1(elo, ehi) * norm
+    y2 = m2(elo, ehi) * norm
+    y3 = bm(elo, ehi) * norm * 0.5
+
+    assert p1.y == pytest.approx(y1)
+    assert p2.y == pytest.approx(y2)
+    assert p3.y == pytest.approx(y3)
+
+
+@pytest.mark.parametrize("idval", [None, 2])
+def test_plot_model_components_pha_with_bgnd_vector(idval, clean_astro_ui):
+    """See issue #2400
+
+    The background scaling is with a vector.
+    """
+
+    # Replace the model with multiple components, also replace
+    # the backbround model.
+    #
+    setup_example_bkg(idval)
+    m1 = ui.box1d.m1
+    m2 = ui.box1d.m2
+    m1.xlow = 0.7
+    m1.xhi = 1.15
+    m1.ampl = 2
+    m2.xlow = 0.95
+    m2.xhi = 1.35
+    m2.ampl = 4
+    ui.set_source(id=idval, model=m1 + m2)
+
+    bm = ui.box1d.bm
+    bm.xlow = 0.65
+    bm.xhi = 1.25
+    ui.set_bkg_source(id=idval, model=bm)
+
+    # Change the background scaling to a vector.
+    bkg_backscal = np.full(10, 0.25)
+    bkg_backscal[4:6] = 0.4
+    ui.set_backscal(id=idval, backscale=bkg_backscal, bkg_id=1)
+
+    mp = ui.get_model_components_plot(idval)
+    assert mp.title == "Component plot"
+    assert len(mp.plots) == 3
+
+    # Basic check the plots contain the expected data
+    p1 = mp.plots[0]
+    p2 = mp.plots[1]
+    p3 = mp.plots[2]
+
+    if idval is None:
+        cpt = "scale1"
+    else:
+        cpt = f"scale{idval}"
+
+    assert p1.title == "Model component: apply_rmf(apply_arf(1201.0 * box1d.m1))"
+    assert p2.title == "Model component: apply_rmf(apply_arf(1201.0 * box1d.m2))"
+    assert p3.title == f"Model component: {cpt} * apply_rmf(apply_arf(1201.0 * box1d.bm))"
+
+    for p in mp.plots:
+        assert p.xlabel == "Channel"
+        assert p.ylabel == "Counts/sec/channel"
+
+    # Access the data from the RMF and ARF rather than hard-coding it.
+    rmf = ui.get_rmf(idval)
+    elo = rmf.e_min
+    ehi = rmf.e_max
+
+    arf = ui.get_arf(idval).specresp
+    norm = arf
+
+    src_backscal = ui.get_backscal(id=idval, bkg_id=None)
+
+    # Calculate the expected values.
+    y1 = m1(elo, ehi) * norm
+    y2 = m2(elo, ehi) * norm
+    y3 = bm(elo, ehi) * norm * src_backscal / bkg_backscal
+
+    assert p1.y == pytest.approx(y1)
+    assert p2.y == pytest.approx(y2)
+    assert p3.y == pytest.approx(y3)
