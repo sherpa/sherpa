@@ -161,6 +161,19 @@ jobs:
         conda activate build
         source .github/scripts/setup_xspec.sh
 
+    # Install FFTW3 rather than build it ourselves (but not for XSPEC
+    # builds as that uses the XSPEC version).
+    #
+    - name: Install FFTW (no XSPEC)
+      if: matrix.xspec-version == ''
+      run: |
+        source ${conda_loc}/etc/profile.d/conda.sh
+        conda install fftw
+        sed -i="" "s|#fftw=local|fftw=local|" setup.cfg
+        sed -i="" "s|#fftw_include_dirs=build/include|fftw_include_dirs=${CONDA_PREFIX}/include|" setup.cfg
+        sed -i="" "s|#fftw_lib_dirs=build/lib|fftw_lib_dirs=${CONDA_PREFIX}/lib|" setup.cfg
+        sed -i="" "s|#fftw_libraries=fftw3|fftw_libraries=fftw3|" setup.cfg
+
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
       env:
