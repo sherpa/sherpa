@@ -55,8 +55,10 @@ al. (2001) and in more detail in Chapter 11 of Gelman, Carlin, Stern, and Rubin
 https://hea-www.harvard.edu/AstroStat/pyBLoCXS/
 """
 
-# The pyBLoCXS code base is cleanly separable from Sherpa!
+from __future__ import annotations
 
+from abc import ABC, abstractmethod
+from collections.abc import Callable
 import inspect
 import logging
 import math
@@ -64,6 +66,7 @@ import math
 import numpy as np
 
 from sherpa.utils import random
+from sherpa.utils.types import ArrayType
 
 
 logger = logging.getLogger("sherpa")
@@ -83,7 +86,11 @@ class CovarError(Exception):
     pass
 
 
-def rmvt(mu, sigma, dof, rng=None):
+def rmvt(mu: np.ndarray,
+         sigma: np.ndarray,
+         dof: int,
+         rng: random.RandomType | None = None
+         ) -> np.ndarray:
     """Sampling the non-central multivariate Student's t distribution
     using deviates from multivariate normal and chi-squared distributions
     Source: Kshirsagar method taken from function `rmvt` in R package `mvtnorm`.
@@ -122,9 +129,13 @@ def rmvt(mu, sigma, dof, rng=None):
     return proposal
 
 
-def dmvt(x, mu, sigma, dof, log=True, norm=False):
+def dmvt(x: np.ndarray,
+         mu: np.ndarray,
+         sigma: np.ndarray,
+         dof: int,
+         log: bool = True,
+         norm: bool = False) -> float:
     """Probability Density of a multi-variate Student's t distribution
-
     """
 
     # if np.min( np.linalg.eigvalsh(sigma))<=0 :
@@ -152,10 +163,11 @@ def dmvt(x, mu, sigma, dof, log=True, norm=False):
     return val
 
 
-def dmvnorm(x, mu, sigma, log=True):
-    """
-
-    Probability Density of a multi-variate Normal distribution
+def dmvnorm(x: np.ndarray,
+            mu: np.ndarray,
+            sigma: np.ndarray,
+            log: bool = True) -> float:
+    """Probability Density of a multi-variate Normal distribution
     """
 
     # if np.min( np.linalg.eigvalsh(sigma))<=0 :
@@ -197,16 +209,20 @@ def dmvnorm(x, mu, sigma, log=True):
 #     sys.stdout.flush()
 
 
-class Walk():
+class Walk:
 
-    def __init__(self, sampler=None, niter=1000):
+TODO: do we send in the sampler class or an instance?
+
+    def __init__(self,
+                 sampler: type[Sampler] | None = None,
+                 niter: int = 1000) -> None:
         self._sampler = sampler
         self.niter = int(niter)
 
-    def set_sampler(self, sampler):
+    def set_sampler(self, sampler: type[Sampler]) -> None:
         self._sampler = sampler
 
-    def __call__(self, **kwargs):
+    def __call__(self, **kwargs) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
         if self._sampler is None:
             raise AttributeError("sampler object has not been set, " +
@@ -288,9 +304,9 @@ class Walk():
         return (stats, acceptflag, params)
 
 
-class Sampler():
+class Sampler(ABC):
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs) -> None:
 
         # get the initial keyword argument defaults;
         # it looks like inspect.getargspec is not being removed
@@ -311,23 +327,33 @@ class Sampler():
         self._opts = dict(opts)
         self.walk = None
 
-    def init(self):
+    @abstractmethod
+    def init(self, *args, **kwargs) -> tuple[np.ndarray, float]:
+        ...
+
+    @abstractmethod
+    def draw(self, current: np.ndarray) -> np.ndarray:
+        ...
+
+    @abstractmethod
+    def accept(self,
+               current: np.ndarray,
+               current_stat: float,
+               proposal: np.ndarray,
+               proposal_stat: float,
+               **kwargs) -> bool:
+        ...
+
+    @abstractmethod
+    def reject(self) -> None:
+        ...
+
+    @abstractmethod
+    def calc_stat(self, proposed_params: np.ndarray) -> float:
         raise NotImplementedError
 
-    def draw(self, current, **kwargs):
-        raise NotImplementedError
-
-    def accept(self, current, current_stat, proposal, proposal_stat, **kwargs):
-        raise NotImplementedError
-
-    def reject(self):
-        raise NotImplementedError
-
-    def calc_stat(self, proposed_params):
-        raise NotImplementedError
-
-    def tear_down(self):
-        raise NotImplementedError
+    def tear_down(self) -> None:
+        pass
 
 
 class MH(Sampler):
@@ -345,7 +371,14 @@ class MH(Sampler):
 
     """
 
-    def __init__(self, fcn, sigma, mu, dof, *args, rng=None):
+    def __init__(self,
+                 fcn: Callable[[np.ndarray], float],
+                 sigma: ArrayType,
+                 mu: ArrayType,
+                 dof: int,
+                 *args,
+                 rng: random.RandomType | None = None
+                 ) -> None:
         self.fcn = fcn
         self._dof = dof
         self._mu = np.array(mu)
@@ -361,20 +394,28 @@ class MH(Sampler):
         self.defaultprior = True
         self.priorshape = False
         self.originalscale = True
-        self.scale = 1
+        self.scale: float = 1
         self.prior_funcs = ()
         self.sigma_m = False
 
         # How are RNGs generated?
         self.rng = rng
 
-        Sampler.__init__(self)
+        super().__init__()
 
-    def calc_fit_stat(self, proposed_params):
+    def calc_fit_stat(self, proposed_params: np.ndarray) -> float:
         return self.fcn(proposed_params)
 
-    def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
-             priors=(), originalscale=True, scale=1, sigma_m=False):
+    def init(self,
+             log: bool = False,
+             inv: bool = False,
+             defaultprior: bool = True,
+             priorshape: bool = False,
+             priors=(),
+             originalscale = True,  # shouldn't this be a sequence?
+             scale: float = 1,
+             sigma_m: bool = False
+             ) -> tuple[np.ndarray, float]:
 
         if self._sigma is None or self._mu is None:
             raise AttributeError('sigma or mu is None, initialization failed')
@@ -464,7 +505,11 @@ class MH(Sampler):
 
         return (current, stat)
 
-    def update(self, stat, mu, init=True):
+    def update(self,
+               stat: float,
+               mu: np.ndarray,
+               init: bool = True
+               ) -> float:
         """ include prior """
         if not self.defaultprior:
             x = mu.copy()
@@ -493,7 +538,7 @@ class MH(Sampler):
                 stat -= stat_temp
         return stat
 
-    def draw(self, current):
+    def draw(self, current: np.ndarray) -> np.ndarray:
         """Create a new set of parameter values using the t distribution.
 
         Given the best-guess (mu) and current (current) set of
@@ -504,22 +549,36 @@ class MH(Sampler):
         self.accept_func = self.accept_mh
         return proposal
 
-    def mh(self, current):
+    def mh(self, current: np.ndarray) -> np.ndarray:
         """ MH jumping rule """
 
         # The current proposal is ignored here.
         # MH jumps from the best-fit parameter values at each iteration
         return rmvt(self._mu, self._sigma, self._dof, rng=self.rng)
 
-    def dmvt(self, x, log=True, norm=False):
+    def dmvt(self,
+             x: np.ndarray,
+             log: bool = True,
+             norm: bool = False
+             ) -> float:
         return dmvt(x, self._mu, self._sigma, self._dof, log, norm)
 
-    def accept_mh(self, current, current_stat, proposal, proposal_stat):
+    def accept_mh(self,
+                  current: np.ndarray,
+                  current_stat: float,
+                  proposal: np.ndarray,
+                  proposal_stat: float
+                  ) -> float:
         alpha = np.exp(proposal_stat + self.dmvt(current) -
                        current_stat - self.dmvt(proposal))
         return alpha
 
-    def accept(self, current, current_stat, proposal, proposal_stat, **kwargs):
+    def accept(self,
+               current: np.ndarray,
+               current_stat: float,
+               proposal: np.ndarray,
+               proposal_stat: float,
+               **kwargs) -> bool:
         """
         Should the proposal be accepted (using the Cash statistic and the
         t distribution)?
@@ -528,11 +587,11 @@ class MH(Sampler):
         u = random.uniform(self.rng, 0, 1)
         return u <= alpha
 
-    def reject(self):
+    def reject(self) -> None:
         # added for test
         self.rejections += 1
 
-    def calc_stat(self, proposed_params):
+    def calc_stat(self, proposed_params: np.ndarray) -> float:
 
         if np.sum(self.log) > 0:
             proposed_params[self.log] = np.exp(proposed_params[self.log])
@@ -553,22 +612,35 @@ class MH(Sampler):
 
         return proposed_stat
 
-    def tear_down(self):
-        pass
-
 
 class MetropolisMH(MH):
     """ The Metropolis Metropolis-Hastings Sampler """
 
-    def __init__(self, fcn, sigma, mu, dof, *args, rng=None):
-        MH.__init__(self, fcn, sigma, mu, dof, *args, rng=rng)
+    def __init__(self,
+                 fcn: Callable[[np.ndarray], float],
+                 sigma: ArrayType,
+                 mu: ArrayType,
+                 dof: int,
+                 *args,
+                 rng: random.RandomType | None = None
+                 ) -> None:
+        super().__init__(fcn, sigma, mu, dof, *args, rng=rng)
 
         # count the p_M
         self.num_mh = 0
         self.num_metropolis = 0
 
-    def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
-             priors=(), originalscale=True, scale=1, sigma_m=False, p_M=.5):
+    def init(self,
+             log: bool = False,
+             inv: bool = False,
+             defaultprior: bool = True,
+             priorshape: bool = False,
+             priors=(),
+             originalscale = True,  # shouldn't this be a sequence?
+             scale: float = 1,
+             sigma_m: bool = False,
+             p_M: float = 0.5
+             ) -> tuple[np.ndarray, float]:
 
         debug("Running Metropolis with Metropolis-Hastings")
 
@@ -577,10 +649,10 @@ class MetropolisMH(MH):
         debug("X ~ uniform(0,1) <= %.2f --> Metropolis", float(p_M))
         debug("X ~ uniform(0,1) >  %.2f --> Metropolis-Hastings", float(p_M))
 
-        return MH.init(self, log, inv, defaultprior, priorshape, priors,
-                       originalscale, scale, sigma_m)
+        return super().init(log, inv, defaultprior, priorshape, priors,
+                            originalscale, scale, sigma_m)
 
-    def draw(self, current):
+    def draw(self, current: np.ndarray) -> np.ndarray:
         """Create a new set of parameter values using the t distribution.
 
         Given the best-guess (mu) and current (current) set of
@@ -600,7 +672,7 @@ class MetropolisMH(MH):
 
         return proposal
 
-    def metropolis(self, current):
+    def metropolis(self, current: np.ndarray) -> np.ndarray:
         """ Metropolis Jumping Rule """
 
         # Metropolis with MH jumps from the current accepted parameter
@@ -608,11 +680,18 @@ class MetropolisMH(MH):
         return rmvt(current, self.sigma_m * self.scale, self._dof,
                     rng=self.rng)
 
-    def accept_metropolis(self, current, current_stat, proposal, proposal_stat):
+    def accept_metropolis(self,
+                          current: np.ndarray,
+                          current_stat: float,
+                          proposal: np.ndarray,
+                          proposal_stat: float
+                          ) -> float:
         return np.exp(proposal_stat - current_stat)
 
-    def tear_down(self):
+    def tear_down(self) -> None:
         num = float(self.num_metropolis + self.num_mh)
         if num > 0:
-            debug("p_M: %g, Metropolis: %g%%", self.p_M, 100 * self.num_metropolis / num)
-            debug("p_M: %g, Metropolis-Hastings: %g%%", self.p_M, 100 * self.num_mh / num)
+            debug("p_M: %g, Metropolis: %g%%", self.p_M,
+                  100 * self.num_metropolis / num)
+            debug("p_M: %g, Metropolis-Hastings: %g%%", self.p_M,
+                  100 * self.num_mh / num)
