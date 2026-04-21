@@ -6414,15 +6414,18 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arf is None:
-            id, arf = arf, id
+            idval = self.get_default_id()
+            arf = id
+        else:
+            idval = self._fix_id(id)
 
         # store only the ARF dataset in the PHA response dict
         if type(arf) in (sherpa.astro.instrument.ARF1D,):
             arf = arf._arf
         _check_type(arf, sherpa.astro.data.DataARF, 'arf', 'an ARF data set')
 
-        data = self._get_pha_data(id, bkg_id)
-        data.set_arf(arf, resp_id)
+        data = self._get_pha_data(idval, bkg_id)
+        data.set_arf(arf, id=resp_id)
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
             data._set_initial_quantity()
@@ -6481,7 +6484,9 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
-    def load_arf(self, id, arg=None,
+    def load_arf(self,
+                 id,
+                 arg=None,
                  resp_id: IdType | None = None,
                  bkg_id: IdType | None = None
                  ) -> None:
@@ -6560,8 +6565,13 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
-        self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
+
+        arf = self.unpack_arf(arg)
+        self.set_arf(idval, arf, resp_id=resp_id, bkg_id=bkg_id)
 
     def get_bkg_arf(self,
                     id: IdType | None = None):
@@ -6609,12 +6619,16 @@ class Session(sherpa.ui.utils.Session):
         >>> set_arf(2, arf1, bkg_id=1)
 
         """
-        bkg_id = self._get_pha_data(id).default_background_id
-        resp_id = self._get_pha_data(id).primary_response_id
-        return self.get_arf(id, resp_id, bkg_id)
+        data = self._get_pha_data(id)
+        bkg_id = data.default_background_id
+        resp_id = data.primary_response_id
+        return self.get_arf(id, resp_id=resp_id, bkg_id=bkg_id)
 
     # DOC-TODO: how to describe I/O backend support?
-    def load_bkg_arf(self, id, arg=None) -> None:
+    def load_bkg_arf(self,
+                     id,
+                     arg=None
+                     ) -> None:
         """Load an ARF from a file and add it to the background of a
         PHA data set.
 
@@ -6669,11 +6683,19 @@ class Session(sherpa.ui.utils.Session):
         >>> load_bkg_arf('core', 'core_bkg.arf')
 
         """
+
+        # Note: this is very similar to load_arf
         if arg is None:
-            id, arg = arg, id
-        bkg_id = self._get_pha_data(id).default_background_id
-        resp_id = self._get_pha_data(id).primary_response_id
-        self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
+
+        data = self._get_pha_data(idval)
+        bkg_id = data.default_background_id
+        resp_id = data.primary_response_id
+        arf = self.unpack_arf(arg)
+        self.set_arf(idval, arf, resp_id=resp_id, bkg_id=bkg_id)
 
     def load_multi_arfs(self, id, filenames, resp_ids=None) -> None:
         """Load multiple ARFs for a PHA data set.
@@ -6733,22 +6755,18 @@ class Session(sherpa.ui.utils.Session):
         >>> load_multi_arfs('lowstate', arfs, [1, 2, 3])
 
         """
-# if type(filenames) not in (list, tuple):
-#             raise ArgumentError('Filenames must be contained in a list')
-# if type(resp_ids) not in (list, tuple):
-#             raise ArgumentError('Response IDs must be contained in a list')
 
         if resp_ids is None:
             id, filenames, resp_ids = resp_ids, id, filenames
 
         filenames = list(filenames)
         resp_ids = list(resp_ids)
-
         if len(filenames) != len(resp_ids):
             raise ArgumentErr('multirsp')
 
+        idval = self._fix_id(id)
         for filename, resp_id in zip(filenames, resp_ids):
-            self.load_arf(id, filename, resp_id)
+            self.load_arf(idval, filename, resp_id=resp_id)
 
     def get_rmf(self,
                 id: IdType | None = None,
@@ -6892,15 +6910,18 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if rmf is None:
-            id, rmf = rmf, id
+            idval = self.get_default_id()
+            rmf = id
+        else:
+            idval = self._fix_id(id)
 
         # store only the RMF dataset in the PHA response dict
         if type(rmf) in (sherpa.astro.instrument.RMF1D,):
             rmf = rmf._rmf
         _check_type(rmf, sherpa.astro.data.DataRMF, 'rmf', 'an RMF data set')
 
-        data = self._get_pha_data(id, bkg_id)
-        data.set_rmf(rmf, resp_id)
+        data = self._get_pha_data(idval, bkg_id)
+        data.set_rmf(rmf, id=resp_id)
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
             data._set_initial_quantity()
@@ -6964,7 +6985,9 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
-    def load_rmf(self, id, arg=None,
+    def load_rmf(self,
+                 id,
+                 arg=None,
                  resp_id: IdType | None = None,
                  bkg_id: IdType | None = None
                  ) -> None:
@@ -7048,8 +7071,13 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
-        self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
+
+        rmf = self.unpack_rmf(arg)
+        self.set_rmf(idval, rmf, resp_id=resp_id, bkg_id=bkg_id)
 
     def get_bkg_rmf(self,
                     id: IdType | None = None):
@@ -7092,12 +7120,16 @@ class Session(sherpa.ui.utils.Session):
         >>> set_rmf(2, arf1, bkg_id=1)
 
         """
-        bkg_id = self._get_pha_data(id).default_background_id
-        resp_id = self._get_pha_data(id).primary_response_id
-        return self.get_rmf(id, resp_id, bkg_id)
+        data = self._get_pha_data(id)
+        bkg_id = data.default_background_id
+        resp_id = data.primary_response_id
+        return self.get_rmf(id, resp_id=resp_id, bkg_id=bkg_id)
 
     # DOC-TODO: how to describe I/O backend support?
-    def load_bkg_rmf(self, id, arg=None) -> None:
+    def load_bkg_rmf(self,
+                     id,
+                     arg=None
+                     ) -> None:
         """Load a RMF from a file and add it to the background of a
         PHA data set.
 
@@ -7152,11 +7184,19 @@ class Session(sherpa.ui.utils.Session):
         >>> load_bkg_rmf('core', 'core_bkg.rmf')
 
         """
+
+        # Note: this is very similar to load_rmf
         if arg is None:
-            id, arg = arg, id
-        bkg_id = self._get_pha_data(id).default_background_id
-        resp_id = self._get_pha_data(id).primary_response_id
-        self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
+
+        data = self._get_pha_data(idval)
+        bkg_id = data.default_background_id
+        resp_id = data.primary_response_id
+        rmf = self.unpack_rmf(arg)
+        self.set_rmf(idval, rmf, resp_id=resp_id, bkg_id=bkg_id)
 
     def load_multi_rmfs(self, id, filenames, resp_ids=None) -> None:
         """Load multiple RMFs for a PHA data set.
@@ -7216,22 +7256,18 @@ class Session(sherpa.ui.utils.Session):
         >>> load_multi_rmfs('lowstate', rmfs, [1, 2, 3])
 
         """
-# if type(filenames) not in (list, tuple):
-#             raise ArgumentError('Filenames must be contained in a list')
-# if type(resp_ids) not in (list, tuple):
-#             raise ArgumentError('Response IDs must be contained in a list')
 
         if resp_ids is None:
             id, filenames, resp_ids = resp_ids, id, filenames
 
         filenames = list(filenames)
         resp_ids = list(resp_ids)
-
         if len(filenames) != len(resp_ids):
             raise ArgumentErr('multirsp')
 
+        idval = self._fix_id(id)
         for filename, resp_id in zip(filenames, resp_ids):
-            self.load_rmf(id, filename, resp_id)
+            self.load_rmf(idval, filename, resp_id=resp_id)
 
     def get_bkg(self,
                 id: IdType | None = None,
