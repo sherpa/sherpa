@@ -186,7 +186,7 @@ def _save_entries(out: OutType,
     store
        A container with keys. The elements of the container are
        passed to tostatement to create the string that is then
-       written to fh.
+       saved in out.
     tostatement : func
        A function which accepts two arguments, the key and value
        from store, and returns a string. The reason for the name
@@ -374,9 +374,6 @@ def _save_pha_grouping(out: OutType,
     bid
        If not ``None`` then this indicates that the background dataset
        is to be used.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     _save_pha_array(out, state, pha, "grouping", id, bid=bid)
@@ -1718,10 +1715,10 @@ def save_all(state: SessionType,
 
     _save_id(out, state)
 
-    if fh is None:
-        fh = sys.stdout
+    outfh = sys.stdout if fh is None else fh
 
-    write = lambda msg: fh.write(f"{msg}\n")
+    def write(msg: str) -> None:
+        outfh.write(f"{msg}\n")
 
     # Hard code the required imports.
     #
