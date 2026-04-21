@@ -25,7 +25,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 import logging
 import os
-from typing import Any
+from typing import Any, Type
 import sys
 
 import numpy as np
@@ -1540,7 +1540,11 @@ class Session(sherpa.ui.utils.Session):
     # as it's needed in multiple places (ideally in the
     # DataX class documentation, but users may not find it)
     # DOC-TODO: what do the shape arguments for Data2D/Data2DInt mean?
-    def load_table(self, id, filename=None, ncols=2, colkeys=None,
+    def load_table(self,
+                   id,
+                   filename=None,
+                   ncols: int = 2,
+                   colkeys: Sequence[str] | None = None,
                    dstype=Data1D) -> None:
         """Load a FITS binary file as a data set.
 
@@ -1651,16 +1655,26 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if filename is None:
-            id, filename = filename, id
+            idval = self.get_default_id()
+            filename = id
+        else:
+            idval = self._fix_id(id)
 
-        self.set_data(id, self.unpack_table(filename, ncols, colkeys, dstype))
+        data = self.unpack_table(filename, ncols, colkeys, dstype)
+        self.set_data(idval, data)
 
     # DOC-TODO: should unpack_ascii be merged into unpack_table?
     # DOC-TODO: I am going to ignore the crates support here as
     # it is somewhat meaningless, since the crate could
     # have been read from a FITS binary table.
-    def unpack_ascii(self, filename, ncols=2, colkeys=None,
-                     dstype=Data1D, sep=' ', comment='#'):
+    def unpack_ascii(self,
+                     filename,
+                     ncols: int = 2,
+                     colkeys: Sequence[str] | None = None,
+                     dstype: Type[Data1D] = Data1D,
+                     sep: str = ' ',
+                     comment: str = '#'
+                     ) -> Data1D:
         """Unpack an ASCII file into a data structure.
 
         Parameters
@@ -1736,9 +1750,14 @@ class Session(sherpa.ui.utils.Session):
     # have been read from a FITS binary table.
     # DOC-TODO: how best to include datastack support?
     # DOC-TODO: what does shape mean here (how is it encoded)?
-    def load_ascii(self, id, filename=None, ncols=2, colkeys=None,
-                   dstype=Data1D, sep=' ',
-                   comment='#') -> None:
+    def load_ascii(self,
+                   id,
+                   filename=None,
+                   ncols: int = 2,
+                   colkeys: Sequence[str] | None = None,
+                   dstype: type[Data1D] = Data1D,
+                   sep: str = ' ',
+                   comment: str = '#') -> None:
         """Load an ASCII file as a data set.
 
         The standard behavior is to create a single data set, but
@@ -1845,11 +1864,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if filename is None:
-            id, filename = filename, id
+            idval = self.get_default_id()
+            filename = id
+        else:
+            idval = self._fix_id(id)
 
-        self.set_data(id, self.unpack_ascii(filename, ncols=ncols,
-                                            colkeys=colkeys, dstype=dstype,
-                                            sep=sep, comment=comment))
+        data = self.unpack_ascii(filename, ncols=ncols,
+                                 colkeys=colkeys, dstype=dstype,
+                                 sep=sep, comment=comment)
+        self.set_data(idval, data)
 
     # DOC-NOTE: also in sherpa.utils
     def unpack_data(self, filename, *args, **kwargs):
@@ -1912,7 +1935,9 @@ class Session(sherpa.ui.utils.Session):
                     # If this errors out then so be it
                     return self.unpack_ascii(filename, *args, **kwargs)
 
-    def load_ascii_with_errors(self, id, filename=None,
+    def load_ascii_with_errors(self,
+                               id,
+                               filename=None,
                                colkeys: Sequence[str] | None = None,
                                sep: str = ' ',
                                comment: str = '#',
@@ -2018,13 +2043,16 @@ class Session(sherpa.ui.utils.Session):
         """
 
         if filename is None:
-            id, filename = filename, id
-        self.set_data(id, self.unpack_ascii(filename, ncols=4,
-                                            colkeys=colkeys,
-                                            dstype=Data1DAsymmetricErrs,
-                                            sep=sep, comment=comment))
+            idval = self.get_default_id()
+            filename = id
+        else:
+            idval = self._fix_id(id)
 
-        data = self.get_data(id)
+        data = self.unpack_ascii(filename, ncols=4,
+                                 colkeys=colkeys,
+                                 dstype=Data1DAsymmetricErrs,
+                                 sep=sep, comment=comment)
+        self.set_data(idval, data)
 
         if not delta:
             data.elo = data.y - data.elo
@@ -2164,7 +2192,10 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils without the support for
     #           multiple datasets.
     #
-    def load_data(self, id, filename=None, *args,
+    def load_data(self,
+                  id,
+                  filename=None,
+                  *args,
                   **kwargs) -> None:
         # pylint: disable=W1113
         """Load a data set from a file.
@@ -2233,10 +2264,13 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if filename is None:
-            id, filename = filename, id
+            idval = self.get_default_id()
+            filename = id
+        else:
+            idval = self._fix_id(id)
 
         datasets = self.unpack_data(filename, *args, **kwargs)
-        self._load_data(id, datasets, filename=filename, kwargs=kwargs)
+        self._load_data(idval, datasets, filename=filename, kwargs=kwargs)
 
     def unpack_image(self, arg, coord='logical',
                      dstype=DataIMG):
@@ -2297,7 +2331,10 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
-    def load_image(self, id, arg=None, coord='logical',
+    def load_image(self,
+                   id,
+                   arg=None,
+                   coord: str = 'logical',
                    dstype=DataIMG) -> None:
         """Load an image as a data set.
 
@@ -2362,11 +2399,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
-        self.set_data(id, self.unpack_image(arg, coord, dstype))
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
+
+        data = self.unpack_image(arg, coord, dstype)
+        self.set_data(idval, data)
 
     # DOC-TODO: what does this return when given a PHA2 file?
-    def unpack_pha(self, arg, use_errors=False):
+    def unpack_pha(self, arg, use_errors: bool = False):
         """Create a PHA data structure.
 
         Any instrument or background data sets referenced in the
@@ -2471,7 +2513,9 @@ class Session(sherpa.ui.utils.Session):
                                         use_background=True)
 
     # DOC-TODO: how best to include datastack support?
-    def load_pha(self, id, arg=None,
+    def load_pha(self,
+                 id,
+                 arg=None,
                  use_errors: bool = False) -> None:
         """Load a PHA data set.
 
