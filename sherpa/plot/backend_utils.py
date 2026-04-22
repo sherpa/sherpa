@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2022 - 2024
+#  Copyright (C) 2022-2024, 2026
 #  MIT
 #
 #
@@ -117,8 +117,8 @@ def add_kwargs_to_doc(param_doc):
     --------
 
     >>> param_doc = {'c' : ['int', 'thickness of line'],
-    ...              'title' : ['string', 'Title of figure (only use if `overplot=False`)'],
-    ...              'color': ['string or number',
+    ...              'title' : ['str', 'Title of figure (only use if `overplot=False`)'],
+    ...              'color': ['str or number',
     ...                  'any matplotlib color with a really long text attached to it that will not fit in one line of text in the docstring']}
     >>> @add_kwargs_to_doc(param_doc)
     ... def test_func2(a, *, title=None, color='None'):
@@ -141,9 +141,9 @@ def add_kwargs_to_doc(param_doc):
         ----------
         a : int
             Our stuff
-        title : string, default=None
+        title : str, default=None
             Title of figure (only use if `overplot=False`)
-        color : string or number, default=None
+        color : str or number, default=None
             any matplotlib color with a really long text attached to it that will not fit in one line of text in the docstring
 
     '''
@@ -155,10 +155,16 @@ def add_kwargs_to_doc(param_doc):
         for p, par in sig.parameters.items():
             if par.kind == par.KEYWORD_ONLY:
                 pdoc = param_doc.get(p, ['', ''])
-                out.append(' ' * indent + f'{p} : {pdoc[0]}, default={sig.parameters[p].default}')
+                outmsg = ' ' * indent + f'{p} : '
+                if pdoc[0] != '':
+                    outmsg += f'{pdoc[0]}, '
+                outmsg += f'default={sig.parameters[p].default}'
+                out.append(outmsg)
+
             if par.kind == par.VAR_KEYWORD:
                 pdoc = param_doc.get(p, ['', 'All other keyword parameters are passed to the plotting library.'])
                 out.append(' ' * indent + f'{p} : dict, optional')
+
             if par.kind in (par.KEYWORD_ONLY, par.VAR_KEYWORD):
                 for line in pdoc[1].split('\n'):
                     out.append(' ' * (indent + 4) + line)
