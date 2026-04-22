@@ -25,11 +25,10 @@ The sherpa.utils.guess module
       guess_fwhm
       param_apply_limits
       get_amplitude_position
+      get_position
       guess_amplitude
       guess_amplitude_at_ref
       guess_amplitude2d
-      guess_reference
-      get_position
       guess_position
       guess_bounds
       guess_reference
