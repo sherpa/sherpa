@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015 - 2017, 2019 - 2025
+#  Copyright (C) 2008, 2015-2017, 2019-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -708,11 +708,11 @@ class Filter:
 
         Parameters
         ----------
-        mins : sequence of values
+        mins : sequence
            The minimum value of the valid range (elements may be None
            to indicate no lower bound). When not None, it is treated
            as an inclusive limit, so points >= min are included.
-        maxes : sequence of values
+        maxes : sequence
            The maximum value of the valid range (elements may be None
            to indicate no upper bound). It is treated as an inclusive
            limit (points <= max) when integrated is False, and an
