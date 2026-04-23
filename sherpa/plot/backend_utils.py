@@ -141,9 +141,9 @@ def add_kwargs_to_doc(param_doc):
         ----------
         a : int
             Our stuff
-        title : str, default=None
+        title : str or None, default=None
             Title of figure (only use if `overplot=False`)
-        color : str or number, default=None
+        color : str or number or None, default=None
             any matplotlib color with a really long text attached to it that will not fit in one line of text in the docstring
 
     '''
