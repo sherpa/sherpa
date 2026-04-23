@@ -117,8 +117,8 @@ def add_kwargs_to_doc(param_doc):
     --------
 
     >>> param_doc = {'c' : ['int', 'thickness of line'],
-    ...              'title' : ['str', 'Title of figure (only use if `overplot=False`)'],
-    ...              'color': ['str or number',
+    ...              'title' : ['str or None', 'Title of figure (only use if `overplot=False`)'],
+    ...              'color': ['str or number or None',
     ...                  'any matplotlib color with a really long text attached to it that will not fit in one line of text in the docstring']}
     >>> @add_kwargs_to_doc(param_doc)
     ... def test_func2(a, *, title=None, color='None'):
