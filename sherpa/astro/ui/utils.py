@@ -7105,7 +7105,7 @@ class Session(sherpa.ui.utils.Session):
         Set 'core_bkg.rmf' as the RMF for the background of data set
         'core':
 
-        >>> load_bkg_arf('core', 'core_bkg.rmf')
+        >>> load_bkg_rmf('core', 'core_bkg.rmf')
 
         """
         if arg is None:
