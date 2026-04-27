@@ -1371,7 +1371,7 @@ We can view the model plot object::
     xlabel = x
     ylabel = y
     title  = Model
-    histo_prefs = {'xerrorbars': False, 'yerrorbars': False, ..., 'linecolor': None}
+    histo_prefs = {'xlog': False, 'ylog': False, ...}
 
 
 .. _dataimg_coords:
@@ -1498,8 +1498,6 @@ pixels. It is defined as ``(nx1, nx0)``, and so matches the ndarray
   array([1.80277564, 1.11803399, 1.11803399, 1.80277564, 1.5       ,
          0.5       , 0.5       , 1.5       , 1.80277564, 1.11803399,
          1.11803399, 1.80277564])
-  >>> d.get_axes()
-  (array([1., 2., 3., 4.]), array([1., 2., 3.]))
   >>> d.get_dims()
   (4, 3)
 
@@ -1540,11 +1538,9 @@ represents the conversion sent to the ``sky`` argument, and so get the
 independent axis in the converted system with the
 `~sherpa.astro.data.DataIMG.set_coord` method:
 
-  >>> d.get_axes()
-  (array([1., 2., 3.]), array([1., 2.]))
+  >>> d.indep
+  (array([1, 2, 3, 1, 2, 3]), array([1, 1, 1, 2, 2, 2]))
   >>> d.set_coord("physical")
-  >>> d.get_axes()
-  (array([1000., 1002., 1004.]), array([2000., 2002.]))
   >>> d.indep
   (array([1000., 1002., 1004., 1000., 1002., 1004.]), array([2000., 2000., 2000., 2002., 2002., 2002.]))
 
