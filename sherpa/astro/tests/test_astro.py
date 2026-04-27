@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015 - 2021, 2023 - 2025
+#  Copyright (C) 2007, 2015-2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,9 +34,8 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 
 try:
     from sherpa.astro import xspec
-    has_xspec = True
 except ImportError:
-    has_xspec = False
+    pass
 
 
 try:
