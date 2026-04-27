@@ -129,17 +129,18 @@ this range to have at least 20 counts per group:
 
 from __future__ import annotations
 
+from abc import ABC
 from collections.abc import Callable, Mapping
 import logging
 import os
-from typing import Any, Literal, cast, overload, TYPE_CHECKING
+from typing import Any, Literal, Self, cast, overload, TYPE_CHECKING
 import warnings
 
 import numpy as np
 import numpy.typing as npt
 
 from sherpa.astro import hc
-from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
+from sherpa.data import Data1DInt, Data2D, Data, Data1D, Data2DInt, FieldsType, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
@@ -1606,17 +1607,18 @@ class DataPHA(Data1D):
 
         # Assert types: is there a better way to do this?
         #
-        self._grouping: np.ndarray | None
-        self._quality: np.ndarray | None
-        self._quality_filter: np.ndarray | None
+        self._grouping: np.ndarray | None = None
+        self._quality: np.ndarray | None = None
+        self._quality_filter: np.ndarray | None = None
 
         self.bin_lo = None
         self.bin_hi = None
-        self.quality = _check(quality)
-        self.grouping = _check(grouping)
         self.exposure = exposure
-        self.backscal = backscal
-        self.areascal = areascal
+        # Can't set to array yet, because independent dataspace has not been set
+        # But need to set to something before calling __init__ because of
+        # NoNewAttributesAfterInit
+        self.backscal = None
+        self.areascal = None
         if header is None:
             header = {"HDUCLASS": "OGIP", "HDUCLAS1": "SPECTRUM",
                       "HDUCLAS2": "TOTAL", "HDUCLAS3": "TYPE:I",
@@ -1652,6 +1654,10 @@ class DataPHA(Data1D):
         self.units = "channel"
         self.quality_filter = None
         super().__init__(name, channel, counts, staterror, syserror)
+        self.quality = _check(quality)
+        self.grouping = _check(grouping)
+        self.backscal = backscal
+        self.areascal = areascal
 
         # special-case the labels
         self._xlabel = None
@@ -3274,7 +3280,7 @@ It is an integer or string.
             return None
 
         nelem = self.size
-        if nelem is None:
+        if nelem == 0:
             raise DataErr("sizenotset", self.name)
 
         data = _check(data)
@@ -3444,7 +3450,7 @@ It is an integer or string.
             return None
 
         nelem = self.size
-        if nelem is None:
+        if nelem == 0:
             raise DataErr("sizenotset", self.name)
 
         data = _check(data)
@@ -4497,8 +4503,7 @@ It is an integer or string.
     def get_y(self,
               filter: bool,
               yfunc: None,
-              response_id: IdType | None = None,
-              use_evaluation_space: bool = False
+              response_id: IdType | None = None
               ) -> np.ndarray:
         ...
 
@@ -4506,15 +4511,11 @@ It is an integer or string.
     def get_y(self,
               filter: bool,
               yfunc: ModelFunc,
-              response_id: IdType | None = None,
-              use_evaluation_space: bool = False
+              response_id: IdType | None = None
               ) -> tuple[np.ndarray, np.ndarray]:
         ...
 
-    # Note that use_evaluation_space is unused.
-    #
-    def get_y(self, filter=False, yfunc=None, response_id=None,
-              use_evaluation_space=False):
+    def get_y(self, filter=False, yfunc=None, response_id=None):
 
         vals = Data.get_y(self, yfunc=yfunc)
         vallist = (vals,) if yfunc is None else vals
@@ -4712,7 +4713,7 @@ It is an integer or string.
 
         """
 
-        if self.size is None:
+        if self.size == 0:
             raise DataErr("sizenotset", self.name)
 
         # I am not convinced that self.mask will always be an array if
@@ -5268,105 +5269,11 @@ It is an integer or string.
         self.subtracted = False
 
 
-class DataIMG(Data2D):
-    '''Image data set
-
-    This class builds on `sherpa.data.Data2D` to add support for
-    region filters and the ability to describe the data in different coordinate
-    systems, such as the "logical" coordinates (pixels of the image),
-    the "physical" coordinates (e.g. detector coordinates), and the "world"
-    coordinates (e.g. Ra/Dec on the sky).
-
-    .. note::
-
-       In principle, this class can deal with any shape of data, even with
-       sparse data. However, the added functionality over the base class
-       is most useful for regularly gridded images. In that case, that data
-       should be ordered as in the FITS image conventions, i.e. [column, row];
-       in other words `x0` is the x-axis of the image and `x1` is the y-axis in
-       an x-y-plot.
-       (Sherpa uses `y` for the dependent variable and calls the axes `x0` and `x1`.)
-
-       Only with this convention will the routines that return a 2D
-       array (e.g. for plotting) work correctly. Fitting is done on the flattened
-       1D arrays and will work for any ordering.
+class IMGMixIn(ABC):
+    """Mix-in class to add WCS support and 2D imagane filtering to 2D data classes."""
 
 
-
-    Parameters
-    ----------
-    name : string
-        name of this dataset
-    x0 : array-like
-        Independent coordinate values for the first dimension
-    x1 : array-like
-        Independent coordinate values for the second dimension
-    y : array-like
-        The values of the dependent observable.
-    shape : tuple
-        Shape of the data grid (optional). This is
-        used return the data as an image e.g. for display,
-        but it not needed for fitting and modelling.
-    staterror : array-like
-        the statistical error associated with the data
-    syserror : array-like
-        the systematic error associated with the data
-    sky : `sherpa.astro.io.wcs.WCS`
-        The optional WCS object that converts to the physical coordinate system.
-    eqpos : `sherpa.astro.io.wcs.WCS`
-        The optional WCS object that converts to the world coordinate system.
-    coord : string
-        The coordinate system of the data. This can be one of 'logical',
-        'physical', or 'world'.
-        'image' is an alias for 'logical' and 'wcs' is an alias for 'world'.
-    header : dict
-        The FITS header associated with the data to store meta data.
-
-    Examples
-    --------
-    In this example, we create an image data set, but do not specify the
-    coordinate system. This means that the coordinates are expressed in
-    the logical coordinates of the image, i.e. in pixels::
-
-        >>> from sherpa.astro.data import DataIMG
-        >>> import numpy as np
-        >>> # Note ordering of x1, x0 here
-        >>> x1, x0 = np.mgrid[20:30, 5:20]
-        >>> datashape = x0.shape
-        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
-        >>> x0flat = x0.flatten()
-        >>> x1flat = x1.flatten()
-        >>> yflat = y.flatten()
-        >>> image = DataIMG("bimage", x0=x0flat, x1=x1flat, y=yflat, shape=datashape)
-
-    In this example, we end up with a "logical" coordinate system
-    in ``image`` and no WCS system to convert it to anything else. On the other hand,
-    in FITS standard terminology, the "logical" coordinate system is the
-    "image", counting pixels starting at 1, while here the ``x0lo``` and ``x1lo``
-    actually start at 20 and 5, respectively.
-    This behavior works for now, but might be revisited.
-
-    For the common case of creating an image data set from a 2D array,
-    the `from_2d_array` class method can be used. In this case,
-    the length of ``x0`` and ``x1`` must match the shape of the 2D numpy array and
-    Sherpa will take care of transforming it from numpy [row, column] ordering
-    to the [column, row] ordering::
-
-        >>> x0 = np.arange(20, 30)
-        >>> x1 = np.arange(5, 20)
-        >>> print(y.shape, x0.shape, x1.shape)
-        (10, 15) (10,) (15,)
-        >>> image = DataIMG.from_2d_array("bimage", y=y, x0=x0, x1=x1)
-
-    It's even easier if no particular coordinate system is needed for ``x0``
-    and ``x1`` and the coordinates are simply pixel indices, which can be generated
-    automatically (starting at 1)::
-
-        >>> image = DataIMG.from_2d_array("bimage", y=y)
-
-    '''
-
-    _extra_fields = ("sky", "eqpos", "coord")
+    _extra_fields: FieldsType = ("sky", "eqpos", "coord")
 
     sky = None
     """The optional WCS object that converts to the physical coordinate system."""
@@ -5405,9 +5312,10 @@ class DataIMG(Data2D):
 
         self._coord = coord
 
-    def __init__(self, name, x0, x1, y, shape=None, staterror=None,
+
+    def __init__(self, name, *args, shape=None, staterror=None,
                  syserror=None, sky=None, eqpos=None, coord='logical',
-                 header=None):
+                 header=None, **kwargs):
         self.name = name  # needed by transform checks
         self.sky = sky
         self.eqpos = eqpos
@@ -5415,104 +5323,13 @@ class DataIMG(Data2D):
         self.header = {} if header is None else header
         self._region = None
 
-        # Store the original axes so we can always recreate the other
-        # systems without having to worry about numerical differences
-        # from switching between systems. This is an explicit decision
-        # to go for repeatable behavior at the expense of using more
-        # memory. See #1380 for more information.
-        #
-        self._orig_indep_axis = (self.coord, x0, x1)
-
-        super().__init__(name, x0, x1, y, shape, staterror, syserror)
+        super().__init__(name, *args,
+                         shape=shape, staterror=staterror, syserror=syserror,
+                         **kwargs)
 
         # special case the x-axis labels
         self._x0label = None
         self._x1label = None
-
-
-    # This could be moved up Data2D, but the inheritance pathway of the
-    # DataIMG classes makes that a bit awkward, since DataIMG and DataIMGInt
-    # both inherit from Data2D, but DataIMGInt does not inherit from Data2DInt.
-    @classmethod
-    def from_2d_array(cls,
-                     name: str,
-                     *,
-                     y: npt.NDArray[np.floating],
-                     x0: npt.NDArray[np.floating] | None = None,
-                     x1: npt.NDArray[np.floating] | None = None,
-                     staterror: npt.NDArray[np.floating] | None = None,
-                     syserror: npt.NDArray[np.floating] | None = None,
-                     header: Mapping[str, Any] | None = None
-                     ) -> "DataIMG":   # change to Self once Python 3.10 support has been dropped
-        '''Create a `DataIMG` instance from a 2-dimensional array.
-
-        Parameters
-        ----------
-        name : str
-            The name of the dataset.
-        y : ndarray with 2 dimensions
-            The dependent variable array.
-        x0, x1: ndarray, optional
-            The independent variable arrays; the length of x0 must match
-            y's first dimension, and the length of x1 must match y's second dimension.
-            If not provided, they will be generated, starting at 1.
-
-            .. note::
-
-                This does **not** follow the usual Python conventions to start
-                enumerations at 0, instead, it follows the fits conventions where the first
-                pixel has the coordinate (1, 1).
-
-        staterror : ndarray with 2 dimensions, optional
-            The statistical error array.
-        syserror : ndarray with 2 dimensions, optional
-            The systematic error array.
-        header : dict, optional
-            The header information for the data.
-
-        Returns
-        -------
-        dataimg : DataIMG
-            A DataIMG instance.
-
-        Examples
-        --------
-        Create a DataIMG instance from 2D data. Here, we first create
-        a 2-D array of values y, but in practice this might be read in
-        from a file, from the output of a simulation, or as a result of
-        some other computation.
-
-            >>> import numpy as np
-            >>> from sherpa.astro.data import DataIMG
-            >>> x1 = np.arange(20, 30, 2)
-            >>> x0 = np.arange(5, 20, 2)
-            >>> y = np.sqrt((x0[:, np.newaxis] - 10)**2 + (x1[np.newaxis, :] - 31)**2)
-            >>> reg2d = DataIMG.from_2d_array("regular2d", x0=x0, x1=x1, y=y)
-
-        '''
-        if y.ndim != 2:
-            raise ValueError(f"Expected 2D array for y, got {y.ndim}D array instead.")
-        if staterror is not None and staterror.shape != y.shape:
-            raise ValueError(f"staterror shape {staterror.shape} does not match y's shape {y.shape}")
-        if syserror is not None and syserror.shape != y.shape:
-            raise ValueError(f"syserror shape {syserror.shape} does not match y's shape {y.shape}")
-
-        if x0 is None:
-            x0 = np.arange(y.shape[0], dtype=SherpaFloat) + 1.
-        if x1 is None:
-            x1 = np.arange(y.shape[1], dtype=SherpaFloat) + 1.
-
-        if len(x0) != y.shape[0]:
-            raise ValueError(f"Length of x0 ({len(x0)}) must match y's first dimension ({y.shape[0]})")
-        if len(x1) != y.shape[1]:
-            raise ValueError(f"Length of x1 ({len(x1)}) must match y's second dimension ({y.shape[1]})")
-
-        x0, x1 = np.meshgrid(x0, x1)
-        return cls(name, x0=x0.ravel(), x1=x1.ravel(),
-                   y=y.T.ravel(), shape=y.T.shape,
-                   staterror=staterror.T.ravel() if staterror is not None else None,
-                   syserror=syserror.T.ravel() if syserror is not None else None,
-                   header=header)
 
     @classmethod
     def from_2d_array_with_wcs(cls,
@@ -5525,8 +5342,8 @@ class DataIMG(Data2D):
                      eqpos: WCS,
                      coord: Literal["logical", "image", "physical", "world", "wcs"] = 'logical',
                      header: Mapping[str, Any] | None = None
-                     ) -> "DataIMG":   # change to Self once Python 3.10 support has been dropped
-        '''Create a DataIMG instance from 2D data and WCS information.
+                     ) -> Self:
+        '''Create a DataIMGInt instance from 2D data and WCS information.
 
         '''
         img = cls.from_2d_array(name, y=y,
@@ -5718,21 +5535,27 @@ class DataIMG(Data2D):
 
         return (x0, x1)
 
-    # Convert from the _orig_indep_axis tuple (coord, x0, x1) to the
+    # Convert from the _orig_indep_axis tuple
+    # (coord, ((x0, x1),)) or
+    # (coord, ((x0lo, x1lo), (x0hi, x1hi)))
+    # to the
     # required data system (if it isn't already set).
     #
     def _get_coordsys(self, coord):
         if self.coord == coord:
             return self.get_indep()
 
-        (base, x0, x1) = self._orig_indep_axis
-        x0 = x0.copy()
-        x1 = x1.copy()
+        (base, axes) = self._orig_indep_axis
+        axes = tuple(tuple(ax.copy() for ax in axesset) for axesset in axes)
+
         if base == coord:
-            return (x0, x1)
+            # The sum() with () is a neat trick to flatten the list of tuples
+            return sum(axes, ())
 
         conv = getattr(self, f'_{base}_to_{coord}')
-        return conv(x0, x1)
+        nested_tuple = (conv(x0, x1) for x0, x1 in axes)
+        # The sum() with () is a neat trick to flatten the list of tuples
+        return sum(nested_tuple, ())
 
     def get_logical(self):
         return self._get_coordsys("logical")
@@ -5778,6 +5601,90 @@ class DataIMG(Data2D):
         func = getattr(self, f'get_{coord}')
         self.indep = func()
         self._set_coord(coord)
+
+    def _get_axes(self, offset):
+        axis0 = np.arange(self.shape[1], dtype=float) + offset
+        axis1 = np.arange(self.shape[0], dtype=float) + offset
+
+        # dummy placeholders needed b/c img shape may not be square!
+        dummy0 = np.ones(axis0.size, dtype=float)
+        dummy1 = np.ones(axis1.size, dtype=float)
+
+        if self.coord == 'logical':
+            return (axis0, axis1)
+
+        if self.coord == 'physical':
+            axis0, dummy = self._logical_to_physical(axis0, dummy0)
+            dummy, axis1 = self._logical_to_physical(dummy1, axis1)
+        else:
+            axis0, dummy = self._logical_to_world(axis0, dummy0)
+            dummy, axis1 = self._logical_to_world(dummy1, axis1)
+        return (axis0, axis1)
+
+    def get_axes(self):
+        # FIXME: how to filter an axis when self.mask is size of self.y?
+        self._check_shape()
+
+        if self.integrated:
+            # Integrated datasets start with pixels are 0
+            return self._get_axes(offset=-0.5) + self._get_axes(offset=0.5)
+        else:
+            # but non-integrated datasets start with pixels at 1
+            # FIXME: is this correct?
+            return self._get_axes(offset=1.0)
+
+
+        # Sum with () flattens the tuple of arrays
+        return sum(out, ())
+
+    def get_x0label(self) -> str:
+        """Return the label for the first independent axis.
+
+        If set_x0label has been called then the label used in that call
+        will be used, otherwise the label will change depending on the
+        coordinate setting.
+
+        .. versionchanged:: 4.17.0
+           The return value depends on if set_x0label has been called.
+
+        See Also
+        --------
+        get_x1label, set_coord, set_x0label
+
+        """
+
+        if self._x0label is not None:
+            return self._x0label
+        if self.coord == 'physical':
+            return 'x0 (pixels)'
+        if self.coord == 'world':
+            return 'RA (deg)'
+        return 'x0'
+
+    def get_x1label(self) -> str:
+        """Return the label for the second independent axis.
+
+        If set_x1label has been called then the label used in that call
+        will be used, otherwise the label will change depending on the
+        coordinate setting.
+
+        .. versionchanged:: 4.17.0
+           The return value depends on if set_x1label has been called.
+
+        See Also
+        --------
+        get_x0label, set_coord, set_x1label
+
+        """
+
+        if self._x1label is not None:
+            return self._x1label
+        if self.coord == 'physical':
+            return 'x1 (pixels)'
+        if self.coord == 'world':
+            return 'DEC (deg)'
+
+        return 'x1'
 
     def get_filter_expr(self):
         if self._region is None:
@@ -5889,78 +5796,6 @@ class DataIMG(Data2D):
         return (y_img,
                 self.filter_region(m).reshape(*self.shape))
 
-    def get_axes(self):
-        # FIXME: how to filter an axis when self.mask is size of self.y?
-        self._check_shape()
-
-        # dummy placeholders needed b/c img shape may not be square!
-        axis0 = np.arange(self.shape[1], dtype=float) + 1.
-        axis1 = np.arange(self.shape[0], dtype=float) + 1.
-        if self.coord == 'logical':
-            return (axis0, axis1)
-
-        dummy0 = np.ones(axis0.size, dtype=float)
-        dummy1 = np.ones(axis1.size, dtype=float)
-
-        if self.coord == 'physical':
-            axis0, dummy = self._logical_to_physical(axis0, dummy0)
-            dummy, axis1 = self._logical_to_physical(dummy1, axis1)
-
-        else:
-            axis0, dummy = self._logical_to_world(axis0, dummy0)
-            dummy, axis1 = self._logical_to_world(dummy1, axis1)
-
-        return (axis0, axis1)
-
-    def get_x0label(self) -> str:
-        """Return the label for the first independent axis.
-
-        If set_x0label has been called then the label used in that call
-        will be used, otherwise the label will change depending on the
-        coordinate setting.
-
-        .. versionchanged:: 4.17.0
-           The return value depends on if set_x0label has been called.
-
-        See Also
-        --------
-        get_x1label, set_coord, set_x0label
-
-        """
-
-        if self._x0label is not None:
-            return self._x0label
-        if self.coord == 'physical':
-            return 'x0 (pixels)'
-        if self.coord == 'world':
-            return 'RA (deg)'
-        return 'x0'
-
-    def get_x1label(self) -> str:
-        """Return the label for the second independent axis.
-
-        If set_x1label has been called then the label used in that call
-        will be used, otherwise the label will change depending on the
-        coordinate setting.
-
-        .. versionchanged:: 4.17.0
-           The return value depends on if set_x1label has been called.
-
-        See Also
-        --------
-        get_x0label, set_coord, set_x1label
-
-        """
-
-        if self._x1label is not None:
-            return self._x1label
-        if self.coord == 'physical':
-            return 'x1 (pixels)'
-        if self.coord == 'world':
-            return 'DEC (deg)'
-
-        return 'x1'
-
     def to_contour(self, yfunc=None):
         y = self.filter_region(self.get_dep(False))
         if yfunc is not None:
@@ -5989,8 +5824,209 @@ class DataIMG(Data2D):
         out[~self.mask] = np.nan
         return out
 
+class DataIMG(IMGMixIn, Data2D):
+    '''Image data set
 
-class DataIMGInt(DataIMG):
+    This class builds on `sherpa.data.Data2D` to add support for
+    region filters and the ability to describe the data in different coordinate
+    systems, such as the "logical" coordinates (pixels of the image),
+    the "physical" coordinates (e.g. detector coordinates), and the "world"
+    coordinates (e.g. Ra/Dec on the sky).
+
+    .. note::
+
+       In principle, this class can deal with any shape of data, even with
+       sparse data. However, the added functionality over the base class
+       is most useful for regularly gridded images. In that case, that data
+       should be ordered as in the FITS image conventions, i.e. [column, row];
+       in other words `x0` is the x-axis of the image and `x1` is the y-axis in
+       an x-y-plot.
+       (Sherpa uses `y` for the dependent variable and calls the axes `x0` and `x1`.)
+
+       Only with this convention will the routines that return a 2D
+       array (e.g. for plotting) work correctly. Fitting is done on the flattened
+       1D arrays and will work for any ordering.
+
+
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    x0 : array-like
+        Independent coordinate values for the first dimension
+    x1 : array-like
+        Independent coordinate values for the second dimension
+    y : array-like
+        The values of the dependent observable.
+    shape : tuple
+        Shape of the data grid (optional). This is
+        used return the data as an image e.g. for display,
+        but it not needed for fitting and modelling.
+    staterror : array-like
+        the statistical error associated with the data
+    syserror : array-like
+        the systematic error associated with the data
+    sky : `sherpa.astro.io.wcs.WCS`
+        The optional WCS object that converts to the physical coordinate system.
+    eqpos : `sherpa.astro.io.wcs.WCS`
+        The optional WCS object that converts to the world coordinate system.
+    coord : string
+        The coordinate system of the data. This can be one of 'logical',
+        'physical', or 'world'.
+        'image' is an alias for 'logical' and 'wcs' is an alias for 'world'.
+    header : dict
+        The FITS header associated with the data to store meta data.
+
+    Examples
+    --------
+    In this example, we create an image data set, but do not specify the
+    coordinate system. This means that the coordinates are expressed in
+    the logical coordinates of the image, i.e. in pixels::
+
+        >>> from sherpa.astro.data import DataIMG
+        >>> import numpy as np
+        >>> # Note ordering of x1, x0 here
+        >>> x1, x0 = np.mgrid[20:30, 5:20]
+        >>> datashape = x0.shape
+        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+        >>> x0flat = x0.flatten()
+        >>> x1flat = x1.flatten()
+        >>> yflat = y.flatten()
+        >>> image = DataIMG("bimage", x0=x0flat, x1=x1flat, y=yflat, shape=datashape)
+
+    In this example, we end up with a "logical" coordinate system
+    in ``image`` and no WCS system to convert it to anything else. On the other hand,
+    in FITS standard terminology, the "logical" coordinate system is the
+    "image", counting pixels starting at 1, while here the ``x0lo``` and ``x1lo``
+    actually start at 20 and 5, respectively.
+    This behavior works for now, but might be revisited.
+
+    For the common case of creating an image data set from a 2D array,
+    the `from_2d_array` class method can be used. In this case,
+    the length of ``x0`` and ``x1`` must match the shape of the 2D numpy array and
+    Sherpa will take care of transforming it from numpy [row, column] ordering
+    to the [column, row] ordering::
+
+        >>> x0 = np.arange(20, 30)
+        >>> x1 = np.arange(5, 20)
+        >>> print(y.shape, x0.shape, x1.shape)
+        (10, 15) (10,) (15,)
+        >>> image = DataIMG.from_2d_array("bimage", y=y, x0=x0, x1=x1)
+
+    It's even easier if no particular coordinate system is needed for ``x0``
+    and ``x1`` and the coordinates are simply pixel indices, which can be generated
+    automatically (starting at 1)::
+
+        >>> image = DataIMG.from_2d_array("bimage", y=y)
+
+    '''
+    _fields: FieldsType = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
+
+    def __init__(self, name, x0, x1, y, shape=None, staterror=None,
+                 syserror=None, sky=None, eqpos=None, coord='logical',
+                 header=None):
+
+        # Store the original axes so we can always recreate the other
+        # systems without having to worry about numerical differences
+        # from switching between systems. This is an explicit decision
+        # to go for repeatable behavior at the expense of using more
+        # memory. See #1380 for more information.
+        #
+        self._orig_indep_axis = (coord, ((x0, x1),))
+
+        super().__init__(name, x0, x1, y,
+                         shape=shape,
+                         staterror=staterror, syserror=syserror,
+                         sky=sky, eqpos=eqpos, coord=coord, header=header)
+
+
+    # This could be moved up Data2D, but the inheritance pathway of the
+    # DataIMG classes makes that a bit awkward, since DataIMG and DataIMGInt
+    # both inherit from Data2D, but DataIMGInt does not inherit from Data2DInt.
+    @classmethod
+    def from_2d_array(cls,
+                     name: str,
+                     *,
+                     y: npt.NDArray[np.floating],
+                     x0: npt.NDArray[np.floating] | None = None,
+                     x1: npt.NDArray[np.floating] | None = None,
+                     staterror: npt.NDArray[np.floating] | None = None,
+                     syserror: npt.NDArray[np.floating] | None = None,
+                     header: Mapping[str, Any] | None = None
+                     ) -> "DataIMG":   # change to Self once Python 3.10 support has been dropped
+        '''Create a `DataIMG` instance from a 2-dimensional array.
+
+        Parameters
+        ----------
+        name : str
+            The name of the dataset.
+        y : ndarray with 2 dimensions
+            The dependent variable array.
+        x0, x1: ndarray, optional
+            The independent variable arrays; the length of x0 must match
+            y's first dimension, and the length of x1 must match y's second dimension.
+            If not provided, they will be generated, starting at 1.
+
+            .. note::
+
+                This does **not** follow the usual Python conventions to start
+                enumerations at 0, instead, it follows the fits conventions where the first
+                pixel has the coordinate (1, 1).
+
+        staterror : ndarray with 2 dimensions, optional
+            The statistical error array.
+        syserror : ndarray with 2 dimensions, optional
+            The systematic error array.
+        header : dict, optional
+            The header information for the data.
+
+        Returns
+        -------
+        dataimg : DataIMG
+            A DataIMG instance.
+
+        Examples
+        --------
+        Create a DataIMG instance from 2D data. Here, we first create
+        a 2-D array of values y, but in practice this might be read in
+        from a file, from the output of a simulation, or as a result of
+        some other computation.
+
+            >>> import numpy as np
+            >>> from sherpa.astro.data import DataIMG
+            >>> x1 = np.arange(20, 30, 2)
+            >>> x0 = np.arange(5, 20, 2)
+            >>> y = np.sqrt((x0[:, np.newaxis] - 10)**2 + (x1[np.newaxis, :] - 31)**2)
+            >>> reg2d = DataIMG.from_2d_array("regular2d", x0=x0, x1=x1, y=y)
+
+        '''
+        if y.ndim != 2:
+            raise ValueError(f"Expected 2D array for y, got {y.ndim}D array instead.")
+        if staterror is not None and staterror.shape != y.shape:
+            raise ValueError(f"staterror shape {staterror.shape} does not match y's shape {y.shape}")
+        if syserror is not None and syserror.shape != y.shape:
+            raise ValueError(f"syserror shape {syserror.shape} does not match y's shape {y.shape}")
+
+        if x0 is None:
+            x0 = np.arange(y.shape[0], dtype=SherpaFloat) + 1.
+        if x1 is None:
+            x1 = np.arange(y.shape[1], dtype=SherpaFloat) + 1.
+
+        if len(x0) != y.shape[0]:
+            raise ValueError(f"Length of x0 ({len(x0)}) must match y's first dimension ({y.shape[0]})")
+        if len(x1) != y.shape[1]:
+            raise ValueError(f"Length of x1 ({len(x1)}) must match y's second dimension ({y.shape[1]})")
+
+        x0, x1 = np.meshgrid(x0, x1)
+        return cls(name, x0=x0.ravel(), x1=x1.ravel(),
+                   y=y.T.ravel(), shape=y.T.shape,
+                   staterror=staterror.T.ravel() if staterror is not None else None,
+                   syserror=syserror.T.ravel() if syserror is not None else None,
+                   header=header)
+
+
+class DataIMGInt(IMGMixIn, Data2DInt):
     '''Binned image data set
 
     This class is very similar to `sherpa.data.DataIMG`, but it stores integrated
@@ -6076,24 +6112,18 @@ class DataIMGInt(DataIMG):
         ...                    x0_bounds=x0edges, x1_bounds=x1edges)
 
     '''
+    _fields: FieldsType = ("name", "x0lo", "x1lo", "x0hi", "x1hi", "y", "shape", "staterror", "syserror")
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None, sky=None, eqpos=None,
                  coord='logical', header=None):
 
-        # Note: we do not call the superclass here.
-        self._region = None
-        self.sky = sky
-        self.eqpos = eqpos
-        self._set_coord(coord)
-        self.header = {} if header is None else header
-        self.shape = shape
+        self._orig_indep_axis = (coord, ((x0lo, x1lo), (x0hi, x1hi)))
 
-        self._x0label = 'x0'
-        self._x1label = 'x1'
-        self._ylabel = 'y'
-
-        Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
+        super().__init__(name, x0lo, x1lo, x0hi, x1hi, y,
+                         shape=shape,
+                         staterror=staterror, syserror=syserror,
+                         sky=sky, eqpos=eqpos, coord=coord, header=header)
 
     # This could be moved up Data2D, but the inheritance pathway of the
     # DataIMG classes makes that a bit awkward, since DataIMG and DataIMGInt
@@ -6188,159 +6218,3 @@ class DataIMGInt(DataIMG):
                    syserror=syserror.T.ravel() if syserror is not None else None,
                    header=header)
 
-
-    @classmethod
-    def from_2d_array_with_wcs(cls,
-                     name: str,
-                     *,
-                     y: npt.NDArray[np.floating],
-                     staterror: npt.NDArray[np.floating] | None = None,
-                     syserror: npt.NDArray[np.floating] | None = None,
-                     sky: WCS,
-                     eqpos: WCS,
-                     coord: Literal["logical", "image", "physical", "world", "wcs"] = 'logical',
-                     header: Mapping[str, Any] | None = None
-                     ) -> "DataIMGInt":   # change to Self once Python 3.10 support has been dropped
-        '''Create a DataIMGInt instance from 2D data and WCS information.
-
-        '''
-        img = cls.from_2d_array(name, y=y,
-                               staterror=staterror, syserror=syserror,
-                               header=header)
-        img.sky = sky
-        img.eqpos = eqpos
-        img._set_coord(coord)
-        return img
-
-    def _init_data_space(self, filter, *data):
-        ndata = len(data)
-        if ndata != 4:
-            raise DataErr("wrongaxiscount", self.name, 4, ndata)
-
-        ds = IntegratedDataSpace2D(filter, *data)
-        self._check_data_space(ds)
-        return ds
-
-    def get_x0(self, filter=False):
-        if self.size is None:
-            return None
-        indep = self._data_space.get(filter)
-        return (indep.x0lo + indep.x0hi) / 2.0
-
-    def get_x1(self, filter=False):
-        if self.size is None:
-            return None
-        indep = self._data_space.get(filter)
-        return (indep.x1lo + indep.x1hi) / 2.0
-
-    @property
-    def x0lo(self):
-        """
-        Property kept for compatibility
-        """
-        return self._data_space.x0lo
-
-    @property
-    def x0hi(self):
-        """
-        Property kept for compatibility
-        """
-        return self._data_space.x0hi
-
-    @property
-    def x1lo(self):
-        """
-        Property kept for compatibility
-        """
-        return self._data_space.x1lo
-
-    @property
-    def x1hi(self):
-        """
-        Property kept for compatibility
-        """
-        return self._data_space.x1hi
-
-    def get_logical(self):
-        coord = self.coord
-        x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord == 'logical':
-            return (x0lo, x1lo, x0hi, x1hi)
-
-        x0lo = x0lo.copy()
-        x1lo = x1lo.copy()
-        convert = getattr(self, f'_{coord}_to_logical')
-        x0lo, x1lo = convert(x0lo, x1lo)
-
-        x0hi = x0hi.copy()
-        x1hi = x1hi.copy()
-        x0hi, x1hi = convert(x0hi, x1hi)
-
-        return (x0lo, x1lo, x0hi, x1hi)
-
-    def get_physical(self):
-        coord = self.coord
-        x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord == 'physical':
-            return (x0lo, x1lo, x0hi, x1hi)
-
-        x0lo = x0lo.copy()
-        x1lo = x1lo.copy()
-        convert = getattr(self, f'_{coord}_to_physical')
-        x0lo, x1lo = convert(x0lo, x1lo)
-
-        x0hi = x0hi.copy()
-        x1hi = x1hi.copy()
-        x0hi, x1hi = convert(x0hi, x1hi)
-
-        return (x0lo, x1lo, x0hi, x1hi)
-
-    def get_world(self):
-        coord = self.coord
-        x0lo, x1lo, x0hi, x1hi = self.get_indep()
-        if coord == 'world':
-            return (x0lo, x1lo, x0hi, x1hi)
-
-        x0lo = x0lo.copy()
-        x1lo = x1lo.copy()
-        convert = getattr(self, f'_{coord}_to_world')
-        x0lo, x1lo = convert(x0lo, x1lo)
-
-        x0hi = x0hi.copy()
-        x1hi = x1hi.copy()
-        x0hi, x1hi = convert(x0hi, x1hi)
-
-        return (x0lo, x1lo, x0hi, x1hi)
-
-    def get_axes(self):
-        # FIXME: how to filter an axis when self.mask is size of self.y?
-        self._check_shape()
-
-        # dummy placeholders needed b/c img shape may not be square!
-        axis0lo = np.arange(self.shape[1], dtype=float) - 0.5
-        axis1lo = np.arange(self.shape[0], dtype=float) - 0.5
-
-        axis0hi = np.arange(self.shape[1], dtype=float) + 0.5
-        axis1hi = np.arange(self.shape[0], dtype=float) + 0.5
-
-        if self.coord == 'logical':
-            return (axis0lo, axis1lo, axis0hi, axis1hi)
-
-        dummy0 = np.ones(axis0lo.size, dtype=float)
-        dummy1 = np.ones(axis1lo.size, dtype=float)
-
-        if self.coord == 'physical':
-            axis0lo, dummy = self._logical_to_physical(axis0lo, dummy0)
-            axis0hi, dummy = self._logical_to_physical(axis0hi, dummy0)
-
-            dummy, axis1lo = self._logical_to_physical(dummy1, axis1lo)
-            dummy, axis1hi = self._logical_to_physical(dummy1, axis1hi)
-
-        else:
-            axis0lo, dummy = self._logical_to_world(axis0lo, dummy0)
-            axis0hi, dummy = self._logical_to_world(axis0hi, dummy0)
-
-            dummy, axis1lo = self._logical_to_world(dummy1, axis1lo)
-            dummy, axis1hi = self._logical_to_world(dummy1, axis1hi)
-
-        return (axis0lo, axis1lo, axis0hi, axis1hi)

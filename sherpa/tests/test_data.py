@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2022, 2024
+#  Copyright (C) 2019-2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -331,15 +331,15 @@ def test_data_len(Dataclass):
 @pytest.mark.parametrize("data", (Data, ), indirect=True)
 def test_data_str_repr(data):
     assert repr(data) == "<Data data set instance 'data_test'>"
-    assert str(data) == 'name      = data_test\nindep     = (array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),)\ndep       ' \
-                        '= Int64[10]\nstaterror = Float64[10]\nsyserror  = Float64[10]'
+    assert str(data) == 'name       = data_test\nindep      = (array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),)\ndep        ' \
+                        '= Int64[10]\nstaterror  = Float64[10]\nsyserror   = Float64[10]\nintegrated = False'
 
 
 @pytest.mark.parametrize("data", (Data1D, ), indirect=True)
 def test_data1d_str_repr(data):
     assert repr(data) == "<Data1D data set instance 'data_test'>"
-    assert str(data) == 'name      = data_test\nx         = Int64[10]\ny         = Int64[10]\nstaterror = ' \
-                        'Float64[10]\nsyserror  = Float64[10]'
+    assert str(data) == 'name       = data_test\nx          = Int64[10]\ny          = Int64[10]\nstaterror  = ' \
+                        'Float64[10]\nsyserror   = Float64[10]\nintegrated = False'
 
 
 @pytest.mark.parametrize("data", (Data, Data1D), indirect=True)
@@ -1615,7 +1615,7 @@ def test_ispace2d_mismatch():
 
     with pytest.raises(DataErr,
                        match="size mismatch between x0 and x1: 9 vs 10"):
-        IntegratedDataSpace2D(Filter(), x0[:-1], x1[:-1], x0[1:], x1[1:])
+        IntegratedDataSpace2D(Filter(), x0[:-1], x1[:-1], x0[1:], x1[1:], flat=True)
 
 
 @pytest.fixture
@@ -2206,33 +2206,16 @@ def test_check_related_fields_correct_size(column):
     """
 
     d = Data1D('example', None, None)
-    setattr(d, column, numpy.asarray([2, 10, 3]))
+    with pytest.raises(DataErr,
+                       match=f"size mismatch between independent axis and {column}: 0 vs 3"):
+        setattr(d, column, numpy.asarray([2, 10, 3]))
+
+    d.indep = (numpy.asarray([2, 3, 4, 5]), )
 
     with pytest.raises(DataErr,
-                       match="independent axis can not change size: 3 to 4"):
-        d.indep = (numpy.asarray([2, 3, 4, 5]), )
+                       match=f"size mismatch between independent axis and {column}: 4 vs 3"):
+        setattr(d, column, numpy.asarray([2, 10, 3]))
 
-
-def test_data1d_mismatched_related_fields():
-    """Check setting the related fields to different sizes: Data1D
-
-    This is a regression test to check when the mismatch is detected,
-    if it is. It is important that we have not set the dependent axis
-    here, as there is likely to be better support for checking the
-    dependent and independent axes than the related axes.
-
-    The assumption here is that we don't need to test all the classes.
-    """
-
-    # Create an empty object, set the syserror and staterror fields to
-    # different lengths, then set the independent axis.
-    #
-    d = Data1D("x", None, None)
-
-    d.staterror = [1, 2, 3, 4]
-    with pytest.raises(DataErr,
-                       match="size mismatch between independent axis and syserror: 4 vs 6"):
-        d.syserror = [2, 3, 4, 5, 20, 12]
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2404,7 +2387,7 @@ def test_data_is_empty(data_class, args):
     """There is no size attribute"""
 
     data = data_class("empty", *args)
-    assert data.size is None
+    assert data.size is 0
 
 
 @pytest.mark.parametrize("data", (Data, ) + DATA_1D_CLASSES, indirect=True)
@@ -2431,15 +2414,14 @@ def test_data_size_2d(data):
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
 def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
-    """Check out how we error out.
+    """Setting a scalar sets all (in this case 0, since empty) values.
 
     This is a regression test.
     """
 
     data = data_class("empty", *args)
-    with pytest.raises(DataErr,
-                       match="The size of 'empty' has not been set"):
-        data.set_dep(2)
+    data.set_dep(2)
+    assert data.dep == pytest.approx([])
 
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
@@ -2698,19 +2680,15 @@ def test_eval_model_to_fit_when_all_ignored_2d(data_copy):
 def test_to_guess_when_empty(data_class, args):
     """This is a regression test."""
 
-    if data_class == Data1DInt:
-        # Error is
-        # TypeError: IntegratedDataSpace1D.__init__() missing 1 required positional argument: 'xhi'
-        #
-        pytest.xfail("test known to fail with Data1DInt")
-
     data = data_class("empty", *args)
     resp = data.to_guess()
 
+    # Get from input, don't use attributes of the objects that we want to test
+    ndim = int(data.__class__.__name__[4])
     # Ensure there are n None values, where n is the number of
     # independent + dependent axes - ie len(args)
     #
-    assert len(resp) == len(args)
+    assert len(resp) == ndim * {True: 2, False: 1}[data.integrated] + 1
     for r in resp:
         assert r is None
 
@@ -2753,15 +2731,15 @@ def test_get_filter_when_empty_1d(data_class, args):
     hard-codes the return value to be ''.
     """
 
-    if data_class == Data1DInt:
+    #if data_class == Data1DInt:
         # Error is
         # IntegratedDataSpace1D.__init__() missing 1 required positional argument: 'xhi'
-        pytest.xfail("test known to fail with Data1DInt")
+    #    pytest.xfail("test known to fail with Data1DInt")
 
     data = data_class("empty", *args)
     # This is not a nice error case, so catch it in case we decide to
     # change the code.
     #
-    with pytest.raises(TypeError,
-                       match=r"object of type 'NoneType' has no len\(\)"):
-        _ = data.get_filter()
+    assert '' == data.get_filter()
+
+
