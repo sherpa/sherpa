@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2020 - 2025
+#  Copyright (C) 2017, 2020-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -33,10 +33,10 @@ from numpy.testing import assert_allclose
 import pytest
 
 from sherpa.astro import hc, io
-from sherpa.astro.data import DataPHA, DataRMF, DataIMG
+from sherpa.astro.data import DataARF, DataPHA, DataRMF, DataIMG
 from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     Response1D, MultipleResponse1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
-    RSPModelNoPHA, RSPModelPHA, PSFModel, RMFMatrix, \
+    RSPModelNoPHA, RSPModelPHA, PSFModel, RMFMatrix, MultiResponseSumModel, \
     create_arf, create_delta_rmf, create_non_delta_rmf, \
     rmf_to_matrix, rmf_to_image, has_pha_response
 from sherpa.data import Data1D
@@ -1536,6 +1536,255 @@ def test_rsp_multi_2_filtered(analysis, arfexp, phaexp):
     assert out == pytest.approx(2 * expected2)
 
 
+def test_rsp_multi_no_response():
+    """Corner chase: check we error out if no response"""
+
+    pha = DataPHA("x", np.asarray([1, 2]), np.asarray([0, 1]))
+    model = Box1D()
+
+    # Note that
+    #    rsp = MultipleResponse1D(pha)
+    #    rsp(model)
+    # could also error out, but MultiResponse1D already checks that
+    # there is at least one response, so there is a need to call
+    # MultiResponseSumModel directly.
+    #
+    with pytest.raises(DataErr,
+                       match="^No instrument response found for "
+                       "dataset x$"):
+        MultiResponseSumModel(model, pha=pha)
+
+
+def create_xrism_like_responses() -> tuple[DataRMF,
+                                           DataRMF,
+                                           DataARF,
+                                           DataPHA]:
+    """Create two RMF and one ARF to emulate XRISM multi-RMF file.
+
+    This is primarily to test whether MultipleResponse1D and
+    MultiResponseSumModel can handle this case. Unlike the
+    multiple-order grating case, the ARF is expected to be the same
+    but the individual RMF grids have different energy scales.
+
+    """
+
+    # First block is "perfect" and the second adds a "blob"
+    # component.
+    #
+    egrid = np.linspace(0.1, 2.1, 21)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf1 = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi,
+                            name="perfect")
+    rmf1.header["TESTBLCK"] = 1
+
+    # reduce the "energy" resolution of the second block.
+    #
+    e4grid = np.linspace(0.1, 2.1, 6)
+    e4lo = e4grid[:-1]
+    e4hi = e4grid[1:]
+    matrix = np.zeros((5, 4), dtype=np.float32)
+    blur = [0.1, 0.3, 0.4, 0.2]
+    for i in range(5):
+        matrix[i] = blur
+
+    rmf2 = DataRMF("blob", detchans=rmf1.detchans,
+                   energ_lo=e4lo, energ_hi=e4hi,
+                   n_grp=np.ones(5, dtype=np.int32),
+                   f_chan=np.asarray([2, 4, 6, 8, 10], dtype=np.int32),
+                   n_chan=4 * np.ones(5, dtype=np.int32),
+                   matrix=matrix.flatten(),
+                   e_min=elo, e_max=ehi,
+                   header={"TESTBLCK": 2})
+
+    specresp = np.full(elo.size, 20.0)
+    specresp[12:] = 15.0
+    arf = DataARF("arfy", energ_lo=elo, energ_hi=ehi,
+                  specresp=specresp)
+
+    chans = np.arange(1, 21, dtype=np.int16)
+    pha = DataPHA("ex", chans, np.zeros(20, dtype=np.int16))
+    pha.exposure = 100.0
+
+    return (rmf1, rmf2, arf, pha)
+
+
+def create_xrism_like_model():
+    """A common model"""
+
+    pl = PowLaw1D()
+    line = Gauss1D()
+    pl.ampl = 2
+    pl.gamma = 2
+    line.fwhm = 0.4
+    line.pos = 0.6
+    line.ampl = 1
+    return pl + line
+
+
+def eval_xrism_like_model_rmf1():
+    """What is the expected value?
+
+    This is multiplied by the PHA exposure time
+    """
+
+    # These values were created by running the code with CIAO 4.18,
+    # rather than calculating them directly from knowledge of the
+    # model and responses.
+    #
+    return np.asarray([20006.50887613, 6691.72203773, 3402.16404438,
+                       2134.98603532, 1522.35747977, 1141.40509882,
+                       849.27174961, 624.3862666, 469.49981551,
+                       370.14523977, 304.23651655, 256.56964413,
+                       164.84642229, 142.857898, 125.00003606,
+                       110.29411887, 98.03921572, 87.71929825,
+                       78.94736842, 71.42857143])
+
+
+def eval_xrism_like_model_rmf2():
+    """What is the expected value?
+
+    This is multiplied by the PHA exposure time
+    """
+
+    # These values were created by running the code with CIAO 4.18,
+    # rather than calculating them directly from knowledge of the
+    # model and responses.
+    #
+    return np.asarray([0., 3223.53814739, 9670.61468234,
+                       13307.8946552, 7688.30252254, 1795.01338626,
+                       1247.61951277, 614.48034306, 442.9897964,
+                       250.81283921, 209.44003681, 134.45378353,
+                       67.22689176, 0., 0., 0, 0, 0, 0, 0])
+
+
+def test_rspmodelpha_rmf1_arf_mismatch():
+    """Can we handle the ARF and RMF grids being different?"""
+
+    rmf1, _, arf, pha = create_xrism_like_responses()
+
+    src = create_xrism_like_model()
+
+    # This does *not* include the exposure time.
+    rsp = RSPModelPHA(arf=arf, rmf=rmf1, pha=pha, model=src)
+    y = rsp(pha.channel)
+
+    expected = eval_xrism_like_model_rmf1() / pha.exposure
+    assert y == pytest.approx(expected)
+
+
+def test_rspmodelpha_rmf2_arf_mismatch():
+    """Can we handle the ARF and RMF grids being different?"""
+
+    _, rmf2, arf, pha = create_xrism_like_responses()
+
+    src = create_xrism_like_model()
+
+    # This does *not* include the exposure time.
+    rsp = RSPModelPHA(arf=arf, rmf=rmf2, pha=pha, model=src)
+    y = rsp(pha.channel)
+
+    expected = eval_xrism_like_model_rmf2() / pha.exposure
+    assert y == pytest.approx(expected)
+
+
+def test_rspmodelnopha_rmf1_arf_mismatch():
+    """Can we handle the ARF and RMF grids being different?"""
+
+    rmf1, _, arf, pha = create_xrism_like_responses()
+
+    src = create_xrism_like_model()
+
+    # This does *not* include the exposure time.
+    rsp = RSPModelNoPHA(arf=arf, rmf=rmf1, model=src)
+    y = rsp(pha.channel)
+
+    expected = eval_xrism_like_model_rmf1() / pha.exposure
+    assert y == pytest.approx(expected)
+
+
+def test_rspmodelnopha_rmf2_arf_mismatch():
+    """Can we handle the ARF and RMF grids being different?"""
+
+    _, rmf2, arf, pha = create_xrism_like_responses()
+
+    src = create_xrism_like_model()
+
+    # This does *not* include the exposure time.
+    rsp = RSPModelNoPHA(arf=arf, rmf=rmf2, model=src)
+    y = rsp(pha.channel)
+
+    expected = eval_xrism_like_model_rmf2() / pha.exposure
+    assert y == pytest.approx(expected)
+
+
+def test_multi_response_xrism_like():
+    """Can we handle XRISM-like responses as separate objects?
+    """
+
+    rmf1, rmf2, arf, pha = create_xrism_like_responses()
+    src = create_xrism_like_model()
+
+    # Evaluate the model with each of the RMFs.
+    #
+    pha.set_response(arf, rmf1, id=1)
+    resp_1 = pha.get_full_response()
+    model_1 = resp_1(src)
+
+    pha.set_response(arf, rmf2, id=1)
+    resp_2 = pha.get_full_response()
+    model_2 = resp_2(src)
+
+    # Combine the responses.
+    #
+    pha.set_response(arf, rmf1, id=1)
+    pha.set_response(arf, rmf2, id=2)
+    resp_c = pha.get_full_response()
+    assert isinstance(resp_c, MultipleResponse1D), type(resp_c)
+    model_c = resp_c(src)
+
+    expected_1 = eval_xrism_like_model_rmf1()
+    expected_2 = eval_xrism_like_model_rmf2()
+    expected = expected_1 + expected_2
+
+    # Check we get the expected values. Note that unlike the
+    # test_rspmodel[no]pha_rmf[12]_arf_mismatch case, the exposure
+    # time is included in this model evaluation.
+    #
+    y_1 = model_1(pha.channel)
+    y_2 = model_2(pha.channel)
+    assert y_1 == pytest.approx(expected_1)
+    assert y_2 == pytest.approx(expected_2)
+
+    y_c = model_c(pha.channel)
+    assert y_c == pytest.approx(expected)
+
+
+def test_multi_response_xrism_like_swapped():
+    """Can we handle XRISM-like responses as separate objects?
+
+    Change the ordering of the RMFs from
+    test_multi_response_xrism_like.
+    """
+
+    rmf1, rmf2, arf, pha = create_xrism_like_responses()
+    src = create_xrism_like_model()
+
+    # Combine the responses. SWAPPED
+    #
+    pha.set_response(arf, rmf2, id=1)
+    pha.set_response(arf, rmf1, id=2)
+    resp_c = pha.get_full_response()
+    model_c = resp_c(src)
+
+    expected_1 = eval_xrism_like_model_rmf1()
+    expected_2 = eval_xrism_like_model_rmf2()
+    expected = expected_1 + expected_2
+
+    y_c = model_c(pha.channel)
+    assert y_c == pytest.approx(expected)
+
+
 class MyPowLaw1D(PowLaw1D):
     """A model that creates a NaN if the first bin starts <= 0"""
 
@@ -2410,3 +2659,469 @@ def test_has_pha_response():
     # reflexivity check
     assert has_pha_response(rsp(m1) + m2)
     assert has_pha_response(rsp(m1) + rsp(m2))
+
+
+@pytest.mark.parametrize("startup", [False, True])
+def test_rsp_single_startup(startup):
+    """Check we get the same results when startup is called.
+
+    Since startup can lead to different data being used for the
+    responses, and this is used within a fit, check we match the
+    "no-startup" case, which many of the tests use.
+
+    This is with a single pair of responses.
+
+    """
+
+    exposure = 200.1
+    rdata = create_non_delta_rmf_local()
+    specresp = create_non_delta_specresp()
+    adata = create_arf(rdata.energ_lo,
+                       rdata.energ_hi,
+                       specresp,
+                       exposure=exposure)
+
+    nchans = rdata.e_min.size
+    channels = np.arange(1, nchans + 1, dtype=np.int16)
+    counts = np.ones(nchans, dtype=np.int16)
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  exposure=exposure)
+
+    pha.set_arf(adata)
+    pha.set_rmf(rdata)
+    pha.set_analysis("energy")
+
+    rsp = Response1D(pha)
+    constant = 2.3
+    slope = -0.25
+    mdl = Polynom1D('mdl')
+    mdl.c0 = constant
+    mdl.c1 = slope
+
+    # Ensure the model is not cached.
+    mdl.cache = 0
+    convolved = rsp(mdl)
+
+    # Check we are actually filtering things so that startup does
+    # some work.
+    #
+    assert pha.get_indep()[0] == pytest.approx([1, 2, 3, 4, 5, 6, 7, 8])
+    pha.notice(lo=0.4, hi=0.8)
+    assert pha.get_indep()[0] == pytest.approx([3, 4, 5, 6])
+
+    if startup:
+        convolved.startup()
+
+    y = convolved(pha.channel)
+
+    # Calculate the model analytically. Note that the exposure value
+    # is included here.
+    #
+    modvals = exposure * specresp * mdl(rdata.energ_lo, rdata.energ_hi)
+    matrix = get_non_delta_matrix()
+    expected = np.matmul(modvals, matrix)
+
+    # The values are only guaranteed to match for the noticed
+    # channels.  Channels outside this range may get "spill-over" when
+    # startup() has been called, but it is not guaranteed to match the
+    # expected values for the "no filter is applied" case.
+    #
+    idx = [2, 3, 4, 5]
+    assert y[idx] == pytest.approx(expected[idx])
+
+    # Check that the other values agree or do not agree, depending
+    # on the startup flag.
+    #
+    idx = [0, 1, 6, 7]
+    if startup:
+        # The calculated values should be less than the expected ones.
+        # However, there could be cases where some channels agree (as
+        # seen in a CI run, presumably due to numerical issues), so
+        # use <= rather than < here).
+        #
+        assert (y[idx] <= expected[idx]).all()
+    else:
+        assert y[idx] == pytest.approx(expected[idx])
+
+
+@pytest.mark.parametrize("startup", [False, True])
+def test_rsp_multi_startup(startup):
+    """Check we get the same results when startup is called.
+
+    Since startup can lead to different data being used for the
+    responses, and this is used within a fit, check we match the
+    "no-startup" case, which many of the tests use.
+
+    This is with two pairs of responses.
+
+    """
+
+    exposure = 200.1
+
+    rmf1, rmf2, arf, pha = create_xrism_like_responses()
+
+    src = create_xrism_like_model()
+
+    pha.set_response(arf, rmf1, id=1)
+    pha.set_response(arf, rmf2, id=2)
+    pha.set_analysis("energy")
+
+    # Rather than evaluate the model from first principles, use
+    # pre-calculated values.
+    #
+    expected_1 = eval_xrism_like_model_rmf1()
+    expected_2 = eval_xrism_like_model_rmf2()
+    expected = expected_1 + expected_2
+
+    # Ensure the model is not cached. This requires knowledge that src
+    # is cpt1 + cpt2 and cpt1/2 are not composite models.
+    #
+    src.lhs.cache = 0
+    src.rhs.cache = 0
+    rsp = pha.get_full_response()
+    convolved = rsp(src)
+
+    # Check we are actually filtering things so that startup does
+    # some work.
+    #
+    assert pha.get_indep()[0] == pytest.approx(np.arange(1, 21))
+    pha.notice(lo=0.5, hi=1.35)
+    assert pha.get_indep()[0] == pytest.approx(np.arange(5, 14))
+
+    if startup:
+        convolved.startup()
+
+    y = convolved(pha.channel)
+
+    # Unlike the single-response case, the result does not reflect
+    # any channel filtering. At least for now.
+    #
+    assert y == pytest.approx(expected)
+
+
+def test_rsp_single_setup_wavelength():
+    """RSPModelPHA, wavelength analysis, use of startup.
+
+    This is intended to test the behaviour of setup/filter
+    by evaluating a model.
+
+    This is with a single pair of responses.
+
+    """
+
+    exposure = 200.1
+    rdata = create_non_delta_rmf_local()
+    specresp = create_non_delta_specresp()
+    adata = create_arf(rdata.energ_lo,
+                       rdata.energ_hi,
+                       specresp,
+                       exposure=exposure)
+
+    nchans = rdata.e_min.size
+    channels = np.arange(1, nchans + 1, dtype=np.int16)
+    counts = np.ones(nchans, dtype=np.int16)
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  exposure=exposure)
+
+    pha.set_arf(adata)
+    pha.set_rmf(rdata)
+
+    rsp = Response1D(pha)
+    constant = 2.3
+    slope = -0.25
+    mdl = Polynom1D('mdl')
+    mdl.c0 = constant
+    mdl.c1 = slope
+
+    # Ensure the model is not cached.
+    mdl.cache = 0
+    convolved = rsp(mdl)
+    assert isinstance(convolved, RSPModelPHA)
+
+    # Get the "no startup" values.
+    #
+    pha.set_analysis("energy")
+    orig = convolved(channels)
+
+    # Select channels 3, 4, 5, 6 (of the starting 1-8).
+    #
+    pha.set_analysis("channel")
+    pha.ignore(hi=2)
+    pha.ignore(lo=7)
+
+    # Go through the settings.
+    #
+    out = {}
+    for setting in ["channel", "wavelength", "energy"]:
+        pha.set_analysis(setting)
+        convolved.startup()
+        out[setting] = convolved(channels)
+        convolved.teardown()
+
+    # Channel and energy should be the same.
+    #
+    assert out["energy"] == pytest.approx(out["channel"])
+
+    # Wavelength analysis is different because the model parameters
+    # are now interpreted in Angstroms rather than keV. These
+    # parameters lead to all channels (other than the last) being
+    # negative.
+    #
+    # This is a regression test (with values calculated by a
+    # development branch of 4.18.1) just to know when anything
+    # changes.
+    #
+    expected = np.asarray([-1.21430630e6, -1.41944674e6,
+                           -1.83990472e5, -7.48808180e4,
+                           -2.47166908e4, -2.35095965e4,
+                           -9.35854705e2, 0])
+    assert out["wavelength"] == pytest.approx(expected, rel=1e-4)
+
+    # The channel/energy values should match the original
+    # values for the selected channels.
+    #
+    idx = [2, 3, 4, 5]
+    assert out["energy"][idx] == pytest.approx(orig[idx])
+
+
+def test_rmf_single_setup_wavelength():
+    """RMFModelPHA, wavelength analysis, use of startup.
+
+    This is intended to test the behaviour of setup/filter
+    by evaluating a model.
+
+    This is with a single pair of responses.
+
+    """
+
+    exposure = 200.1
+    rdata = create_non_delta_rmf_local()
+
+    nchans = rdata.e_min.size
+    channels = np.arange(1, nchans + 1, dtype=np.int16)
+    counts = np.ones(nchans, dtype=np.int16)
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  exposure=exposure)
+
+    pha.set_rmf(rdata)
+
+    rsp = Response1D(pha)
+    constant = 2.3
+    slope = -0.25
+    mdl = Polynom1D('mdl')
+    mdl.c0 = constant
+    mdl.c1 = slope
+
+    # Ensure the model is not cached.
+    mdl.cache = 0
+    convolved = rsp(mdl)
+    assert isinstance(convolved, RMFModelPHA)
+
+    # Get the "no startup" values.
+    #
+    pha.set_analysis("energy")
+    orig = convolved(channels)
+
+    # Select channels 3, 4, 5, 6 (of the starting 1-8).
+    #
+    pha.set_analysis("channel")
+    pha.ignore(hi=2)
+    pha.ignore(lo=7)
+
+    # Go through the settings.
+    #
+    out = {}
+    for setting in ["channel", "wavelength", "energy"]:
+        pha.set_analysis(setting)
+        convolved.startup()
+        out[setting] = convolved(channels)
+        convolved.teardown()
+
+    # Channel and energy should be the same.
+    #
+    assert out["energy"] == pytest.approx(out["channel"])
+
+    # Wavelength analysis is different because the model parameters
+    # are now interpreted in Angstroms rather than keV. These
+    # parameters lead to all channels (other than the last) being
+    # negative.
+    #
+    # This is a regression test (with values calculated by a
+    # development branch of 4.18.1) just to know when anything
+    # changes.
+    #
+    expected = np.asarray([-1.50712369e5, -1.60594556e5,
+                           -1.03440118e4, -3.86060019e3,
+                           -1.98967947e3, -1.27644364e3,
+                           -1.47756554e2, 0])
+    assert out["wavelength"] == pytest.approx(expected, rel=1e-4)
+
+    # The channel/energy values should match the original
+    # values for the selected channels.
+    #
+    idx = [2, 3, 4, 5]
+    assert out["energy"][idx] == pytest.approx(orig[idx])
+
+
+def test_arf_single_setup_wavelength():
+    """ARFModelPHA, wavelength analysis, use of startup.
+
+    This is intended to test the behaviour of setup/filter
+    by evaluating a model.
+
+    This is with a single pair of responses.
+
+    """
+
+    exposure = 200.1
+    rdata = create_non_delta_rmf_local()
+    specresp = create_non_delta_specresp()
+    adata = create_arf(rdata.energ_lo,
+                       rdata.energ_hi,
+                       specresp,
+                       exposure=exposure)
+
+    nchans = adata.energ_lo.size
+    channels = np.arange(1, nchans + 1, dtype=np.int16)
+    counts = np.ones(nchans, dtype=np.int16)
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  exposure=exposure)
+
+    pha.set_arf(adata)
+
+    rsp = Response1D(pha)
+    constant = 2.3
+    slope = -0.25
+    mdl = Polynom1D('mdl')
+    mdl.c0 = constant
+    mdl.c1 = slope
+
+    # Ensure the model is not cached.
+    mdl.cache = 0
+    convolved = rsp(mdl)
+    assert isinstance(convolved, ARFModelPHA)
+
+    # Get the "no startup" values.
+    #
+    pha.set_analysis("energy")
+    orig = convolved(channels)
+
+    # Select channels 3, 4, 5, 6 (of the starting 1-20).
+    #
+    pha.set_analysis("channel")
+    pha.ignore(hi=2)
+    pha.ignore(lo=7)
+
+    # Go through the settings.
+    #
+    out = {}
+    for setting in ["channel", "wavelength", "energy"]:
+        pha.set_analysis(setting)
+        convolved.startup()
+        out[setting] = convolved(channels)
+        convolved.teardown()
+
+    # Channel and energy should be the same.
+    #
+    assert out["energy"] == pytest.approx(out["channel"])
+
+    # Unlike RSP/RMFModelPHA, the output here is restricted to the
+    # input size, not the intrinsic range. This may be an issue, but
+    # we do not really have any ARF-only real-life data to check
+    # against.
+    #
+    assert len(out["energy"]) == 4
+
+    # Wavelength analysis is different because the model parameters
+    # are now interpreted in Angstroms rather than keV. These
+    # parameters lead to all channels (other than the last) being
+    # negative.
+    #
+    # This is a regression test (with values calculated by a
+    # development branch of 4.18.1) just to know when anything
+    # changes.
+    #
+    expected = np.asarray([0.0, -288983.46463642, -224901.11145058,
+                           -172341.83467511])
+    assert out["wavelength"] == pytest.approx(expected, rel=1e-4)
+
+    # The channel/energy values should match the original
+    # values for the selected channels.
+    #
+    idx = [2, 3, 4, 5]
+    assert out["energy"] == pytest.approx(orig[idx])
+
+
+def test_rsp_multi_setup_wavelength():
+    """RSPModelPHA, wavelength analysis, use of startup.
+
+    This is intended to test the behaviour of setup/filter
+    by evaluating a model.
+
+    This is with a single pair of responses.
+
+    """
+
+    exposure = 200.1
+    rmf1, rmf2, arf, pha = create_xrism_like_responses()
+
+    src = create_xrism_like_model()
+
+    pha.set_response(arf, rmf1, id=1)
+    pha.set_response(arf, rmf2, id=2)
+
+    rsp = pha.get_full_response()
+    assert isinstance(rsp, MultipleResponse1D)
+
+    # Ensure the model is not cached.
+    src.lhs.cache = 0
+    src.rhs.cache = 0
+    convolved = rsp(src)
+
+    # Get the "no startup" values.
+    #
+    pha.set_analysis("energy")
+    orig = convolved(pha.channel)
+
+    # Select channels 3, 4, 5, 6 (of the starting 1-8).
+    # The response is different to test_rsp_single_setup_wavelength
+    # but keep the same channel range.
+    #
+    pha.set_analysis("channel")
+    pha.ignore(hi=2)
+    pha.ignore(lo=7)
+
+    # Go through the settings.
+    #
+    out = {}
+    for setting in ["channel", "wavelength", "energy"]:
+        pha.set_analysis(setting)
+        convolved.startup()
+        out[setting] = convolved(pha.channel)
+        convolved.teardown()
+
+    # Channel and energy should be the same.
+    #
+    assert out["energy"] == pytest.approx(out["channel"])
+
+    # Wavelength analysis is different because the model parameters
+    # are now interpreted in Angstroms rather than keV.
+    #
+    # This is a regression test (with values calculated by a
+    # development branch of 4.18.1) just to know when anything
+    # changes.
+    #
+    expected = np.asarray([32.26217862, 45.16705026, 70.9767945,
+                           96.78653682, 96.78653778, 96.78653682,
+                           96.78653778, 93.56031891, 87.10788381,
+                           80.65544727, 80.65544799, 70.97679354,
+                           43.55394143, 24.19663397, 24.19663397,
+                           24.19663397, 24.19663397, 24.19663397,
+                           24.19663397, 24.19663397])
+    assert out["wavelength"] == pytest.approx(expected, rel=1e-4)
+
+    # The channel/energy values should match the original
+    # values for the selected channels.
+    #
+    idx = [2, 3, 4, 5]
+    assert out["energy"][idx] == pytest.approx(orig[idx])
