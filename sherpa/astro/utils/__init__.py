@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2020-2022, 2024-2025
+#  Copyright (C) 2008, 2016, 2020-2022, 2024-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -520,7 +520,7 @@ def calc_energy_flux(data, src, lo=None, hi=None):
 
     Returns
     -------
-    flux
+    flux : number
        The flux or flux density of the source model. For X-Spec
        models the flux units will be erg/cm^2/s and the flux
        density is either erg/cm^2/s/keV or erg/cm^2/s/Angstrom,
@@ -528,10 +528,7 @@ def calc_energy_flux(data, src, lo=None, hi=None):
 
     See Also
     --------
-    calc_data_sum : Sum up the data values over a pass band.
-    calc_model_sum : Sum up the fitted model over a pass band.
-    calc_source_sum : Sum up the source model over a pass band.
-    calc_photon_flux : Integrate the source model over a pass band.
+    calc_data_sum, calc_model_sum, calc_source_sum, calc_photon_flux
 
     Notes
     -----
@@ -592,7 +589,7 @@ def calc_photon_flux(data, src, lo=None, hi=None):
 
     Returns
     -------
-    flux
+    flux : number
        The flux or flux density of the source model. For X-Spec
        models the flux units will be photon/cm^2/s and the flux
        density is either photon/cm^2/s/keV or
@@ -600,10 +597,7 @@ def calc_photon_flux(data, src, lo=None, hi=None):
 
     See Also
     --------
-    calc_data_sum : Sum up the data values over a pass band.
-    calc_model_sum : Sum up the fitted model over a pass band.
-    calc_energy_flux : Integrate the source model over a pass band.
-    calc_source_sum : Sum up the source model over a pass band.
+    calc_data_sum, calc_model_sum, calc_energy_flux, calc_source_sum
 
     Notes
     -----

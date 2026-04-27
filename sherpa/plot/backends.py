@@ -55,7 +55,7 @@ backend_indep_kwargs = {
 
 # DOC-NOTE: can xerr be asymmetric (i.e. be 2D)?
 #
-kwargs_doc = {'xerr': ['float or array-like, shape(N,) or shape(2, N)',
+kwargs_doc = {'xerr': ['float or array-like',
                        '''The errorbar sizes can be:
   - scalar: Symmetric +/- values for all data points.
   - shape(N,): Symmetric +/-values for each data point.
@@ -65,7 +65,7 @@ kwargs_doc = {'xerr': ['float or array-like, shape(N,) or shape(2, N)',
   - None: No errorbar.
 
 Note that all error arrays should have positive values.'''],
-              'yerr': ['float or array-like, shape(N,) or shape(2, N)',
+              'yerr': ['float or array-like',
                        '''The errorbar sizes can be:
   - scalar: Symmetric +/- values for all data points.
   - shape(N,): Symmetric +/-values for each data point.
@@ -79,7 +79,7 @@ Note that all error arrays should have positive values.'''],
                         'Plot title (can contain LaTeX formulas). Only used if a new plot is created.'],
               'xlabel': ['str',
                          'Axis label (can contain LaTeX formulas). Only used if a new plot is created.'],
-              'ylabel': ['string',
+              'ylabel': ['str',
                          'Axis label (can contain LaTeX formulas). Only used if a new plot is created.'],
               'xlog': ['bool',
                        'Should the x axis be logarithmic (default: linear)? Only used if a new plot is created.'],
@@ -87,6 +87,8 @@ Note that all error arrays should have positive values.'''],
                        'Should the y axis be logarithmic (default: linear)? Only used if a new plot is created.'],
               'overplot': ['bool',
                            'If `True`, the plot is added to an existing plot, if not a new plot is created.'],
+              'overcontour': ['bool',
+                           'If `True`, the contour is added to an existing plot, if not a new plot is created.'],
               'clearwindow': ['bool',
                               'If `True` the entire figure area is cleared to make space for a new plot.'],
               'xerrorbars': ['bool',
@@ -135,7 +137,7 @@ string, no marker shown), "." (dot), "o" (circle), "+", "s" (square),
 
 Some backends may accept additional values.'''],
               'alpha': ['float', 'Number between 0 and 1, setting the transparency.'],
-              'markerfacecolor': ['string', 'see `color`'],
+              'markerfacecolor': ['str', 'see `color`'],
               'markersize': ['float',
                              '''Size of a marker. The scale may also depend on the backend. `None`
 uses the backend-specific default.'''],
@@ -472,12 +474,12 @@ class BaseBackend(metaclass=MetaBaseBackend):
 
         Parameters
         ----------
-        x0 : array-like or scalar number
+        xlo : array-like or scalar number
             lower bin boundary values
-        x1 : array-like or scalar number
+        xhi : array-like or scalar number
             upper bin boundary values
         y : array-like or scalar number
-            y values, same dimension as `x0`.
+            y values, same dimension as xlo.
         {kwargs}
         """
         pass
@@ -533,7 +535,7 @@ class BaseBackend(metaclass=MetaBaseBackend):
             independent axis in the first dimenation
         x1 : array-like
             independent axis in the second dimenation
-        y : array-like, with shape (len(x0), len(x1))
+        y : array-like
             dependent axis (i.e. image values) in 2D
             with shape (len(x0), len(x1))
         {kwargs}

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2017, 2019-2025
+#  Copyright (C) 2010, 2015, 2017, 2019-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -270,12 +270,12 @@ class PylabBackend(BasicBackend):
 
         Parameters
         ----------
-        x0 : array-like or scalar number
+        xlo : array-like or scalar number
             lower bin boundary values
-        x1 : array-like or scalar number
+        xhi : array-like or scalar number
             upper bin boundary values
         y : array-like or scalar number
-            y values, same dimension as `x0`.
+            y values, same dimension as xlo.
         {kwargs}
         """
         if linecolor is not None:
@@ -620,7 +620,7 @@ class PylabBackend(BasicBackend):
             independent axis in the first dimension
         x1 : array-like
             independent axis in the second dimension
-        y : array-like, with shape (len(x0), len(x1))
+        y : array-like, with shape
             dependent axis (i.e. image values) in 2D
             with shape (len(x0), len(x1))
         {kwargs}

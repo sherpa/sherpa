@@ -13122,7 +13122,7 @@ class Session(sherpa.ui.utils.Session):
            of the covariance matrix). If the scales parameter is not
            given then the covariance matrix is evaluated for the
            current model and best-fit parameters.
-        model : model, optional
+        model : Model, optional
            The model to integrate. If left as `None` then the source
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
@@ -13149,12 +13149,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_photon_flux_hist : Return the data displayed by plot_photon_flux.
-        plot_energy_flux : Display the energy flux distribution.
-        plot_photon_flux : Display the photon flux distribution.
-        sample_energy_flux : Return the energy flux distribution of a model.
-        sample_flux : Return the flux distribution of a model.
-        sample_photon_flux : Return the photon flux distribution of a model.
+        get_photon_flux_hist, plot_energy_flux, plot_photon_flux,
+        sample_energy_flux, sample_flux, sample_photon_flux
 
         Examples
         --------
@@ -13268,7 +13264,7 @@ class Session(sherpa.ui.utils.Session):
            of the covariance matrix). If the scales parameter is not
            given then the covariance matrix is evaluated for the
            current model and best-fit parameters.
-        model : model, optional
+        model : Model, optional
            The model to integrate. If left as `None` then the source
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
@@ -13295,12 +13291,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_energy_flux_hist : Return the data displayed by plot_energy_flux.
-        plot_energy_flux : Display the energy flux distribution.
-        plot_photon_flux : Display the photon flux distribution.
-        sample_energy_flux : Return the energy flux distribution of a model.
-        sample_flux : Return the flux distribution of a model.
-        sample_photon_flux : Return the photon flux distribution of a model.
+        get_energy_flux_hist, plot_energy_flux, plot_photon_flux,
+        sample_energy_flux, sample_flux, sample_photon_flux
 
         Examples
         --------
@@ -14365,7 +14357,7 @@ class Session(sherpa.ui.utils.Session):
            of the covariance matrix). If the scales parameter is not
            given then the covariance matrix is evaluated for the
            current model and best-fit parameters.
-        model : model, optional
+        model : Model, optional
            The model to integrate. If left as `None` then the source
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
@@ -14392,18 +14384,10 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the unconvolved source model over a pass band.
-        calc_energy_flux : Integrate the unconvolved source model over a pass band.
-        covar : Estimate the confidence intervals using the confidence method.
-        get_energy_flux_hist : Return the data displayed by plot_energy_flux.
-        get_photon_flux_hist : Return the data displayed by plot_photon_flux.
-        plot_cdf : Plot the cumulative density function of an array.
-        plot_pdf : Plot the probability density function of an array.
-        plot_photon_flux : Display the photon flux distribution.
-        plot_trace : Create a trace plot of row number versus value.
-        sample_energy_flux : Return the energy flux distribution of a model.
-        sample_flux : Return the flux distribution of a model.
-        sample_photon_flux : Return the photon flux distribution of a model.
+        calc_photon_flux, calc_energy_flux, covar,
+        get_energy_flux_hist, get_photon_flux_hist, plot_cdf,
+        plot_pdf, plot_photon_flux, plot_trace, sample_energy_flux,
+        sample_flux, sample_photon_flux
 
         Examples
         --------
@@ -14537,7 +14521,7 @@ class Session(sherpa.ui.utils.Session):
            of the covariance matrix). If the scales parameter is not
            given then the covariance matrix is evaluated for the
            current model and best-fit parameters.
-        model : model, optional
+        model : Model, optional
            The model to integrate. If left as `None` then the source
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
@@ -14564,18 +14548,10 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the unconvolved source model over a pass band.
-        calc_energy_flux : Integrate the unconvolved source model over a pass band.
-        covar : Estimate the confidence intervals using the confidence method.
-        get_energy_flux_hist : Return the data displayed by plot_energy_flux.
-        get_photon_flux_hist : Return the data displayed by plot_photon_flux.
-        plot_cdf : Plot the cumulative density function of an array.
-        plot_pdf : Plot the probability density function of an array.
-        plot_energy_flux : Display the energy flux distribution.
-        plot_trace : Create a trace plot of row number versus value.
-        sample_energy_flux : Return the energy flux distribution of a model.
-        sample_flux : Return the flux distribution of a model.
-        sample_photon_flux : Return the photon flux distribution of a model.
+        calc_photon_flux, calc_energy_flux, covar,
+        get_energy_flux_hist, get_photon_flux_hist, plot_cdf,
+        plot_pdf, plot_energy_flux, plot_trace, sample_energy_flux,
+        sample_flux, sample_photon_flux
 
         Examples
         --------
@@ -15083,7 +15059,7 @@ class Session(sherpa.ui.utils.Session):
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
-        model : model, optional
+        model : Model, optional
            The model to integrate. If left as `None` then the source
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
@@ -15102,7 +15078,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        vals
+        vals : ndarray
            The return array has the shape ``(num, N+2)``, where ``N``
            is the number of free parameters in the fit and num is the
            `num` parameter.  The rows of this array contain the flux
@@ -15114,16 +15090,9 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the unconvolved source model over a pass band.
-        calc_energy_flux : Integrate the unconvolved source model over a pass band.
-        covar : Estimate the confidence intervals using the confidence method.
-        plot_cdf : Plot the cumulative density function of an array.
-        plot_pdf : Plot the probability density function of an array.
-        plot_energy_flux : Display the energy flux distribution.
-        plot_photon_flux : Display the photon flux distribution.
-        plot_trace : Create a trace plot of row number versus value.
-        sample_energy_flux : Return the energy flux distribution of a model.
-        sample_flux : Return the flux distribution of a model.
+        calc_photon_flux, calc_energy_flux, covar, plot_cdf, plot_pdf,
+        plot_energy_flux, plot_photon_flux, plot_trace,
+        sample_energy_flux, sample_flux
 
         Notes
         -----
@@ -15324,7 +15293,7 @@ class Session(sherpa.ui.utils.Session):
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
-        model : model, optional
+        model : Model, optional
            The model to integrate. If left as `None` then the source
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
@@ -15343,7 +15312,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        vals
+        vals : ndarray
            The return array has the shape ``(num, N+2)``, where ``N``
            is the number of free parameters in the fit and num is the
            `num` parameter.  The rows of this array contain the flux
@@ -15355,16 +15324,9 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_photon_flux : Integrate the unconvolved source model over a pass band.
-        calc_energy_flux : Integrate the unconvolved source model over a pass band.
-        covar : Estimate the confidence intervals using the confidence method.
-        plot_cdf : Plot the cumulative density function of an array.
-        plot_pdf : Plot the probability density function of an array.
-        plot_energy_flux : Display the energy flux distribution.
-        plot_photon_flux : Display the photon flux distribution.
-        plot_trace : Create a trace plot of row number versus value.
-        sample_photon_flux : Return the flux distribution of a model.
-        sample_flux : Return the flux distribution of a model.
+        calc_photon_flux, calc_energy_flux, covar, plot_cdf, plot_pdf,
+        plot_energy_flux, plot_photon_flux, plot_trace,
+        sample_photon_flux, sample_flux
 
         Notes
         -----
@@ -15975,7 +15937,7 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int, str, or None, optional
            If set, use the model associated with the given background
            component rather than the source model.
-        model : model, optional
+        model : Model, optional
            The model to integrate. If left as `None` then the source
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
@@ -15990,12 +15952,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_data_sum : Sum up the observed counts over a pass band.
-        calc_model_sum : Sum up the fitted model over a pass band.
-        calc_energy_flux : Integrate the unconvolved source model over a pass band.
-        calc_source_sum: Sum up the source model over a pass band.
-        set_analysis : Set the units used when fitting and displaying spectral data
-        set_model : Set the source model expression for a data set.
+        calc_data_sum, calc_model_sum, calc_energy_flux,
+        calc_source_sum, set_analysis, set_model
 
         Notes
         -----
@@ -16097,7 +16055,7 @@ class Session(sherpa.ui.utils.Session):
         bkg_id : int, str, or None, optional
            If set, use the model associated with the given background
            component rather than the source model.
-        model : model, optional
+        model : Model, optional
            The model to integrate. If left as `None` then the source
            model for the dataset will be used. This can be used to
            calculate the unabsorbed flux, as shown in the examples.
@@ -16112,12 +16070,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_data_sum : Sum up the data values over a pass band.
-        calc_model_sum : Sum up the fitted model over a pass band.
-        calc_source_sum: Sum up the source model over a pass band.
-        calc_photon_flux : Integrate the unconvolved source model over a pass band.
-        set_analysis : Set the units used when fitting and displaying spectral data
-        set_model : Set the source model expression for a data set.
+        calc_data_sum, calc_model_sum, calc_source_sum,
+        calc_photon_flux, set_analysis, set_model
 
         Notes
         -----

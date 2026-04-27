@@ -3,22 +3,23 @@ name: sherpa
 channels:
   - conda-forge
   - astropy
+  - nodefaults
 
 dependencies:
   - bison
-  - python=3.10
+  - python=3.13
   - numpy
   - pandoc
   - matplotlib
   - astropy
   - pip
   - graphviz
-  - sphinx>=5.0,<8.0
+  - sphinx>=5.0
   - pip:
     - ipykernel
     - nbsphinx
     - sphinx-astropy
     - sphinx_rtd_theme>=3.0.0
     - bokeh
-    - arviz
+    - arviz<1.0.0
     - optimagic

@@ -983,9 +983,9 @@ def filter_bins(mins: Sequence[float | None],
 
     Parameters
     ----------
-    mins : sequence of values
+    mins : sequence
        The minimum value of the valid range (elements may be None).
-    maxes : sequence of values
+    maxes : sequence
        The maximum value of the valid range (elements may be None).
     axislist: sequence of arrays
        The axis to apply the range to. There must be the same
