@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018-2021, 2023-2025
+#  Copyright (C) 2015, 2016, 2018-2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -691,9 +691,6 @@ set_xschatter(0)
 set_xsabund("lodd")
 set_xscosmo(72, 0.02, 0.71)
 set_xsxsect("vern")
-set_xsxset("APECROOT", "3.0.9")
-set_xsxset("NEIAPECROOT", "3.0.9")
-set_xsxset("NEIVERS", "3.0.4")
 """
 
 _canonical_pha_load_bkg = """import numpy
@@ -2543,9 +2540,6 @@ set_xschatter(0)
 set_xsabund("angr")
 set_xscosmo(70, 0, 0.73)
 set_xsxsect("bcmc")
-set_xsxset("APECROOT", "3.0.9")
-set_xsxset("NEIAPECROOT", "3.0.9")
-set_xsxset("NEIVERS", "3.0.4")
 """
 
     _canonical_pha_basic += _canonical_extra

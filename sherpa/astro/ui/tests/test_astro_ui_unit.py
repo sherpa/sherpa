@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020 - 2025
+#  Copyright (C) 2017-2018, 2020-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -3219,8 +3219,11 @@ def test_guess_with_response_and_multiple_models(idval, clean_astro_ui, caplog, 
         ui.notice(lo=0.3, hi=6)
         ui.subtract(id=idval)
 
+    # Pick "simple" models that should not depend on things like the
+    # ATOMDB version.
+    #
     cpt1 = ui.create_model_component("xsphabs", "gal")
-    cpt2 = ui.create_model_component("xsapec", "src1")
+    cpt2 = ui.create_model_component("xspowerlaw", "src1")
     cpt3 = ui.create_model_component("xsgaussian", "src2")
     ui.set_model(id=idval, model=cpt1 * (cpt2 + cpt3))
 
@@ -3245,7 +3248,7 @@ def test_guess_with_response_and_multiple_models(idval, clean_astro_ui, caplog, 
     assert cpt1.nH.min == pytest.approx(0)
     assert cpt1.nH.max == pytest.approx(1e6)
 
-    expected = 3.539017671368409
+    expected = 2.293144719701809
     assert cpt2.norm.val == pytest.approx(expected / 1000)
     assert cpt2.norm.min == pytest.approx(expected / 1000 / 1000)
     assert cpt2.norm.max == pytest.approx(expected)
