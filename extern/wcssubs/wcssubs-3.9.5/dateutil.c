@@ -1,5 +1,5 @@
 /*** File libwcs/dateutil.c
- *** May 2, 2017
+ *** March 12, 2026
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
  *** Copyright (C) 1999-2017
@@ -14,7 +14,7 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-    
+
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -313,11 +313,11 @@
 #include "wcs.h"
 #include "fitsfile.h"
 
-static double suntl();
-static void fixdate();
-static int caldays();
-static double dint();
-static double dmod();
+static double suntl(double, double, double, int);
+static void fixdate(int *, int *, int *, int *, int *, double *, int);
+static int caldays(int, int);
+static double dint(double);
+static double dmod(double, double);
 
 static double longitude = 0.0;	/* longitude of observatory in degrees (+=west) */
 void
@@ -750,7 +750,7 @@ int	ndsec;	/* Number of decimal places in seconds (0=int) */
 	jd = (int) (dj - frac) + 1;
 	sday = (frac - 0.5) * 86400.0;
 	}
-    
+
     *ihr = (int) (sday / 3600.0);
     sday = sday - (double) (*ihr * 3600);
     *imn = (int) (sday / 60.0);
@@ -3190,7 +3190,7 @@ ut2fd()
     day = ts->tm_mday;
     hour = ts->tm_hour;
     minute = ts->tm_min;
-    second = ts->tm_sec; 
+    second = ts->tm_sec;
 
     isotime = (char *) calloc (32, sizeof (char));
     sprintf (isotime, "%04d-%02d-%02dT%02d:%02d:%02d",
@@ -3970,7 +3970,7 @@ double *eps0;   /* Mean obliquity in radians (returned) */
  *
  */
 
-{ 
+{
     double as2r = 0.000004848136811095359935899141; /* arcseconds to radians */
 
     double dmas2r = as2r / 1000.0;	/* milliarcseconds to radians */
@@ -4250,7 +4250,7 @@ char	*string; /* Possible FITS date string, which may be:
     char *sstr, *dstr, *tstr, *nval;
 
     /* Translate string from ASCII to binary */
-    if (string == NULL) 
+    if (string == NULL)
 	return (0);
 
     sstr = strchr (string,'/');
@@ -4555,4 +4555,7 @@ double	dnum, dm;
  * Oct 19 2012	Unused l0 dropped from jd2lst(); ts2ss from jd2mst()
  *
  * May  2 2017	Allocate new output string for fd2ofd() and fd2oft()
+
+ * Mar 12 2026  Minimal change to support -std=c23
+
  */

@@ -1,6 +1,6 @@
-/*                                                                
-**  Copyright (C) 2015-2016  Smithsonian Astrophysical Observatory 
-*/                                                                
+/*
+**  Copyright (C) 2015-2016, 2026  Smithsonian Astrophysical Observatory
+*/
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
@@ -79,30 +79,30 @@ int regCompareRegion( regRegion* Region1, regRegion* Region2 )
 {
     regShape* Shape1;
     regShape* Shape2;
-    int true  = 1;
-    int false = 0;
+    int _true  = 1;
+    int _false = 0;
     Shape1 = Region1->shape;
     Shape2 = Region2->shape;
 
     while (Shape1 != NULL )
     {
         if ( !Shape2 )
-            return false;
+            return _false;
 
         if ( Shape1->component != Shape2->component )
-            return false;
+            return _false;
 
         if( !Shape1->isEqual(Shape1, Shape2) )
-            return false;
+            return _false;
 
         Shape1 = Shape1->next;
         Shape2 = Shape2->next;
     }
 
     if ( Shape2 )
-        return false;
+        return _false;
 
-    return true;
+    return _true;
 }
 
 

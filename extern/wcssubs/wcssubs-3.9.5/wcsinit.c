@@ -1,5 +1,5 @@
 /*** File libwcs/wcsinit.c
- *** July 24, 2016
+ *** March 12, 2026
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
  *** Copyright (C) 1998-2016
@@ -14,7 +14,7 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-    
+
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -47,13 +47,13 @@
 #include <stdlib.h>
 #endif
 
-static void wcseq();
-static void wcseqm();
-static void wcsioset();
-void wcsrotset();
-char wcschar();
+static void wcseq(char *, struct WorldCoor *);
+static void wcseqm(char *, struct WorldCoor *, char *);
+static void wcsioset(struct WorldCoor *);
+void wcsrotset(struct WorldCoor *);
+char wcschar(const char *, const char*);
 
-/* set up a WCS structure from a FITS image header lhstring bytes long 
+/* set up a WCS structure from a FITS image header lhstring bytes long
  * for a specified WCS name */
 
 struct WorldCoor *
@@ -242,11 +242,11 @@ char *wchar;		/* Suffix character for one of multiple WCS */
     double ut;
     int nax;
     int twod;
-    extern int tnxinit();
-    extern int zpxinit();
-    extern int platepos();
-    extern int dsspos();
-    void invert_wcs();
+    extern int tnxinit(const char *, struct WorldCoor *);
+    extern int zpxinit(const char *, struct WorldCoor *);
+    extern int platepos(double, double, struct WorldCoor *, double *, double *);
+    extern int dsspos(double, double, struct WorldCoor *, double *, double *);
+    void invert_wcs(struct WorldCoor *);
 
     wcs = (struct WorldCoor *) calloc (1, sizeof(struct WorldCoor));
 
@@ -259,7 +259,7 @@ char *wchar;		/* Suffix character for one of multiple WCS */
 	wcs->wcsname = (char *) calloc (strlen (wcsname)+2, 1);
 	strcpy (wcs->wcsname, wcsname);
 	}
-    
+
 
     /* Set WCSLIB flags so that structures will be reinitialized */
     wcs->cel.flag = 0;
@@ -757,7 +757,7 @@ char *wchar;		/* Suffix character for one of multiple WCS */
 	    }
 
 	/* SCAMP convention */
-	if (wcs->prjcode == WCS_TAN && wcs->naxis == 2) { 
+	if (wcs->prjcode == WCS_TAN && wcs->naxis == 2) {
 	    int n = 0;
 	    if (wcs->inv_x) {
 		poly_end(wcs->inv_x);
@@ -1614,4 +1614,7 @@ char	*mchar;		/* Suffix character for one of multiple WCS */
  * Jul 25 2013	Initialize n=0 when checking for SCAMP distortion terms (fix from Martin Kuemmel)
  *
  * Jun 24 2016	wcs->ptype contains only 3-letter projection code
+
+ * Mar 12 2026  Minimal change to support -std=c23
+
  */

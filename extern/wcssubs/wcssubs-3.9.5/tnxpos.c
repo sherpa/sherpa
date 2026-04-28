@@ -1,5 +1,5 @@
 /*** File wcslib/tnxpos.c
- *** September 17, 2008
+ *** March 12, 2026
  *** By Jessica Mink, jmink@cfa.harvard.edu
  *** Harvard-Smithsonian Center for Astrophysics
  *** After IRAF mwcs/wftnx.x and mwcs/wfgsurfit.x
@@ -15,7 +15,7 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Lesser General Public License for more details.
-    
+
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -47,10 +47,10 @@
 
 #define	max_niter	500
 #define	SZ_ATSTRING	2000
-static void wf_gsclose();
-static void wf_gsb1pol();
-static void wf_gsb1leg();
-static void wf_gsb1cheb();
+static void wf_gsclose(struct IRAFsurface *);
+static void wf_gsb1pol(double x, int, double *);
+static void wf_gsb1leg(double, int, double, double, double *);
+static void wf_gsb1cheb(double, int, double, double, double *);
 
 /* tnxinit -- initialize the gnomonic forward or inverse transform.
  * initialization for this transformation consists of, determining which
@@ -66,7 +66,7 @@ static void wf_gsb1cheb();
  * {xlon|glat}{xlon|elat}" must have been set in the attribute list for the
  * function. the longpole and ro parameters may be set in either or both of
  * the axes attribute lists, but the value in the ra axis attribute list takes
- * precedence. 
+ * precedence.
  */
 
 int
@@ -75,9 +75,9 @@ tnxinit (header, wcs)
 const char *header;	/* FITS header */
 struct WorldCoor *wcs;	/* pointer to WCS structure */
 {
-    struct IRAFsurface *wf_gsopen();
+    struct IRAFsurface *wf_gsopen(char *);
     char *str1, *str2, *lngstr, *latstr;
-    extern void wcsrotset();
+    extern void wcsrotset(struct WorldCoor *);
 
     /* allocate space for the attribute strings */
     str1 = malloc (SZ_ATSTRING);
@@ -166,7 +166,7 @@ double	*xpos, *ypos;	/*o world coordinates (ra, dec) */
     double x, y, r, phi, theta, costhe, sinthe, dphi, cosphi, sinphi, dlng, z;
     double colatp, coslatp, sinlatp, longp;
     double xs, ys, ra, dec, xp, yp;
-    double wf_gseval();
+    double wf_gseval(struct IRAFsurface *, double, double);
 
     /* Convert from pixels to image coordinates */
     xpix = xpix - wcs->crpix[0];
@@ -317,7 +317,7 @@ double	*xpix, *ypix;	/*o physical coordinates (x, y) */
     double s, r, dphi, z, dpi, dhalfpi, twopi, tx;
     double xm, ym, f, fx, fy, g, gx, gy, denom, dx, dy;
     double colatp, coslatp, sinlatp, longp, sphtol;
-    double wf_gseval(), wf_gsder();
+    double wf_gseval(struct IRAFsurface *, double, double), wf_gsder(struct IRAFsurface *, double, double, int, int);
 
     /* get the axis numbers */
     if (wcs->coorflip) {
@@ -562,7 +562,7 @@ char    *astr;		/* the input mwcs attribute string */
     int npar, szcoeff;
     double *coeff;
     struct IRAFsurface *gs;
-    struct IRAFsurface *wf_gsrestore();
+    struct IRAFsurface *wf_gsrestore(double *);
 
     if (astr[1] == 0)
 	return (NULL);
@@ -737,7 +737,7 @@ int	nxd, nyd;	/* order of the derivatives in x and y */
     struct IRAFsurface *sf2 = 0;
     double *ptr1, *ptr2;
     double zfit, norm;
-    double wf_gseval();
+    double wf_gseval(struct IRAFsurface *, double, double);
 
     if (sf1 == NULL)
 	return (0.0);
@@ -771,7 +771,7 @@ int	nxd, nyd;	/* order of the derivatives in x and y */
 
 	/* Find the order of the new surface */
 	switch (sf2->xterms) {
-	    case TNX_XNONE: 
+	    case TNX_XNONE:
 		if (nxder > 0 && nyder > 0) {
 		    sf2->xorder = 1;
 		    sf2->yorder = 1;
@@ -884,7 +884,7 @@ int	nxd, nyd;	/* order of the derivatives in x and y */
 	    if (nxder > 0 && nyder > 0)
 		sf2->coeff[0] = 0.0;
 
-	    else if (nxder > 0) { 
+	    else if (nxder > 0) {
 		ptr1 = coeff;
 		ptr2 = sf2->coeff + sf2->ncoeff - 1;
 		for (j = sf1->xorder; j >= nxder+1; j--) {
@@ -912,7 +912,7 @@ int	nxd, nyd;	/* order of the derivatives in x and y */
     zfit = wf_gseval (sf2, x, y);
 
     /* normalize */
-    if (sf2->type != TNX_POLYNOMIAL) { 
+    if (sf2->type != TNX_POLYNOMIAL) {
 	norm = pow (sf2->xrange, (double)nxder) *
 	       pow (sf2->yrange, (double)nyder);
 	zfit = norm * zfit;
@@ -1121,7 +1121,7 @@ double	*coeff;		/* Plate fit coefficients */
 
 {
     double *ycoeff;
-    struct IRAFsurface *wf_gspset ();
+    struct IRAFsurface *wf_gspset (int, int, int, double *);
 
     wcs->prjcode = WCS_TNX;
 
@@ -1231,4 +1231,7 @@ double	*coeff;
  * Sep  9 2008	Fix loop in TNX_XFULL section of wf_gsder()
  * 		(last two bugs found by Ed Los)
  * Sep 17 2008	Fix tnxpos for null correction case (fix by Ed Los)
+
+ * Mar 12 2026  Minimal change to support -std=c23
+
  */
