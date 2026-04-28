@@ -13,7 +13,8 @@ then
 fi
 echo "HEADAS=${HEADAS}"
 
-#Set the xspec_root as the top of the Conda environment
+# Set the xspec_root as the top of the Conda environment.
+# These settings are valid for the CXC xspec-modelsonly build.
 xspec_root=${CONDA_PREFIX}
 xspec_library_path=${xspec_root}/lib/
 xspec_include_path=${xspec_root}/include/
