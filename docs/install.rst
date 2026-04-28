@@ -218,112 +218,64 @@ XSPEC
 ^^^^^
 
 Sherpa can be built to use the Astronomy models provided by
-:term:`XSPEC`. To enable XSPEC support, several changes must be
-made to the ``xspec_config`` section of the ``setup.cfg`` file.
-
-To build the :py:mod:`sherpa.astro.xspec` module, the
-``with_xspec`` option must be set to ``True`` **and** the
+:term:`XSPEC`. To enable XSPEC support, several changes must be made
+to the ``xspec_config`` section of the ``setup.cfg`` file: the
+``with_xspec`` option must be set to ``True`` and the
 ``xspec_version`` option set to the correct version string (the XSPEC
-patch level must not be included), and then the
-remaining options depend on the version of XSPEC and whether
-the XSPEC model library or the full XSPEC system has been installed.
+patch level must not be included). The remaining options depend on the
+version of XSPEC and how it was built and installed.
 
-In the examples below, the ``$HEADAS`` value **must be replaced**
-by the actual path to the HEADAS installation, and the versions of
-the libraries - such as ``CCfits_2.7`` - may need to be changed to
-match the contents of the XSPEC installation.
+HEASARC
+"""""""
+
+If XSPEC has been installed from the
+`HEASARC <https://heasarc.gsfc.nasa.gov/docs/software/conda.html>`_
+conda channel then only set the ``with_xspec`` and ``xspec_version``
+lines.
+
+Note that the ``xspec-data`` package should also be installed
+otherwise some of the models may return zeros or cause the program to
+crash.
+
+CIAO
+""""
+
+If XSPEC has been installed from the
+`CIAO <https://cxc.cfa.harvard.edu/ciao/download/conda.html>`_
+conda channel (using the ``xspec-modelsonly`` package name) then
+the ``with_xspec``, ``xspec_version``, ``xspec_lib_dirs``, and
+``xspec_include_dirs`` lines need to be set. The directory
+names should be set to::
+
+  xspec_lib_dirs = $CONDA_PREFIX/lib
+  xspec_include_dirs = $CONDA_PREFIX/include
+
+The CIAO XSPEC package includes the data files needed to evaluate the
+models.
+
+Other
+"""""
+
+Modern XSPEC builds use run-time search paths to reference most of the
+libraries it uses, so the only settings that should be necessary are
+``with_xspec`` and ``xspec_version``.
+
+If the build fails then various settings can be changed, such as
+adding the hdsp library to the ``xspec_libraries`` setting, setting
+the ``ccfits_libraries``, ``wcslib_libraries`` or
+``gfortran_libraries`` values, or adding paths. Note that a number of
+libraries - such as ``hdsp``, ``CCfits``, and ``wcs`` - include
+version numbers in the names.
 
 .. note::
 
-   If XSPEC has been installed via conda - such as with the
-   `HEASARC <https://heasarc.gsfc.nasa.gov/docs/software/conda.html>`_
-   or
-   `CIAO <https://cxc.cfa.harvard.edu/ciao/download/conda.html>`_
-   channels - then the only settings which are needed are::
+   The ``xspec_lib_dirs`` and ``xspec_include_dirs`` options default
+   to ``$HEADAS/lib`` and ``$HEADAS/include`` respectively, so should
+   only be set if these paths are not valid.
 
-     with_xspec
-     xspec_version
-     xspec_lib_dirs
-     xspec_include_dirs
-
-* If the full XSPEC 12.15.1 system has been built then use::
-
-       with_xspec = True
-       xspec_version = 12.15.1
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.36
-       ccfits_libraries = CCfits_2.7
-       wcslib_libraries = wcs-8.3
-
-  where the version numbers were taken from version 6.36 of HEASOFT and
-  may need updating with a newer release.
-
-* If the full XSPEC 12.15.0 system has been built then use::
-
-       with_xspec = True
-       xspec_version = 12.15.0
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.35
-       ccfits_libraries = CCfits_2.7
-       wcslib_libraries = wcs-8.3
-
-* If the full XSPEC 12.14.1 system has been built then use::
-
-       with_xspec = True
-       xspec_version = 12.14.1
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.34
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-8.3
-
-* If the full XSPEC 12.14.0 system has been built then use::
-
-       with_xspec = True
-       xspec_version = 12.14.0
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.33
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-8.2.1
-
-* If the full XSPEC 12.13.1 system has been built then use::
-
-       with_xspec = True
-       xspec_version = 12.13.1
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.32
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-7.7
-
-* If the full XSPEC 12.13.0 system has been built then use::
-
-       with_xspec = True
-       xspec_version = 12.13.0
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.31
-       ccfits_libraries = CCfits_2.6
-       wcslib_libraries = wcs-7.7
-
-* If the model-only build of XSPEC - created with the
-  ``--enable-xs-models-only`` flag when building HEASOFT - has been
-  installed, then the configuration is similar, but the library names
-  may not need version numbers and locations, depending on how the
-  ``cfitsio``, ``CCfits``, and ``wcs`` libraries were installed.
-
-A common problem is to set one or both of the ``xspec_lib_dirs``
-and ``xspec_lib_include`` options to the value of ``$HEADAS`` instead of
-``$HEADAS/lib`` and ``$HEADAS/include`` (after expanding out the
-environment variable). Doing so will cause the build to fail with
-errors about being unable to find various XSPEC libraries such as
-``XSFunctions`` and ``XSModel``.
-
-The ``gfortran`` options should be adjusted if there are problems
-using the XSPEC module.
+   In 4.18.0 and earlier, environment variables in the the
+   ``xspec_lib_dirs`` and ``xspec_include_dirs`` settings were not
+   automatically expanded, and they were not set by default.
 
 In order for the XSPEC module to be used from Python, the
 ``HEADAS`` environment variable **must** be set before the
@@ -333,8 +285,8 @@ The Sherpa test suite includes an extensive set of tests of this
 module, but a quick check of an installed version can be made with
 the following command::
 
-    % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
-    12.15.0
+  % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
+  12.15.1
 
 Other options
 ^^^^^^^^^^^^^

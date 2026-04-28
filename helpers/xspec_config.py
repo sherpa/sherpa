@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014-2018, 2020-2025
+#  Copyright (C) 2014-2018, 2020-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from os.path import expandvars
 from setuptools import Command
 import re
 
@@ -80,9 +81,9 @@ class xspec_config(Command):
     description = "Configure XSPEC Models external module (optional) "
     user_options = [
                     ('with_xspec', None, "Whether sherpa must build the XSPEC module (default False)"),
-                    ('xspec_version', None, "the XSPEC version (default 12.12.0)"),
-                    ('xspec_lib_dirs', None, "Where the xspec libraries are located, if with_xspec is True"),
-                    ('xspec_libraries', None, "Name of the libraries that should be linked for xspec"),
+                    ('xspec_version', None, "the XSPEC version (default 12.15.1)"),
+                    ('xspec_lib_dirs', None, "Where the xspec libraries are located, if with_xspec is True (default $HEADAS/lib)"),
+                    ('xspec_libraries', None, "Name of the libraries that should be linked for xspec (default $HEADAS/include)"),
                     ('cfitsio_lib_dirs', None, "Where the cfitsio libraries are located, if with_xspec is True"),
                     ('cfitsio_libraries', None, "Name of the libraries that should be linked for cfitsio"),
                     ('ccfits_lib_dirs', None, "Where the CCfits libraries are located, if with_xspec is True"),
@@ -95,10 +96,15 @@ class xspec_config(Command):
 
     def initialize_options(self):
         self.with_xspec = False
-        self.xspec_version = '12.14.1'
-        self.xspec_include_dirs = ''
-        self.xspec_lib_dirs = ''
-        # This is set up for how CIAO builds XSPEC; other users may require more libraries
+        # The defaults are to support XSPEC builds where the various
+        # modules already reference the necessary "internal"
+        # libraries, such as hdsp, CCFits. Users can set them if
+        # necessary (e.g. add to the xspec_libraries line, set
+        # ccfits_libries, or add in paths).
+        #
+        self.xspec_version = '12.15.1'
+        self.xspec_include_dirs = '$HEADAS/include'
+        self.xspec_lib_dirs = '$HEADAS/lib'
         self.xspec_libraries = 'XSFunctions XSUtil XS'
         self.cfitsio_include_dirs = ''
         self.cfitsio_lib_dirs = ''
@@ -114,7 +120,13 @@ class xspec_config(Command):
         self.gfortran_libraries = ''
 
     def finalize_options(self):
-        pass
+        # Expand environment variables in the directory paths
+        for name in ["xspec", "cfitsio", "ccfits", "wcslib",
+                      "gfortran"]:
+            for dname in ["include", "lib"]:
+                field = f"{name}_{dname}_dirs"
+                oldval = getattr(self, field)
+                setattr(self, field, expandvars(oldval))
 
     def run(self):
         if not self.with_xspec:
