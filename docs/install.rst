@@ -219,22 +219,7 @@ XSPEC
 
 Sherpa can be built to use the Astronomy models provided by
 :term:`XSPEC`. To enable XSPEC support, several changes must be
-made to the ``xspec_config`` section of the ``setup.cfg`` file. The
-available options (with default values) are::
-
-    with_xspec = False
-    xspec_version = 12.14.1
-    xspec_lib_dirs = None
-    xspec_include_dirs = None
-    xspec_libraries = XSFunctions XSUtil XS
-    cfitsio_lib_dirs = None
-    cfitsio_libraries =
-    ccfits_lib_dirs = None
-    ccfits_libraries =
-    wcslib_lib_dirs = None
-    wcslib_libraries =
-    gfortran_lib_dirs = None
-    gfortran_libraries =
+made to the ``xspec_config`` section of the ``setup.cfg`` file.
 
 To build the :py:mod:`sherpa.astro.xspec` module, the
 ``with_xspec`` option must be set to ``True`` **and** the
