@@ -34,6 +34,7 @@ import pytest
 from sherpa.astro.models import JDPileup
 from sherpa.astro import ui
 from sherpa.astro.io.wcs import WCS
+from sherpa.astro.ui.serialize import FileStore
 
 from sherpa.models.basic import TableModel
 
@@ -42,6 +43,7 @@ from sherpa.utils.err import ArgumentErr, DataErr, \
 from sherpa.utils.testing import get_datadir, requires_data, \
     requires_xspec, has_package_from_list, requires_fits, \
     requires_group, requires_region, requires_wcs
+from sherpa.utils.types import IdType
 
 
 has_xspec = has_package_from_list("sherpa.astro.xspec")
@@ -709,8 +711,8 @@ load_bkg("x", "@@/MNLup_2138_0670580101_EMOS1_S001_specbg.fits", bkg_id="foo", u
 
 ######### Background Spectral Responses
 
-load_arf("x", "@@/MNLup_2138_0670580101_EMOS1_S001_spec.arf", resp_id=1, bkg_id="foo")
-load_rmf("x", "@@/MNLup_2138_0670580101_EMOS1_S001_spec.rmf", resp_id=1, bkg_id="foo")
+load_arf("x", "@@/MNLup_2138_0670580101_EMOS1_S001_spec.arf", bkg_id="foo")
+load_rmf("x", "@@/MNLup_2138_0670580101_EMOS1_S001_spec.rmf", bkg_id="foo")
 
 ######### Set Energy or Wave Units
 
@@ -2608,7 +2610,11 @@ def compare(check_str, expected, **kwargs):
     # but ensures that the program can compile.
     #
     compileit(output)
-    check_str(output, expected.split("\n"))
+    try:
+        check_str(output, expected.split("\n"))
+    except:
+        print(f"OUTPUT:\n{output}")
+        raise
 
 
 def restore():
@@ -4319,3 +4325,141 @@ def test_copy_data_pha(make_data_path):
     restore()
 
     check_data()
+
+
+# These tests check whether internal constraints hold on the filestore
+# dictionaries. This allows a number of situations to be checked
+# without having to create "save_all" outputs for all possibilities.
+#
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("loadfunc,filename,ids",
+                         [("load_data", "3c273.pi", [1]),
+                          ("load_pha", "3c273.pi", [1]),
+                          ("load_data", "3c120_pha2.gz", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+                          ("load_data", "img.fits", [1]),
+                          ("load_image", "img.fits", [1]),
+                          ("load_data", "data1.dat", [1]),
+                          ("load_ascii", "data1.dat", [1]),
+                         ])
+def test_store_deletion_removes_entries_after_load(loadfunc: str,
+                                                   filename: str,
+                                                   ids: list[IdType],
+                                                   make_data_path
+                                                   ) -> None:
+    """Check the stores are set and deleted"""
+
+    func = getattr(ui, loadfunc)
+    func(make_data_path(filename))
+
+    assert len(ui._session._load_data_store) == len(ids)
+
+    for idval in ids:
+        ui.delete_data(idval)
+
+    # Everything should be removed now
+    #
+    for name in ["_load_data_store",
+                 "_load_bkg_store",
+                 "_multi_data_store",
+                 "_load_arf_store",
+                 "_load_rmf_store",
+                 "_load_bkg_arf_store",
+                 "_load_bkg_rmf_store"]:
+        store = getattr(ui._session, name)
+        assert len(store) == 0, name
+
+
+@requires_data
+@requires_fits
+def test_store_records_pha_autoload(make_data_path) -> None:
+    """Check we record the auto-loaded files for a PHA file."""
+
+    ui.load_pha("foo", make_data_path("9774.pi"))
+
+    state = ui._session
+    assert len(state._load_data_store) == 1
+    assert isinstance(state._load_data_store["foo"], FileStore)
+
+    # This is not a PHA2 file
+    assert len(state._multi_data_store) == 0
+
+    # There should be one "autoload" for the responses, but the data
+    # is stored differently for ARF/RMF and background data.
+    #
+    for name in ["_load_arf_store",
+                 "_load_rmf_store"]:
+        store = getattr(state, name)
+        assert isinstance(store, dict)
+        assert len(store) == 1, name
+        assert isinstance(store["foo"], dict)
+        assert len(store["foo"]) == 1
+        assert isinstance(store["foo"][1], FileStore), name
+        assert store["foo"][1].autoloaded, name
+
+    assert len(state._load_bkg_store) == 1
+    assert isinstance(state._load_bkg_store["foo"], dict)
+    assert len(state._load_bkg_store["foo"]) == 1
+    assert isinstance(state._load_bkg_store["foo"][1], FileStore)
+    assert state._load_bkg_store["foo"][1].autoloaded
+
+    for name in ["_load_bkg_arf_store",
+                 "_load_bkg_rmf_store"]:
+        store = getattr(state, name)
+        assert len(store) == 1, name
+        assert isinstance(store["foo"], dict)
+        assert len(store["foo"]) == 1
+        assert isinstance(store["foo"][1], dict)
+        assert len(store["foo"][1]) == 1
+        assert isinstance(store["foo"][1][1], FileStore), name
+        assert store["foo"][1][1].autoloaded, name
+
+
+@requires_data
+@requires_fits
+def test_store_records_pha_no_autoload(make_data_path) -> None:
+    """Check we record the manually-loaded files for a PHA file."""
+
+    # Hide the ENERG_LO=0 warnings for ARF and RMF.
+    #
+    with warnings.catch_warnings(record=True):
+        # This has no *FILE keywords pointing to files
+        ui.load_pha("foo", make_data_path("target_sr.pha"))
+        ui.load_arf("foo", make_data_path("target_sr.arf"))
+        ui.load_rmf("foo", make_data_path("swxpc0to12s6_20130101v014.rmf"))
+
+        # use the same files for the background
+        ui.load_bkg("foo", make_data_path("target_sr.pha"))
+        ui.load_bkg_arf("foo", make_data_path("target_sr.arf"))
+        ui.load_bkg_rmf("foo", make_data_path("swxpc0to12s6_20130101v014.rmf"))
+
+    state = ui._session
+    assert len(state._load_data_store) == 1
+    assert isinstance(state._load_data_store["foo"], FileStore)
+
+    # This is not a PHA2 file
+    assert len(state._multi_data_store) == 0
+
+    for name in ["_load_arf_store",
+                 "_load_rmf_store"]:
+        store = getattr(state, name)
+        assert isinstance(store, dict)
+        assert len(store) == 1, name
+        assert isinstance(store["foo"], dict)
+        assert len(store["foo"]) == 1
+        assert isinstance(store["foo"][1], FileStore), name
+
+    assert len(state._load_bkg_store) == 1
+    assert isinstance(state._load_bkg_store["foo"], dict)
+    assert len(state._load_bkg_store["foo"]) == 1
+    assert isinstance(state._load_bkg_store["foo"][1], FileStore)
+
+    for name in ["_load_bkg_arf_store",
+                 "_load_bkg_rmf_store"]:
+        store = getattr(state, name)
+        assert len(store) == 1, name
+        assert isinstance(store["foo"], dict)
+        assert len(store["foo"]) == 1
+        assert isinstance(store["foo"][1], dict)
+        assert len(store["foo"][1]) == 1
+        assert isinstance(store["foo"][1][1], FileStore)
