@@ -193,9 +193,8 @@ class FileStore:
 
     _: KW_ONLY
 
-    args: Sequence[Any]
-    """Positional arguments used to read in the file."""
-
+    # For now we only need to store keyword arguments.
+    #
     kwargs: Mapping[str, Any]
     """Named arguments used to read in the file."""
 
@@ -208,9 +207,10 @@ class FileStore:
         idstr = _id_to_str(self.idval)
         out = f'{self.loadfunc.__name__}({idstr}, '
         out += f'"{self.filename}"'
-        for arg in self.args:
-            out += f", {showval(arg)}"
 
+        # For now remove the default arguments as we can not track
+        # what arguments were actually used when the file was loaded.
+        #
         kwargs = remove_default_args(self.loadfunc, self.kwargs)
         for k, v in kwargs.items():
             out += f", {k}={showval(v)}"
@@ -342,8 +342,7 @@ def _show_response(state: SessionType,
         kwargs["bkg_id"] = bid
 
     func = getattr(state, f'load_{label}')
-    store = FileStore(func, idval, respfile, args=(),
-                      kwargs=kwargs)
+    store = FileStore(func, idval, respfile, kwargs=kwargs)
     return store.show()
 
 

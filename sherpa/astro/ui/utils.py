@@ -1060,10 +1060,9 @@ class Session(sherpa.ui.utils.Session):
     # Data
     ###########################################################################
 
-    def delete_data(self, id: IdType | None = None) -> None:
-        idval = self._fix_id(id)
-        super().delete_data(idval)
-
+    def _clean_file_store(self, idval: IdType) -> None:
+        """Clean the internal file-store objects for this identifier."""
+        
         with suppress(KeyError):
             del self._load_bkg_store[idval]
 
@@ -1084,6 +1083,11 @@ class Session(sherpa.ui.utils.Session):
 
         with suppress(KeyError):
             del self._multi_data_store[idval]
+    
+    def delete_data(self, id: IdType | None = None) -> None:
+        idval = self._fix_id(id)
+        super().delete_data(idval)
+        self._clean_file_store(idval)
 
     delete_data.__doc__ = sherpa.ui.utils.Session.delete_data.__doc__
 
@@ -1099,29 +1103,7 @@ class Session(sherpa.ui.utils.Session):
             dval = data
 
         super().set_data(idval, data=dval)
-
-        # Ensure the load-bkg/data stores are cleared.
-        #
-        with suppress(KeyError):
-            del self._load_bkg_store[idval]
-
-        with suppress(KeyError):
-            del self._load_bkg_arf_store[idval]
-
-        with suppress(KeyError):
-            del self._load_bkg_rmf_store[idval]
-
-        with suppress(KeyError):
-            del self._load_arf_store[idval]
-
-        with suppress(KeyError):
-            del self._load_rmf_store[idval]
-
-        with suppress(KeyError):
-            del self._load_data_store[idval]
-
-        with suppress(KeyError):
-            del self._multi_data_store[idval]
+        self._clean_file_store(idval)
 
     set_data.__doc__ = sherpa.ui.utils.Session.set_data.__doc__
 
@@ -1134,26 +1116,7 @@ class Session(sherpa.ui.utils.Session):
 
         # Remove any filestore info for the toid.
         #
-        with suppress(KeyError):
-            del self._load_bkg_store[toid]
-
-        with suppress(KeyError):
-            del self._load_bkg_arf_store[toid]
-
-        with suppress(KeyError):
-            del self._load_bkg_rmf_store[toid]
-
-        with suppress(KeyError):
-            del self._load_arf_store[toid]
-
-        with suppress(KeyError):
-            del self._load_rmf_store[toid]
-
-        with suppress(KeyError):
-            del self._load_data_store[toid]
-
-        with suppress(KeyError):
-            del self._multi_data_store[toid]
+        self._clean_file_store(toid)
 
         def copy_store(old: FileStore) -> FileStore:
             # Update the id value.
@@ -1773,9 +1736,13 @@ class Session(sherpa.ui.utils.Session):
         data = self.unpack_table(filename, ncols, colkeys, dstype)
         self.set_data(idval, data)
 
+        # Do not track load calls when the argument is not a string.
+        if not isinstance(filename, str):
+            return
+        
         kwargs = {"ncols": ncols, "colkeys": colkeys,
                   "dstype": dstype}
-        store = FileStore(self.load_table, idval, filename, args=(),
+        store = FileStore(self.load_table, idval, filename,
                           kwargs=kwargs)
         self._load_data_store[idval] = store
 
@@ -1993,7 +1960,11 @@ class Session(sherpa.ui.utils.Session):
         data = self.unpack_ascii(filename, **kwargs)
         self.set_data(idval, data)
 
-        store = FileStore(self.load_ascii, idval, filename, args=(),
+        # Do not track load calls when the argument is not a string.
+        if not isinstance(filename, str):
+            return
+        
+        store = FileStore(self.load_ascii, idval, filename,
                           kwargs=kwargs)
         self._load_data_store[idval] = store
 
@@ -2188,16 +2159,20 @@ class Session(sherpa.ui.utils.Session):
 
         data.staterror = staterror
 
+        # Do not track load calls when the argument is not a string.
+        if not isinstance(filename, str):
+            return
+        
         kwargs["func"] = func
         kwargs["delta"] = delta
         store = FileStore(self.load_ascii_with_errors, idval, filename,
-                          args=(), kwargs=kwargs)
+                          kwargs=kwargs)
         self._load_data_store[idval] = store
 
     def _load_datas(self,
                     idval: IdType,
                     datasets: Sequence[DataPHA],
-                    store: FileStore,
+                    store: FileStore | None,
                     use_errors: bool
                     ) -> None:
         """Load in multiple datasets (at present PHA2 files).
@@ -2214,7 +2189,8 @@ class Session(sherpa.ui.utils.Session):
            The data to load, either as a single item or, for
            multiple-dataset files, an iterable of them.
         store
-           How was the file loaded?
+           How was the file loaded? If it was loaded from a I/O
+           object then we do not record the provenance.
 
         """
 
@@ -2238,11 +2214,14 @@ class Session(sherpa.ui.utils.Session):
         # it indicates in the FileStore object that something is
         # different here.
         #
-        store.autoloaded = True
+        if store is not None:
+            store.autoloaded = True
+            
         for id_, data in zip(ids, datasets):
             self.set_data(id_, data)
-            self._load_data_store[id_] = store
-            self._multi_data_store[id_] = (store, ids)
+            if store is not None:
+                self._load_data_store[id_] = store
+                self._multi_data_store[id_] = (store, ids)
 
             self._pha_filestore(id_, data, use_errors=use_errors)
 
@@ -2337,8 +2316,12 @@ class Session(sherpa.ui.utils.Session):
         # We record the load_data call, not the underlying "load_xxx"
         # call.
         #
-        store = FileStore(self.load_data, idval, filename, args=args,
-                          kwargs=kwargs)
+        if isinstance(filename, str):
+            # This assumes that len(args) == 0
+            store = FileStore(self.load_data, idval, filename,
+                              kwargs=kwargs)
+        else:
+            store = None
 
         try:
             use_errors = kwargs["use_errors"]
@@ -2353,7 +2336,8 @@ class Session(sherpa.ui.utils.Session):
 
         if not np.iterable(datasets):
             self.set_data(idval, datasets)
-            self._load_data_store[idval] = store
+            if store is not None:
+                self._load_data_store[idval] = store
 
             # If this is a PHA then hide the automatically-loaded
             # responses (backround, arf/rmf, and background arf/rmf).
@@ -2501,15 +2485,12 @@ class Session(sherpa.ui.utils.Session):
         data = self.unpack_image(arg, coord, dstype)
         self.set_data(idval, data)
 
-        # For now only store if the argument is a string.
-        # TODO: should this be done for all the load_xxx calls
-        # to reflect the argument maybe a IO/backend value?
-        #
+        # Do not track load calls when the argument is not a string.
         if not isinstance(arg, str):
             return
-
+        
         kwargs = {"coord": coord, "dstype": dstype}
-        store = FileStore(self.load_image, idval, arg, args=(),
+        store = FileStore(self.load_image, idval, arg, 
                           kwargs=kwargs)
         self._load_data_store[idval] = store
 
@@ -2632,29 +2613,33 @@ class Session(sherpa.ui.utils.Session):
         """
 
         # Keys are resp_id
-        arfs = {}
-        rmfs = {}
+        arfs: FileDict = {}
+        rmfs: FileDict = {}
 
         # Keys are bkg_id and then resp_id
-        bkg_arfs = {}
-        bkg_rmfs = {}
+        bkg_arfs: dict[IdType, FileDict] = {}
+        bkg_rmfs: dict[IdType, FileDict] = {}
 
         # Keys are bkg_id
-        bkgs = {}
+        bkgs: FileDict = {}
 
         # We need to create the FileStore values for the
-        # automatically-loaded files.
+        # automatically-loaded files. This has to re-create the logic
+        # that sherpa.astro.io.read_pha used to load the files in.
+        #
+        # The assumption is that none of these filenames can be I/O
+        # objects (i.e. they are all strings).
         #
         for resp_id in data.response_ids:
             marf, mrmf = data.get_response(resp_id)
             kwargs = {"resp_id": resp_id}
             if marf is not None:
                 arfs[resp_id] = FileStore(self.load_arf, idval, marf.name,
-                                          args=(), kwargs=kwargs, autoloaded=True)
+                                          kwargs=kwargs, autoloaded=True)
 
             if mrmf is not None:
                 rmfs[resp_id] = FileStore(self.load_rmf, idval, mrmf.name,
-                                          args=(), kwargs=kwargs, autoloaded=True)
+                                          kwargs=kwargs, autoloaded=True)
 
         for bkg_id in data.background_ids:
             # At this point we know bkg is not None but the API does
@@ -2666,7 +2651,7 @@ class Session(sherpa.ui.utils.Session):
 
             kwargs = {"bkg_id": bkg_id, "use_errors": use_errors}
             bkgs[bkg_id] = FileStore(self.load_bkg, idval, bkg.name,
-                                     args=(), kwargs=kwargs, autoloaded=True)
+                                     kwargs=kwargs, autoloaded=True)
 
             bkg_arfs[bkg_id] = {}
             bkg_rmfs[bkg_id] = {}
@@ -2680,12 +2665,12 @@ class Session(sherpa.ui.utils.Session):
                 kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
                 if marf is not None:
                     store = FileStore(self.load_arf, idval, marf.name,
-                                      args=(), kwargs=kwargs, autoloaded=True)
+                                      kwargs=kwargs, autoloaded=True)
                     bkg_arfs[bkg_id][resp_id] = store
 
                 if mrmf is not None:
                     store = FileStore(self.load_rmf, idval, mrmf.name,
-                                      args=(), kwargs=kwargs, autoloaded=True)
+                                      kwargs=kwargs, autoloaded=True)
                     bkg_rmfs[bkg_id][resp_id] = store
 
         self._load_arf_store[idval] = arfs
@@ -2859,14 +2844,17 @@ class Session(sherpa.ui.utils.Session):
 
         phasets = self.unpack_pha(arg, use_errors)
 
-        kwargs = {"use_errors": use_errors}
-        store = FileStore(self.load_pha, idval, arg, args=(),
-                          kwargs=kwargs)
+        if isinstance(arg, str):
+            kwargs = {"use_errors": use_errors}
+            store = FileStore(self.load_pha, idval, arg, kwargs=kwargs)
+        else:
+            store = None
 
         if not np.iterable(phasets):
             self.set_data(idval, phasets)
-
-            self._load_data_store[idval] = store
+            if store is not None:
+                self._load_data_store[idval] = store
+                
             self._pha_filestore(idval, phasets, use_errors=use_errors)
             return
 
@@ -6791,9 +6779,13 @@ class Session(sherpa.ui.utils.Session):
         arf = self.unpack_arf(arg)
         self.set_arf(idval, arf, resp_id=resp_id, bkg_id=bkg_id)
 
-        kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
-        store = FileStore(self.load_arf, idval, arg, args=(),
-                          kwargs=kwargs)
+        # Do not track load calls when the argument is not a string.
+        if isinstance(arg, str):
+            kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
+            store = FileStore(self.load_arf, idval, arg,
+                              kwargs=kwargs)
+        else:
+            store = None
 
         # Ensure resp_id is not None for the key.
         if resp_id is None:
@@ -6805,12 +6797,14 @@ class Session(sherpa.ui.utils.Session):
             if idval not in self._load_arf_store:
                 self._load_arf_store[idval] = {}
 
-            self._load_arf_store[idval][resp_id] = store
+            if store is not None:
+                self._load_arf_store[idval][resp_id] = store
         else:
             if idval not in self._load_bkg_arf_store:
                 self._load_bkg_arf_store[idval] = {}
 
-            self._load_bkg_arf_store[idval][bkg_id][resp_id] = store
+            if store is not None:
+                self._load_bkg_arf_store[idval][bkg_id][resp_id] = store
 
     def get_bkg_arf(self,
                     id: IdType | None = None):
@@ -6936,12 +6930,14 @@ class Session(sherpa.ui.utils.Session):
         arf = self.unpack_arf(arg)
         self.set_arf(idval, arf, resp_id=resp_id, bkg_id=bkg_id)
 
-        store = FileStore(self.load_bkg_arf, idval, arg, args=(),
-                          kwargs={})
-
         if idval not in self._load_bkg_arf_store:
             self._load_bkg_arf_store[idval] = {}
 
+        # Do not track load calls when the argument is not a string.
+        if not isinstance(arg, str):
+            return
+        
+        store = FileStore(self.load_bkg_arf, idval, arg, kwargs={})
         self._load_bkg_arf_store[idval][bkg_id][resp_id] = store
 
     def load_multi_arfs(self, id, filenames, resp_ids=None) -> None:
@@ -7355,9 +7351,13 @@ class Session(sherpa.ui.utils.Session):
         rmf = self.unpack_rmf(arg)
         self.set_rmf(idval, rmf, resp_id=resp_id, bkg_id=bkg_id)
 
-        kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
-        store = FileStore(self.load_rmf, idval, arg, args=(),
-                          kwargs=kwargs)
+        # Do not track load calls when the argument is not a string.
+        if isinstance(arg, str):
+            kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
+            store = FileStore(self.load_rmf, idval, arg,
+                              kwargs=kwargs)
+        else:
+            store = None
 
         # Ensure resp_id is not None for the key.
         if resp_id is None:
@@ -7369,12 +7369,14 @@ class Session(sherpa.ui.utils.Session):
             if idval not in self._load_rmf_store:
                 self._load_rmf_store[idval] = {}
 
-            self._load_rmf_store[idval][resp_id] = store
+            if store is not None:
+                self._load_rmf_store[idval][resp_id] = store
         else:
             if idval not in self._load_bkg_rmf_store:
                 self._load_bkg_rmf_store[idval] = {}
 
-            self._load_bkg_rmf_store[idval][bkg_id][resp_id] = store
+            if store is not None:
+                self._load_bkg_rmf_store[idval][bkg_id][resp_id] = store
 
     def get_bkg_rmf(self,
                     id: IdType | None = None):
@@ -7495,12 +7497,14 @@ class Session(sherpa.ui.utils.Session):
         rmf = self.unpack_rmf(arg)
         self.set_rmf(idval, rmf, resp_id=resp_id, bkg_id=bkg_id)
 
-        store = FileStore(self.load_bkg_rmf, idval, arg, args=(),
-                          kwargs={})
-
         if idval not in self._load_bkg_rmf_store:
             self._load_bkg_rmf_store[idval] = {}
 
+        # Do not track load calls when the argument is not a string.
+        if not isinstance(arg, str):
+            return
+        
+        store = FileStore(self.load_bkg_rmf, idval, arg, kwargs={})
         self._load_bkg_rmf_store[idval][bkg_id][resp_id] = store
 
     def load_multi_rmfs(self, id, filenames, resp_ids=None) -> None:
@@ -7707,6 +7711,15 @@ class Session(sherpa.ui.utils.Session):
         # Ensure the load-bkg store is cleared.
         with suppress(KeyError):
             del self._load_bkg_store[idval][bkg_idval]
+            
+        with suppress(KeyError):
+            del self._load_bkg_arf_store[idval][bkg_idval]
+            
+        with suppress(KeyError):
+            del self._load_bkg_rmf_store[idval][bkg_idval]
+
+        # Should this also delete the arf/rmf stores?
+        with suppress(KeyError):
             if len(self._load_bkg_store[idval]) == 0:
                 del self._load_bkg_store[idval]
 
@@ -8792,13 +8805,14 @@ class Session(sherpa.ui.utils.Session):
         # dict of dicts, unlike the _load_data_store, which is just a
         # dict.
         #
-        fullstore = {}
-        self._load_bkg_store[idval] = fullstore
+        fullstore: FileDict = {}
 
-        kwargs = {"bkg_id": bkg_id, "use_errors": use_errors}
-        store = FileStore(self.load_bkg, idval, arg, args=(),
-                          kwargs=kwargs)
-
+        if isinstance(arg, str):
+            kwargs = {"bkg_id": bkg_id, "use_errors": use_errors}
+            store = FileStore(self.load_bkg, idval, arg, kwargs=kwargs)
+        else:
+            store = None
+            
         if np.iterable(bkgsets):
             # QUS: do we support PHA2 background files? Technically
             # we do, but in reality we do not have files like this.
@@ -8810,14 +8824,18 @@ class Session(sherpa.ui.utils.Session):
                 self.set_bkg(idval, bkg, bkgid)
                 bkgids.append(bkgid)
 
-                fullstore[bkg_id] = store
+                if store is not None:
+                    fullstore[bkgid] = store
 
         else:
             bkg_idval = self._fix_background_id(idval, bkg_id)
             self.set_bkg(idval, bkgsets, bkg_idval)
 
-            fullstore[bkg_idval] = store
+            if store is not None:
+                fullstore[bkg_idval] = store
 
+        self._load_bkg_store[idval] = fullstore
+                
     def group(self,
               id: IdType | None = None,
               bkg_id: IdType | None = None
