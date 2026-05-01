@@ -37,7 +37,7 @@ from sherpa.astro.io.wcs import WCS
 
 from sherpa.models.basic import TableModel
 
-from sherpa.utils.err import ArgumentErr, DataErr, \
+from sherpa.utils.err import DataErr, \
     IdentifierErr, IOErr, StatErr
 from sherpa.utils.testing import get_datadir, requires_data, \
     requires_xspec, has_package_from_list, requires_fits, \
@@ -1743,6 +1743,47 @@ set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
+_canonical_load_arrays_pha_with_bkg = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_arrays(1,
+            [1, 2, 3, 4, 5],
+            [12, 2, 1, 0, 1],
+            DataPHA)
+set_exposure(1, 100)
+set_backscal(1, 0.002)
+set_areascal(1, 0.001)
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(1, quantity="channel", type="rate", factor=0)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.1920928955078125e-07)
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.1920928955078125e-07)
+set_method_opt("gtol", 1.1920928955078125e-07)
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.1920928955078125e-07)
+
+"""
+
 _canonical_load_arrays_data2d = """import numpy
 from sherpa.astro.ui import *
 
@@ -2530,6 +2571,49 @@ set_bkg_source("csc", powlaw1d.bpl, bkg_id=1)
 
 """
 
+_canonical_copy_data_pha_bkg_resp = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_pha(2, "@@/9774.pi")
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+
+######### Background Spectral Responses
+
+load_arf(2, "@@/3c273.arf", resp_id=1, bkg_id=1)
+load_rmf(2, "@@/3c273.rmf", resp_id=1, bkg_id=1)
+
+######### Set Energy or Wave Units
+
+set_analysis(2, quantity="energy", type="rate", factor=0)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.1920928955078125e-07)
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.1920928955078125e-07)
+set_method_opt("gtol", 1.1920928955078125e-07)
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.1920928955078125e-07)
+
+"""
+
 if has_xspec:
     from sherpa.astro import xspec
 
@@ -2855,7 +2939,6 @@ def test_restore_pha_basic(make_data_path):
 
 
 @requires_data
-@requires_xspec
 @requires_fits
 @requires_group
 def test_canonical_pha_load(make_data_path, check_str):
@@ -3506,6 +3589,50 @@ def test_restore_load_arrays_pha_response(check_str):
     # TODO: come up with tests once the state can be restored
 
 
+def test_restore_load_arrays_pha_with_bkg(check_str):
+    """Can we re-create a load_arrays/DataPHA with background?
+
+    This recreation is currently incomplete, so just test what is
+    expected (i.e. a regression test).
+
+    """
+
+    dset = ui.DataPHA("ex", [1, 2, 3, 4, 5], [12, 2, 1, 0, 1])
+    dset.exposure = 100
+    dset.backscal = 0.002
+    dset.areascal = 0.001
+
+    bset = ui.DataPHA("ex", [1, 2, 3, 4, 5], [4, 1, 0, 0, 1])
+    bset.exposure = 500
+    bset.backscal = 0.01
+    bset.areascal = 0.02
+
+    ui.set_data(dset)
+    ui.set_bkg(bset)
+
+    compare(check_str, _canonical_load_arrays_pha_with_bkg)
+
+    restore()
+
+    assert ui.list_data_ids() == [1]
+    # assert ui.list_bkg_ids(1) == [1]
+    assert ui.list_bkg_ids(1) == []  # TODO: this is wrong
+
+    pha = ui.get_data()
+    # bkg = ui.get_bkg()  # TODO: this currently fails
+
+    # for got_obj, exp_obj in [(pha, dset), (bkg, bset)]:
+    for got_obj, exp_obj in [(pha, dset)]:
+        assert isinstance(got_obj, ui.DataPHA)
+
+        for field in ["channel", "counts", "exposure",
+                      "backscal", "areascal"]:
+            got = getattr(got_obj, field)
+            expected = getattr(exp_obj, field)
+
+            assert got == pytest.approx(expected)
+
+
 def test_restore_load_arrays_data2d(check_str):
     """Can we re-create a load_arrays/Data2D case
 
@@ -3937,12 +4064,7 @@ def test_restore_pha2(make_data_path, check_str):
 @requires_data
 @requires_fits
 def test_restore_pha2_delete(make_data_path, check_str):
-    """Can we restore a pha2 file after deleting files?
-
-    This is a regression test so we can see as soon as things have
-    changed, rather than marking it as xfail.
-
-    """
+    """Can we restore a pha2 file after deleting files?"""
 
     # Note: not including .gz for the file name
     ui.load_pha(make_data_path("3c120_pha2"))
@@ -4124,6 +4246,30 @@ def test_filter1d_excluded2():
 
     with pytest.raises(DataErr, match="^mask excludes all data$"):
         ui.get_dep(filter=True)
+
+
+@pytest.mark.xfail  # XFAIL: does not save the background
+def test_filter1d_pha_bkg_excluded():
+    """Check what happens if all data filtered out from PHA bkg."""
+
+    ui.load_arrays(1, [1, 2], [10, 20], ui.DataPHA)
+    bkg = ui.DataPHA("bkg", [1, 2], [2, 3])
+    ui.set_bkg(bkg)
+
+    ui.ignore(lo=2)
+    ui.ignore(bkg_id=1)
+
+    def check():
+        assert ui.get_data().mask == pytest.approx([True, False])
+        assert ui.get_bkg().mask is False
+        assert ui.get_data().get_filter() == "1"
+        assert ui.get_bkg().get_filter() == ""  # regression test
+        assert ui.get_data().get_filter_expr() == "1 Channel"
+        assert ui.get_bkg().get_filter_expr() == " Channel"  # regression test
+
+    check()
+    restore()
+    check()
 
 
 def test_filter2d_excluded1():
@@ -4315,7 +4461,129 @@ def test_copy_data_pha(make_data_path):
         assert ui.get_staterror(2) == pytest.approx(evals)
 
     check_data()
-
     restore()
+    check_data()
+
+
+@requires_data
+@requires_fits
+@requires_group
+def test_copy_data_pha_bkg_resp(make_data_path, check_str):
+    """Can we copy a PHA dataset and track it?
+
+    This adds backround responses to test_copy_data_pha.
+
+    """
+
+    # This auto-loads response and background
+    ui.load_pha(make_data_path("9774.pi"))
+
+    # load in responses for the background (these are not
+    # correct for this dataset but that is not important here).
+    #
+    ui.load_rmf(make_data_path("3c273.rmf"), bkg_id=1)
+    ui.load_arf(make_data_path("3c273.arf"), bkg_id=1)
+
+    ui.copy_data(1, 2)
+    ui.delete_data(1)
+
+    # Check the serialization as we want to check that the source
+    # responses are not included but the background ones are.
+    #
+    expected_output = add_datadir_path(_canonical_copy_data_pha_bkg_resp)
+    compare(check_str, expected_output)
+
+    def check_data():
+        assert ui.list_data_ids() == [2]
+        assert ui.list_bkg_ids(2) == [1]
+        assert ui.get_data(2).name.endswith("/9774.pi")
+        assert ui.get_arf(2).name.endswith("/9774.arf")
+        assert ui.get_rmf(2).name.endswith("/9774.rmf")
+
+        assert ui.get_arf(2, bkg_id=1).name.endswith("/3c273.arf")
+        assert ui.get_rmf(2, bkg_id=1).name.endswith("/3c273.rmf")
 
     check_data()
+    restore()
+    check_data()
+
+
+def test_copy_data_manual():
+    """What happens when we copy a manually-created dataset?"""
+
+    ui.load_arrays("y", [1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
+    ui.ignore_id("y", lo=3, hi=4)
+    ui.copy_data("y", "x")
+
+    # Check that the copied data has also been filtered.
+    yy = ui.get_dep("y", filter=True)
+    yx = ui.get_dep("x", filter=True)
+    assert len(yy) == 3
+
+    def check_data():
+        assert ui.list_data_ids() == ["x", "y"]
+
+        assert ui.get_dep("x", filter=True) == pytest.approx(yy)
+        assert ui.get_dep("y", filter=True) == pytest.approx(yy)
+
+    check_data()
+    restore()
+    check_data()
+
+
+@requires_fits
+@requires_data
+def test_load_ascii(make_data_path):
+    """Check we can restore a load-ascii call."""
+
+    ui.set_stat("chi2datavar")
+
+    infile = make_data_path("sim.poisson.1.dat")
+    ui.load_ascii(infile)
+
+    def check():
+        assert isinstance(ui.get_data(), ui.Data1D)
+
+        y = ui.get_dep()
+        assert len(y) == 50
+        assert y[0:5] == pytest.approx([27, 27, 20, 28, 27])
+
+        xs = ui.get_indep()
+        assert len(xs) == 1
+        assert xs[0][0:5] == pytest.approx([0.5, 1, 1.5, 2, 2.5])
+
+        dy = ui.get_staterror()
+        assert dy == pytest.approx(np.sqrt(y))
+
+    check()
+    restore()
+    check()
+
+
+@pytest.mark.xfail  # does not include colkeys when loading in the data
+@requires_fits
+@requires_data
+def test_load_table_fits(make_data_path):
+    """Check we can restore a load-table call."""
+
+    infile = make_data_path("1838_rprofile_rmid.fits")
+    ui.load_table(infile, colkeys=["RMID", "COUNTS", "ERR_COUNTS"])
+
+    def check():
+        assert isinstance(ui.get_data(), ui.Data1D)
+
+        y = ui.get_dep()
+        assert len(y) == 38
+        assert y[0:5] == pytest.approx([1529, 2014, 2385, 2158, 2013])
+
+        xs = ui.get_indep()
+        assert len(xs) == 1
+        assert xs[0][0:5] == pytest.approx([12.5, 17.5, 22.5, 27.5, 32.5])
+
+        dy = ui.get_staterror()
+        assert dy[0:3] == pytest.approx([39.1024295920, 44.8776113446,
+                                         48.8364617883])
+
+    check()
+    restore()
+    check()
