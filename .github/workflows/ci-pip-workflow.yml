@@ -81,6 +81,21 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Install FFTW
+      run: |
+        # Do not worry about specifying a version
+        sudo apt install libfftw3-dev pkg-config
+        echo "# --cflags: $(pkg-config --cflags fftw3)"
+        echo "# --libs:   $(pkg-config --libs fftw3)"
+        echo "# --cflags: $(pkg-config --cflags-only-I fftw3)"
+        echo "# --libs:   $(pkg-config --libs-only-L fftw3)"
+        echo "# --libs:   $(pkg-config --libs-only-l fftw3)"
+        ./scripts/update_config
+        #
+        echo "* START setup.cfg"
+        git diff setup.cfg
+        echo "* END   setup.cfg"
+
     - name: Pip Testing Setup - Dependencies
       env:
         NUMPYVER: ${{ matrix.numpy-pkg }}
@@ -167,7 +182,7 @@ jobs:
         FITS: ${{ matrix.fits-pkg }}
       run: |
         smokevars="-v 3"
-        if [ ${FITS} != '' ] ; then
+        if [ -n "${FITS}" ] ; then
             smokevars="-f ${FITS} ${smokevars}"
         fi
         echo "** smoke test: ${smokevars}"
