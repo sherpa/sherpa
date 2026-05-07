@@ -4504,14 +4504,15 @@ def check_moncar(ncores, fr, g1, g2) -> None:
             # test for this (so we know if/when this assumption
             # changes).
             #
-            if platform.machine() == "x86_64":
+            print(f"*** system:  {platform.system()}")
+            print(f"*** machine: {platform.machine()}")
+            if platform.machine() in ["x86_64", "aarch64"]:
                 nexp = 13788
                 gleft = g2
                 gright = g1
 
             else:
-                # This is known to work with Linux/aarch64 and
-                # Darwin/arm64.
+                # This holds for Darwin/arm64
                 nexp = 13785
                 gleft = g1
                 gright = g2
