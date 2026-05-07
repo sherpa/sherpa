@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI arch')))
 
     strategy:
@@ -25,7 +25,7 @@ jobs:
       matrix:
         include:
           - arch: aarch64
-          - arch: ppc64le
+          # - arch: ppc64le  this is very slow
 
           # We currently do not have any user requests for this
           # architecture.
@@ -40,12 +40,13 @@ jobs:
       # with:
       #   submodules: 'True'
 
+    # ubuntu_latest does not provide g++ < 15.0 so pick an older version
     - name: Build and test
-      uses: uraimo/run-on-arch-action@v2
+      uses: uraimo/run-on-arch-action@v3
       with:
         arch: ${{ matrix.arch }}
         # use the latest LTS version
-        distro: ubuntu_latest
+        distro: ubuntu24.04
 
         shell: /bin/bash
 
@@ -54,11 +55,11 @@ jobs:
           apt-get update -q -y
           apt-get install -q -y \
                                 g++ \
-                                gfortran \
                                 flex \
                                 bison \
                                 make \
                                 file \
+                                libfftw3-dev \
                                 pkg-config \
                                 python3 \
                                 python3-dev \
@@ -73,12 +74,13 @@ jobs:
           python3 -m venv --system-site-packages tests
           source tests/bin/activate
 
-          # without this we get configure errors when building fftw and I don't know why
-          # (this adds the --disable-dependency-tracking option). A google suggests it
-          # could be a make vs gmake issue but we can't easily change this (and it may
-          # not be the actual problem).
-          #
-          sed -i.orig "s|#configure=None|configure=--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib --disable-dependency-tracking|" setup.cfg
+          # Setup the configuration
+          ./scripts/update_config
+
+          # Do not require git to be present
+          echo "* START setup.cfg"
+          grep fftw setup.cfg
+          echo "* END   setup.cfg"
 
           pip3 install -e .[test]
           python3 -m pytest
