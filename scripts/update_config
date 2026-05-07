@@ -45,7 +45,6 @@ fftw3_name=$(pkg-config --libs-only-l $mod | sed -e 's/^-l//')
 #
 echo "Updating $cfg"
 
-sed -i.orig "s|#fftw=local|fftw=local|" $cfg
 sed -i.orig "s|#fftw_include_dirs=build/include|fftw_include_dirs = ${fftw3_inc_path}|" $cfg
 sed -i.orig "s|#fftw_lib_dirs=build/lib|fftw_lib_dirs = ${fftw3_libs_path}|" $cfg
 sed -i.orig "s|#fftw_libraries=fftw3|fftw_libraries = ${fftw3_name}|" $cfg

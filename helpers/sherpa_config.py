@@ -97,9 +97,10 @@ def get_pkg_config_library(package: str) -> str | None:
 class sherpa_config(Command):
     description = "Configure Sherpa build options. If in doubt, ignore this command and stick to defaults. See setup.cfg for more information."
     user_options = [
-                    ('fftw', None, "Whether Sherpa should build the embedded fftw3 library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
-                    ('fftw_include_dirs', None, "Where the fftw3 headers are located, if fftw is 'local'"),
-                    ('fftw_lib_dirs', None, "Where the fftw3 libraries are located, if fftw is 'local'"),
+                    ('disable_fftw', None, "Disable the use of the FFTW3 library"),
+                    ('fftw', None, "This setting is no-longer used as Sherpa no-longer provides the embedded fftw3 libraries"),
+                    ('fftw_include_dirs', None, "Where the fftw3 headers are located, if disable_fftw is False"),
+                    ('fftw_lib_dirs', None, "Where the fftw3 libraries are located, if disable_fftw is False"),
                     ('fftw_libraries', None, "Name of the libraries that should be linked as fftw3"),
                     ('disable_region', None, "Disable the use of the region library"),
                     ('region', None, "Whether Sherpa should build the embedded region library, which is the default behavior: set to 'local' to make Sherpa link against existing libraries on the system.)"),
@@ -149,6 +150,10 @@ class sherpa_config(Command):
     def finalize_options(self):
         incdir = os.path.join(self.install_dir, 'include')
         libdir = os.path.join(self.install_dir, 'lib')
+
+        if self.fftw is not None:
+            # Assume this is "local" but do not enforce this.
+            self.warn(f"The fftw='{self.fftw}' option is no-longer valid. Use disable_fftw or the fftw_include/lib_dirs and fftw_libraries options.")
 
         if not self.disable_fftw:
             # Use pkg-config to find the paths (if available, and not
@@ -217,6 +222,7 @@ class sherpa_config(Command):
             self.distribution.ext_modules.append(regext)
 
         # Do not build the psf module if FFT support is disabled.
+        #
         if not self.disable_fftw:
             psfext = build_ext(self, 'psf', 'fftw')
             self.distribution.ext_modules.append(psfext)
@@ -232,10 +238,6 @@ class sherpa_config(Command):
             configure.append(f'GROUP_CFLAGS="{self.group_cflags}"')
         if self.configure != 'None':
             configure.extend(self.configure.split(' '))
-
-        # Is the FFTW library built?
-        if not self.disable_fftw and self.fftw != 'local':
-            configure.append('--enable-fftw')
 
         if not self.disable_region and self.region != 'local':
             configure.append('--enable-region')
