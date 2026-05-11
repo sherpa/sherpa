@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2020, 2021, 2025
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,13 +25,20 @@ background.
 """
 
 from collections import defaultdict
+from collections.abc import Mapping
 import logging
+from typing import cast
 
 import numpy as np
 
-from sherpa.astro.instrument import PileupResponse1D
-from sherpa.models.model import ArithmeticConstantModel
+from sherpa.astro.data import DataPHA
+from sherpa.astro.instrument import MultipleResponse1D, \
+    PileupResponse1D, Response1D
+from sherpa.astro.ui.utils import Session
+from sherpa.models.model import ArithmeticConstantModel, ArithmeticModel, \
+    Model
 from sherpa.utils.err import ModelErr
+from sherpa.utils.types import IdType
 
 
 __all__ = ('add_response', 'get_response_for_pha')
@@ -39,7 +47,11 @@ __all__ = ('add_response', 'get_response_for_pha')
 warning = logging.getLogger(__name__).warning
 
 
-def add_response(session, id, data, model):
+def add_response(session: Session,
+                 id: IdType,
+                 data: DataPHA,
+                 model: ArithmeticModel
+                 ) -> ArithmeticModel:
     """Create the response model describing the source and model.
 
     Include any background components and apply the response
@@ -47,102 +59,114 @@ def add_response(session, id, data, model):
 
     Parameters
     ----------
-    session : sherpa.astro.ui.utils.Session instance
-    id : int or str
+    session
+    id
         The identifier for the dataset.
-    data : sherpa.astro.data.DataPHA instance
+    data
         The dataset (may be a background dataset).
-    model : sherpa.models.model.ArithmeticModel instance
+    model
         The model (without response or background components)
         to match to data.
 
     Returns
     -------
-    fullmodel : sherpa.models.model.ArithmeticModel
+    fullmodel
         The model including the necessary response models and
         background components.
 
     """
-    id = session._fix_id(id)
+    idval = session._fix_id(id)
+
     # QUS: if this gets used to generate the response for the
     #      background then how does it pick up the correct response
     #      (ie when fit_bkg is used). Or does that get generated
     #      by a different code path?
-    pileup_model = session._pileup_models.get(id)
-    bkg_srcs = session._background_sources.get(id, {})
-    return get_response_for_pha(data, model, bkg_srcs, pileup_model, id)
+    pileup_model = session._pileup_models.get(idval)
+    bkg_srcs = get_bkg_srcs(session, idval)
+
+    return get_response_for_pha(data, model, bkg_srcs, pileup_model, idval)
 
 
-def get_response_for_pha(data, model, bkg_srcs={}, pileup_model=None, id=None):
-    """Create the response model describing the source and model.
+def get_bkg_srcs(session,
+                 idval: IdType
+                 ) -> dict[IdType, ArithmeticModel]:
+    """Return information on the background sources for the dataset."""
 
-    Include any background components and apply the response
-    model for the dataset.
+    # At present the background sources are labelled as Model and
+    # not ArithmeticModel, which they arguably should be. So just
+    # cast the value.
+    #
+    return cast(dict[IdType, ArithmeticModel],
+                session._background_sources.get(idval, {})
+                )
 
-    This is essentially the object-oriented version of
-    `sherpa.astro.background.add_response`.
+
+# This implies that we always require a response, even if it is just
+# an ideal one.
+#
+def get_full_expr(idname: IdType,
+                  data: DataPHA,
+                  resp: PileupResponse1D | MultipleResponse1D | Response1D,
+                  model: ArithmeticModel,
+                  bkg_srcs: Mapping[IdType, ArithmeticModel]
+                  ) -> tuple[ArithmeticModel,
+                             list[tuple[ArithmeticConstantModel, ArithmeticModel]]
+                             ]:
+    """Return the full model expression.
+
+    This is to primarily evaluate any background contributions to the
+    model expression.
 
     Parameters
     ----------
-    data : sherpa.astro.data.DataPHA instance
-        The dataset (may be a background dataset).
-    model : sherpa.models.model.ArithmeticModel instance
-        The model (without response or background components)
-        to match to data.
-    bkg_srcs : dict
-        Keys in the dictionary need to be the background ids in the dataset
-        ``data``, and the values are the corresponding source models.
-    pileup_model : None or `sherpa.astro.models.JDPileup` instance
-        Pileup model for the dataset if needed, or ``None`` for no pileup
-        model.
-    id : string
-        A string to label the dataset in warning messages. If this is set
-        ``None`` the name of the dataset it used. Thus parameters is mainly
-        needed if this function is called from the UI layer, where datasets and
-        models have ids that are not stored in an attribute of the dataset
-        itself.
+    idname
+       The identifier for warning or error messages.
+    data
+       The dataset (may be a background dataset).
+    resp
+       The response model.
+    model
+       The model (without response or background components)
+       to match to data.
+    bkg_srcs
+       Keys in the dictionary need to be the background ids in the dataset
+       ``data``, and the values are the corresponding source models.
 
     Returns
     -------
-    fullmodel : sherpa.models.model.ArithmeticModel
-        The model including the necessary response models and
-        background components.
+    model, list of (con_i, model_i)
+       The full model is resp(model) + sum_i con_i * resp(model_i)
 
     """
-    if id is None:
-        id = data.name
 
-    resp = data.get_full_response(pileup_model)
-    if data.subtracted or (len(bkg_srcs) == 0):
-        return resp(model)
-    # At this point we have background one or more background
-    # components that need to be added to the overall model.
-    # If the scale factors are all scalars then we can return
+    # At this point we have one or more background components that
+    # need to be added to the overall model.  If the scale factors are
+    # all scalars then we can return
     #
-    #   resp(model + sum (scale_i * bgnd_i))        [1]
+    #   model + sum (scale_i * bgnd_i), []        [1]
     #
     # but if any are arrays then we have to apply the scale factor
     # after applying the response, that is
     #
-    #   resp(model) + sum(scale_i * resp(bgnd_i))   [2]
+    #   model, [(scale_i, bgnd_i)]   [2]
     #
-    # This is because the scale values are in channel space,
-    # and not the instrument response (i.e. the values used inside
-    # the resp call).
+    # This is because the scale values are in channel space, and not
+    # the instrument response (i.e. the values used inside the resp
+    # call).
     #
-    # Note that if resp is not a linear response - for instance,
-    # it is a pileup model - then we will not get the correct
-    # answer if there's an array value for the scale factor
-    # (i.e. equation [2] above). A warning message is created in this
-    # case, but it is not treated as an error.
+    # Note that if resp is not a linear response - for instance, it is
+    # a pileup model - then we will not get the correct answer if
+    # there's an array value for the scale factor (i.e. equation [2]
+    # above). A warning message is created in this case, but it is not
+    # treated as an error.
     #
     # For multiple background datasets we can have different models -
-    # that is, one for each dataset - but it is expected that the
-    # same model is used for all backgrounds (i.e. this is what
-    # we 'optimise' for).
-
-    # Identify the scalar and vector scale values for each
-    # background dataset, and combine using the model as a key.
+    # that is, one for each dataset - but it is expected that the same
+    # model is used for all backgrounds (i.e. this is what we
+    # 'optimise' for).
+    #
+    # Identify the scalar and vector scale values for each background
+    # dataset, and combine using the model as a key.
     #
     scales_scalar = defaultdict(list)
     scales_vector = defaultdict(list)
@@ -150,7 +174,7 @@ def get_response_for_pha(data, model, bkg_srcs={}, pileup_model=None, id=None):
         try:
             bmdl = bkg_srcs[bkg_id]
         except KeyError:
-            raise ModelErr('nobkg', bkg_id, id)
+            raise ModelErr('nobkg', bkg_id, idname)
 
         scale = data.get_background_scale(bkg_id, units='rate', group=False)
 
@@ -167,12 +191,11 @@ def get_response_for_pha(data, model, bkg_srcs={}, pileup_model=None, id=None):
         scale = sum(scales)
         model += scale * mdl
 
-    # Apply the instrument response.
+    # If there are no "arrays" for the scale factors then we can just
+    # return the response and the model.
     #
-    model = resp(model)
-
     if len(scales_vector) == 0:
-        return model
+        return model, []
 
     # Warn if a pileup model is being used. The error message here
     # is terrible.
@@ -180,7 +203,7 @@ def get_response_for_pha(data, model, bkg_srcs={}, pileup_model=None, id=None):
     # Should this be a Python Warning rather than a logged message?
     #
     if isinstance(resp, PileupResponse1D):
-        wmsg = "model results for dataset {} ".format(id) + \
+        wmsg = f"model results for dataset {idname} " + \
                 "likely wrong: use of pileup model and array scaling " + \
                 "for the background"
 
@@ -197,19 +220,78 @@ def get_response_for_pha(data, model, bkg_srcs={}, pileup_model=None, id=None):
     # anywhere. An alternative would be to use the default naming
     # convention of the model, which will use 'float64[n]' as a label.
     #
+    bmodels = []
     nvectors = len(scales_vector)
     for i, (mdl, scales) in enumerate(scales_vector.items(), 1):
 
         # special case the single-value case
         if nvectors == 1:
-            name = 'scale{}'.format(id)
+            name = f'scale{idname}'
         else:
-            name = 'scale{}_{}'.format(id, i)
+            name = f'scale{idname}_{i}'
 
         # We sum up the scale arrays for this model.
         #
         scale = sum(scales)
         tbl = ArithmeticConstantModel(scale, name=name)
-        model += tbl * resp(mdl)
+        bmodels.append((tbl, mdl))
 
-    return model
+    return model, bmodels
+
+
+def get_response_for_pha(data: DataPHA,
+                         model: ArithmeticModel,
+                         bkg_srcs: Mapping[IdType, ArithmeticModel] = {},
+                         pileup_model: Model | None = None,
+                         id: IdType | None = None
+                         ) -> ArithmeticModel:
+    """Create the response model describing the source and model.
+
+    Include any background components and apply the response
+    model for the dataset.
+
+    This is essentially the object-oriented version of
+    `sherpa.astro.background.add_response`.
+
+    Parameters
+    ----------
+    data
+        The dataset (may be a background dataset).
+    model
+        The model (without response or background components)
+        to match to data.
+    bkg_srcs
+        Keys in the dictionary need to be the background ids in the dataset
+        ``data``, and the values are the corresponding source models.
+    pileup_model
+        Pileup model for the dataset if needed, or ``None`` for no pileup
+        model.
+    id
+        A string to label the dataset in warning messages. If this is set
+        ``None`` the name of the dataset it used. Thus parameters is mainly
+        needed if this function is called from the UI layer, where datasets and
+        models have ids that are not stored in an attribute of the dataset
+        itself.
+
+    Returns
+    -------
+    fullmodel
+        The model including the necessary response models and
+        background components.
+
+    """
+
+    resp = data.get_full_response(pileup_model)
+    if data.subtracted or len(bkg_srcs) == 0:
+        return resp(model)
+
+    if id is None:
+        idname = data.name
+    else:
+        idname = str(id)
+
+    base_model, bmodels = get_full_expr(idname, data, resp, model,
+                                        bkg_srcs)
+
+    cpts = [resp(base_model)] + [scale * resp(bmdl) for scale, bmdl in bmodels]
+    return sum(cpts[1:], start=cpts[0])
