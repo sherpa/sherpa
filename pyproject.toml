@@ -58,7 +58,7 @@ doc = [
   "matplotlib",
   "bokeh",
   "scipy",
-  "arviz",
+  "arviz>=1.0.0",
   "optimagic",
 ]
 
