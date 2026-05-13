@@ -78,8 +78,6 @@ except RuntimeErr as e:
     raise RuntimeErr('badwin', e) from e
 
 
-_ArrayKeys: tuple[str, ...] = ("dim", "dims", "xdim", "ydim", "zdim",
-                               "bitpix", "skip", "arch")
 _DefTemplate: str = "sherpa"
 
 _OpenCheckInterval: float = 0.2  # seconds
@@ -215,22 +213,6 @@ def _formatOptions(kargs: Mapping[str, Any]) -> str:
     return ','.join(arglist)
 
 
-def _splitDict(inDict,
-               keys
-               ):
-    """Splits a dictionary into two parts:
-    - outDict contains any keys listed in "keys";
-      this is returned by the function
-    - inDict has those keys removed (this is the dictionary passed in;
-      it is modified by this call)
-    """
-    outDict = {}
-    for key in keys:
-        if key in inDict:
-            outDict[key] = inDict.pop(key)
-    return outDict
-
-
 class DS9Win:
     """An object that talks to a particular window on ds9
 
@@ -289,31 +271,26 @@ class DS9Win:
         except RuntimeErr:
             return False
 
-    def showArray(self,
-                  arr,
-                  **kargs) -> None:
+    def showArray(self, arr) -> None:
         """Display a 2-d or 3-d grayscale integer numarray arrays.
 
         3-d images are displayed as data cubes, meaning one can
         view a single z at a time or play through them as a movie,
         that sort of thing.
 
-        Inputs:
-        - arr: a numarray array; must be 2-d or 3-d:
-                2-d arrays have index order (y, x)
-                3-d arrays are loaded as a data cube index order (z, y, x)
-        kargs: see Extra Keyword Arguments in the module doc string for information.
-        Keywords that specify array info (see doc for showBinFile for the list)
-        are ignored, because array info is determined from the array itself.
+        Parameters
+        ----------
+        arr
+           An array (expected to be NumPy but need not be) that must
+           be 2-d (axis order is y,x) or 3-d (axis order is z,y,x).
 
-        Data types:
-        - UInt8, Int16, Int32 and floating point types sent unmodified.
-        - All other integer types are converted before transmission.
-        - Complex types are rejected.
+        Notes
+        -----
+        Complex data types cause an invalid. Other data types may be
+        modified before sending to DS9.
 
-        Raises ValueError if arr's elements are not some kind of integer.
-        Raises RuntimeError if ds9 is not running or returns an error message.
         """
+
         if not hasattr(arr, "dtype") or not hasattr(arr, "astype"):
             arr = np.array(arr)
 
@@ -338,14 +315,13 @@ class DS9Win:
         # If the byteorder is native, then use the system
         # endianness
         if arr.dtype.byteorder == '>':
-            isBigendian = True
+            arch = "bigendian"
         elif arr.dtype.byteorder == '<':
-            isBigendian = False
+            arch = "littleendian"
+        elif sys.byteorder == 'big':
+            arch = "bigendian"
         else:
-            if sys.byteorder == 'big':
-                isBigendian = True
-            else:
-                isBigendian = False
+            arch = "littleendian"
 
         # compute bits/pix; ds9 uses negative values for floating values
         bitsPerPix = arr.itemsize * 8
@@ -355,9 +331,6 @@ class DS9Win:
             # array is float; use negative value
             bitsPerPix = -bitsPerPix
 
-        # remove array info keywords from kargs; we compute all that
-        _splitDict(kargs, _ArrayKeys)
-
         # generate array info keywords; note that numarray
         # 2-d images are in order [y, x]
         # 3-d images are in order [z, y, x]
@@ -366,18 +339,12 @@ class DS9Win:
             arryDict[f"{axis}dim"] = size
 
         arryDict["bitpix"] = bitsPerPix
-        if isBigendian:
-            arryDict["arch"] = 'bigendian'
-        else:
-            arryDict["arch"] = 'littleendian'
+        arryDict["arch"] = arch
 
         self.xpaset(
             cmd=f'array [{_formatOptions(arryDict)}]',
             data=arr.tobytes(),
         )
-
-        for keyValue in kargs.items():
-            self.xpaset(cmd=' '.join(keyValue))
 
     def xpaget(self,
                cmd: str
