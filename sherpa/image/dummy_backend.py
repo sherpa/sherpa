@@ -18,22 +18,26 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import numpy as np
+
+from sherpa.astro.io.wcs import WCS
+
 
 imager = None
 """The DS9 window, or None"""
 
 
-def close():
+def close() -> None:
     """Stop the image viewer."""
     pass
 
 
-def delete_frames():
+def delete_frames() -> None:
     """Delete all the frames open in the image viewer."""
     pass
 
 
-def get_region(coord):
+def get_region(coord: str) -> str:
     """Return the region defined in the image viewer.
 
     Parameters
@@ -48,13 +52,13 @@ def get_region(coord):
        The region, or regions, or the empty string.
 
     """
-    pass
+    return ""
 
 
-def image(array,
-          newframe=False,
-          tile=False
-          ):
+def image(array: np.ndarray,
+          newframe: bool = False,
+          tile: bool = False
+          ) -> None:
     """Send the data to the image viewer to display.
 
     Parameters
@@ -70,7 +74,7 @@ def image(array,
     pass
 
 
-def wcs(keys):
+def wcs(keys: tuple[WCS | None, WCS | None, str]) -> None:
     """Send the WCS information to the image viewer.
 
     Parameters
@@ -82,12 +86,12 @@ def wcs(keys):
     pass
 
 
-def open():
+def open() -> None:
     """Start the image viewer."""
     pass
 
 
-def set_region(reg, coord):
+def set_region(reg: str, coord: str) -> None:
     """Set the region to display in the image viewer.
 
     Parameters
@@ -102,7 +106,7 @@ def set_region(reg, coord):
     pass
 
 
-def xpaget(arg):
+def xpaget(arg: str) -> str:
     """Query the image viewer via XPA.
 
     Retrieve the results of a query to the image viewer.
@@ -117,10 +121,10 @@ def xpaget(arg):
     returnval : str
 
     """
-    pass
+    return ""
 
 
-def xpaset(arg, data=None):
+def xpaset(arg: str, data: str | bytes | None = None) -> None:
     """Send the image viewer a command via XPA.
 
     Send a command to the image viewer.
