@@ -354,8 +354,9 @@ Connections to ArviZ
 It serves as a backend-agnostic tool for diagnosing and visualizing Bayesian inference and
 provides different plotting and statistical diagnostic functions for MCMC chains that
 are not implemented in Sherpa itself. If the ArviZ package is installed,
-`~sherpa.sim.mcmc_to_arviz` can be used to convert the MCMC results to an
-`arviz.data.inference_data.InferenceData` object.
+`~sherpa.sim.mcmc_to_arviz` can be used to convert the MCMC results to a
+`~xarray.ore.datatree.DataTree` object, which is the data structure that all
+ArviZ routines use.
 
 .. plot::
     :include-source:
@@ -366,8 +367,7 @@ are not implemented in Sherpa itself. If the ArviZ package is installed,
         >>> import arviz as az
         >>> from sherpa.sim import mcmc_to_arviz
         >>> dataset = mcmc_to_arviz(mcmc=mcmc, fit=f, list_of_draws=[draws])
-        >>> _ = az.plot_pair(dataset, kind=["scatter", "kde"], kde_kwargs={"fill_last": False},
-        ...     marginals=True, point_estimate="median", figsize=(12, 12))
+        >>> _ = az.plot_pair(dataset)
 
 See the `ArviZ <https://python.arviz.org>`_ documentation for more details on the
 available plotting functions and statistical diagnostics.
