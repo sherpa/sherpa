@@ -30,10 +30,12 @@ been simplified to only support the features that Sherpa needs.
 
 """
 
+from collections.abc import Mapping
 import os
 import shlex
 import sys
 import time
+from typing import Any
 import warnings
 import subprocess
 
@@ -44,7 +46,7 @@ from sherpa.utils.err import RuntimeErr, TypeErr
 __all__ = ["setup", "xpaget", "xpaset", "DS9Win"]
 
 
-def _addToPATH(newPath):
+def _addToPATH(newPath: str) -> None:
     """Add newPath to the PATH environment variable.
     Do nothing if newPath already in PATH.
     """
@@ -60,7 +62,7 @@ def _addToPATH(newPath):
     os.environ["PATH"] = pathStr
 
 
-def _findUnixApp(appName):
+def _findUnixApp(appName: str) -> str:
     """Search PATH to find first directory that has the application.
     Return the path if found.
     Raise RuntimeError if not found.
@@ -77,7 +79,7 @@ def _findUnixApp(appName):
     return appPath
 
 
-def _findDS9AndXPA():
+def _findDS9AndXPA() -> tuple[str, str]:
     """Locate ds9 and xpa, and add to PATH if not already there.
 
     Returns:
@@ -93,9 +95,9 @@ def _findDS9AndXPA():
     return (ds9Dir, xpaDir)
 
 
-def setup(doRaise=True,
-          debug=False
-          ):
+def setup(doRaise: bool = True,
+          debug: bool = False
+          ) -> str | None:
     """Search for xpa and ds9 and set globals accordingly.
     Return None if all is well, else return an error string.
     The return value is also saved in global variable _SetupError.
@@ -201,7 +203,7 @@ def xpaget(cmd: str,
 
 
 def xpaset(cmd: str,
-           data=None,
+           data: str | bytes | None = None,
            dataFunc=None,
            template: str = _DefTemplate,
            doRaise: bool = True,
@@ -290,9 +292,9 @@ _FloatTypes = (np.float32, np.float64)
 _ComplexTypes = (np.complex64, np.complex128)
 
 
-def _expandPath(fname,
-                extraArgs=""
-                ):
+def _expandPath(fname: str,
+                extraArgs: str = ""
+                ) -> str:
     """Expand a file path and protect it such that spaces are allowed.
     Inputs:
     - fname                file path to expand
@@ -306,7 +308,7 @@ def _expandPath(fname,
     return f"{{{filepath}{extraArgs}}}"
 
 
-def _formatOptions(kargs):
+def _formatOptions(kargs: Mapping[str, Any]) -> str:
     """Returns a string: "key1=val1,key2=val2,..."
     (where keyx and valx are string representations)
     """
@@ -422,7 +424,7 @@ class DS9Win:
 
     def showArray(self,
                   arr,
-                  **kargs):
+                  **kargs) -> None:
         """Display a 2-d or 3-d grayscale integer numarray arrays.
         3-d images are displayed as data cubes, meaning one can
         view a single z at a time or play through them as a movie,
@@ -592,7 +594,7 @@ class DS9Win:
 
     def xpaset(self,
                cmd: str,
-               data=None,
+               data: str | bytes | None = None,
                dataFunc=None
                ) -> None:
         """Executes a simple xpaset command.
