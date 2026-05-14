@@ -36,10 +36,10 @@ been simplified to only support the features that Sherpa needs.
 
 from collections.abc import Mapping
 import os
+import shlex
 import sys
 import time
 from typing import Any
-import warnings
 import subprocess
 
 import numpy as np
@@ -106,11 +106,9 @@ def xpaget(cmd: str,
 
     """
 
-    # Would be better to make a sequence rather than have to quote arguments
-    fullCmd = f'xpaget {template} "{cmd}"'
-
+    fullCmd = ['xpaget', template, cmd]
     with subprocess.Popen(args=fullCmd,
-                          shell=True,
+                          shell=False,
                           stdin=subprocess.PIPE,
                           stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE) as p:
@@ -119,7 +117,8 @@ def xpaget(cmd: str,
             errMsg = p.stderr.read()
             if errMsg:
                 errMsgStr = errMsg.decode()
-                raise RuntimeErr('cmdfail', fullCmd, errMsgStr)
+                cmdStr = shlex.join(fullCmd)
+                raise RuntimeErr('cmdfail', cmdStr, errMsgStr)
 
             return_value = p.stdout.read()
             return return_value.decode()
@@ -147,21 +146,21 @@ def xpaset(cmd: str,
        a string giving "host:port", or other supported forms.
 
     """
-    # Would be better to make a sequence rather than have to quote arguments
-    if data:
-        fullCmd = f'xpaset {template} "{cmd}"'
-    else:
-        fullCmd = f'xpaset -p {template} "{cmd}"'
 
+    fullCmd = ['xpaset']
+    if not data:
+        fullCmd.append('-p')
+
+    fullCmd.extend([template, cmd])
     with subprocess.Popen(args=fullCmd,
-                          shell=True,
+                          shell=False,
                           stdin=subprocess.PIPE,
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT) as p:
         try:
             try:
                 data = bytearray(data, "UTF-8")
-            except Exception:
+            except TypeError:
                 pass
 
             if data:
@@ -172,7 +171,8 @@ def xpaset(cmd: str,
             reply = p.stdout.read()
             if reply:
                 errMsgStr = reply.strip().decode()
-                raise RuntimeErr('cmdfail', fullCmd, errMsgStr)
+                cmdStr = shlex.join(fullCmd)
+                raise RuntimeErr('cmdfail', cmdStr, errMsgStr)
 
 
         finally:
@@ -240,29 +240,28 @@ class DS9Win:
         if self.isOpen():
             return
 
-        # We want to fork ds9. This is possible with os.fork, but
-        # it doesn't work on Windows. At present Sherpa does not
-        # run on Windows, so it is not a serious problem, but it is
-        # not clear if it is an acceptable, or sensible, option.
-        #
-        p = subprocess.Popen(
-            args=('ds9', '-title', self.template, '-port', "0"),
-            cwd=None,
-            close_fds=True, stdin=None, stdout=None, stderr=None
-        )
+        with subprocess.Popen(
+                args=('ds9', '-title', self.template, '-port', "0"),
+                shell=False,
+                cwd=None,
+                close_fds=True,
+                stdin=None,
+                stdout=None,
+                stderr=None) as p:
 
-        startTime = time.time()
-        while True:
-            time.sleep(_OpenCheckInterval)
-            if self.isOpen():
-                # Trick to stop a ResourceWarning warning to be created when
-                # running sherpa/tests/test_image.py
-                #
-                # Adapted from https://hg.python.org/cpython/rev/72946937536e
-                p.returncode = 0
-                return
-            if time.time() - startTime > _MaxOpenTime:
-                raise RuntimeErr('nowin', self.template)
+            startTime = time.time()
+            while True:
+                time.sleep(_OpenCheckInterval)
+                if self.isOpen():
+                    # Trick to stop a ResourceWarning warning to be created when
+                    # running sherpa/tests/test_image.py
+                    #
+                    # Adapted from https://hg.python.org/cpython/rev/72946937536e
+                    p.returncode = 0
+                    return
+
+                if time.time() - startTime > _MaxOpenTime:
+                    raise RuntimeErr('nowin', self.template)
 
     def isOpen(self) -> bool:
         """Is the DS9 window open and responding to XPA queries?"""
