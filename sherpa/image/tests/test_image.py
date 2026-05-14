@@ -250,9 +250,14 @@ def test_xpaget_error():
     """Check the error is raised."""
     im = Image()
     im.open()
+
+    # The message may include "-m local"; do not worry about checking
+    # it.
+    #
     command = "not a command"
-    msg = rf"^\"xpaget sherpa '{command}'\" failed: XPA\$ERROR " + \
+    msg = rf"^\"xpaget .*sherpa '{command}'\" failed: XPA\$ERROR " + \
         "undefined command for this xpa "
+
     with pytest.raises(RuntimeErr, match=msg):
         _ = im.xpaget(command)
 
@@ -262,8 +267,13 @@ def test_xpaset_error():
     """Check the error is raised."""
     im = Image()
     im.open()
+
+    # The message may include "-m local"; do not worry about checking
+    # it.
+    #
     command = "not a command"
-    msg = rf"^\"xpaset -p sherpa '{command}'\" failed: XPA\$ERROR " + \
+    msg = rf"^\"xpaset .*-p sherpa '{command}'\" failed: XPA\$ERROR " + \
         "undefined command for this xpa "
+
     with pytest.raises(RuntimeErr, match=msg):
         im.xpaset(command)
