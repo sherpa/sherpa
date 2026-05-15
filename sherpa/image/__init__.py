@@ -240,6 +240,15 @@ class DataImage(Image):
         Image.__init__(self)
 
     def prepare_image(self, data: Data2D) -> None:
+        """Create the data to display.
+
+        Parameters
+        ----------
+        data
+           The Sherpa data object to display.
+
+        """
+
         self.y = data.get_img()
         self.eqpos = getattr(data, 'eqpos', None)
         self.sky = getattr(data, 'sky', None)
@@ -260,6 +269,18 @@ class DataImage(Image):
               newframe: bool = False,
               tile: bool = False
               ) -> None:
+        """Send the data to the image viewer to display.
+
+        Parameters
+        ----------
+        shape
+           The shape of the data (optional).
+        newframe
+           Should the pixels be displayed in a new frame?
+        tile
+           Should the display be tiled?
+
+        """
         Image.image(self, self.y, shape, newframe, tile)
         Image.set_wcs((self.eqpos, self.sky, self.name))
 
@@ -282,6 +303,17 @@ class ModelImage(Image):
         Image.__init__(self)
 
     def prepare_image(self, data: Data2D, model: Model) -> None:
+        """Create the data to display.
+
+        Parameters
+        ----------
+        data
+           The Sherpa data object to display.
+        model
+           The model to evaluate on the data grid.
+
+        """
+
         self.y = data.get_img(model)
         self.y = self.y[1]
         self.eqpos = getattr(data, 'eqpos', None)
@@ -292,6 +324,18 @@ class ModelImage(Image):
               newframe: bool = False,
               tile: bool = False
               ) -> None:
+        """Send the data to the image viewer to display.
+
+        Parameters
+        ----------
+        shape
+           The shape of the data (optional).
+        newframe
+           Should the pixels be displayed in a new frame?
+        tile
+           Should the display be tiled?
+
+        """
         Image.image(self, self.y, shape, newframe, tile)
         Image.set_wcs((self.eqpos, self.sky, self.name))
 
@@ -304,8 +348,16 @@ class SourceImage(ModelImage):
         self.name = 'Source'
 
     def prepare_image(self, data: Data2D, model: Model) -> None:
-        # self.y = data.get_img(model)
-        # self.y = self.y[1]
+        """Create the data to display.
+
+        Parameters
+        ----------
+        data
+           The Sherpa data object to display.
+        model
+           The model to evaluate on the data grid.
+
+        """
 
         self.y = data.eval_model(model)
         data._check_shape()
@@ -316,7 +368,13 @@ class SourceImage(ModelImage):
 
 
 class RatioImage(Image):
-    """The data divide by the model."""
+    """The data divided by the model.
+
+    See Also
+    --------
+    ResidImage
+
+    """
 
     _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
     """The fields to include in the string output.
@@ -341,6 +399,17 @@ class RatioImage(Image):
         return (data / model)
 
     def prepare_image(self, data: Data2D, model: Model) -> None:
+        """Create the data to display.
+
+        Parameters
+        ----------
+        data
+           The Sherpa data object to display.
+        model
+           The model to evaluate on the data grid.
+
+        """
+
         self.y = data.get_img(model)
         self.y = self._calc_ratio(self.y)
         self.eqpos = getattr(data, 'eqpos', None)
@@ -351,12 +420,30 @@ class RatioImage(Image):
               newframe: bool = False,
               tile: bool = False
               ) -> None:
+        """Send the data to the image viewer to display.
+
+        Parameters
+        ----------
+        shape
+           The shape of the data (optional).
+        newframe
+           Should the pixels be displayed in a new frame?
+        tile
+           Should the display be tiled?
+
+        """
         Image.image(self, self.y, shape, newframe, tile)
         Image.set_wcs((self.eqpos, self.sky, self.name))
 
 
 class ResidImage(Image):
-    """The data - model image."""
+    """The data - model image.
+
+    See Also
+    --------
+    RatioImage
+
+    """
 
     _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
     """The fields to include in the string output.
@@ -376,6 +463,17 @@ class ResidImage(Image):
         return ylist[0] - ylist[1]
 
     def prepare_image(self, data: Data2D, model: Model) -> None:
+        """Create the data to display.
+
+        Parameters
+        ----------
+        data
+           The Sherpa data object to display.
+        model
+           The model to evaluate on the data grid.
+
+        """
+
         self.y = data.get_img(model)
         self.y = self._calc_resid(self.y)
         self.eqpos = getattr(data, 'eqpos', None)
@@ -386,12 +484,30 @@ class ResidImage(Image):
               newframe: bool = False,
               tile: bool = False
               ) -> None:
+        """Send the data to the image viewer to display.
+
+        Parameters
+        ----------
+        shape
+           The shape of the data (optional).
+        newframe
+           Should the pixels be displayed in a new frame?
+        tile
+           Should the display be tiled?
+
+        """
         Image.image(self, self.y, shape, newframe, tile)
         Image.set_wcs((self.eqpos, self.sky, self.name))
 
 
 class PSFImage(DataImage):
-    """The PSF image."""
+    """The PSF image.
+
+    See Also
+    --------
+    PSFKernelImage
+
+    """
 
     def prepare_image(self, psf, data=None) -> None:
         psfdata = psf.get_kernel(data, False)
@@ -400,7 +516,13 @@ class PSFImage(DataImage):
 
 
 class PSFKernelImage(DataImage):
-    """The PSF kernel image."""
+    """The PSF kernel image.
+
+    See Also
+    --------
+    PSFImage
+
+    """
 
     def prepare_image(self, psf, data=None) -> None:
         psfdata = psf.get_kernel(data)
@@ -412,6 +534,17 @@ class ComponentSourceImage(SourceImage):
     """The unconvolved source component."""
 
     def prepare_image(self, data: Data2D, model: Model) -> None:
+        """Create the data to display.
+
+        Parameters
+        ----------
+        data
+           The Sherpa data object to display.
+        model
+           The model to evaluate on the data grid.
+
+        """
+
         ModelImage.prepare_image(self, data, model)
         # self.name = "Source component '%s'" % model.name
         self.name = "Source_component"
@@ -421,6 +554,17 @@ class ComponentModelImage(ModelImage):
     """The model component."""
 
     def prepare_image(self, data: Data2D, model: Model) -> None:
+        """Create the data to display.
+
+        Parameters
+        ----------
+        data
+           The Sherpa data object to display.
+        model
+           The model to evaluate on the data grid.
+
+        """
+
         ModelImage.prepare_image(self, data, model)
         # self.name = "Model component '%s'" % model.name
         self.name = "Model_component"
