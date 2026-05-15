@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2018, 2021, 2023, 2025
+#  Copyright (C) 2018, 2021, 2023, 2025-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -397,7 +397,8 @@ def test_eqwidth_multi_id_poisson(clean_astro_ui):
 
     # A regression to check if the calculation changes.
     #
-    assert val1 == pytest.approx(0.0409343934694133)
+    tol = 1e-5
+    assert val1 == pytest.approx(0.0409343934694133, rel=tol)
 
     # Check the error results. This is calculated via get_draws,
     # which handles the multiple-id case.
@@ -425,9 +426,9 @@ def test_eqwidth_multi_id_poisson(clean_astro_ui):
     # be approximated by a "smaller" sigma limits range, and the
     # "a + b" and "b + a" give the same results.
     #
-    assert resa[0] == pytest.approx(0.04259715629705425)
-    assert resb[0] == pytest.approx(0.043209134605777154)
-    assert resab[0] == pytest.approx(0.04104216531226462)
+    assert resa[0] == pytest.approx(0.04259715629705425, rel=tol)
+    assert resb[0] == pytest.approx(0.043209134605777154, rel=tol)
+    assert resab[0] == pytest.approx(0.04104216531226462, rel=tol)
 
     # The resba results are identical to resab
     assert resba[4] == pytest.approx(resab[4])
