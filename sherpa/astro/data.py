@@ -5267,7 +5267,8 @@ It is an integer or string.
             >>> bb.kT = 0.5
             >>> bb.ampl = 0.0005
             >>> resp = pha.get_full_response(pileup_model=None)
-            >>> x, (ydata, ymodel), xerr, yerr, xlabel, ylabel = pha.to_plot(yfunc=resp(bb))
+            >>> model = resp(bb)
+            >>> x, (ydata, ymodel), xerr, yerr, xlabel, ylabel = pha.to_plot(yfunc=model)
 
         If you actually plot x/ydata and x/ymodel, you will see that a blackbody is not
         a good description for this dataset.
