@@ -73,7 +73,7 @@ import contextlib
 import copy
 import logging
 import importlib
-from typing import Any, Literal, overload
+from typing import Any, Literal
 
 import numpy as np
 
@@ -85,11 +85,12 @@ from sherpa.optmethods import LevMar, NelderMead
 from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
 from sherpa.stats import Stat, Likelihood, LeastSq, Chi2XspecVar
 from sherpa.utils import NoNewAttributesAfterInit, erf, \
-    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
+    bool_cast, parallel_map, dataspace1d, histogram1d, \
+    get_error_estimates, display_fields
 from sherpa.utils.err import ArgumentTypeErr, ConfidenceErr, \
     IdentifierErr, PlotErr, StatErr
 from sherpa.utils.numeric_types import SherpaFloat
-from sherpa.utils.types import ArrayType, PrefsType
+from sherpa.utils.types import PrefsType
 
 # PLOT_BACKENDS only contains backends in modules that are imported successfully
 # but modules are not discovered by itself. Entrypoints would solve this problem
@@ -400,91 +401,6 @@ def calculate_errors(data: Data,
             warning("%s\nzeros or negative values found", msg)
 
         return None
-
-
-@overload
-def arr2str(x: None) -> None:
-    ...
-
-@overload
-def arr2str(x: ArrayType) -> str:
-    ...
-
-def arr2str(x: ArrayType | None) -> str | None:
-    """Convert an array to a string for __str__ calls
-
-    Parameters
-    ----------
-    x : sequence or None
-
-    Returns
-    -------
-    arrstr : str
-
-    """
-
-    if x is None:
-        return x
-
-    return np.array2string(np.asarray(x), separator=',',
-                           precision=4, suppress_small=False)
-
-
-# This is used in a similar manner to the way that sherpa.data._fields
-# is used to control the string output of the Data objects. We extend
-# that version to allow a decision of whether to display as an array -
-# via arr2str - or as is. Given how our classes are arranged it is not
-# worth trying to share infrastructure between the plot classes and
-# the data classes to handle the similar __str__ handling.
-#
-def display_fields(obj,  # hard to provide an accurate type
-                   fields: Sequence[str]) -> str:
-    """Create the __str__ output for the object.
-
-    Parameters
-    ----------
-    obj
-       The object to convert to a string. It is expected to be
-       derived from one of the plot classes.
-    fields
-       The fields to diplay. A field name ending in ! means display
-       directly, otherwise the value is passed through arr2str.
-
-    Returns
-    -------
-    strval
-       The string representation (one field per line)
-
-    Notes
-    -----
-
-    The default length for the labels is 6 but we check the labels so
-    that a larger value is used if need be (except for any xxx_prefs
-    label, just to better match the original output). This is wasted
-    logic, in that it could be calculated at object creation, but it
-    is not that much work to do here.
-
-    """
-
-    out = []
-    size = 6
-    for lbl in fields:
-        if lbl.endswith('!'):
-            lbl = lbl[:-1]
-            scalar = True
-        else:
-            scalar = False
-
-        val = getattr(obj, lbl)
-        if not scalar:
-            val = arr2str(val)
-
-        out.append((lbl, val))
-        if not lbl.endswith("_prefs"):
-            size = max(size, len(lbl))
-
-    fmt = f"{{:{size}s}} = {{}}"
-    return "\n".join(fmt.format(*vals) for vals in out)
 
 
 class Plot(NoNewAttributesAfterInit):

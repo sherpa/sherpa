@@ -147,6 +147,24 @@ def test_get_data_image(session):
     assert y[2, 5] == pytest.approx(100.0)
 
 
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
+def test_data_image_show(session, check_str):
+
+    s = session()
+    s.set_data(Data2D('example', [1, 1, 1], [-5, -4, -3], [2, 3, 4],
+                      shape=(1, 3)))
+
+    obj = s.get_data_image()
+    check_str(str(obj),
+              ["name   = Data",
+               "y      = [[2,3,4]]",
+               "eqpos  = None",
+               "sky    = None",
+               ])
+
+
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_model_image(session):
     from sherpa.image import ModelImage
