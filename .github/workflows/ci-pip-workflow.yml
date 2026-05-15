@@ -43,7 +43,7 @@ jobs:
             bokeh-pkg: 'bokeh>=3,<4'
             ncores: 1
 
-          - name: Linux Build (w/o Matplotlib, w/o Astropy or Xspec)
+          - name: Linux Build (w/o Matplotlib, Astropy or Xspec)
             os: ubuntu-latest
             python-version: "3.11"
             numpy-pkg: 'numpy'
@@ -59,7 +59,7 @@ jobs:
             fits-pkg: 'astropy'
             test-data: none
 
-          - name: Linux Build (submodule data without or Xspec)
+          - name: Linux Build (submodule data without Xspec)
             os: ubuntu-latest
             python-version: "3.12"
             numpy-pkg: 'numpy'
