@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2009,2010,2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009,2010,2016,2025
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,44 +18,127 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import numpy as np
+
+from sherpa.astro.io.wcs import WCS
+
+
 imager = None
+"""The DS9 window, or None"""
+
+# If this file is xxx_backend.py then 'name = "xxx"'.
+name: str = "dummy"
+"""The name of the backend."""
 
 
-def close(*args, **kwargs):
+def close() -> None:
+    """Stop the image viewer."""
     pass
 
 
-def delete_frames(*args, **kwargs):
+def delete_frames() -> None:
+    """Delete all the frames open in the image viewer."""
     pass
 
 
-def get_region(*args, **kwargs):
+def get_region(coord: str) -> str:
+    """Return the region defined in the image viewer.
+
+    Parameters
+    ----------
+    coord : str
+       The name of the coordinate system (the empty string means
+       to use the current system).
+
+    Returns
+    -------
+    region : str
+       The region, or regions, or the empty string.
+
+    """
+    return ""
+
+
+def image(array: np.ndarray,
+          newframe: bool = False,
+          tile: bool = False
+          ) -> None:
+    """Send the data to the image viewer to display.
+
+    Parameters
+    ----------
+    array
+       The pixel values
+    newframe
+       Should the pixels be displayed in a new frame?
+    tile
+       Should the display be tiled?
+
+    """
     pass
 
 
-def image(*args, **kwargs):
+def wcs(keys: tuple[WCS | None, WCS | None, str]) -> None:
+    """Send the WCS informatiom to the image viewer.
+
+    Parameters
+    ----------
+    keys
+       The eqpos and sky transforms, and the name of the display.
+
+    """
     pass
 
 
-def _set_wcs(*args, **kwargs):
+def open() -> None:
+    """Start the image viewer."""
     pass
 
 
-def wcs(*args, **kwargs):
+def set_region(reg: str, coord: str) -> None:
+    """Set the region to display in the image viewer.
+
+    Parameters
+    ----------
+    reg : str
+       The region to display.
+    coord : str
+       The name of the coordinate system (the empty string means
+       to use the current system).
+
+    """
     pass
 
 
-def open(*args, **kwargs):
-    pass
+def xpaget(arg: str) -> str:
+    """Query the image viewer via XPA.
+
+    Retrieve the results of a query to the image viewer.
+
+    Parameters
+    ----------
+    arg : str
+       A command to send to the image viewer via XPA.
+
+    Returns
+    -------
+    returnval : str
+
+    """
+    return ""
 
 
-def set_region(*args, **kwargs):
-    pass
+def xpaset(arg: str, data: str | bytes | None = None) -> None:
+    """Send the image viewer a command via XPA.
 
+    Send a command to the image viewer.
 
-def xpaget(*args, **kwargs):
-    pass
+    Parameters
+    ----------
+    arg : str
+       A command to send to the image viewer via XPA.
+    data : optional
+       The data for the command.
 
-
-def xpaset(*args, **kwargs):
+    """
     pass
