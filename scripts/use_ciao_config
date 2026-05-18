@@ -70,7 +70,7 @@ fi
 echo "Updating $cfg"
 
 sed -i="" "s|#install_dir=build|install_dir=${CONDA_PREFIX}|" $cfg
-sed -i="" "s|#configure=None|configure=None|" $cfg
+sed -i="" "s|#disable_extern=True|disable_extern=True|" $cfg
 
 sed -i="" "s|#disable_group=True|disable_group=True|" $cfg
 sed -i="" "s|#disable_stk=True|disable_stk=True|" $cfg
