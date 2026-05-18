@@ -1010,7 +1010,7 @@ class ReSampleData(NoNewAttributesAfterInit):
         return result
 
 
-# The return value is InterferenceData, but this is not imported on the module
+# The return value is xarray.core.datatree.DataTree, but this is not imported on the module
 # level, so we can't use it in the type hint.
 def mcmc_to_arviz(mcmc : MCMC, fit: Fit, list_of_draws : list[tuple],
                   ):
@@ -1037,12 +1037,9 @@ def mcmc_to_arviz(mcmc : MCMC, fit: Fit, list_of_draws : list[tuple],
 
     Returns
     -------
-    inference_data: arviz.InferenceData
-        An ArviZ InferenceData object containing the posterior and log likelihood data.
+    inference_data: xarray.core.datatree.DataTree
+        A DataTree containing the posterior and log likelihood data.
     """
-
-    from arviz.data.base import dict_to_dataset
-    from arviz.data.inference_data import InferenceData
 
     pnames = [p.fullname for p in fit.model.get_thawed_pars()]
 
@@ -1058,29 +1055,26 @@ def mcmc_to_arviz(mcmc : MCMC, fit: Fit, list_of_draws : list[tuple],
             raise ValueError("All chains must have the same number of steps. " +
                 f"Chain {i} contains {draw[0].shape[0]} steps, but the first chain has {len(list_of_draws[0][0])} steps.")
 
+    from arviz import from_dict
+
     datadict = {}
     for i, p in enumerate(pnames):
         datadict[p] = np.stack([draw[2][i, :] for draw in list_of_draws])
     attrs = {'name': fit.model.name,
-             'created_at': datetime.now().isoformat(),
-             'inference_library': 'sherpa',
-             'inference_library_version': sherpa.__version__,
-             'sampler_name': mcmc.get_sampler_name(),
-             'sampler_opt': mcmc.get_sampler(),
-             'stat_name': fit.stat.name,
+                'created_at': datetime.now().isoformat(),
+                'creation_library': 'sherpa',
+                'creation_library_version': sherpa.__version__,
+                'creation_library_language': 'python',
+                'inference_library': 'sherpa',
+                'inference_library_version': sherpa.__version__,
+                'sampler_name': mcmc.get_sampler_name(),
+                'sampler_opt': mcmc.get_sampler(),
+                'stat_name': fit.stat.name,
+                }
 
-             }
-    posterior = dict_to_dataset(datadict,
-                                attrs = attrs,
-                                library=sherpa,
-                                )
-    log_likelihood_data = {'obs': np.stack([draw[0] for draw in list_of_draws])}
-    log_likelihood = dict_to_dataset(log_likelihood_data,
-                                     attrs = attrs,
-                                     library=sherpa,
-                                     )
+    data = {"posterior": datadict,
+            "log_likelihood": {'obs': np.stack([draw[0] for draw in list_of_draws])}}
 
-    return InferenceData(
-            **{"posterior": posterior, "log_likelihood": log_likelihood},
-            attrs = attrs,
-        )
+    return from_dict(data=data,
+                    name=fit.model.name,
+                    attrs={'/': attrs, 'posterior': attrs, 'log_likelihood': attrs})

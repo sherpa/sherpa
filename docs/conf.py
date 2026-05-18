@@ -140,7 +140,9 @@ extensions = [
 # of servers
 # but adding to the astropy list.
 intersphinx_mapping['bokeh'] = ('https://docs.bokeh.org/en/latest/', None)
-intersphinx_mapping['arviz'] = ('https://python.arviz.org/en/latest/', None)
+# Arviz uses xarray data structures. We don't need a link to Arviz itself, but we do need one to xarray.
+# intersphinx_mapping['arviz'] = ('https://python.arviz.org/en/latest/', None)
+intersphinx_mapping['xarray'] = ('https://xarray.pydata.org/en/latest/', None)
 intersphinx_mapping['optimagic'] = ('https://optimagic.readthedocs.io/en/latest/', None)
 
 # Settings for matplotlib sphinx extension

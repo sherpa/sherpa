@@ -43,15 +43,12 @@ jobs:
             bokeh-pkg: 'bokeh>=3,<4'
             ncores: 1
 
-          - name: Linux Build (w/o Astropy or Xspec)
+          - name: Linux Build (w/o Matplotlib, Astropy or Xspec)
             os: ubuntu-latest
             python-version: "3.11"
             numpy-pkg: 'numpy'
             install-type: install
             test-data: package
-            matplotlib-pkg: 'matplotlib>=3,<4'
-            bokeh-pkg: 'bokeh>=3,<4'
-            arviz-pkg: 'arviz'
             optimagic-pkg: 'optimagic'
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
@@ -62,11 +59,14 @@ jobs:
             fits-pkg: 'astropy'
             test-data: none
 
-          - name: Linux Build (submodule data w/o Matplotlib or Xspec)
+          - name: Linux Build (submodule data without Xspec)
             os: ubuntu-latest
             python-version: "3.12"
             numpy-pkg: 'numpy'
             install-type: develop
+            matplotlib-pkg: 'matplotlib>=3,<4'
+            bokeh-pkg: 'bokeh>=3,<4'
+            arviz-pkg: 'arviz>=1.0.0'
             fits-pkg: 'astropy'
             test-data: submodule
 
