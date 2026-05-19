@@ -1967,6 +1967,42 @@ class Data1D(Data):
     def to_plot(self,
                 yfunc: ModelFunc | None = None,
                 staterrfunc: StatErrFunc | None = None):
+        """Get arrays required to make plots
+
+        This method returns all the ingredients to make a plot of the data.
+        It's used internally in Sherpa in the plotting functions, but can also
+        be called by users to obtain just the arrays to perform the
+        plotting themselves, for example with a different plotting package than
+        supported by Sherpa.
+
+        Parameters
+        ----------
+        yfunc : callable or None, optional
+            If `None` the binned and filtered data values are returned. If ``yfunc``
+            is a function, this function is called with the bin positions and the
+            return values of that function are also returned. The purpose of this is to
+            obtain model values evaluated on the data grid.
+        staterrfunc : callable or None, optional
+            If no statistical error has been set, the errors will be calculated
+            by applying this function to the dependent axis of the data set.
+
+        Returns
+        -------
+        x : ndarray
+            Bin mid-points after applying the filter
+        y : ndarray or tuple of two arrays
+            Values in each bin for data. If ``yfunc`` is given, then this is a tuple of
+            two arrays, where the first array holds the data and the second array the evaluated
+            ``yfunc``.
+        yerr : ndarray
+            Uncertainties for the data values
+        xerr : ndarray
+            Half-width of each bin
+        xlabel : str
+            Label for the x axis
+        ylabel : str
+            Label for the y axis
+        """
         # As we introduced models defined on arbitrary grids, the x array can also depend on the
         # model function, at least in principle.
         return (self.get_x(True, yfunc),
