@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2006-2010, 2016-2021, 2025
+#  Copyright (C) 2006-2010, 2016-2021, 2025-2026
 #     Smithsonian Astrophysical Observatory
 #
 #
@@ -277,11 +277,13 @@ def xpaget(cmd, template=_DefTemplate, doRaise=True):
             p.stdin.close()
             errMsg = p.stderr.read()
             if errMsg:
-                fullErrMsg = "%r failed: %s" % (fullCmd, errMsg)
+                errMsgStr = errMsg.decode()
                 if doRaise:
-                    raise RuntimeErr('cmdfail', fullCmd, errMsg)
-                else:
-                    warnings.warn(fullErrMsg)
+                    raise RuntimeErr('cmdfail', fullCmd, errMsgStr)
+
+                fullErrMsg = f"{repr(fullCmd)} failed: {errMsgStr}"
+                warnings.warn(fullErrMsg)
+
             return_value = p.stdout.read()
             return return_value.decode()
         finally:
@@ -338,12 +340,13 @@ def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate,
             p.stdin.close()
             reply = p.stdout.read()
             if reply:
-                fullErrMsg = "%r failed: %s" % (fullCmd, reply.strip())
+                errMsgStr = reply.strip().decode()
                 if doRaise:
-                    raise RuntimeErr('cmdfail', fullCmd,
-                                     reply.strip())
-                else:
-                    warnings.warn(fullErrMsg)
+                    raise RuntimeErr('cmdfail', fullCmd, errMsgStr)
+
+                fullErrMsg = f"{repr(fullCmd)} failed: {errMsgStr}"
+                warnings.warn(fullErrMsg)
+
         finally:
             p.stdin.close()  # redundant
             p.stdout.close()
