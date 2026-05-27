@@ -477,7 +477,7 @@ def test_region_uncertainty(setup_confidence):
     # setup_confidence.ru.contour()
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_source_component_arbitrary_grid(session, all_plot_backends):
     ui = session()
 
@@ -519,7 +519,7 @@ def test_source_component_arbitrary_grid(session, all_plot_backends):
     tst(x, y, re_x, [0,  0, 10, 10, 10,  0,  0,  0,  0,  0])
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_model_arbitrary_grid_integrated(session):
     ui = session()
     model = basic.Const1D('c')
@@ -560,7 +560,7 @@ def test_plot_model_arbitrary_grid_integrated(session):
     tst(x, y, re_x, yy)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_source_component_arbitrary_grid_int(session):
     ui = session()
 

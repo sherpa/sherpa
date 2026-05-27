@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2022, 2024
+#  Copyright (C) 2019-2022, 2024-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1210,7 +1210,7 @@ def test_data_dep_any_obj_with_mask(Dataclass):
 
 
 # repeat set of tests except now by using ui
-# Results should be idendical, but tests are fast, so we just test again
+# Results should be identical, but tests are fast, so we just test again
 # To make sure that there is no heuristic in load_arrays or similar that
 # interferes with the logic
 @pytest.mark.parametrize('arrpos', [POS_X_ARRAY, POS_STATERR_ARRAY, POS_SYSERR_ARRAY])
