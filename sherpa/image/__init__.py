@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2021, 2024
+#  Copyright (C) 2007, 2016, 2021, 2024, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -33,7 +33,7 @@ References
 """
 
 import numpy
-from sherpa.utils import NoNewAttributesAfterInit, bool_cast
+from sherpa.utils import NoNewAttributesAfterInit, bool_cast, display_fields
 
 import logging
 warning = logging.getLogger(__name__).warning
@@ -59,8 +59,15 @@ __all__ = ('Image', 'DataImage', 'ModelImage', 'RatioImage',
 class Image(NoNewAttributesAfterInit):
     """Base class for sending image data to an external viewer."""
 
-    def __init__(self):
-        NoNewAttributesAfterInit.__init__(self)
+    _fields: list[str] = []
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
+    def __str__(self) -> str:
+        return display_fields(self, self._fields)
 
     def close():
         """Stop the image viewer."""
@@ -171,22 +178,20 @@ class DataImage(Image):
 
     """
 
+    _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are displayed directly, otherwise they are
+    passed through NumPy's array2string.
+
+    """
+
     def __init__(self):
         self.y = None
         self.eqpos = None
         self.sky = None
         self.name = 'Data'
         Image.__init__(self)
-
-    def __str__(self):
-        y = self.y
-        if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
-        return (('name   = %s\n' % self.name) +
-                ('y      = %s\n' % y) +
-                ('eqpos  = %s\n' % self.eqpos) +
-                ('sky    = %s\n' % self.sky))
 
     def prepare_image(self, data):
         self.y = data.get_img()
@@ -205,22 +210,19 @@ class DataImage(Image):
 
 class ModelImage(Image):
 
+    _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are displayed directly, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     def __init__(self):
         self.name = 'Model'
         self.y = None
         self.eqpos = None
         self.sky = None
         Image.__init__(self)
-
-    def __str__(self):
-        y = self.y
-        if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
-        return (('name   = %s\n' % self.name) +
-                ('y      = %s\n' % y) +
-                ('eqpos  = %s\n' % self.eqpos) +
-                ('sky    = %s\n' % self.sky))
 
     def prepare_image(self, data, model):
         self.y = data.get_img(model)
@@ -252,22 +254,19 @@ class SourceImage(ModelImage):
 
 class RatioImage(Image):
 
+    _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are displayed directly, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     def __init__(self):
         self.name = 'Ratio'
         self.y = None
         self.eqpos = None
         self.sky = None
         Image.__init__(self)
-
-    def __str__(self):
-        y = self.y
-        if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
-        return (('name   = %s\n' % self.name) +
-                ('y      = %s\n' % y) +
-                ('eqpos  = %s\n' % self.eqpos) +
-                ('sky    = %s\n' % self.sky))
 
     def _calc_ratio(self, ylist):
         data = numpy.array(ylist[0])
@@ -290,22 +289,19 @@ class RatioImage(Image):
 
 class ResidImage(Image):
 
+    _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are displayed directly, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     def __init__(self):
         self.name = 'Residual'
         self.y = None
         self.eqpos = None
         self.sky = None
         Image.__init__(self)
-
-    def __str__(self):
-        y = self.y
-        if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
-        return (('name   = %s\n' % self.name) +
-                ('y      = %s\n' % y) +
-                ('eqpos  = %s\n' % self.eqpos) +
-                ('sky    = %s\n' % self.sky))
 
     def _calc_resid(self, ylist):
         return ylist[0] - ylist[1]

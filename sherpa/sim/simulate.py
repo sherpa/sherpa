@@ -33,9 +33,8 @@ from sherpa.stats import Cash, CStat, WStat
 from sherpa.optmethods import NelderMead
 from sherpa.estmethods import Covariance
 from sherpa.fit import Fit
-from sherpa.plot import arr2str
 from sherpa.sim.sample import NormalParameterSampleFromScaleMatrix
-from sherpa.utils import NoNewAttributesAfterInit
+from sherpa.utils import NoNewAttributesAfterInit, arr2str
 from sherpa.utils.parallel import parallel_map_rng
 from sherpa.utils.random import poisson_noise
 from sherpa.utils.types import ArrayType

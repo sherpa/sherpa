@@ -34,7 +34,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, overload
 import warnings
 
 import numpy as np
@@ -57,6 +57,7 @@ from .guess import _guess_ampl_scale, get_midpoint, get_peak, \
 from .parallel import multi as _multi, ncpus as _ncpus, \
     parallel_map, parallel_map_funcs, run_tasks
 from .random import poisson_noise
+from .types import ArrayType
 
 
 warning = logging.getLogger("sherpa").warning
@@ -1414,6 +1415,87 @@ def print_fields(names: Sequence[str],
             v = str(v)
         lines.append(fmt % (n, v))
     return '\n'.join(lines)
+
+
+@overload
+def arr2str(x: None) -> None:
+    ...
+
+@overload
+def arr2str(x: ArrayType) -> str:
+    ...
+
+def arr2str(x: ArrayType | None) -> str | None:
+    """Convert an array to a string for __str__ calls
+
+    Parameters
+    ----------
+    x : sequence or None
+
+    Returns
+    -------
+    arrstr : str
+
+    """
+
+    if x is None:
+        return x
+
+    return np.array2string(np.asarray(x), separator=',',
+                           precision=4, suppress_small=False)
+
+
+# This is similar to print_fields, but used for plot and image
+# objects.
+#
+def display_fields(obj,  # hard to provide an accurate type
+                   fields: Sequence[str]) -> str:
+    """Create the __str__ output for the object.
+
+    Parameters
+    ----------
+    obj
+       The object to convert to a string. It is expected to be
+       derived from one of the plot classes.
+    fields
+       The fields to diplay. A field name ending in ! means display
+       directly, otherwise the value is passed through arr2str.
+
+    Returns
+    -------
+    strval
+       The string representation (one field per line)
+
+    Notes
+    -----
+
+    The default length for the labels is 6 but we check the labels so
+    that a larger value is used if need be (except for any xxx_prefs
+    label, just to better match the original output). This is wasted
+    logic, in that it could be calculated at object creation, but it
+    is not that much work to do here.
+
+    """
+
+    out = []
+    size = 6
+    for lbl in fields:
+        if lbl.endswith('!'):
+            lbl = lbl[:-1]
+            scalar = True
+        else:
+            scalar = False
+
+        val = getattr(obj, lbl)
+        if not scalar:
+            val = arr2str(val)
+
+        out.append((lbl, val))
+        if not lbl.endswith("_prefs"):
+            size = max(size, len(lbl))
+
+    fmt = f"{{:{size}s}} = {{}}"
+    return "\n".join(fmt.format(*vals) for vals in out)
 
 
 def create_expr(vals, mask=None, format='%s', delim='-'):

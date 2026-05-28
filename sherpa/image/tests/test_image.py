@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015-2016, 2017-2019, 2023, 2026
+#  Copyright (C) 2007, 2015-2019, 2023, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
