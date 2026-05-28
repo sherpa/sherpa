@@ -1,11 +1,5 @@
 #!/usr/bin/env bash -e
 
-# As of early 2025 we do not download the Darwin version (i.e. this
-# script should not be run on a macOS machine), but the implementation
-# is left in place (although it is known to fail if run as the script
-# would need to identify x86 versus ARM, as well as update the OS).
-#
-
 # The download/ version is the "latest" release whereas archive/ includes
 # older releases.
 # ds9_base_url=https://ds9.si.edu/download
@@ -18,8 +12,12 @@ then
 fi
 
 if [ "`uname -s`" == "Darwin" ] ; then
-    ds9_os=darwinbigsur
-    ds9_platform=x86
+    if [ "`uname -m`" != "arm64" ] ; then
+	echo "* DS9 testing not supported on `uname -s` : `uname -m`"
+	exit 0
+    fi
+    ds9_os=darwinsonoma
+    ds9_platform=arm64
 else
     echo "* installing dev environment"
 
