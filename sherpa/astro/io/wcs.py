@@ -189,7 +189,7 @@ class WCS(NoNewAttributesAfterInit):
                x0: float | ArrayType,
                x1: float | ArrayType
                ) -> tuple[np.float64 | np.ndarray, np.float64 | np.ndarray]:
-        """Convert the output coordinates to the inpyt system.
+        """Convert the output coordinates to the input system.
 
         Parameters
         ----------

@@ -213,7 +213,7 @@ class ModelImage(Image):
     _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
     """The fields to include in the string output.
 
-    Names that end in ! are displayed diretly, otherwise they are
+    Names that end in ! are displayed directly, otherwise they are
     passed through NumPy's array2string.
     """
 
@@ -257,7 +257,7 @@ class RatioImage(Image):
     _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
     """The fields to include in the string output.
 
-    Names that end in ! are displayed diretly, otherwise they are
+    Names that end in ! are displayed directly, otherwise they are
     passed through NumPy's array2string.
     """
 
@@ -292,7 +292,7 @@ class ResidImage(Image):
     _fields: list[str] = ["name!", "y", "eqpos!", "sky!"]
     """The fields to include in the string output.
 
-    Names that end in ! are displayed diretly, otherwise they are
+    Names that end in ! are displayed directly, otherwise they are
     passed through NumPy's array2string.
     """
 
