@@ -38,8 +38,6 @@ in serial.
 
 """
 
-import logging
-
 import numpy as np
 
 import pytest
@@ -50,9 +48,7 @@ from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.data import Data2D
 from sherpa.models import basic
 
-from sherpa.stats import Chi2Gehrels
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DS9Err, \
-    IdentifierErr
+from sherpa.utils.err import DS9Err
 from sherpa.utils.testing import requires_ds9
 
 
@@ -753,9 +749,7 @@ def test_image_kernel(session):
 @pytest.mark.parametrize("session",
                          [pytest.param(BaseSession, marks=pytest.mark.session),
                           AstroSession])
-@pytest.mark.parametrize("coord", ["", "image"])
-def test_image_getregion_starts_empty(session, coord):
-    from sherpa.image import backend
+def test_image_getregion_starts_empty(session):
 
     s = session()
     d = example_data()
@@ -770,7 +764,6 @@ def test_image_getregion_starts_empty(session, coord):
                          [pytest.param(BaseSession, marks=pytest.mark.session),
                           AstroSession])
 def test_image_setregion_invalid_string(session):
-    from sherpa.image import backend
 
     s = session()
     d = example_data()
@@ -780,7 +773,7 @@ def test_image_setregion_invalid_string(session):
     # "rect" is not part of https://ds9.si.edu/doc/ref/region.html
     reg = "rect(2,3,3,4)"
     with pytest.raises(DS9Err,
-                       match=rf"^Could not use rect\(2,3,3,4\) as a "
+                       match=r"^Could not use rect\(2,3,3,4\) as a "
                        "region or region file$"):
         s.image_setregion(reg)
 
@@ -791,7 +784,6 @@ def test_image_setregion_invalid_string(session):
                           AstroSession])
 @pytest.mark.parametrize("coord", ["", "image"])
 def test_image_setregion_string(session, coord):
-    from sherpa.image import backend
 
     s = session()
     d = example_data()
@@ -810,7 +802,6 @@ def test_image_setregion_string(session, coord):
                           AstroSession])
 @pytest.mark.parametrize("coord", ["", "image"])
 def test_image_setregions_string(session, coord):
-    from sherpa.image import backend
 
     s = session()
     d = example_data()
@@ -833,7 +824,6 @@ def test_image_setregions_string(session, coord):
                           AstroSession])
 @pytest.mark.parametrize("coord", ["", "image"])
 def test_image_setregion_file(session, coord, tmp_path):
-    from sherpa.image import backend
 
     s = session()
     d = example_data()
