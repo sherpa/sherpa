@@ -211,10 +211,8 @@ def dmvnorm(x: np.ndarray,
 
 class Walk:
 
-    # TODO: do we send in the sampler class or an instance?
-
     def __init__(self,
-                 sampler: type[Sampler] | None = None,
+                 sampler: Sampler | None = None,
                  niter: int = 1000) -> None:
         self._sampler = sampler
         self.niter = int(niter)

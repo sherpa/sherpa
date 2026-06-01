@@ -531,17 +531,18 @@ class MCMC(NoNewAttributesAfterInit):
             # case insensitive
             sampler = str(sampler).lower()
 
-            if sampler not in self.__samplers:
-                raise TypeError(f"Unknown sampler '{sampler}'")
+            try:
+                self.sampler = self.__samplers[sampler]
+            except KeyError as exc:
+                raise TypeError(f"Unknown sampler '{sampler}'") from exc
 
-            self.sampler = self.__samplers.get(sampler)
             self.walker = self.__walkers.get(sampler, Walk)
 
         elif issubclass(sampler, Sampler):
             self.sampler = sampler
-            # TODO: the type here is wrong, as it should use the name
-            # of the sampler
-            self.walker = self.__walkers.get(sampler, Walk)
+            # Use the class name as the index.
+            sampler_name = sampler.__class__.__name__.lower()
+            self.walker = self.__walkers.get(sampler_name, Walk)
 
         else:
             raise TypeError(f"Unknown sampler '{sampler}'")
