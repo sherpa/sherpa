@@ -201,19 +201,27 @@ from sherpa.data import Data1D, Data1DAsymmetricErrs
 from sherpa.fit import Fit
 from sherpa.optmethods import LevMar, OptMethod
 
-# Although all this module needs is the following import
-#   from sherpa.sim.mh import LimitError, MetropolisMH, MH, Sampler, Walk
-# it looks like the following modules are being re-exported by this
-# one, so the 'from blah import *' lines can not easily be removed.
-#
-from sherpa.sim.simulate import *
-from sherpa.sim.sample import *
-from sherpa.sim.mh import *
-
 from sherpa.stats import Cash, CStat, WStat, LeastSq, Stat
 from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils import random
+
+# To support old code, be explicit about the symbols loaded into this
+# module. It is possible that not all exports are needed, but leave as
+# is.
+#
+from .simulate import LikelihoodRatioTest, LikelihoodRatioResults
+from .sample import multivariate_t, multivariate_cauchy, \
+    normal_sample, uniform_sample, t_sample, \
+    ParameterScaleVector, ParameterScaleMatrix, \
+    UniformParameterSampleFromScaleVector, \
+    NormalParameterSampleFromScaleVector, \
+    NormalParameterSampleFromScaleMatrix, \
+    StudentTParameterSampleFromScaleMatrix, \
+    NormalSampleFromScaleMatrix, NormalSampleFromScaleVector, \
+    UniformSampleFromScaleVector, StudentTSampleFromScaleMatrix
+from .mh import LimitError, MetropolisMH, MH, Sampler, Walk, \
+    dmvt as dmvt, dmvnorm as dmvnorm
 
 info = logging.getLogger("sherpa").info
 
@@ -229,15 +237,13 @@ def flat(x):
 def inverse(x):
     """Returns the inverse of x."""
 
-    prior = 1.0 / x
-    return prior
+    return 1.0 / x
 
 
 def inverse2(x):
     """Returns the inverse of x^2."""
 
-    prior = 1.0 / (x * x)
-    return prior
+    return 1.0 / (x * x)
 
 
 _samplers = {"metropolismh": MetropolisMH, "mh": MH}
