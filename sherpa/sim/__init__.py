@@ -201,19 +201,34 @@ from sherpa.data import Data1D, Data1DAsymmetricErrs
 from sherpa.fit import Fit
 from sherpa.optmethods import LevMar, OptMethod
 
-# Although all this module needs is the following import
-#   from sherpa.sim.mh import LimitError, MetropolisMH, MH, Sampler, Walk
-# it looks like the following modules are being re-exported by this
-# one, so the 'from blah import *' lines can not easily be removed.
-#
-from sherpa.sim.simulate import *
-from sherpa.sim.sample import *
-from sherpa.sim.mh import *
-
 from sherpa.stats import Cash, CStat, WStat, LeastSq, Stat
 from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils import random
+
+# To support old code, be explicit about the symbols loaded into this
+# module. It is possible that not all exports are needed, but leave as
+# is.
+#
+from .simulate import LikelihoodRatioTest as LikelihoodRatioTest, \
+    LikelihoodRatioResults as LikelihoodRatioResults
+from .sample import multivariate_t as multivariate_t, \
+    multivariate_cauchy as multivariate_cauchy, \
+    normal_sample as normal_sample, \
+    uniform_sample as uniform_sample, \
+    t_sample as t_sample, \
+    ParameterScaleVector as ParameterScaleVector, \
+    ParameterScaleMatrix as ParameterScaleMatrix, \
+    UniformParameterSampleFromScaleVector as UniformParameterSampleFromScaleVector, \
+    NormalParameterSampleFromScaleVector as NormalParameterSampleFromScaleVector, \
+    NormalParameterSampleFromScaleMatrix as NormalParameterSampleFromScaleMatrix, \
+    StudentTParameterSampleFromScaleMatrix as StudentTParameterSampleFromScaleMatrix, \
+    NormalSampleFromScaleMatrix as NormalSampleFromScaleMatrix, \
+    NormalSampleFromScaleVector as NormalSampleFromScaleVector, \
+    UniformSampleFromScaleVector as UniformSampleFromScaleVector, \
+    StudentTSampleFromScaleMatrix as StudentTSampleFromScaleMatrix
+from .mh import LimitError, MetropolisMH, MH, Sampler, Walk, \
+    dmvt as dmvt, dmvnorm as dmvnorm
 
 info = logging.getLogger("sherpa").info
 
