@@ -272,8 +272,8 @@ class Walk:
                 try:
                     proposed_params = self._sampler.draw(current_params)
                 except CovarError:
-                    error("Covariance matrix failed! %s", str(proposed_params))
                     # automatically reject if the covar is malformed
+                    error("Covariance matrix failed! %s", str(current_params))
                     self._sampler.reject()
                     continue
 
