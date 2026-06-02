@@ -29,14 +29,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-using namespace std;
-
-#ifndef MID
-#define MID( a, b ) (( a + b ) / 2.0 )
-#endif
 
 namespace sherpa { namespace astro { namespace utils {
-
 
   template <typename ArrayType, typename ConstArrayType, typename IndexType>
   void arf_fold( IndexType num,
@@ -48,7 +42,6 @@ namespace sherpa { namespace astro { namespace utils {
       out[ ii ] = in1[ ii ] * in2[ ii ];
 
   }
-
 
   //
   // Function to perform XSPEC-style convolution, using an RMF
@@ -186,10 +179,10 @@ namespace sherpa { namespace astro { namespace utils {
     if( lo < lochan && hi > hichan )
       return true;
 
-    if( binary_search( noticed_chans, noticed_chans + size, lo ) )
+    if( std::binary_search( noticed_chans, noticed_chans + size, lo ) )
       return true;
 
-    if( binary_search( noticed_chans, noticed_chans + size, hi ) )
+    if( std::binary_search( noticed_chans, noticed_chans + size, hi ) )
       return true;
 
     // consider the case of fragmented channels
@@ -203,8 +196,9 @@ namespace sherpa { namespace astro { namespace utils {
     // noticed_chans = 1-249, 400-500, 601-1024
     // lo=250 hi=600
     if( lochan < lo && lo < hichan && lochan < hi && hi < hichan ) {
-      const ConstIntType *idx = upper_bound( noticed_chans,
-					  noticed_chans + size, lo );
+      const ConstIntType *idx = std::upper_bound( noticed_chans,
+						  noticed_chans + size,
+						  lo );
       if( idx == (noticed_chans + size) )
 	return false;
 
@@ -233,10 +227,10 @@ namespace sherpa { namespace astro { namespace utils {
 		   const ConstIntType *n_chan,
 		   const ConstFloatType *matrix, IndexType len_response,
 		   unsigned int offset,
-		   vector<IntType>& grp,
-		   vector<IntType>& fch,
-		   vector<IntType>& nch,
-		   vector<FloatType>& rsp,
+		   std::vector<IntType>& grp,
+		   std::vector<IntType>& fch,
+		   std::vector<IntType>& nch,
+		   std::vector<FloatType>& rsp,
 		   BoolType *mask) {
 
     IndexType response_counter = 0, group_counter = 0;
@@ -293,74 +287,142 @@ namespace sherpa { namespace astro { namespace utils {
     return EXIT_SUCCESS;
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>
-  void _sum(const ConstFloatArrayType& data, IndexType start,
-	    IndexType stop, SherpaFloat& val) {
+  // These routines are used by _do_group to combine the data for each
+  // group, where a single group covers the given [start, stop) range
+  // for the data array.
+  //
+  // The Sherpa array type does not support C++11 style iterators,
+  // hence the direct array access via the for loop.
+  //
+  template <typename FloatArrayType, typename IndexType>
+  void _sum(const FloatArrayType& data,
+	    IndexType start, IndexType stop,
+	    typename FloatArrayType::value_type& val) {
 
     val = 0.0;
-    for( IndexType ii = start; ii < stop; ii++ )
+    for( auto ii = start; ii < stop; ii++ )
       val += data[ii];
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>
-  void _sum_sq(const ConstFloatArrayType& data, IndexType start,
-	       IndexType stop, SherpaFloat& val) {
+  template <typename FloatArrayType, typename IndexType>
+  void _sum_sq(const FloatArrayType& data,
+	       IndexType start, IndexType stop,
+	       typename FloatArrayType::value_type& val) {
 
     val = 0.0;
-    for( IndexType ii = start; ii < stop; ii++ )
+    for( auto ii = start; ii < stop; ii++ )
       val += ( data[ii] * data[ii] );
 
     val = sqrt( val );
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>
-  void _max(const ConstFloatArrayType& data, IndexType start,
-		 IndexType stop, SherpaFloat& val) {
+  template <typename FloatArrayType, typename IndexType>
+  void _max(const FloatArrayType& data,
+	    IndexType start, IndexType stop,
+	    typename FloatArrayType::value_type& val) {
 
-    SherpaFloat max = data[start];
-    for( IndexType ii = start; ii < stop - 1; ii++ )
-      max = std::max( max, data[ ii + 1 ] );
+    val = data[start];
+    for( auto ii = start + 1; ii < stop; ii++ )
+      val = std::max( val, data[ii] );
 
-    val = max;
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>
-  void _min(const ConstFloatArrayType& data, IndexType start,
-		 IndexType stop, SherpaFloat& val) {
+  template <typename FloatArrayType, typename IndexType>
+  void _min(const FloatArrayType& data,
+	    IndexType start, IndexType stop,
+	    typename FloatArrayType::value_type& val) {
 
-    SherpaFloat min = data[start];
-    for( IndexType ii = start; ii < stop - 1; ii++ )
-      min = std::min( min, data[ ii + 1 ] );
+    val = data[start];
+    for( auto ii = start + 1; ii < stop; ii++ )
+      val = std::min( val, data[ii] );
 
-    val = min;
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>
-  void _middle(const ConstFloatArrayType& data, IndexType start,
-	       IndexType stop, SherpaFloat& val) {
+  template <typename FloatArrayType, typename IndexType>
+  void _middle(const FloatArrayType& data,
+	       IndexType start, IndexType stop,
+	       typename FloatArrayType::value_type& val) {
 
-    SherpaFloat min = data[start];
-    SherpaFloat max = data[start];
-    for( IndexType ii = start; ii < stop - 1; ii++ ) {
-      min = std::min( min, data[ ii + 1 ] );
-      max = std::max( max, data[ ii + 1 ] );
+    auto min = data[start];
+    auto max = data[start];
+    for( auto ii = start + 1; ii < stop; ii++ ) {
+      min = std::min( min, data[ii] );
+      max = std::max( max, data[ii] );
     }
-    val = MID( min, max );
+    val = (min + max) / 2.0;
   }
 
-  template <typename ConstFloatArrayType, typename FloatArrayType,
-	    typename ConstIntArrayType, typename IndexType>
-  int _do_group( IndexType len_data, const ConstFloatArrayType& data,
-		 IndexType len_group, const ConstIntArrayType& group,
-		 FloatArrayType& grouped, const char *type )
+  // Apply the group function to a subset of the data. The
+  // start and stop indices indicate the subset as
+  // [start, stop), so we have
+  //
+  //   - stop > start
+  //   - start >= 0
+  //   - stop is one more than the upper-limit to process
+  //
+  // Note that the grp_func is assumed to return a SherpaFloat
+  // value (or something that can be converted to it). It is
+  // not worth trying to make the output type be a template
+  // parameter.
+  //
+  template <typename ArrayType, typename IndexType>
+  SherpaFloat apply_group(const ArrayType& unused,
+		     PyObject* grp_func,
+		     double* data,
+		     IndexType start,
+		     IndexType stop,
+		     int& ierr ) {
+
+    // Optimize for success.
+    ierr = EXIT_SUCCESS;
+
+    npy_intp dims[1] = {stop - start};
+    ArrayType grp_data;
+    if ( EXIT_SUCCESS != grp_data.create(1, dims, &data[start]) ) {
+      PyErr_SetString( PyExc_ValueError,
+		       "unable to create view of array" );
+      ierr = EXIT_FAILURE;
+      return 0.0;
+    }
+
+    PyObject* rv = PyObject_CallOneArg( grp_func,
+					grp_data.borrowed_ref() );
+    if ( NULL == rv ) {
+      PyErr_SetString( PyExc_ValueError,
+		       "unable to evaluate group function" );
+      ierr = EXIT_FAILURE;
+      return 0.0;
+    }
+
+    double retval = PyFloat_AsDouble(rv);
+    Py_DECREF(rv);
+    if (PyErr_Occurred() != NULL)
+      ierr = EXIT_FAILURE;
+
+    return static_cast<SherpaFloat>(retval);
+  }
+
+  // The data and group arrays have the same size, nelem. The
+  // operation to apply to each group is controlled by the type
+  // argument, and can be one of: "sum", "_sum_sq", "_max", "_min",
+  // "_middle", and "_make_groups". If the type argument is not
+  // recognized then a std::out_of_range exception will be raised.
+  //
+  template <typename FloatArrayType,
+	    typename IntArrayType,
+	    typename IndexType>
+  int _do_group_name( IndexType nelem,
+		      const FloatArrayType& data,
+		      const IntArrayType& group,
+		      FloatArrayType& grouped,
+		      const char *type )
   {
 
-    typedef void (*fptr)( const ConstFloatArrayType&, IndexType, IndexType,
-			  SherpaFloat&);
-    string funcname(type);
-    map<string, fptr> funcs;
-    SherpaFloat val;
-    fptr func = _sum;
+    typedef void (*fptr)( const FloatArrayType&, IndexType, IndexType,
+			  typename FloatArrayType::value_type&);
+    std::string funcname(type);
+    std::map<std::string, fptr> funcs;
+    fptr func = NULL;
 
     funcs["sum"] = _sum;
     funcs["_sum_sq"] = _sum_sq;
@@ -373,34 +435,41 @@ namespace sherpa { namespace astro { namespace utils {
       func = funcs.at(funcname);
     }
 
-    vector< IndexType > pick_pts;
-
-    for( IndexType ii = 0; ii < len_group; ii++ )
-      //if( group[ ii ] == 1 )
-      // include channels where grouping == 0 so the filter will catch large
-      // energy bins
+    // Identify the start of each "group", with each "0" value being
+    // treated as a new group. There is limited validation here (e.g.
+    // if group starts with a sequence of values < 0 then they will be
+    // ignored). Each group can then be identified as
+    //
+    //     pick_pts[i] <= idx < pick_pts[i + 1]
+    //
+    std::vector< IndexType > pick_pts;
+    for( auto ii = 0; ii < nelem; ii++ )
       if( group[ ii ] >= 0 )
 	pick_pts.push_back( ii );
-    pick_pts.push_back( len_group );
 
-    npy_intp dim = npy_intp( pick_pts.size( ) - 1 );
+    // End the last group.
+    pick_pts.push_back( nelem );
+
+    // Number of groups.
+    const size_t ngrp = pick_pts.size() - 1;
+
+    npy_intp dim = npy_intp( ngrp );
     if ( EXIT_SUCCESS != grouped.create( 1, &dim ) )
       return EXIT_FAILURE;
 
-    for( size_t ii = 0; ii < pick_pts.size( ) - 1; ii++ ) {
-      IndexType start = pick_pts[ ii ];
-      IndexType stop = pick_pts[ ii + 1 ];
+    // Apply the group function to each group.
+    auto val = static_cast<typename FloatArrayType::value_type>(0.0);
+    for( size_t ii = 0; ii < ngrp; ii++ ) {
+      auto start = pick_pts[ ii ];
+      auto stop = pick_pts[ ii + 1 ];
 
-      if ( stop > len_data )
-	return EXIT_FAILURE;
-
-      if ( funcname == "_make_groups" ) {
-	grouped[ ii ] = data[0] + (SherpaFloat) ii;
-	continue;
+      if ( func == NULL ) {
+	grouped[ ii ] = data[0] +
+	  static_cast<typename FloatArrayType::value_type>(ii);
+      } else {
+	func( data, start, stop, val );
+	grouped[ ii ] = val;
       }
-
-      func( data, start, stop, val );
-      grouped[ ii ] = val;
 
     } // end ii
 
@@ -408,6 +477,60 @@ namespace sherpa { namespace astro { namespace utils {
 
   }
 
+  // The data and group arrays have the same size, nelem.
+  //
+  template <typename FloatArrayType,
+	    typename IntArrayType,
+	    typename IndexType>
+  int _do_group_call( IndexType nelem,
+		      const FloatArrayType& data,
+		      const IntArrayType& group,
+		      FloatArrayType& grouped,
+		      PyObject *grp_func )
+  {
+
+    std::vector< IndexType > pick_pts;
+
+    for( IndexType ii = 0; ii < nelem; ii++ )
+      //if( group[ ii ] == 1 )
+      // include channels where grouping == 0 so the filter will catch large
+      // energy bins
+      if( group[ ii ] >= 0 )
+	pick_pts.push_back( ii );
+    pick_pts.push_back( nelem );
+
+    npy_intp dim = npy_intp( pick_pts.size( ) - 1 );
+    if ( EXIT_SUCCESS != grouped.create( 1, &dim ) )
+      return EXIT_FAILURE;
+
+    // Ensure that data is stored in a contiguous array, so that it is
+    // easier to subset below. It also assumes that the FloatArrayType
+    // is compatible with double storage.
+    //
+    PyArrayObject *borrowed = static_cast< PyArrayObject * >
+      ( static_cast< void * >
+	( const_cast< FloatArrayType& > (data).borrowed_ref() )
+	);
+    PyArrayObject* contiguous = PyArray_GETCONTIGUOUS(borrowed);
+    double* cont_data = (double *) PyArray_DATA(contiguous);
+
+    int ierr = EXIT_SUCCESS;
+    for( size_t ii = 0; ii < pick_pts.size( ) - 1; ii++ ) {
+      IndexType start = pick_pts[ ii ];
+      IndexType stop = pick_pts[ ii + 1 ];
+      if ( stop > nelem )
+	return EXIT_FAILURE;
+
+      grouped[ ii ] = apply_group(data,  // only sent to please the type gods
+				  grp_func, cont_data, start, stop, ierr);
+      if (ierr != EXIT_SUCCESS)
+	return EXIT_FAILURE;
+
+    } // end ii
+
+    return EXIT_SUCCESS;
+
+  }
 
   static double interpolate( double x, double x0, double x1,
 		      double y0, double y1, double tol ) {

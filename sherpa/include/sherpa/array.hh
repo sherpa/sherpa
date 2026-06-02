@@ -1,5 +1,6 @@
-// 
-//  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2007, 2015, 2024
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -34,6 +35,9 @@ namespace sherpa {
 
   public:
 
+    // Provide access to the template data type.
+    using value_type = CType;
+
     ~Array() { Py_XDECREF( array ); }
 
     Array()
@@ -58,7 +62,7 @@ namespace sherpa {
     int zeros( int ndim, const npy_intp* dims )
     {
       return init( PyArray_Zeros( ndim, const_cast< npy_intp* >( dims ),
-				  PyArray_DescrFromType( ArrayType ), 0 ) ); 
+				  PyArray_DescrFromType( ArrayType ), 0 ) );
     }
 
     PyObject* borrowed_ref()
