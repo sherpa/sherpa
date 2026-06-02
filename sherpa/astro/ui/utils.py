@@ -29,7 +29,6 @@ import os
 from typing import Any
 import sys
 from types import MethodType
-import warnings
 
 import numpy as np
 
@@ -11212,7 +11211,6 @@ class Session(sherpa.ui.utils.Session):
     # (such as fits files) than the super method (only ascii files) and
     # thus we do define a method here just so we can write a new docstring.
     # DOC-NOTE: can filename be a crate/hdulist?
-    # DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
     def load_table_model(self, modelname, filename,
                          *args,
                          **kwargs) -> None:
@@ -11226,6 +11224,13 @@ class Session(sherpa.ui.utils.Session):
         The ``load_xstable_model`` routine must be used with XSPEC table
         models.
 
+        Tables can take many forms. The most common are 1D data (with 2 columns),
+        1D data with integrated bins (wiht colunns xlow, xhigh, y), and 2D data such
+        as an image. This function will try to infer the format of the data from
+        the structure of the file given.
+        Details also depend on the file tome (fits or ascii) and the backend in use
+        (crates, astropy, or just the build in ascii reader).
+
         Parameters
         ----------
         modelname : str
@@ -11234,10 +11239,17 @@ class Session(sherpa.ui.utils.Session):
            The name of the file containing the data, which should
            contain two columns, which are the x and y values for
            the data, or be an image.
-        args
-           Arguments for reading in the data.
+        method : func, optional
+           The interpolation method to use to map the input data onto the
+           coordinate grid of the data set.
+           Sherpa provides `~sherpa.utils.linear_interp`,
+           `~sherpa.utils.nearest_interp`, `~sherpa.utils.neville`, and
+           `~sherpa.utils.neville2d` in `sherpa.utils` but other functions
+           with the same signature can be used.
         kwargs
-           Keyword arguments for reading in the data.
+           The accepted keyword arguments depend on the file type and
+           backend used to read in the data. They are listed in the "notes" section below.
+
 
         See Also
         --------
@@ -11250,14 +11262,63 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        Examples of interpolation schemes provided by `sherpa.utils`
-        are: `linear_interp`, `nearest_interp`, `neville`, and
-        `neville2d`.
+
+        * Keywords for ASCII tables*
+
+            ncols : int, optional
+                The number of columns to read in (the first ``ncols`` columns
+                in the file). This is ignored if ``colkeys`` is given.
+            colkeys : array of str, optional
+                An array of the column name to read in. The default is `None`.
+            sep : str, optional
+                The separator character. The default is ``' '``.
+            dstype : data class to use, optional
+                Used to check that the data file contains enough columns.
+            comment : str, optional
+                The comment character. The default is ``'#'``.
+            require_floats : bool, optional
+                If `True` (the default), non-numeric data values will
+                raise a `ValueError`.
+
+        * Keywords for FITS tables
+
+            ncols: int, optional
+                The number of columns to read in when colkeys is not
+                set (the first ncols columns are chosen).
+            colkeys: sequence of str or None, optional
+                If given, what columns from the table should be selected,
+                otherwise the backend selects. The default is `None`.
+                Names are compared using a case insensitive match.
+            make_copy: bool, optional
+                If set then the returned NumPy arrays are explicitly copied,
+                rather than using a reference from the data structure
+                created by the backend. Backends are not required to
+                honor this setting. The default is `True`.
+            fix_type: bool, optional
+                Should the returned arrays be converted to the
+                `sherpa.utils.numeric_types.SherpaFloat` type. The default
+                is `True`.
+            blockname: str or None, optional
+                The name of the "block" (HDU) to read the column data (useful
+                for data structures containing multiple blocks/HDUs) or None.
+                Names are compared using a case insensitive match.
+            hdrkeys: sequence of str or None, optional
+                If set, the table structure must contain these keys, and the
+                values are returned.  Names are compared using a case
+                insensitive match.
+
+        * Keywords for FITS images
+
+            coord : { 'logical', 'image', 'physical', 'world', 'wcs' }, optional
+                Ensure that the image contains the given coordinate system.
+            dstype : optional
+                The image class to use. The default is `~sherpa.astro.data.DataIMG`.
+
 
         Examples
         --------
 
-        Load in the data from filt.fits and use it to multiply
+        Load in the data from "filt.fits" and use it to multiply
         the source model (a power law and a gaussian). Allow
         the amplitude for the table model to vary between 1
         and 1e6, starting at 1e3.
