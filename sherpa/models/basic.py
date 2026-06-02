@@ -2414,7 +2414,7 @@ class FixedTableModel(TableModelBase):
         raise ModelErr("filtermismatch", 'table model',
                        f"data, ({len(self._y)} vs {len(x0)})")
 
-class InterpolatedTableModel1D(TableModelBase, RegriddableModel1D):
+class InterpolatedTableModel1D(TableModelBase):
     """Tabulated values are linearly scaled and may be interpolated.
 
     The `load` method is used to read in the tabular data and model
