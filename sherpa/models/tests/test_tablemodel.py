@@ -82,9 +82,6 @@ def test_filename(cls):
                                          (InterpolatedTableModel1D, 1)])
 def test_ndim(cls, ndim):
     """What is the ndim?
-
-    At the moment we can use this with nD data but only really if we do
-    not set the "x" argument.
     """
 
     mdl = cls()
