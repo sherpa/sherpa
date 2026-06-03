@@ -298,6 +298,23 @@ class FileStore:
 #
 FileDict = dict[IdType, FileStore]
 
+"""
+add_pha_response(astore | None, rstore | None,
+                 idval, resp_id, bkg_id=None)
+
+astore | None, rstore | None = get_pha_response(idval, resp_id, bkg_id=None)
+
+how about add_psf? In that case we may need an enumeration and can
+go back to add_extra? With add_extra can fit in bkg, but then need
+to carry around bkg_id for routines that don't need it. Cam use
+**kwargs and then the enumeration can "record" this.
+
+
+add_extra(store: T, idval, **kwargs) -> None
+get_extra(idval, **kwargs) -> T
+   T since may want tuple[FileStore | None, FileStore | None] ....
+
+"""
 
 class Storage:
     """Store the mapping from dataset identifier to FileStore."""
