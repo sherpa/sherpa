@@ -256,7 +256,7 @@ class FileStore:
             out += f'{idstr}, '
 
         filename = self.kwargs[self.filekey]
-        out += f'"{filename}"'
+        out += f'"{filename.resolve()}"'
 
         # Drop the default arguments as we can not track what
         # arguments were actually used when the file was loaded.
