@@ -29,7 +29,12 @@ else
 
     # set os-specific variables
     ds9_os=ubuntu24
-    ds9_platform=x86
+    if [ "`uname -m`" == "x86_64" ] ; then
+      ds9_platform=x86
+    else
+      # Assume this is aarch64 for now
+      ds9_platform=arm64
+    fi
 fi
 
 echo "* ds9_os=$ds9_os"
