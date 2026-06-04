@@ -243,8 +243,16 @@ class FileStore:
         except KeyError:
             raise KeyError(f"kwargs does not contain a '{self.idkey}' element") from None
 
-    def show(self) -> str:
-        """How to load the data, ignoring the autoloaded setting."""
+    def show(self,
+             absolute: bool = True) -> str:
+        """How to load the data, ignoring the autoloaded setting.
+
+        Parameters
+        ----------
+        absolute
+           If True (the default) then use the full path otherwise
+           use a path relative to the current working directory.
+        """
 
         out = f'{self.loadfunc.__name__}('
 
@@ -255,8 +263,20 @@ class FileStore:
             idstr = _id_to_str(self.kwargs[self.idkey])
             out += f'{idstr}, '
 
+        # Can we clean up the filename?
         filename = self.kwargs[self.filekey]
-        out += f'"{filename.resolve()}"'
+        if absolute:
+            filename = filename.resolve()
+        else:
+            cwd = filename.cwd()
+            try:
+                filename = filename.resolve().relative_to(cwd)
+            except ValueError:
+                # If the file is not related to the working directory
+                # fall back to the full path.
+                pass
+
+        out += f'"{filename}"'
 
         # Drop the default arguments as we can not track what
         # arguments were actually used when the file was loaded.
