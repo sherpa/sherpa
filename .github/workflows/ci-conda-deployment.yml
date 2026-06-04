@@ -138,7 +138,7 @@ jobs:
             os-dir: "osx-64"
             python-version: "3.12"
           - name: MacOS (Intel) Python 3.13
-            os-type: "macos-13"
+            os-type: "macos-15-intel"
             os-dir: "osx-64"
             python-version: "3.13"
           - name: MacOS (ARM) Python 3.11
