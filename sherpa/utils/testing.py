@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2020 - 2024
+#  Copyright (C) 2017, 2020-2024, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,9 +19,7 @@
 #
 
 import importlib
-import os
-
-from sherpa.plot import TemporaryPlottingBackend
+from pathlib import Path
 
 try:
     import pytest
@@ -32,38 +30,46 @@ except ImportError:
 from sherpa.utils.err import RuntimeErr
 
 
-def _get_datadir():
+def _get_datadir() -> str | None:
     """Return the location of the test data files, if installed.
+
+    .. versionchanged:: 4.19.0
+       The path is now guaranteed to be normalized.
 
     Returns
     -------
     path : str or None
         The path to the Sherpa test data directory or None.
+
     """
 
     try:
         import sherpatest
-        datadir = os.path.dirname(sherpatest.__file__)
+        path = Path(sherpatest.__file__).parent
     except ImportError:
         try:
             import sherpa
-            datadir = os.path.join(os.path.dirname(sherpa.__file__), os.pardir,
-                                   'sherpa-test-data', 'sherpatest')
-            if not os.path.exists(datadir) or not os.path.isdir(datadir) \
-               or not os.listdir(datadir):
+            path = Path(sherpa.__file__).parent.parent / \
+                'sherpa-test-data' / 'sherpatest'
+            if not path.exists() or not path.is_dir() \
+               or next(path.iterdir(), None) is None:
                 # The dir is empty, maybe the submodule was not initialized
-                datadir = None
+                return None
         except ImportError:
             # neither sherpatest nor sherpa can be found, falling back to None
-            datadir = None
-    return datadir
+            return None
+
+    return str(path)
 
 
 DATADIR = _get_datadir()
 
 
-def set_datadir(datadir):
+def set_datadir(datadir: str) -> None:
     """Set the data directory.
+
+    .. versionchanged:: 4.19.0
+       The path is now normalized before it is used.
 
     Parameters
     ----------
@@ -77,16 +83,20 @@ def set_datadir(datadir):
 
     """
 
-    if not os.path.exists(datadir) or not os.path.isdir(datadir) \
-       or not os.listdir(datadir):
+    path = Path(datadir).resolve()
+    if not path.exists() or not path.is_dir() \
+       or next(path.iterdir(), None) is None:
         raise OSError(f"datadir={datadir} is empty or not a directory")
 
     global DATADIR
-    DATADIR = datadir
+    DATADIR = str(path)
 
 
-def get_datadir():
+def get_datadir() -> str | None:
     """Return the data directory.
+
+    .. versionchanged:: 4.19.0
+       The path is now guaranteed to be normalized.
 
     Returns
     -------
@@ -98,7 +108,7 @@ def get_datadir():
     return DATADIR
 
 
-def has_package_from_list(*packages):
+def has_package_from_list(*packages: str) -> bool:
     """
     Returns True if at least one of the ``packages`` args is importable.
     """
