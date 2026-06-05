@@ -1,6 +1,6 @@
 name: Conda Deployments
 
-#Only run when updating main, ciaox, or release/... branches (no PRs).
+#Only run when updating main, ciaox, or release/... branches (no PRs), or on "package test" labels
 #With check-skip job, we skip build on main/ciaox if directly tagged as a release.
 # (To only build releases on the release branch)
 on:
@@ -9,7 +9,9 @@ on:
     - main
     - ciaox
     - 'release/**'
-
+  pull_request:
+    types: [synchronize, labeled]
+    
 #Reduces GH Action duplication:
 # Cancels the previous pipeline for this ref it is still running
 concurrency:
@@ -26,9 +28,13 @@ defaults:
 
 jobs:
   check-skip:
-    name: Skip the Pipeline if tagged and NOT on the release branch
+    name: Skip the Pipeline if tagged and NOT on the release branch, or if there's a label and it isn't "Packaging"
     runs-on: ubuntu-latest
-    if: github.repository == 'sherpa/sherpa'
+    if: |
+      github.repository == 'sherpa/sherpa' &&
+        github.event_name == 'push' ||
+        (github.event_name == 'pull_request' &&
+         contains(github.event.pull_request.labels.*.name, 'Packaging'))
     outputs:
       skip_pipeline: ${{ steps.skip_check.outputs.skip_pipeline }}
 
@@ -56,7 +62,7 @@ jobs:
   # based on it being defined in the matrix or not.
   build-linux:
     name: Linux Python ${{ matrix.python-version }}
-    if: ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
+    if: needs.check-skip.outputs.skip_pipeline == 'false'
     needs: ["check-skip"]
     runs-on: ubuntu-latest
     container:
@@ -80,7 +86,7 @@ jobs:
         curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -o conda-installer.sh
         bash conda-installer.sh -b -p ${conda_loc}
         source ${conda_loc}/etc/profile.d/conda.sh
-        conda create -yq -n builder "conda-build==25.1.2=*_0" conda-verify
+        conda install -yq conda-build
 
     #Checkout the code with a depth of 0 to grab the tags/branches as well
     - name: Checkout Code
@@ -104,11 +110,10 @@ jobs:
           exit 1
         fi
         source ${conda_loc}/etc/profile.d/conda.sh
-        conda activate builder
         echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
         conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.os-dir }}-${{ matrix.python-version }}
         path: ${{ github.workspace }}/packages/*/sherpa*conda
@@ -118,7 +123,7 @@ jobs:
 #Note macos-15-intel is the last version for Intel on macOS
   build-macos:
     name: ${{ matrix.name }}
-    if: github.repository == 'sherpa/sherpa' && ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
+    if: github.repository == 'sherpa/sherpa' && needs.check-skip.outputs.skip_pipeline == 'false'
     needs: ["check-skip"]
     runs-on: ${{ matrix.os-type }}
     strategy:
@@ -133,7 +138,7 @@ jobs:
             os-dir: "osx-64"
             python-version: "3.12"
           - name: MacOS (Intel) Python 3.13
-            os-type: "macos-13"
+            os-type: "macos-15-intel"
             os-dir: "osx-64"
             python-version: "3.13"
           - name: MacOS (ARM) Python 3.11
@@ -158,7 +163,7 @@ jobs:
         curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -o conda-installer.sh
         bash conda-installer.sh -b -p ${conda_loc}
         source ${conda_loc}/etc/profile.d/conda.sh
-        conda create -yq -n builder conda-build conda-verify
+        conda install -yq conda-build
 
     - name: macOS 11.0 SDK
       if: ${{ matrix.os-dir != 'linux-64' }}
@@ -192,11 +197,10 @@ jobs:
           exit 1
         fi
         source ${conda_loc}/etc/profile.d/conda.sh
-        conda activate builder
         echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
         conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.os-dir }}-${{ matrix.python-version }}
         path: ${{ github.workspace }}/packages/*/sherpa*conda
