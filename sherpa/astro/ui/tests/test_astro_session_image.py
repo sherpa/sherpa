@@ -340,7 +340,18 @@ def test_wcs_with_no_wcs(make_data_path, tmp_path, check_str):
 
     cts = wcsfile.read_text()
 
-    lines = []
+    lines = [
+        "WCSAXES =                    2 / Number of WCS axes",
+        "WCSNAME = 'PHYSICAL'           / Reference name for the coord. frame",
+        "CRPIX1  =                  1.0 / Reference pixel on axis 1",
+        "CRPIX2  =                  1.0 / Reference pixel on axis 2",
+        "CRVAL1  =                  1.0 / Value at ref. pixel on axis 1",
+        "CRVAL2  =                  1.0 / Value at ref. pixel on axis 2",
+        "CTYPE1  = 'x       '           / Type of co-ordinate on axis 1",
+        "CTYPE2  = 'y       '           / Type of co-ordinate on axis 2",
+        "CDELT1  =                  1.0 / Pixel size on axis 1",
+        "CDELT2  =                  1.0 / Pixel size on axis 2",
+    ]
 
     expected = [f"{l:80s}" for l in lines] + ["", ""]
     check_str(cts, expected)
