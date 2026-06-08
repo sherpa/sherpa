@@ -340,7 +340,18 @@ def test_wcs_with_no_wcs(make_data_path, tmp_path, check_str):
 
     cts = wcsfile.read_text()
 
-    lines = []
+    lines = [
+        "WCSAXES =                    2 / Number of WCS axes",
+        "WCSNAME = 'PHYSICAL'           / Reference name for the coord. frame",
+        "CRPIX1  =                  1.0 / Reference pixel on axis 1",
+        "CRPIX2  =                  1.0 / Reference pixel on axis 2",
+        "CRVAL1  =                  1.0 / Value at ref. pixel on axis 1",
+        "CRVAL2  =                  1.0 / Value at ref. pixel on axis 2",
+        "CTYPE1  = 'x       '           / Type of co-ordinate on axis 1",
+        "CTYPE2  = 'y       '           / Type of co-ordinate on axis 2",
+        "CDELT1  =                  1.0 / Pixel size on axis 1",
+        "CDELT2  =                  1.0 / Pixel size on axis 2",
+    ]
 
     expected = [f"{l:80s}" for l in lines] + ["", ""]
     check_str(cts, expected)
@@ -423,7 +434,7 @@ def test_wcs_with_wcs(make_data_path, tmp_path):
 
 @requires_wcs
 @requires_ds9
-def test_read_image_only_sky(tmp_path):
+def test_read_image_only_sky(tmp_path, check_str):
     """Read in an image with "only" physical/sky transform image.
 
     The split between "physical" and "world" coordinate systems is
@@ -457,14 +468,25 @@ def test_read_image_only_sky(tmp_path):
 
     cts = wcsfile.read_text()
 
-    # For now this is easy to check.
+    # This is not as hard to check as test_wcs_with_wcs as we can use
+    # check_str.
     #
     ctslines = cts.split("\n")
-    assert len(ctslines) == 2
 
-    # Ends in two blank lines
-    assert ctslines[-2] == ctslines[-1]
-    assert ctslines[-1] == ""
+    lines = ["WCSAXES =                    2 / Number of WCS axes",
+             "WCSNAME = 'PHYSICAL'           / Reference name for the coord. frame",
+             "CRPIX1  =                  1.0 / Reference pixel on axis 1",
+             "CRPIX2  =                  1.0 / Reference pixel on axis 2",
+             "CRVAL1  =                101.0 / Value at ref. pixel on axis 1",
+             "CRVAL2  =                198.0 / Value at ref. pixel on axis 2",
+             "CTYPE1  = 'x       '           / Type of co-ordinate on axis 1",
+             "CTYPE2  = 'y       '           / Type of co-ordinate on axis 2",
+             "CDELT1  =                  2.0 / Pixel size on axis 1",
+             "CDELT2  =                  4.0 / Pixel size on axis 2"
+             ]
+
+    expected = [f"{l:80s}" for l in lines] + ["", ""]
+    check_str(cts, expected)
 
 
 @requires_wcs
@@ -517,7 +539,17 @@ def test_read_image_only_eqpos(tmp_path, check_str):
              "CTYPE2  = 'DEC--TAN'           / Type of co-ordinate on axis 2",
              "CDELT1  =                 -0.5 / Pixel size on axis 1",
              "CDELT2  =                 0.05 / Pixel size on axis 2",
-             "RADESYS = 'ICRS    '           / Reference frame for RA/DEC values"
+             "RADESYS = 'ICRS    '           / Reference frame for RA/DEC values",
+             "WCSAXESP=                    2 / Number of WCS axes",
+             "WCSNAMEP= 'PHYSICAL'           / Reference name for the coord. frame",
+             "CRPIX1P =                  1.0 / Reference pixel on axis 1",
+             "CRPIX2P =                  1.0 / Reference pixel on axis 2",
+             "CRVAL1P =                  1.0 / Value at ref. pixel on axis 1",
+             "CRVAL2P =                  1.0 / Value at ref. pixel on axis 2",
+             "CTYPE1P = 'x       '           / Type of co-ordinate on axis 1",
+             "CTYPE2P = 'y       '           / Type of co-ordinate on axis 2",
+             "CDELT1P =                  1.0 / Pixel size on axis 1",
+             "CDELT2P =                  1.0 / Pixel size on axis 2"
              ]
 
     expected = [f"{l:80s}" for l in lines] + ["", ""]
