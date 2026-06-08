@@ -2368,7 +2368,7 @@ def save_all(state: SessionType,
 
      .. versionchanged:: 4.19.0
         Improved support for reporting optional arguments used when
-        loading a file.
+        loading a file. File paths are now always normalized.
 
      .. versionchanged:: 4.18.0
         Handling of PHA data has been improved, and the output now

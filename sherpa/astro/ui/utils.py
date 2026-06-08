@@ -17302,7 +17302,8 @@ class Session(sherpa.ui.utils.Session):
         .. versionchanged:: 4.19.0
            PSF models now also save the radial and norm parameters, if
            available. Improved support for reporting optional
-           arguments used when loading a file.
+           arguments used when loading a file. File paths are now
+           always normalized.
 
         .. versionchanged:: 4.18.0
            Handling of PHA data has been improved, and the output now
