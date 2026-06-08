@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015-2025
+#  Copyright (C) 2008, 2015-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -132,13 +132,12 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 import logging
 import os
-from typing import Any, Literal, cast, overload, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, cast, overload
 import warnings
 
 import numpy as np
 import numpy.typing as npt
 
-from sherpa.astro import hc
 from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
@@ -152,9 +151,11 @@ from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.types import ArrayType, IdType, IdTypes, \
     ModelFunc, StatErrFunc
 
+from . import hc
+
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid symbols.
-from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
+from .utils import arf_fold, rmf_fold, filter_resp, \
     compile_energy_grid, do_group, expand_grouped_mask
 
 __doctest_requires__ = {
@@ -163,14 +164,14 @@ __doctest_requires__ = {
     }
 
 if TYPE_CHECKING:
-    from sherpa.astro.io.wcs import WCS
+    from .io.wcs import WCS
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
 regstatus = False
 try:
-    from sherpa.astro.utils._region import Region  # type: ignore
+    from .utils._region import Region  # type: ignore
     regstatus = True
 except ImportError:
     warning('failed to import sherpa.astro.utils._region; Region routines ' +
@@ -788,7 +789,12 @@ class DataOgipResponse(Data1DInt):
     # The shift to creating a warning message instead of raising an
     # error has made this messier.
     #
-    def _validate_energy_ranges(self, label, elo, ehi, ethresh):
+    def _validate_energy_ranges(self,
+                                label: str,
+                                elo: np.ndarray,
+                                ehi: np.ndarray,
+                                ethresh: float | None
+                                ) -> tuple[np.ndarray, np.ndarray]:
         """Check the lo/hi values are > 0, handling common error case.
 
         Several checks are made, to make sure the parameters follow
@@ -959,8 +965,17 @@ class DataARF(DataOgipResponse):
 
     specresp = property(_get_specresp, _set_specresp)
 
-    def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
-                 bin_hi=None, exposure=None, header=None, ethresh=None):
+    def __init__(self,
+                 name: str,
+                 energ_lo: np.ndarray,
+                 energ_hi: np.ndarray,
+                 specresp: np.ndarray,
+                 bin_lo=None,
+                 bin_hi=None,
+                 exposure=None,
+                 header=None,
+                 ethresh: float | None = None
+                 ) -> None:
         self.specresp = specresp
         # Keep these fields for now, but they are unused.
         self.bin_lo = None
@@ -1017,10 +1032,14 @@ class DataARF(DataOgipResponse):
             self._lo = self.energ_lo[bin_mask]
             self._hi = self.energ_hi[bin_mask]
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ) -> tuple[np.ndarray, np.ndarray]:
         return (self._lo, self._hi)
 
-    def get_dep(self, filter=False):
+    def get_dep(self,
+                filter: bool = False
+                ) -> np.ndarray:
         return self._rsp
 
     def get_ylabel(self, yfunc=None) -> str:
@@ -1049,7 +1068,8 @@ class DataRMF(DataOgipResponse):
     """RMF data set.
 
     The RMF format is described in OGIP documents [CAL_92_002]_ and
-    [CAL_92_002a]_.
+    [CAL_92_002a]_. However, the data use to create a DataRMF
+    instance has been modified from the on-disk format.
 
     Parameters
     ----------
@@ -1063,6 +1083,9 @@ class DataRMF(DataOgipResponse):
         than the ENERG_LO values for each bin, and the energy arrays
         must be in increasing or decreasing order.
     n_grp, f_chan, n_chan, matrix : array-like
+        These map to the N_GRP, F_CHAN, N_CHAN, and MATRIX columns of
+        the RMF FITS format, but with changes described in the Notes
+        section below.
     offset : int, optional
         This must be 0 or greater. This maps to the TLMIN value of
         the F_CHAN column (when reading from a FITS file).
@@ -1079,15 +1102,67 @@ class DataRMF(DataOgipResponse):
     the standard, these checks can not cover all cases. If a check fails
     then a warning message is logged.
 
+    The on-disk format for RMF files allows for two-dimensional data
+    to allow for multiple blocks of data (F_CHAN, N_CHAN) for each
+    channel row, accessing into the MATRIX block. The arguments to
+    DataRMF have been simplified so that:
+
+    - any rows with N_GTP=0 have been remove
+    - 2D arrays have been flattened (this is particularly relevant
+      if the data has not been stored as a FITS variable-length array.
+
+    So with the following (where [] is used to indicate a
+    variable-length aray for the column):
+
+      ========  ========  =====  ======  ======  =============
+      energ_lo  energ_hi  n_grp  f_chan  n_chan     matrix
+      ========  ========  =====  ======  ======  =============
+         0.1       0.2      0    []      []      []
+         0.2       0.3      2    [1,4]   [2,1]   [0.1,0.6,0.3]
+         0.3       0.4      1    [4]     [2]     [0.2,0.8]
+      ========  ========  =====  ======  ======  =============
+
+    then the arguments would be::
+
+      detchans=3
+      energ_lo=np.asarray([0.1, 0.2, 0.3])
+      energ_hi=np.asarray([0.2, 0.3, 0.4])
+      n_grp=np.asarray([0, 2, 1])
+      f_chan=np.asarray([1, 4, 4])
+      n_chan=np.asarray([2, 1, 2])
+      matrix=np.asarray([0.1, 0.6, 0.3, 0.2, 0.8])
+
+    The number of elements in f_chan and n_chan must match the NUMGRP
+    value, and the size of matrix must match the NUMELT value (if set
+    in the header).
+
+    Best results - in that the RMF convolution should be fastest - are
+    when n_grp, f_chan, n_chan store numpy.uint64 values and matrix
+    stores numpy.float64 values. The main saving is from getting the
+    size correct (e.g. 64 bit versus 32 bit).
+
     """
+
     _ui_name = "RMF"
-    _fields = ("name", "energ_lo", "energ_hi", "n_grp", "f_chan", "n_chan", "matrix", "e_min",
-               "e_max")
+    _fields = ("name", "energ_lo", "energ_hi", "n_grp", "f_chan",
+               "n_chan", "matrix", "e_min", "e_max")
     _extra_fields = ("detchans", "offset", "ethresh")
 
-    def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
-                 n_chan, matrix, offset=1, e_min=None, e_max=None,
-                 header=None, ethresh=None):
+    def __init__(self,
+                 name: str,
+                 detchans: int,
+                 energ_lo: np.ndarray,
+                 energ_hi: np.ndarray,
+                 n_grp: ArrayType,
+                 f_chan: ArrayType,
+                 n_chan: ArrayType,
+                 matrix: ArrayType,
+                 offset: int = 1,
+                 e_min: ArrayType | None = None,
+                 e_max: ArryaType | None = None,
+                 header=None,
+                 ethresh: float | None = None
+                 ) -> None:
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
         # Check it's an integer.
@@ -1220,7 +1295,9 @@ class DataRMF(DataOgipResponse):
         ...
 
     # Note that noticed_chans is not a mask, but the channel values.
-    def notice(self, noticed_chans=None):
+    def notice(self,
+               noticed_chans: np.ndarray | None = None
+               ) -> np.ndarray | None:
         """Filter the response to match the requested channels."""
 
         self._fch = self.f_chan
@@ -1243,10 +1320,14 @@ class DataRMF(DataOgipResponse):
         self._hi = self.energ_hi[bin_mask]
         return bin_mask
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ) -> tuple[np.ndarray, np.ndarray]:
         return (self._lo, self._hi)
 
-    def get_dep(self, filter=False):
+    def get_dep(self,
+                filter: bool = False
+                ) -> np.ndarray:
         return self.apply_rmf(np.ones(self.energ_lo.shape, SherpaFloat))
 
 
