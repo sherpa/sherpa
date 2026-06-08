@@ -1181,14 +1181,16 @@ def _handle_filter(out: OutType,
 
 def _load_from_store(out: OutType,
                      store: FileStore,
-                     auto_load: bool
+                     *,
+                     auto_load: bool,
+                     relative_path: bool
                      ) -> None:
     """Display the load call if wanted."""
 
     if auto_load and store.autoloaded:
         return
 
-    _output(out, store.show())
+    _output(out, store.show(absolute=not relative_path))
 
 
 def _load_bkg_manual(out: OutType,
@@ -1234,7 +1236,9 @@ def _save_dataset_settings_pha(out: OutType,
                                state: SessionType,
                                pha: DataPHA,
                                idval: IdType,
-                               auto_load: bool
+                               *,
+                               auto_load: bool,
+                               relative_path: bool
                                ) -> None:
     """What settings need to be set for DataPHA"""
 
@@ -1265,14 +1269,16 @@ def _save_dataset_settings_pha(out: OutType,
             if arf is not None:
                 astore = state._storage.get_arf(idval, rid)
                 if astore is not None:
-                    _load_from_store(out, astore, auto_load)
+                    _load_from_store(out, astore, auto_load=auto_load,
+                                     relative_path=relative_path)
                 else:
                     _load_arf_manual(out, arf, idval, rid)
 
             if rmf is not None:
                 rstore = state._storage.get_rmf(idval, rid)
                 if rstore is not None:
-                    _load_from_store(out, rstore, auto_load)
+                    _load_from_store(out, rstore, auto_load=auto_load,
+                                     relative_path=relative_path)
                 else:
                     _load_rmf_manual(out, rmf, idval, rid)
 
@@ -1293,7 +1299,8 @@ def _save_dataset_settings_pha(out: OutType,
 
             bstore = state._storage.get_bkg(idval, bid)
             if bstore is not None:
-                _load_from_store(out, bstore, auto_load)
+                _load_from_store(out, bstore, auto_load=auto_load,
+                                 relative_path=relative_path)
             else:
                 _load_bkg_manual(out, idval, bid, bpha)
 
@@ -1322,14 +1329,16 @@ def _save_dataset_settings_pha(out: OutType,
                     if bkg_arf is not None:
                         astore = state._storage.get_bkg_arf(idval, bid, rid)
                         if astore is not None:
-                            _load_from_store(out, astore, auto_load)
+                            _load_from_store(out, astore, auto_load=auto_load,
+                                             relative_path=relative_path)
                         else:
                             _load_arf_manual(out, bkg_arf, idval, rid, bid=bid)
 
                     if bkg_rmf is not None:
                         rstore = state._storage.get_bkg_rmf(idval, bid, rid)
                         if rstore is not None:
-                            _load_from_store(out, rstore, auto_load)
+                            _load_from_store(out, rstore, auto_load=auto_load,
+                                             relative_path=relative_path)
                         else:
                             _load_rmf_manual(out, bkg_rmf, idval, rid, bid=bid)
 
@@ -1357,7 +1366,9 @@ def _save_dataset_settings_2d(out: OutType,
 
 def _save_data(out: OutType,
                state: SessionType,
-               auto_load: bool
+               *,
+               auto_load: bool,
+               relative_path: bool
                ) -> None:
     """Save the data.
 
@@ -1372,6 +1383,9 @@ def _save_data(out: OutType,
     auto_load : bool
        If ``False`` then the output will contain `load_arf`,
        `load_rmf`, and `load_bkg` calls for ancillary PHA files.
+    relative_path : bool
+       Should paths be recorded as relative to the current working
+       directory?
 
     Notes
     -----
@@ -1412,7 +1426,7 @@ def _save_data(out: OutType,
             continue
 
         _output(out, msg)
-        _save_dataset_store(out, store)
+        _save_dataset_store(out, store, relative_path=relative_path)
 
         # Do we need to delete any of the PHA2 datasets?
         #
@@ -1427,11 +1441,12 @@ def _save_data(out: OutType,
             # Assert an actual type rather than the base type of Data
             assert isinstance(data, (Data1D, Data2D))
 
-        _save_dataset(out, state, data, idval)
+        _save_dataset(out, state, data, idval, relative_path=relative_path)
 
         if isinstance(data, DataPHA):
             _save_dataset_settings_pha(out, state, data, idval,
-                                       auto_load=auto_load)
+                                       auto_load=auto_load,
+                                       relative_path=relative_path)
 
         elif isinstance(data, DataIMG):
             _save_dataset_settings_2d(out, state, data, idval)
@@ -2028,11 +2043,13 @@ def _save_xspec(out: OutType) -> None:
 
 
 def _save_dataset_store(out: OutType,
-                        store: FileStore
+                        store: FileStore,
+                        *,
+                        relative_path: bool
                         ) -> None:
     """The data can be read in from a file."""
 
-    outstr = store.show()
+    outstr = store.show(absolute=not relative_path)
     if outstr in out["main"]:
         # This indicates this is from a PHA2 file which has already
         # been loaded.
@@ -2209,7 +2226,10 @@ def _save_dataset_rmf_manual(out: OutType,
 def _save_dataset(out: OutType,
                   state: SessionType,
                   data: Data,
-                  id: IdType) -> None:
+                  id: IdType,
+                  *,
+                  relative_path: bool
+                  ) -> None:
     """Given a dataset identifier, return the text needed to
     re-create it.
 
@@ -2223,7 +2243,7 @@ def _save_dataset(out: OutType,
 
     store = state._storage.get(id)
     if store is not None:
-        _save_dataset_store(out, store)
+        _save_dataset_store(out, store, relative_path=relative_path)
         return
 
     idstr = _id_to_str(id)
@@ -2337,7 +2357,8 @@ def _save_id(out: OutType, state: SessionType) -> None:
 def save_all(state: SessionType,
              fh: TextIO | None = None,
              *,
-             auto_load: bool = True
+             auto_load: bool = True,
+             relative_path: bool = False
              ) -> None:
     """Save the information about the current session to a file handle.
 
@@ -2354,7 +2375,8 @@ def save_all(state: SessionType,
 
      .. versionchanged:: 4.19.0
         Improved support for reporting optional arguments used when
-        loading a file. File paths are now always normalized.
+        loading a file. File paths are now always normalized. Added
+        the relative_path argument.
 
      .. versionchanged:: 4.18.0
         Handling of PHA data has been improved, and the output now
@@ -2372,6 +2394,9 @@ def save_all(state: SessionType,
     auto_load : bool, optional
        If ``False`` then the output will contain `load_arf`,
        `load_rmf`, and `load_bkg` calls for ancillary PHA files.
+    relative_path : bool, optional
+       Should paths be recorded as relative to the current working
+       directory?
 
     See Also
     --------
@@ -2418,7 +2443,7 @@ def save_all(state: SessionType,
             "main": []
            }
 
-    _save_data(out, state, auto_load=auto_load)
+    _save_data(out, state, auto_load=auto_load, relative_path=relative_path)
     _output_nl(out)
     _save_statistic(out, state)
     _save_fit_method(out, state)
