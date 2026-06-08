@@ -23,6 +23,7 @@ corresponding functions in sherpa.astro.ui.utils.
 """
 
 from io import StringIO
+from pathlib import Path
 import re
 from typing import Any
 import warnings
@@ -2461,13 +2462,26 @@ def setup(hide_logging, clean_astro_ui):
         xspec.set_xsstate(old_xspec)
 
 
-def add_datadir_path(output):
+def add_datadir_path(output: str,
+                     relative_path: bool = False
+                     ) -> str:
     """Replace any @@ characters by the value of self.datadir,
     making sure that the replacement text does not end in a /."""
 
     dname = get_datadir()
     if dname.endswith('/'):
         dname = dname[:-1]
+
+    if relative_path:
+        # Some tests - particularly the documentation tests - can
+        # change the working directory, so allow for the paths to be
+        # different.
+        #
+        dpath = Path(dname)
+        try:
+            dname = str(dpath.relative_to(dpath.cwd()))
+        except ValueError:
+            dname = str(dpath)
 
     return re.sub('@@', dname, output, count=0)
 
@@ -2483,7 +2497,7 @@ def compileit(output: str) -> None:
         raise exc
 
 
-def compare(check_str, expected, **kwargs):
+def compare(check_str, expected: str, **kwargs) -> None:
     """Run save_all and check the output (saved to a
     StringIO object) to the string value expected.
 
@@ -2508,7 +2522,7 @@ def compare(check_str, expected, **kwargs):
         raise
 
 
-def restore():
+def restore() -> None:
     """Run save_all then call clean and try to restore
     the Sherpa state from the saved file. Will raise
     a test failure if there was an error when
@@ -2788,6 +2802,25 @@ def test_canonical_pha_load(make_data_path, check_str):
 
     canonical = add_datadir_path(_canonical_pha_basic_load)
     compare(check_str, canonical, auto_load=False)
+
+
+@requires_data
+@requires_fits
+@requires_group
+def test_canonical_pha_load_relative(make_data_path, check_str):
+    """Do we explicitly load the ancillary files (with relative paths)?"""
+
+    # This is setup_pha_basic but without the source model.
+    #
+    fname = make_data_path('3c273.pi')
+    ui.load_pha(1, fname)
+    ui.subtract()
+    ui.set_stat('chi2datavar')
+    ui.notice(0.5, 7)
+
+    canonical = add_datadir_path(_canonical_pha_basic_load,
+                                 relative_path=True)
+    compare(check_str, canonical, auto_load=False, relative_path=True)
 
 
 @requires_data

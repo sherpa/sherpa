@@ -17281,7 +17281,8 @@ class Session(sherpa.ui.utils.Session):
     def save_all(self,
                  outfile=None,
                  clobber: bool = False,
-                 auto_load: bool = True
+                 auto_load: bool = True,
+                 relative_path: bool = False
                  ) -> None:
         """Save the information about the current session to a text file.
 
@@ -17303,7 +17304,7 @@ class Session(sherpa.ui.utils.Session):
            PSF models now also save the radial and norm parameters, if
            available. Improved support for reporting optional
            arguments used when loading a file. File paths are now
-           always normalized.
+           always normalized. Added the relative_path argument.
 
         .. versionchanged:: 4.18.0
            Handling of PHA data has been improved, and the output now
@@ -17343,6 +17344,9 @@ class Session(sherpa.ui.utils.Session):
            such as backgrounds, ARFS, and RMFs, will be included in
            the output with `load_arf`, `load_rmf`, and `load_bkg`
            calls.
+        relative_path : bool, optional
+           Should paths be recorded as relative to the current working
+           directory?
 
         Raises
         ------
@@ -17431,7 +17435,8 @@ class Session(sherpa.ui.utils.Session):
                     raise IOErr('filefound', outfile)
 
             with open(outfile, 'w', encoding="UTF-8") as fh:
-                serialize.save_all(self, fh, auto_load=auto_load)
+                serialize.save_all(self, fh, auto_load=auto_load,
+                                   relative_path=relative_path)
 
         else:
             if outfile is not None:
@@ -17439,4 +17444,5 @@ class Session(sherpa.ui.utils.Session):
             else:
                 fh = sys.stdout
 
-            serialize.save_all(self, fh, auto_load=auto_load)
+            serialize.save_all(self, fh, auto_load=auto_load,
+                               relative_path=relative_path)
