@@ -3382,6 +3382,125 @@ def test_restore_img_no_filter_model_psf(make_data_path, recwarn, check_str):
     recwarn.clear()
 
 
+@pytest.mark.xfail  # psf.radial.val is restored as 0 not 1
+@requires_fits
+def test_load_psf1d_from_file(check_str, tmp_path):
+    """Can we restore a 1D PSF read from a file?
+
+    See also test_load_psf1d_from_model.
+    """
+
+    psfpath = tmp_path / "psf.dat"
+    psfpath.write_text("1 5\n2 2\n3 1\n")
+
+    y = [12, 10, 6, 5, 0, 1, 0]
+    ui.load_arrays(1, [1, 2, 3, 4, 5, 6, 7], y)
+    g1 = ui.create_model_component("gauss1d", "g1")
+    g1.fwhm = 6
+    g1.pos.freeze()
+    g1.ampl = 10
+    ui.set_source(g1)
+
+    ui.load_psf("psf1", str(psfpath))
+    psf1 = ui.get_model_component("psf1")
+    ui.set_psf(psf1)
+    psf1.radial = 1
+
+    expected = np.asarray([6.76271251, 7.53260707, 5.32670844,
+                           3.25497179, 1.71855646, 0.78387108,
+                           1.45712215])
+    assert ui.get_model_plot().y == pytest.approx(expected)
+
+    restore()
+
+    assert ui.get_data().y == pytest.approx(y)
+
+    assert ui.list_psf_ids() == [1]
+    assert ui.list_model_components() == ["g1", "psf1"]
+    psf = ui.get_model_component("psf1")
+    assert psf.radial.val == pytest.approx(1)
+    assert ui.get_model_plot().y == pytest.approx(expected)
+
+    # As the tests above don't check the frozen state
+    g = ui.get_model_component("g1")
+    assert g.pos.frozen
+    assert g.pos.val == pytest.approx(0)
+
+
+@requires_fits
+def test_load_psf1d_from_model(check_str):
+    """Can we restore a 1D PSF read from a model?
+
+    See also test_load_psf1d_from_file.
+
+    This does not check the output text, just that the serialized
+    script can restore important values.
+
+    """
+
+    # Fake up a model expression to match that of the
+    # _from_file version.
+    #
+    # Apparently box1d is xlow <= x <= xhi.
+    b1 = ui.create_model_component("box1d", "b1")
+    b2 = ui.create_model_component("box1d", "b3")
+    b3 = ui.create_model_component("box1d", "b2")
+    mdl = b1 + b2 + b3
+    b1.ampl = 5
+    b2.xlow = 1.1
+    b2.xhi = 2
+    b3.xlow = 1.1
+    b3.xhi = 3
+    # Check evaluation just in case anything changes.
+    assert mdl([1, 2, 3, 4, 5]) == pytest.approx([5, 2, 1, 0, 0])
+
+    y = [12, 10, 6, 5, 0, 1, 0]
+    ui.load_arrays(1, [1, 2, 3, 4, 5, 6, 7], y)
+    g1 = ui.create_model_component("gauss1d", "g1")
+    g1.fwhm = 6
+    g1.pos.freeze()
+    g1.ampl = 10
+    ui.set_source(g1)
+
+    ui.load_psf("psf1", mdl)
+    psf1 = ui.get_model_component("psf1")
+    ui.set_psf(psf1)
+    # It looks like the radial setting isn't used in this case,
+    # unlike the _from_file version. So for now treat this as
+    # a regression test and do not fall over when the value is
+    # not restored.
+    psf1.radial = 1
+
+    # This does not match the _from_file case, so treat this as
+    # a regression test for now.
+    #
+    # expected = np.asarray([6.76271251, 7.53260707, 5.32670844,
+    #                        3.25497179, 1.71855646, 0.78387108,
+    #                        1.45712215])
+    expected = np.asarray([5.92225346, 6.93631282, 6.11951151,
+                           3.99128568, 2.26543146, 1.11970565,
+                           0.48204892])
+    assert ui.get_model_plot().y == pytest.approx(expected)
+
+    restore()
+
+    assert ui.get_data().y == pytest.approx(y)
+
+    assert ui.list_psf_ids() == [1]
+    assert ui.list_model_components() == ["b1", "b2", "b3", "g1", "psf1"]
+    psf = ui.get_model_component("psf1")
+    assert psf.radial.val == pytest.approx(0)  # NOTE: regression test
+    assert ui.get_model_plot().y == pytest.approx(expected)
+
+    # As the tests above don't check the frozen state
+    g = ui.get_model_component("g1")
+    assert g.pos.frozen
+    assert g.pos.val == pytest.approx(0)
+
+    nmdl = sum(ui.get_model_component(n) for n in ['b1', 'b2', 'b3'])
+    assert nmdl([1, 2, 3, 4, 5]) == pytest.approx([5, 2, 1, 0, 0])
+
+
 @requires_data
 @requires_fits
 def test_restore_table_model(make_data_path, check_str):
