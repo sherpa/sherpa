@@ -1923,17 +1923,17 @@ class Session(sherpa.ui.utils.Session):
         >>> set_data('src', dat)
 
         """
-        try:
-            return self.unpack_pha(filename, *args, **kwargs)
-        except Exception:
-            try:
-                return self.unpack_image(filename, *args, **kwargs)
-            except Exception:
-                try:
-                    return self.unpack_table(filename, *args, **kwargs)
-                except Exception:
-                    # If this errors out then so be it
-                    return self.unpack_ascii(filename, *args, **kwargs)
+
+        for func in [self.unpack_pha,
+                     self.unpack_image,
+                     self.unpack_table]:
+            with suppress(Exception):
+                return func(filename, *args, **kwargs)
+
+        # If this errors out then so be it. Perhaps it should
+        # raise an error related to unpack_data.
+        #
+        return self.unpack_ascii(filename, *args, **kwargs)
 
     def load_ascii_with_errors(self,
                                id,
