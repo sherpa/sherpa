@@ -11225,11 +11225,11 @@ class Session(sherpa.ui.utils.Session):
         models.
 
         Tables can take many forms. The most common are 1D data (with 2 columns),
-        1D data with integrated bins (wiht colunns xlow, xhigh, y), and 2D data such
+        1D data with integrated bins (with columns xlow, xhigh, y), and 2D data such
         as an image. This function will try to infer the format of the data from
         the structure of the file given.
-        Details also depend on the file tome (fits or ascii) and the backend in use
-        (crates, astropy, or just the build in ascii reader).
+        Details also depend on the file type (fits or ascii) and the backend in use
+        (crates, astropy, or just the build-in ascii reader).
 
         Parameters
         ----------
@@ -11263,7 +11263,7 @@ class Session(sherpa.ui.utils.Session):
         Notes
         -----
 
-        * Keywords for ASCII tables*
+        * Keywords for ASCII tables
 
             ncols : int, optional
                 The number of columns to read in (the first ``ncols`` columns

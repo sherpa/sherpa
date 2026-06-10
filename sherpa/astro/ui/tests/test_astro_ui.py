@@ -352,7 +352,7 @@ def test_ui_table_model_1d_testfile(clean_astro_ui, comment, ncols):
     """Test table model with simple 1D ASCII files
 
     This should work for any IO backend, because it falls through
-    to the sherpa.io ASCII reader is necessary.
+    to the sherpa.io ASCII reader if necessary.
 
     Regression test for https://github.com/sherpa/sherpa/issues/1648
     """
