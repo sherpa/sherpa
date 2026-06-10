@@ -1885,6 +1885,9 @@ class TableModel(ArithmeticModel):
     The model values - the y argument to `load` - are multiplied by
     the `ampl` parameter of the model.
 
+    ... deprecated:: 4.19.0
+        Use the FixedTableModel or InterpolatedTableModel1D classes instead.
+
     Attributes
     ----------
     ampl
@@ -2283,7 +2286,7 @@ class FixedTableModel(TableModelBase):
 
     The model can be used for data when the independent axis is either
     not useful - such as for an image mask - or the data does not have
-    a meaningful independent axis, as in the the independent variable
+    a meaningful independent axis, e.g. the independent variable
     being an index for a star and the dependent axis is a property of
     each star. In this case the `fold`
     method must be used if the data has been filtered in any way, but
@@ -2428,12 +2431,17 @@ class InterpolatedTableModel1D(TableModelBase):
     ----------
     ampl
         The linear scaling factor for the table values
-    method : callable
-        The interpolation method.
+    interpolate_method : callable
+        The interpolation method. The method argument is a function that accepts arguments (xout,
+        xin, yin) and returns the yout values from interpolating xout onto
+        (xin, yin). The default is linear interpolation
+        (`sherpa.utils.linear_interp`).
+    integrate_method : callable
+        The integration method.
     integrate_kwargs
-        Used to pass extra parameters to the integrator (currently
-        `epsabs`, `epsrel`, `maxeval`, `errflag`, and `logger`).
-        Only used if the `integrate` attribute is set to True.
+            Used to pass extra parameters to the integrator (currently
+            `epsabs`, `epsrel`, `maxeval`, `errflag`, and `logger`).
+            Only used if the `integrate` attribute is set to True.
 
     See Also
     --------
@@ -2442,7 +2450,7 @@ class InterpolatedTableModel1D(TableModelBase):
     Examples
     --------
 
-    The model can interpolate from the requested grid onto the load data
+    The model can interpolate the loaded data onto the requested grid
     (the default is linear interpolation):
 
     >>> tm = InterpolatedTableModel1D()
@@ -2463,6 +2471,15 @@ class InterpolatedTableModel1D(TableModelBase):
     """
     ndim = 1
 
+    def __init__(self, name: str='interpolatedtablemodel1d',
+                 x: Sequence | None=None, y: Sequence | None=None):
+        self._x = None
+        self._method = linear_interp
+        self._integrate_kwargs = {}
+        self._integrate_method = integrate_tabulated_function
+        super().__init__(name)
+        self.load(x, y)
+
     @property
     def method(self):
         """The interpolation method.
@@ -2470,7 +2487,7 @@ class InterpolatedTableModel1D(TableModelBase):
         The method argument is a function that accepts arguments (xout,
         xin, yin) and returns the yout values from interpolating xout onto
         (xin, yin). The default is linear interpolation
-        (sherpa.utils.linear_interp).
+        (`sherpa.utils.linear_interp`).
         """
         return self._method
 
@@ -2483,17 +2500,50 @@ class InterpolatedTableModel1D(TableModelBase):
         #
         self.cache_clear()
 
-    def __init__(self, name: str='interpolatedtablemodel1d',
-                 x: Sequence | None=None, y: Sequence | None=None,
-                 method: Callable=linear_interp,
-                 integrate_method: Callable=integrate_tabulated_function,
-                 integrate_kwargs: dict ={}):
-        self._x = None
-        self._method = method
-        self.integrate_kwargs = integrate_kwargs
-        self.integrate_method = integrate_method
-        super().__init__(name)
-        self.load(x, y)
+    @property
+    def integrate_method(self):
+        """The integration method.
+
+        The method argument is a function that accepts arguments (xout,
+        xin, yin) and returns the yout values from interpolating xout onto
+        (xin, yin). The default is linear interpolation
+        (`sherpa.utils.linear_interp`).
+        """
+        return self._integrate_method
+
+    @integrate_method.setter
+    def integrate_method(self, val):
+        self._integrate_method = val
+
+        # as the method affects the cache, clear it (we could skip
+        # this if the method has not changed but is it worth it?)
+        #
+        self.cache_clear()
+
+    @property
+    def integrate_kwargs(self):
+        '''Used to pass extra parameters to the integrator
+
+        Only used if the `integrate` attribute is set to True.
+        This is a dictionary with key corresponding to the keyword arguments
+        of the integrator.
+        If the entire dictionary is replaced, the model cache is reset since the
+        output will change. However, since dictionary are mutable in Python, this
+        will not detect if a single value in the dictionary is changed.
+        If relevant, the cache can be cleared manually by calling the `cache_clear` method.
+        '''
+        return self._integrate_kwargs
+
+    @integrate_kwargs.setter
+    def integrate_kwargs(self, val):
+
+        self._integrate_kwargs = val
+
+        # as the method affects the cache, clear it (we could skip
+        # this if the method has not changed but is it worth it?)
+        #
+        self.cache_clear()
+
 
     def load(self, x, y):
         """Set the model values.
