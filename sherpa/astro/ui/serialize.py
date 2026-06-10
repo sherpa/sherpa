@@ -1048,7 +1048,7 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
             cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
             _output(out, cmd)
 
-        elif typename == "tablemodel":
+        elif typename in ["fixedtablemodel", "interpolatedtablemodel1d"]:
             cmd = f'load_table_model("{modelname}", "{mod.filename}")'
             _output(out, cmd)
 
