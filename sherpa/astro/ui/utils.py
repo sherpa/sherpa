@@ -1663,10 +1663,10 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(filename, str):
             return
 
-        kwargs = {"ncols": ncols, "colkeys": colkeys,
+        kwargs = {"id": idval, "filename": filename,
+                  "ncols": ncols, "colkeys": colkeys,
                   "dstype": dstype}
-        store = FileStore(self.load_table, idval, Path(filename),
-                          kwargs=kwargs)
+        store = FileStore(self.load_table, kwargs=kwargs)
         self._storage.add(idval, store)
 
     # DOC-TODO: should unpack_ascii be merged into unpack_table?
@@ -1887,8 +1887,8 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(filename, str):
             return
 
-        store = FileStore(self.load_ascii, idval, Path(filename),
-                          kwargs=kwargs)
+        kwargs |= {"id": idval, "filename": filename}
+        store = FileStore(self.load_ascii, kwargs=kwargs)
         self._storage.add(idval, store)
 
     # DOC-NOTE: also in sherpa.utils
@@ -2086,10 +2086,9 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(filename, str):
             return
 
-        kwargs["func"] = func
-        kwargs["delta"] = delta
-        store = FileStore(self.load_ascii_with_errors, idval,
-                          Path(filename), kwargs=kwargs)
+        kwargs |= {"func": func, "delta": delta, "id": idval,
+                   "filename": filename}
+        store = FileStore(self.load_ascii_with_errors, kwargs=kwargs)
         self._storage.add(idval, store)
 
     def _load_datas(self,
@@ -2241,8 +2240,8 @@ class Session(sherpa.ui.utils.Session):
         #
         if isinstance(filename, str):
             # This assumes that len(args) == 0
-            store = FileStore(self.load_data, idval, Path(filename),
-                              kwargs=kwargs)
+            kwargs |= {"id": idval, "filename": filename}
+            store = FileStore(self.load_data, kwargs=kwargs)
         else:
             store = None
 
@@ -2412,9 +2411,9 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(arg, str):
             return
 
-        kwargs = {"coord": coord, "dstype": dstype}
-        store = FileStore(self.load_image, idval, Path(arg),
-                          kwargs=kwargs)
+        kwargs = {"id": idval, "arg": arg, "coord": coord,
+                  "dstype": dstype}
+        store = FileStore(self.load_image, kwargs=kwargs, filekey="arg")
         self._storage.add(idval, store)
 
     # DOC-TODO: what does this return when given a PHA2 file?
@@ -2544,15 +2543,17 @@ class Session(sherpa.ui.utils.Session):
         #
         for resp_id in data.response_ids:
             marf, mrmf = data.get_response(resp_id)
-            kwargs = {"resp_id": resp_id}
+            kwargs = {"id": idval, "resp_id": resp_id}
             if marf is not None:
-                store = FileStore(self.load_arf, idval, Path(marf.name),
-                                  kwargs=kwargs, autoloaded=True)
+                kwargs["arg"] = marf.name
+                store = FileStore(self.load_arf, kwargs=kwargs,
+                                  filekey="arg", autoloaded=True)
                 self._storage.add_arf(idval, resp_id, store)
 
             if mrmf is not None:
-                store = FileStore(self.load_rmf, idval, Path(mrmf.name),
-                                  kwargs=kwargs, autoloaded=True)
+                kwargs["arg"] = mrmf.name
+                store = FileStore(self.load_rmf, kwargs=kwargs,
+                                  filekey="arg", autoloaded=True)
                 self._storage.add_rmf(idval, resp_id, store)
 
         for bkg_id in data.background_ids:
@@ -2563,10 +2564,10 @@ class Session(sherpa.ui.utils.Session):
             bkg = data.get_background(bkg_id)
             assert bkg is not None
 
-            kwargs = {"bkg_id": bkg_id, "use_errors": use_errors}
-
-            store = FileStore(self.load_bkg, idval, Path(bkg.name),
-                              kwargs=kwargs, autoloaded=True)
+            kwargs = {"id": idval, "arg": bkg.name,
+                      "bkg_id": bkg_id, "use_errors": use_errors}
+            store = FileStore(self.load_bkg, kwargs=kwargs,
+                              filekey="arg", autoloaded=True)
             self._storage.add_bkg(idval, bkg_id, store)
 
             # Note that load_bkg_arf and load_bkg_rmf only change the
@@ -2575,15 +2576,17 @@ class Session(sherpa.ui.utils.Session):
             #
             for resp_id in bkg.response_ids:
                 marf, mrmf = bkg.get_response(resp_id)
-                kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
+                kwargs = {"id": idval, "resp_id": resp_id, "bkg_id": bkg_id}
                 if marf is not None:
-                    store = FileStore(self.load_arf, idval, Path(marf.name),
-                                      kwargs=kwargs, autoloaded=True)
+                    kwargs["arg"] = marf.name
+                    store = FileStore(self.load_arf, kwargs=kwargs,
+                                      filekey="arg", autoloaded=True)
                     self._storage.add_bkg_arf(idval, bkg_id, resp_id, store)
 
                 if mrmf is not None:
-                    store = FileStore(self.load_rmf, idval, Path(mrmf.name),
-                                      kwargs=kwargs, autoloaded=True)
+                    kwargs["arg"] = mrmf.name
+                    store = FileStore(self.load_rmf, kwargs=kwargs,
+                                      filekey="arg", autoloaded=True)
                     self._storage.add_bkg_rmf(idval, bkg_id, resp_id, store)
 
     # DOC-TODO: how best to include datastack support?
@@ -2752,9 +2755,9 @@ class Session(sherpa.ui.utils.Session):
         phasets = self.unpack_pha(arg, use_errors)
 
         if isinstance(arg, str):
-            kwargs = {"use_errors": use_errors}
-            store = FileStore(self.load_pha, idval, Path(arg),
-                              kwargs=kwargs)
+            kwargs = {"id": idval, "arg": arg, "use_errors": use_errors}
+            store = FileStore(self.load_pha, kwargs=kwargs,
+                              filekey="arg")
         else:
             store = None
 
@@ -6563,9 +6566,9 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(arg, str):
             return
 
-        kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
-        store = FileStore(self.load_arf, idval, Path(arg),
-                          kwargs=kwargs)
+        kwargs = {"id": idval, "arg": arg, "resp_id": resp_id,
+                  "bkg_id": bkg_id}
+        store = FileStore(self.load_arf, kwargs=kwargs, filekey="arg")
 
         # Ensure resp_id is not None for the key.
         if resp_id is None:
@@ -6705,8 +6708,8 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(arg, str):
             return
 
-        store = FileStore(self.load_bkg_arf, idval, Path(arg),
-                          kwargs={})
+        store = FileStore(self.load_bkg_arf, filekey="arg",
+                          kwargs={"id": idval, "arg": arg})
         self._storage.add_bkg_arf(idval, bkg_id, resp_id, store)
 
     def load_multi_arfs(self, id, filenames, resp_ids=None) -> None:
@@ -7108,9 +7111,9 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(arg, str):
             return
 
-        kwargs = {"resp_id": resp_id, "bkg_id": bkg_id}
-        store = FileStore(self.load_rmf, idval, Path(arg),
-                          kwargs=kwargs)
+        kwargs = {"id": idval, "arg": arg, "resp_id": resp_id,
+                  "bkg_id": bkg_id}
+        store = FileStore(self.load_rmf, kwargs=kwargs, filekey="arg")
 
         # Ensure resp_id is not None for the key.
         if resp_id is None:
@@ -7245,8 +7248,8 @@ class Session(sherpa.ui.utils.Session):
         if not isinstance(arg, str):
             return
 
-        store = FileStore(self.load_bkg_rmf, idval, Path(arg),
-                          kwargs={})
+        store = FileStore(self.load_bkg_rmf, filekey="arg",
+                          kwargs={"id": idval, "arg": arg})
         self._storage.add_bkg_rmf(idval, bkg_id, resp_id, store)
 
     def load_multi_rmfs(self, id, filenames, resp_ids=None) -> None:
@@ -8532,8 +8535,9 @@ class Session(sherpa.ui.utils.Session):
         bkgsets = self.unpack_bkg(arg, use_errors)
 
         if isinstance(arg, str):
-            kwargs = {"bkg_id": bkg_id, "use_errors": use_errors}
-            store = FileStore(self.load_bkg, idval, Path(arg),
+            kwargs = {"id": idval, "arg": arg, "bkg_id": bkg_id,
+                      "use_errors": use_errors}
+            store = FileStore(self.load_bkg, filekey="arg",
                               kwargs=kwargs)
         else:
             store = None

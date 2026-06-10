@@ -183,49 +183,98 @@ def remove_default_args(func: Callable,
 
 @dataclass
 class FileStore:
-    """Record how a dataset was read in."""
+    """Record how a dataset was read in.
+
+    All arguments are given via the kwargs field, with the file name
+    stored in the filekey element. Most stores will also have an
+    argument storing the dataset identifier (the idkey element).
+
+    """
 
     loadfunc: Callable
     """The function to load the data."""
 
-    idval: IdType
-    """The dataset identifier."""
-
-    filename: Path
-    """The location of the file.
-
-    This is assumed to contain the full path to the file.
-    """
-
     _: KW_ONLY
 
-    # For now we only need to store keyword arguments.
+    # For now we only need to store keyword arguments (no need to
+    # store an args array). The kwargs field is copied in the
+    # __post_init__ call to make sure that changes to that version are
+    # not reflected in this object.
     #
     kwargs: Mapping[str, Any]
     """Named arguments used to read in the file."""
 
+    idkey: str | None = "id"
+    """The key in kwargs that stores the identifier (if present)."""
+
+    filekey: str = "filename"
+    """The key in kwargs that stores the file path."""
+
     autoloaded: bool = False
     """Was the file auto-loaded?"""
+
+    def __post_init__(self) -> None:
+        """Validation and clean up."""
+
+        # TODO: So, we do not make use of "missing id" argument here yet
+        assert self.idkey is not None, self.loadfunc.__name__
+
+        # Copy the keyword arguments.
+        self.kwargs = copy.copy(self.kwargs)
+
+        # Ensure the filename is:
+        # - present (identified by the filekey argument)
+        # - is stored as a Path
+        #
+        try:
+            fileval = self.kwargs[self.filekey]
+        except KeyError:
+            raise KeyError(f"kwargs does not contain a '{self.filekey}' element") from None
+
+        self.kwargs[self.filekey] = Path(fileval)
+
+        # Ensure that the identifier is set (if required).
+        #
+        if self.idkey is None:
+            return
+
+        try:
+            _ = self.kwargs[self.idkey]
+        except KeyError:
+            raise KeyError(f"kwargs does not contain a '{self.idkey}' element") from None
 
     def show(self) -> str:
         """How to load the data, ignoring the autoloaded setting."""
 
-        idstr = _id_to_str(self.idval)
-        out = f'{self.loadfunc.__name__}({idstr}, '
-        out += f'"{self.filename}"'
+        out = f'{self.loadfunc.__name__}('
 
-        # For now remove the default arguments as we can not track
-        # what arguments were actually used when the file was loaded.
+        # For now drop the argument names for the identifier and the
+        # filename.
+        #
+        if self.idkey is not None:
+            idstr = _id_to_str(self.kwargs[self.idkey])
+            out += f'{idstr}, '
+
+        filename = self.kwargs[self.filekey]
+        out += f'"{filename}"'
+
+        # Drop the default arguments as we can not track what
+        # arguments were actually used when the file was loaded.
+        # There is an argument to be said to always include them in
+        # case the defaults change.
         #
         kwargs = remove_default_args(self.loadfunc, self.kwargs)
         for k, v in kwargs.items():
+            if k in [self.idkey, self.filekey]:
+                continue
+
             out += f", {k}={showval(v)}"
 
         return f"{out})"
 
 
-# FileStores are indexed by IdType, but it can be an id,
-# resp_id, or bkg_id.
+# FileStores are indexed by IdType, but it can be an id, resp_id, or
+# bkg_id.
 #
 FileDict = dict[IdType, FileStore]
 
@@ -369,9 +418,10 @@ class Storage:
         """Copy the store info about the given identifier."""
 
         def copy_store(old: FileStore) -> FileStore:
-            # Update the id value.
+            # Update the id value. We assume that the idkey field
+            # is not None but do not enforce it.
             store = copy.copy(old)
-            store.idval = toid
+            store.kwargs[store.idkey] = toid
             return store
 
         # Note that the base dataset may not have any storage data,
