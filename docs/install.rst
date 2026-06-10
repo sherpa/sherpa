@@ -36,6 +36,7 @@ Sherpa has the following requirements:
 * Python 3.11 to 3.14 (there is no support for free-threaded Python)
 * NumPy
 * Linux or OS-X (patches to add Windows support are welcome)
+* C and C++ compiler that support the gnu11 and c++ standards respectively
 
 Sherpa can take advantage of the following Python packages
 if installed:
@@ -195,6 +196,27 @@ Configuring the build
 The Sherpa build is controlled by the ``setup.cfg`` file in the
 root of the Sherpa source tree. These configuration options
 include:
+
+.. _build-standards:
+
+Compiler standards
+^^^^^^^^^^^^^^^^^^
+
+The C and C++ code in Sherpa requires compilers that support the
+``gnu11`` and ``c++11`` standards. The build system automatically
+adds the necessary flags to the ``CFLAGS`` and ``CXXFLAGS`` environment
+variables, unless they already contain the string ``-std=``.
+
+The values added to these flags are defined by the::
+
+  c_standard = -std=gnu11
+  cxx_standard = -std=c++11
+
+settings in the ``sherpa_config`` section of the ``setup.cfg`` file.
+If the setting is changed to be empty - e.g. ``c_standard`` - then no
+attempt is made to change the corresponding environment variable.
+
+.. _build-fftw:
 
 FFTW
 ^^^^
