@@ -10376,6 +10376,29 @@ class Session(sherpa.ui.utils.Session):
         self._add_model_component(psf)
         self._psf_models.append(psf)
 
+        # ARGH: load_psf does not fit into the "has id argument first"
+        #       pattern.
+        #
+        """
+        HOW TO HANDLE?
+
+        maybe we only sent in kwargs and so callers have to label
+        id and filename arguments
+
+        - copy_data needs access to id but can do so
+        - filename is harder, as not unique (e.g. can be called arg)
+          but we only need this if there is a
+          "check file exists" sort of check?
+
+        - could store the name of the argument giving the filename
+          (so we don't repeat ourselves), with a default of "filename"
+
+        I think there is at least one place where we have args and
+        not kwargs (but don't have any tests to check it out)
+
+        store = FileStore(self.load_psf
+        """
+
     load_psf.__doc__ = sherpa.ui.utils.Session.load_psf.__doc__
     load_psf.__annotations__ = sherpa.ui.utils.Session.load_psf.__annotations__
 
