@@ -43,16 +43,13 @@ if installed:
 
 * :term:`Astropy`: for reading and writing files in
   :term:`FITS` format.
-* :term:`matplotlib`: for visualisation of
+* :term:`matplotlib` or :term:`bokeh`: for visualisation of
   one-dimensional data or models, one- or two- dimensional
   error analysis, and the results of Monte-Carlo Markov Chain
-  runs. There are no known incompatibilities with matplotlib, but there
-  has only been limited testing. Please
-  `report any problems <https://github.com/sherpa/sherpa/issues/>`_
-  you find.
+  runs.
 * `scipy <https://www.scipy.org>`_ for the `sherpa.optmethods.optscipy`
   module, which provides an interface to several optimizers from Scipy.
-* `optimagic <https://optimagic.readthedocs.io>`_ for the 
+* `optimagic <https://optimagic.readthedocs.io>`_ for the
   `sherpa.optmethods.optoptimagic` module which provides an interface to `optimagic.minimize`.
   Optimagic provides a single interface to dozens of optimizers, many of which
   rely on other external packages that need to be `installed separately
