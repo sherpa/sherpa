@@ -65,6 +65,7 @@ jobs:
             numpy-version: "2.3.2"
             install-type: develop
             test-data: none
+            compiler-version: "15.2"
 
           - name: Linux Full Build (Python 3.13)
             os: ubuntu-latest
@@ -130,6 +131,7 @@ jobs:
         MATPLOTLIBVER: ${{ matrix.matplotlib-version }}
         BOKEHVER: ${{ matrix.bokeh-version }}
         XSPECVER: ${{ matrix.xspec-version }}
+        COMPILERVER: ${{ matrix.compiler-version }}
       run: |
         curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -o conda-installer.sh
         bash conda-installer.sh -b -p ${conda_loc}
@@ -263,4 +265,3 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ${{ github.workspace }}/coverage.xml
         verbose: true
-

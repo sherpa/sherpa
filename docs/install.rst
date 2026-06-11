@@ -36,22 +36,20 @@ Sherpa has the following requirements:
 * Python 3.11 to 3.14 (there is no support for free-threaded Python)
 * NumPy
 * Linux or OS-X (patches to add Windows support are welcome)
+* C and C++ compiler that support the gnu11 and c++ standards respectively
 
 Sherpa can take advantage of the following Python packages
 if installed:
 
 * :term:`Astropy`: for reading and writing files in
   :term:`FITS` format.
-* :term:`matplotlib`: for visualisation of
+* :term:`matplotlib` or :term:`bokeh`: for visualisation of
   one-dimensional data or models, one- or two- dimensional
   error analysis, and the results of Monte-Carlo Markov Chain
-  runs. There are no known incompatibilities with matplotlib, but there
-  has only been limited testing. Please
-  `report any problems <https://github.com/sherpa/sherpa/issues/>`_
-  you find.
+  runs.
 * `scipy <https://www.scipy.org>`_ for the `sherpa.optmethods.optscipy`
   module, which provides an interface to several optimizers from Scipy.
-* `optimagic <https://optimagic.readthedocs.io>`_ for the 
+* `optimagic <https://optimagic.readthedocs.io>`_ for the
   `sherpa.optmethods.optoptimagic` module which provides an interface to `optimagic.minimize`.
   Optimagic provides a single interface to dozens of optimizers, many of which
   rely on other external packages that need to be `installed separately
@@ -195,6 +193,27 @@ Configuring the build
 The Sherpa build is controlled by the ``setup.cfg`` file in the
 root of the Sherpa source tree. These configuration options
 include:
+
+.. _build-standards:
+
+Compiler standards
+^^^^^^^^^^^^^^^^^^
+
+The C and C++ code in Sherpa requires compilers that support the
+``gnu11`` and ``c++11`` standards. The build system automatically
+adds the necessary flags to the ``CFLAGS`` and ``CXXFLAGS`` environment
+variables, unless they already contain the string ``-std=``.
+
+The values added to these flags are defined by the::
+
+  c_standard = -std=gnu11
+  cxx_standard = -std=c++11
+
+settings in the ``sherpa_config`` section of the ``setup.cfg`` file.
+If the setting is changed to be empty - e.g. ``c_standard`` - then no
+attempt is made to change the corresponding environment variable.
+
+.. _build-fftw:
 
 FFTW
 ^^^^
