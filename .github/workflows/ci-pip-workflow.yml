@@ -39,7 +39,7 @@ jobs:
             install-type: install
             test-data: package
             fits-pkg: 'astropy'
-            matplotlib-pkg: 'matplotlib>=3,<4'
+            matplotlib-pkg: 'matplotlib>=3,<3.11.0'
             bokeh-pkg: 'bokeh>=3,<4'
             ncores: 1
 
@@ -64,7 +64,7 @@ jobs:
             python-version: "3.13"
             numpy-pkg: 'numpy'
             install-type: develop
-            matplotlib-pkg: 'matplotlib>=3,<4'
+            matplotlib-pkg: 'matplotlib>=3,<3.11.0'
             bokeh-pkg: 'bokeh>=3,<4'
             arviz-pkg: 'arviz>=1.0.0'
             fits-pkg: 'astropy'
@@ -80,6 +80,16 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+
+    - name: Install FFTW
+      run: |
+        # Do not worry about specifying a version
+        sudo apt install libfftw3-dev pkg-config
+        source scripts/update_config
+        #
+        echo "* START setup.cfg"
+        git diff setup.cfg
+        echo "* END   setup.cfg"
 
     - name: Pip Testing Setup - Dependencies
       env:

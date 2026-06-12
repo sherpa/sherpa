@@ -36,6 +36,8 @@ sherpa/optmethods/src/_minimmodule.c
 sherpa/optmethods/src/minpack/_minpack-f2pywrappers.f
 sherpa/optmethods/src/minpack/_minpackmodule.c
 
+setup.cfg.orig
+
 # VI
 *.swp
 

@@ -8,6 +8,8 @@ channels:
 dependencies:
   - bison
   - python=3.13
+  - pkg-config
+  - fftw
   - numpy
   - pandoc
   - matplotlib
