@@ -1,0 +1,67 @@
+#!/bin/sh
+#
+# Update the Sherpa configuration file (setup.cfg) to use "common"
+# options. At present this just updates the FFTW build to use the
+# pkg-config values.
+#
+
+# Are we in the right directory
+#
+cfg=setup.cfg
+if [ ! -f $cfg ]; then
+    echo "ERROR: Unable to find $cfg";
+    exit 1;
+fi
+
+# Do we have pkg-config?
+#
+if ! pkg-config --version > /dev/null 2>&1
+then
+    echo "* pkg-config is not installed; no change made to $cfg"
+    exit 0
+fi
+
+# Do we have FFTW3?
+#
+mod=fftw3
+if ! pkg-config --exists $mod
+then
+    echo "* fftw3.pc not found; no change made to $cfg"
+    exit 0
+fi
+
+fftw3ver=$(pkg-config --modversion $mod)
+echo "# Using $mod - $fftw3ver"
+
+# Drop the leading "-X" from these responses (the assumption is that
+# there is only one value in each one).
+# 
+fftw3_inc_path=$(pkg-config --cflags-only-I $mod | sed -e 's/^-I//')
+if [ "$fftw3_inc_path" = "" ]; then
+    echo "* error running --cflags-only-I $mod; no change made to $cfg"
+    exit 0
+fi
+
+fftw3_libs_path=$(pkg-config --libs-only-L $mod | sed -e 's/^-L//')
+if [ "$fftw3_libs_path" = "" ]; then
+    echo "* error running --libs $mod (-L); no change made to $cfg"
+    exit 0
+fi
+
+fftw3_name=$(pkg-config --libs-only-l $mod | sed -e 's/^-l//')
+if [ "$fftw3_name" = "" ]; then
+    echo "* error running --libs $mod (-l); no change made to $cfg"
+    exit 0
+fi
+
+# Edit the configuration
+#
+echo "Updating $cfg"
+
+sed -i.orig "s|#fftw=local|fftw=local|" $cfg
+sed -i.orig "s|#fftw_include_dirs=build/include|fftw_include_dirs = ${fftw3_inc_path}|" $cfg
+sed -i.orig "s|#fftw_lib_dirs=build/lib|fftw_lib_dirs = ${fftw3_libs_path}|" $cfg
+sed -i.orig "s|#fftw_libraries=fftw3|fftw_libraries = ${fftw3_name}|" $cfg
+
+# Finished
+
