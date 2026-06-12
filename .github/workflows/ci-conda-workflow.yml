@@ -38,7 +38,7 @@ jobs:
             install-type: develop
             fits: astropy
             test-data: submodule
-            matplotlib-version: 3
+            matplotlib-version: "3.10.8"
             bokeh-version: 3
             xspec-version: 12.14.0i
 
@@ -48,7 +48,7 @@ jobs:
             install-type: develop
             fits: astropy
             test-data: submodule
-            matplotlib-version: 3
+            matplotlib-version: "3.10.8"
             bokeh-version: 3
             xspec-version: 12.13.1e
 
@@ -72,7 +72,7 @@ jobs:
             install-type: develop
             fits: astropy
             test-data: submodule
-            matplotlib-version: 3
+            matplotlib-version: "3.10.8"
             bokeh-version: 3
             xspec-version: 12.14.0i
 
@@ -82,7 +82,7 @@ jobs:
             install-type: develop
             fits: astropy
             test-data: submodule
-            matplotlib-version: 3
+            matplotlib-version: "3.10.8"
             bokeh-version: 3
             xspec-version: 12.14.0i
 
@@ -92,7 +92,7 @@ jobs:
             install-type: develop
             fits: astropy
             test-data: submodule
-            matplotlib-version: 3
+            matplotlib-version: "3.10.8"
             xspec-version: 12.13.1
 
           - name: Linux Build (w/o Astropy or Xspec)
@@ -100,14 +100,14 @@ jobs:
             python-version: "3.14"
             install-type: install
             test-data: package
-            matplotlib-version: 3
+            matplotlib-version: "3.10.8"
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
             python-version: "3.13"
             numpy-version: "2.3.2"
             install-type: develop
-            fits: astropy
+            # fits: astropy   # this also installs matplotlib
             test-data: none
 
     steps:
