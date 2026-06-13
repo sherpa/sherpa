@@ -32,6 +32,7 @@ correct data; it is more a check that the routines can be called.
 
 import copy
 import logging
+import matplotlib.colors as mcolors
 
 import numpy as np
 
@@ -2080,7 +2081,7 @@ def test_pha1_plot_fit_options(clean_astro_ui, requires_pylab, basic_pha1):
     assert pts.get_color() != 'green'  # option over-ridden
     assert pts.get_linestyle() == '-'
     assert pts.get_marker() == 'None'
-    assert pts.get_markerfacecolor() == '#1f77b4'  # line.get_color()  # option over-ridden
+    assert mcolors.to_hex(pts.get_markerfacecolor()) == '#1f77b4'  # line.get_color()  # option over-ridden
     assert pts.get_markersize() == pytest.approx(6.0)
     assert pts.get_alpha() == pytest.approx(0.7)
 
