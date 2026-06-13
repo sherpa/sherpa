@@ -712,7 +712,7 @@ class PylabBackend(BasicBackend):
             ratios[top] = ratio
             gs = {'height_ratios': ratios}
             fig, axes = plt.subplots(nrows, ncols, sharex=True, num=1,
-                                     gridspec_kw=gs)
+                                     gridspec_kw=gs, clear=True)
             fig.subplots_adjust(hspace=0.05)
 
             # Change all but the bottom row. By setting sharex
