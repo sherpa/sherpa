@@ -2503,14 +2503,14 @@ class Session(NoNewAttributesAfterInit):
            The Levenberg-Marquardt method is an interface to the
            MINPACK subroutine lmdif to find the local minimum of
            nonlinear least squares functions of several variables by a
-           modification of the Levenberg-Marquardt algorithm [1].
+           modification of the Levenberg-Marquardt algorithm [1]_.
 
         ``moncar``
-           The implementation of the moncar method is based on [2].
+           The implementation of the moncar method is based on [2]_.
 
         ``neldermead``
            The implementation of the Nelder Mead Simplex direct search
-           is based on [3].
+           is based on [3]_.
 
         ``simplex``
            This is another name for ``neldermead``.
@@ -2518,17 +2518,17 @@ class Session(NoNewAttributesAfterInit):
         References
         ----------
 
-        1. J.J. More, "The Levenberg Marquardt algorithm:
+        .. [1] J.J. More, "The Levenberg Marquardt algorithm:
            implementation and theory," in Lecture Notes in Mathematics
            630: Numerical Analysis, G.A. Watson (Ed.), Springer-Verlag:
            Berlin, 1978, pp.105-116.
 
-        2. Storn, R. and Price, K. "Differential Evolution: A
+        .. [2] Storn, R. and Price, K. "Differential Evolution: A
            Simple and Efficient Adaptive Scheme for Global Optimization
            over Continuous Spaces." J. Global Optimization 11, 341-359,
            1997.
 
-        3. Jeffrey C. Lagarias, James A. Reeds, Margaret H. Wright,
+        .. [3] Jeffrey C. Lagarias, James A. Reeds, Margaret H. Wright,
            Paul E. Wright "Convergence Properties of the Nelder-Mead
            Simplex Algorithm in Low Dimensions", SIAM Journal on
            Optimization,Vol. 9, No. 1 (1998), pages 112-147.
@@ -2796,7 +2796,7 @@ class Session(NoNewAttributesAfterInit):
 
         This is a chi-square statistic where the variance is computed
         from model amplitudes derived in the previous iteration of the
-        fit. This 'Iterative Weighting' ([1]) attempts to remove
+        fit. This 'Iterative Weighting' ([1]_) attempts to remove
         biased estimates of model parameters.
 
         The variance in bin i is estimated to be::
@@ -2827,7 +2827,7 @@ class Session(NoNewAttributesAfterInit):
         References
         ----------
 
-        1. `"Multiparameter linear least-squares fitting to Poisson
+        .. [1] `"Multiparameter linear least-squares fitting to Poisson
            data one count at a time", Wheaton et al. 1995, ApJ 438, 322
            <https://adsabs.harvard.edu/abs/1995ApJ...438..322W>`_
 
@@ -3085,7 +3085,7 @@ class Session(NoNewAttributesAfterInit):
         The available statistics include:
 
         cash
-           A maximum likelihood function [1].
+           A maximum likelihood function [1]_.
 
         chi2
            Chi-squared statistic using the supplied error values.
@@ -3099,7 +3099,7 @@ class Session(NoNewAttributesAfterInit):
            the error for that bin is 0.
 
         chi2gehrels
-           Chi-squared with gehrels method [2]. This is the default method.
+           Chi-squared with gehrels method [2]_. This is the default method.
 
         chi2modvar
            Chi-squared with model amplitude variance.
@@ -3115,7 +3115,7 @@ class Session(NoNewAttributesAfterInit):
 
         cstat
            A maximum likelihood function (the XSPEC implementation of
-           the Cash function) [3]. This does *not* include support
+           the Cash function) [3]_. This does *not* include support
            for including the background.
 
         cstatnegativepenalty
@@ -3129,7 +3129,7 @@ class Session(NoNewAttributesAfterInit):
            A maximum likelihood function which includes the background
            data as part of the fit (i.e. for when it is not being
            explicitly modelled) (the XSPEC implementation of the Cash
-           function) [3].
+           function) [3]_.
 
         leastsq
            The least-squares statisic (the error is not used in this
@@ -3138,16 +3138,16 @@ class Session(NoNewAttributesAfterInit):
         References
         ----------
 
-        1. `Cash, W. "Parameter estimation in astronomy through
+        .. [1] `Cash, W. "Parameter estimation in astronomy through
            application of the likelihood ratio", ApJ, vol 228,
            p. 939-947 (1979).
            <https://adsabs.harvard.edu/abs/1979ApJ...228..939C>`_
 
-        2. `Gehrels, N. "Confidence limits for small numbers of
+        .. [2] `Gehrels, N. "Confidence limits for small numbers of
            events in astrophysical data", ApJ, vol 303, p. 336-346 (1986).
            <https://adsabs.harvard.edu/abs/1986ApJ...303..336G>`_
 
-        3. https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
+        .. [3] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
 
         Examples
         --------
@@ -11544,8 +11544,8 @@ class Session(NoNewAttributesAfterInit):
         near the minimum, the gradient of the function is zero or
         negligible, respectively. So the leading term of the expansion
         is quadratic.  The best root finding algorithm for a curve
-        which is approximately parabolic is Muller's method [1].
-        Muller's method is a generalization of the secant method [2]:
+        which is approximately parabolic is Muller's method [1]_.
+        Muller's method is a generalization of the secant method [2]_:
         the secant method is an iterative root finding method that
         approximates the function by a straight line through two
         points, whereas Muller's method is an iterative root finding
@@ -11581,12 +11581,12 @@ class Session(NoNewAttributesAfterInit):
         References
         ----------
 
-        1. Muller, David E., "A Method for Solving Algebraic
-           Equations Using an Automatic Computer," MTAC, 10
-           (1956), 208-215.
+        .. [1] Muller, David E., "A Method for Solving Algebraic
+               Equations Using an Automatic Computer," MTAC, 10
+               (1956), 208-215.
 
-        2. Numerical Recipes in Fortran, 2nd edition, 1986, Press
-           et al., p. 347
+        .. [2] Numerical Recipes in Fortran, 2nd edition, 1986, Press
+               et al., p. 347
 
         Examples
         --------
@@ -12173,10 +12173,10 @@ class Session(NoNewAttributesAfterInit):
         References
         ----------
 
-        `"Analysis of Energy Spectra with Low Photon Counts via
-        Bayesian Posterior Simulation", van Dyk, D.A., Connors, A.,
-        Kashyap, V.L., & Siemiginowska, A.  2001, Ap.J., 548, 224
-        <https://adsabs.harvard.edu/abs/2001ApJ...548..224V>`_
+        .. [1] `"Analysis of Energy Spectra with Low Photon Counts via
+               Bayesian Posterior Simulation", van Dyk, D.A., Connors, A.,
+               Kashyap, V.L., & Siemiginowska, A.  2001, Ap.J., 548, 224
+               <https://adsabs.harvard.edu/abs/2001ApJ...548..224V>`
 
         Examples
         --------
@@ -12951,7 +12951,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_plot_prefs, plot_model, set_xlinearm set_xlog, set_ylinear,
+        get_plot_prefs, plot_model, set_xlinearm, set_xlog, set_ylinear,
         set_ylog
 
         Notes
@@ -14554,7 +14554,7 @@ class Session(NoNewAttributesAfterInit):
            The label is invalid.
 
         See Also
-        ---------
+        --------
         get_default_id, get_split_plot, set_xlinear, set_xlog,
         set_ylinear, set_ylog
 
@@ -16761,7 +16761,7 @@ class Session(NoNewAttributesAfterInit):
            The data set does not support the requested plot type.
 
         See Also
-        ---------
+        --------
         contour_data, contour_fit, contour_fit_resid, contour_kernel,
         contour_model, contour_psf, contour_ratio, contour_resid,
         contour_source, get_default_id, get_split_plot

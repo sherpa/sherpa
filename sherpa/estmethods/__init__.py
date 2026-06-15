@@ -342,11 +342,10 @@ class Confidence(EstMethod):
         .. versionchanged:: 4.17.1
            All arguments other than statfunc and fitfunc are now
            keyword-only.
+
         Notes
         -----
         The statargs and statkwargs arguments are currently unused.
-
-
         """
 
         if statargs is not None or statkwargs is not None:

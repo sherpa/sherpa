@@ -20,15 +20,15 @@
 
 """Support image display with an external display tool.
 
-At present the only supported application is DS9 [DS9]_, which is
-connected to via XPA [XPA]_.
+At present the only supported application is DS9 [1]_, which is
+connected to via XPA [2]_.
 
 References
 ----------
 
-..  [DS9] SAOImageDS9, "An image display and visualization tool for astronomical data", https://ds9.si.edu/
+.. [1] SAOImageDS9, "An image display and visualization tool for astronomical data", https://ds9.si.edu/
 
-..  [XPA] "The XPA Messaging System", https://github.com/ericmandel/xpa
+.. [2] "The XPA Messaging System", https://github.com/ericmandel/xpa
 
 """
 

@@ -295,8 +295,8 @@ class BaseBackend(metaclass=MetaBaseBackend):
             If True, clear entire plotting area before adding the new
             subplot.
 
-        Note
-        ----
+        Notes
+        -----
         This method is intended for grids of plots with the same number of
         plots in each row and each column. In some backends, more
         complex layouts (e.g. one wide plot on row 1 and two smaller plots
