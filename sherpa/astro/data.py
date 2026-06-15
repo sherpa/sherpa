@@ -58,7 +58,7 @@ counts, but it also has to act like an integrated data set
 The `DataIMG` class extends 2D support for "gridded" data, with
 multiple possible coordinate systems (e.g. ``logical``, ``physical``,
 and ``world``).  Along with this, spatial filters can be applied,
-using the CIAO region syntax [REGION]_.
+using the CIAO region syntax [2]_.
 
 Notes
 -----
@@ -76,24 +76,14 @@ Notebook support
 The Data objects support the rich display protocol of IPython, with
 HTML display of a table of information highlighting the relevant data
 and, for some classes, SVG images. Examples can be found at
-[AstroNoteBook]_.
+[1]_.
 
 References
 ----------
 
-.. [AstroNoteBook] https://sherpa.readthedocs.io/en/latest/NotebookSupport.html
+.. [1] https://sherpa.readthedocs.io/en/latest/NotebookSupport.html
 
-.. [OGIP_92_007] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
-
-.. [OGIP_92_007a] "The OGIP Spectral File Format Addendum: Changes log ", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html
-
-.. [CAL_92_002] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
-
-.. [CAL_92_002a] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
-
-.. [PRIVATE_KA] Private communication with Keith Arnaud
-
-.. [REGION] https://cxc.harvard.edu/ciao/ahelp/dmregions.html
+.. [2] https://cxc.harvard.edu/ciao/ahelp/dmregions.html
 
 Examples
 --------
@@ -908,8 +898,8 @@ class DataOgipResponse(Data1DInt):
 class DataARF(DataOgipResponse):
     """ARF data set.
 
-    The ARF format is described in OGIP documents [CAL_92_002]_ and
-    [CAL_92_002a]_.
+    The ARF format is described in OGIP documents [1]_ and
+    [2]_.
 
     .. versionchanged:: 4.18.0
        The bin_lo and bin_hi columns are now ignored.
@@ -944,6 +934,12 @@ class DataARF(DataOgipResponse):
     There is limited checking that the ARF matches the OGIP standard,
     but as there are cases of released data products that do not follow
     the standard, these checks can not cover all cases.
+
+    References
+    ----------
+    .. [1] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+
+    .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
 
     """
     _ui_name = "ARF"
@@ -1048,8 +1044,8 @@ class DataARF(DataOgipResponse):
 class DataRMF(DataOgipResponse):
     """RMF data set.
 
-    The RMF format is described in OGIP documents [CAL_92_002]_ and
-    [CAL_92_002a]_.
+    The RMF format is described in OGIP documents [1]_ and
+    [2]_.
 
     Parameters
     ----------
@@ -1078,6 +1074,12 @@ class DataRMF(DataOgipResponse):
     but as there are cases of released data products that do not follow
     the standard, these checks can not cover all cases. If a check fails
     then a warning message is logged.
+
+    References
+    ----------
+    .. [1] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+
+    .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
 
     """
     _ui_name = "RMF"
@@ -1491,8 +1493,8 @@ def replace_xspecvar_values(src_counts, bkg_counts,
 class DataPHA(Data1D):
     """PHA data set, including any associated instrument and background data.
 
-    The PHA format is described in an OGIP document [OGIP_92_007]_ and
-    [OGIP_92_007a]_.
+    The PHA format is described in an OGIP document [1]_ and
+    [2]_.
 
     .. versionchanged:: 4.18.0
        The bin_lo and bin_hi columns are now ignored. A diagonal RMF
@@ -1555,11 +1557,11 @@ class DataPHA(Data1D):
 
     The handling of the AREASCAl value - whether it is a scalar or
     array - is currently in flux. It is a value that is stored with
-    the PHA file, and the OGIP PHA standard ([OGIP_92_007]_,
-    [OGIP_92_007a]_) describes the observed counts being divided by
+    the PHA file, and the OGIP PHA standard ([1]_,
+    [2]_) describes the observed counts being divided by
     the area scaling before comparison to the model. However, this is
     not valid for Poisson-based statistics, and is also not how XSPEC
-    handles AREASCAL ([PRIVATE_KA]_); the AREASCAL values are used to
+    handles AREASCAL ([3]_); the AREASCAL values are used to
     scale the exposure times instead. The aim is to add this logic to
     the instrument models in `sherpa.astro.instrument`, such as
     `sherpa.astro.instrument.RMFModelPHA`. The area scaling still has
@@ -1568,6 +1570,13 @@ class DataPHA(Data1D):
     used for plots (following XSPEC so as to avoid sharp
     discontinuities where the area-scaling factor changes strongly).
 
+    References
+    ----------
+    .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+    .. [2] "The OGIP Spectral File Format Addendum: Changes log ", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html
+
+    .. [3] private communication with Keith Arnaud
     """
     _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'grouping', 'quality')
     _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
@@ -1971,7 +1980,7 @@ will be removed. The identifiers can be integers or strings.
 
         A group is indicated by a sequence of flag values starting
         with ``1`` and then ``-1`` for all the channels in the group,
-        following [OGIP_92_007]_.  The grouping array must match the
+        following [1]_.  The grouping array must match the
         number of channels and it will be converted to an integer type
         if necessary.
 
@@ -1988,6 +1997,10 @@ will be removed. The identifiers can be integers or strings.
         See Also
         --------
         group, grouped, quality
+
+        References
+        ----------
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         """
         return self._grouping
@@ -2040,7 +2053,7 @@ will be removed. The identifiers can be integers or strings.
 
         A quality value of 0 indicates a good channel, otherwise
         (values >=1) the channel is considered bad and can be excluded
-        using the `ignore_bad` method, as discussed in [OGIP_92_007]_. The
+        using the `ignore_bad` method, as discussed in [1]_. The
         quality array must match the number of channels and it will be
         converted to an integer type if necessary.
 
@@ -2052,6 +2065,9 @@ will be removed. The identifiers can be integers or strings.
         --------
         group, grouping
 
+        References
+        ----------
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
         """
         return self._quality
 
@@ -3087,7 +3103,7 @@ It is an integer or string.
     def get_backscal(self, group=True, filter=False):
         """Return the background scaling of the PHA data set.
 
-        Return the BACKSCAL setting [OGIP_92_007]_ for the PHA data
+        Return the BACKSCAL setting [1]_ for the PHA data
         set.
 
         Parameters
@@ -3125,6 +3141,10 @@ It is an integer or string.
         >>> pha.get_backscal()
         2.5264364698914e-06
 
+        References
+        ----------
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
         """
         if self.backscal is None:
             return None
@@ -3134,7 +3154,7 @@ It is an integer or string.
     def get_areascal(self, group=True, filter=False):
         """Return the fractional area factor of the PHA data set.
 
-        Return the AREASCAL setting [OGIP_92_007]_ for the PHA data
+        Return the AREASCAL setting [1]_ for the PHA data
         set.
 
         Parameters
@@ -3165,6 +3185,10 @@ It is an integer or string.
         >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.get_areascal()
         1.0
+
+        References
+        ----------
+        .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         """
         if self.areascal is None:
@@ -5234,8 +5258,8 @@ It is an integer or string.
         ylabel : str
             Label for the y axis that describes the current settings for the analysis
 
-        Example
-        -------
+        Examples
+        --------
         In this example, we first set up some data and a model, then we bin and filter
         as we would with a real dataset and retrieve the values.
         For this example, we load a datafile that is included in the Sherpa code. The

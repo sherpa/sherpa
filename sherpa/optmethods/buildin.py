@@ -115,8 +115,8 @@ class OptMethod(NoNewAttributesAfterInit):
                       str,             # message
                       dict[str, Any]]  # information to pass back
 
-    Example
-    -------
+    Examples
+    --------
     For this example, we first define an optimizer function. To demonstrate
     the interface, we use a function that is stupidly simple and should
     **not** be used for any real fitting problem: We will simply draw random

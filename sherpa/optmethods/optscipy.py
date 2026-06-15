@@ -214,8 +214,8 @@ try:
         callback : callable
             A callable called after each iteration.
 
-        Example
-        -------
+        Examples
+        --------
 
         We begin with a simple example of fitting a Gaussian and a constant
         to some data, using all the default options for the optimizer.

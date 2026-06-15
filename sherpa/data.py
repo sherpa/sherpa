@@ -93,12 +93,12 @@ Notebook support
 
 The Data objects support the rich display protocol of IPython, with
 HTML display of a table of information highlighting the relevant data.
-Examples can be found at [NoteBook]_.
+Examples can be found at [1]_.
 
 References
 ----------
 
-.. [NoteBook] https://sherpa.readthedocs.io/en/latest/NotebookSupport.html
+.. [1] https://sherpa.readthedocs.io/en/latest/NotebookSupport.html
 
 Examples
 --------
@@ -1772,7 +1772,7 @@ class Data1D(Data):
         .. versionadded:: 4.17.0
 
         Parameters
-        -------
+        ----------
         label : str
            The new label.
 
@@ -2531,7 +2531,7 @@ class Data2D(Data):
         .. versionadded:: 4.17.0
 
         Parameters
-        -------
+        ----------
         label: str
 
         See Also
@@ -2547,7 +2547,7 @@ class Data2D(Data):
         .. versionadded:: 4.17.0
 
         Parameters
-        -------
+        ----------
         label: str
 
         See Also

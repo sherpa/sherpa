@@ -246,8 +246,8 @@ try:
             the scaling, provide a dictionary or an instance of 
             `optimagic.parameters.scaling.ScalingOptions`.
         
-        Example
-        -------
+        Examples
+        --------
         In this example, we fit a Gaussian and a constant to some data:
 
         >>> import numpy as np
