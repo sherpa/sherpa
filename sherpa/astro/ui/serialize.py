@@ -1168,12 +1168,12 @@ def _save_models(out: OutType, state: SessionType) -> None:
         try:
             try:
                 the_source = state.get_source(id)
-            except:
+            except Exception:
                 the_source = None
 
             try:
                 the_full_model = state.get_model(id)
-            except:
+            except Exception:
                 the_full_model = None
 
             have_source = the_source is not None
@@ -1185,7 +1185,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
                     # used by PHA data sets.
                     try:
                         is_pha = isinstance(state.get_data(id), DataPHA)
-                    except:
+                    except Exception:
                         is_pha = False
 
                     if is_pha and repr(the_source) == repr(the_full_model):
@@ -1203,7 +1203,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
 
             _output(out, cmd)
             _output_nl(out)
-        except:
+        except Exception:
             pass
 
         # Set background models (if any) associated with backgrounds
@@ -1217,12 +1217,12 @@ def _save_models(out: OutType, state: SessionType) -> None:
 
                 try:
                     the_bkg_source = state.get_bkg_source(id, bkg_id=bid)
-                except:
+                except Exception:
                     the_bkg_source = None
 
                 try:
                     the_bkg_full_model = state.get_bkg_model(id, bkg_id=bid)
-                except:
+                except Exception:
                     the_bkg_full_model = None
 
                 have_source = the_bkg_source is not None
@@ -1249,7 +1249,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
                 _output(out, cmd)
                 _output_nl(out)
 
-        except:
+        except Exception:
             pass
 
     # separate out the pileup models from the source models
@@ -1257,7 +1257,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
     for id in ids:
         try:
             pname = state.get_pileup_model(id).name
-        except:
+        except Exception:
             continue
 
         cmd_id = _id_to_str(id)
