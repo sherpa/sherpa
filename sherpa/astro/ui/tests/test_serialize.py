@@ -1259,6 +1259,8 @@ set_method_opt("verbose", 0)
 load_psf("p0", "@@/psf_0.0_00_bin1.img")
 p0.size = (26, 26)
 p0.center = (13, 13)
+p0.radial = 0.0
+p0.norm = 1.0
 
 create_model_component("gauss2d", "g1")
 g1.integrate = True
@@ -3382,7 +3384,6 @@ def test_restore_img_no_filter_model_psf(make_data_path, recwarn, check_str):
     recwarn.clear()
 
 
-@pytest.mark.xfail  # psf.radial.val is restored as 0 not 1
 @requires_fits
 def test_load_psf1d_from_file(check_str, tmp_path):
     """Can we restore a 1D PSF read from a file?
@@ -3467,8 +3468,7 @@ def test_load_psf1d_from_model(check_str):
     ui.set_psf(psf1)
     # It looks like the radial setting isn't used in this case,
     # unlike the _from_file version. So for now treat this as
-    # a regression test and do not fall over when the value is
-    # not restored.
+    # a regression test.
     psf1.radial = 1
 
     # This does not match the _from_file case, so treat this as
@@ -3489,7 +3489,7 @@ def test_load_psf1d_from_model(check_str):
     assert ui.list_psf_ids() == [1]
     assert ui.list_model_components() == ["b1", "b2", "b3", "g1", "psf1"]
     psf = ui.get_model_component("psf1")
-    assert psf.radial.val == pytest.approx(0)  # NOTE: regression test
+    assert psf.radial.val == pytest.approx(1)
     assert ui.get_model_plot().y == pytest.approx(expected)
 
     # As the tests above don't check the frozen state

@@ -43,6 +43,8 @@ from sherpa.astro.io.wcs import WCS
 
 from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.models.basic import UserModel
+from sherpa.models.parameter import Parameter
+from sherpa.utils import get_keyword_defaults
 from sherpa.utils.types import IdType
 
 if TYPE_CHECKING:
@@ -1094,16 +1096,19 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
             _output(out, par_attributes)
             linkstr = linkstr + par_linkstr
 
-        # If the model is a PSFModel, could have special
-        # attributes "size" and "center" -- if so, record them.
+        # If the model is a PSFModel then there are a number of
+        # attributes we want to set, but they are not stored in the
+        # .pars attribute. Drop the "kernel" field as it is a string.
+        #
         if typename == "psfmodel":
             spacer = False
-            if hasattr(mod, "size") and mod.size is not None:
-                _output(out, f"{modelname}.size = {mod.size}")
-                spacer = True
+            for parname in ["size", "center", "radial", "norm"]:
+                parval = getattr(mod, parname, None)
+                if parval is None:
+                    continue
 
-            if hasattr(mod, "center") and mod.center is not None:
-                _output(out, f"{modelname}.center = {mod.center}")
+                val = parval.val if isinstance(parval, Parameter) else parval
+                _output(out, f"{modelname}.{parname} = {val}")
                 spacer = True
 
             if spacer:
