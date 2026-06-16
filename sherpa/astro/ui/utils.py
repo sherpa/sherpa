@@ -10370,6 +10370,23 @@ class Session(sherpa.ui.utils.Session):
                 kernel = self.unpack_data(filename_or_model,
                                           *args, **kwargs)
 
+        """
+
+maybe the unpack_xxx commands create a store (so we can get an
+"accurate" one). do not want to key just on the filename as they
+could get over-written (but then save_all would fail in this case
+anyway).
+
+Maybe unpack_foo saves foo with a filename/index and then we can
+ask for the last index (in the load_foo call that calls unpack_foo)
+to get at it. Or we just save the las tone.
+
+                # could try to make a FileStore here but hard...
+                assert len(args) == 0, args
+                ###assert False
+
+        """
+
         psf = sherpa.astro.instrument.PSFModel(modelname, kernel)
         if isinstance(kernel, Model):
             self.freeze(kernel)
