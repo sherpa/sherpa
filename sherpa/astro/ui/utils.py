@@ -17069,10 +17069,6 @@ class Session(sherpa.ui.utils.Session):
 
         send_to_pager("\n".join(lines), outfile, clobber)
 
-    ###########################################################################
-    # Session Text Save Function
-    ###########################################################################
-
     def save_all(self,
                  outfile=None,
                  clobber: bool = False,
@@ -17081,14 +17077,22 @@ class Session(sherpa.ui.utils.Session):
         """Save the information about the current session to a text file.
 
         This differs to the `save` command in that the output is human
-        readable. Three consequences are:
+        readable, which means:
 
-         1. numeric values may not be recorded to their full precision
+         1. it is possible to read and edit the output of `save_all`,
 
-         2. data sets are not included in the file
+         2. numeric values may not be recorded to their full precision,
 
-         3. some settings and values may not be recorded (such as
+         3. data sets are not included in the file (e.g. the commmand
+            ``load_pha("src.pi")`` requires the file src.pi, and any
+            associated files, to exist),
+
+         4. and some settings and values may not be recorded (such as
             header information).
+
+        .. versionchanged:: 4.19.0
+           PSF models now also save the radial and norm parameters, if
+           available.
 
         .. versionchanged:: 4.18.0
            Handling of PHA data has been improved, and the output now
@@ -17136,8 +17140,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        save : Save the current Sherpa session to a file.
-        restore : Load in a Sherpa session from a file.
+        save, restore
 
         Notes
         -----
