@@ -17233,10 +17233,16 @@ class Session(sherpa.ui.utils.Session):
 
          1. numeric values may not be recorded to their full precision
 
-         2. data sets are not included in the file
+         2. data sets are not included in the file (e.g. the commmand
+            ``load_pha("src.pi")`` requires the file src.pi, and any
+            associated files, to exist)
 
          3. some settings and values may not be recorded (such as
             header information).
+
+        .. versionchanged:: 4.19.0
+           PSF models now also save the radial and norm parameters, if
+           available.
 
         .. versionchanged:: 4.18.0
            Handling of PHA data has been improved, and the output now
@@ -17284,8 +17290,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        save : Save the current Sherpa session to a file.
-        restore : Load in a Sherpa session from a file.
+        save, restore
 
         Notes
         -----
