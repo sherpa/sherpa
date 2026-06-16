@@ -833,17 +833,13 @@ def _print_par(par: ParameterType) -> tuple[str, str | None]:
     # hard min/max ranges?
     #
     parstrs = []
-    try:
+    with suppress(AttributeError):
         if par.hard_min_changed():
             parstrs.append(f'{par.fullname}.hard_min    = {par.hard_min}')
-    except AttributeError:
-        pass
 
-    try:
+    with suppress(AttributeError):
         if par.hard_max_changed():
             parstrs.append(f'{par.fullname}.hard_max    = {par.hard_max}')
-    except AttributeError:
-        pass
 
     parstrs.extend([f'{par.fullname}.default_val = {par.default_val}',
                     f'{par.fullname}.default_min = {par.default_min}',
@@ -1210,16 +1206,17 @@ def _save_source(out: OutType,
     # If a data set has a source model associated with it,
     # set that here -- try to distinguish cases where
     # source model is different from whole model.
-    # If not, just pass
-    try:
+    # If not, do nothing.
+    #
+    with suppress(Exception):
         try:
             the_source = state.get_source(id)
-        except:
+        except Exception:
             the_source = None
 
         try:
             the_full_model = state.get_model(id)
-        except:
+        except Exception:
             the_full_model = None
 
         have_source = the_source is not None
@@ -1231,7 +1228,7 @@ def _save_source(out: OutType,
                 # used by PHA data sets.
                 try:
                     is_pha = isinstance(state.get_data(id), DataPHA)
-                except:
+                except Exception:
                     is_pha = False
 
                 if is_pha and repr(the_source) == repr(the_full_model):
@@ -1249,8 +1246,6 @@ def _save_source(out: OutType,
 
         _output(out, cmd)
         _output_nl(out)
-    except:
-        pass
 
 
 def _save_bkg_source(out: OutType,
@@ -1260,10 +1255,11 @@ def _save_bkg_source(out: OutType,
     """Create the save_bkg_source/model/full_model line."""
 
     # Set background models (if any) associated with backgrounds
-    # tied to this data set -- if none, then pass.  Again, try
+    # tied to this data set -- if none, then do nothing.  Again, try
     # to distinguish cases where background "source" model is
     # different from whole background model.
-    try:
+    #
+    with suppress(Exception):
         bids = state.list_bkg_ids(id)
         cmd_id = _id_to_str(id)
 
@@ -1272,12 +1268,12 @@ def _save_bkg_source(out: OutType,
 
             try:
                 the_bkg_source = state.get_bkg_source(id, bkg_id=bid)
-            except:
+            except Exception:
                 the_bkg_source = None
 
             try:
                 the_bkg_full_model = state.get_bkg_model(id, bkg_id=bid)
-            except:
+            except Exception:
                 the_bkg_full_model = None
 
             if the_bkg_source is not None:
@@ -1300,9 +1296,6 @@ def _save_bkg_source(out: OutType,
 
             _output(out, cmd)
             _output_nl(out)
-
-    except:
-        pass
 
 
 def _save_models(out: OutType, state: SessionType) -> None:
@@ -1331,7 +1324,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
     for id in ids:
         try:
             pname = state.get_pileup_model(id).name
-        except:
+        except Exception:
             continue
 
         cmd_id = _id_to_str(id)
