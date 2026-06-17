@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2016, 2020, 2025
+//  Copyright (C) 2007, 2016, 2020, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -19,7 +19,10 @@
 //
 
 #define _INTEGRATIONMODULE
+
+#define Py_LIMITED_API 0x030B0000
 #include <Python.h>
+
 #include "sherpa/integration.hh"
 #include <iostream>
 #include <limits>
