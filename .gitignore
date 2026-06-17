@@ -127,3 +127,9 @@ docs/*.ipynb
 
 # emacs related files
 flycheck*py
+
+# OpenClaw runtime files (agent profiles, memory, sessions)
+MEMORY.md
+main/
+mara/
+agents/
