@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2016, 2018, 2020-2021, 2025
+//  Copyright (C) 2007, 2016, 2018, 2020-2021, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -76,8 +76,7 @@ static PyObject *tcdPyData_new(PyTypeObject *type, PyObject *args,
 {
 
   tcdPyData *self = NULL;
-  self = (tcdPyData*)type->tp_alloc(type, 0);
-  return (PyObject*)self;
+  return PyType_GenericAlloc(type, 0);
 
 }
 
@@ -464,49 +463,27 @@ static PyMethodDef tcdPyData_methods[] = {
   {NULL, NULL, 0, NULL}  // Sentinel
 };
 
+static PyType_Slot tcdPyData_Slots[] =
+  {
+    {Py_tp_doc, (void *) "tcdPyData object"},
+    {Py_tp_dealloc, (void *) tcdPyData_dealloc},
+    {Py_tp_methods, (void *) tcdPyData_methods},
+    {Py_tp_members, (void *) tcdPyData_members},
+    {Py_tp_init, (void *) tcdPyData_init},
+    {Py_tp_new, (void *) tcdPyData_new},
+    {0, 0}
+  };
 
-// New datatype initialization
-static PyTypeObject tcdPyData_Type = {
-  PyVarObject_HEAD_INIT(NULL, 0)
-//  0,                                // ob_size
-  (char*)"tcdData",                 // tp_name
-  sizeof(tcdPyData),                // tp_basicsize
-  0, 		                    // tp_itemsize
-  (destructor)tcdPyData_dealloc,    // tp_dealloc
-  0,                                // tp_print
-  0,                                // tp_getattr, __getattr__
-  0,                                // tp_setattr, __setattr__
-  0,                                // tp_compare
-  0, //(reprfunc)tcdPyData_repr,       // tp_repr, __repr__
-  0,                                // tp_as_number
-  0,                                // tp_as_sequence
-  0,                                // tp_as_mapping
-  0,                                // tp_hash
-  0,                                // tp_call, __call__
-  0, //(reprfunc)tcdPyData_repr,       // tp_str, __str__
-  0,                                // tp_getattro
-  0,                                // tp_setattro
-  0,                                // tp_as_buffer
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, //tp_flags
-  (char*)"tcdPyData object",        // tp_doc, __doc__
-  0,		                    // tp_traverse
-  0,		                    // tp_clear
-  0,		                    // tp_richcompare
-  0,		                    // tp_weaklistoffset
-  0,		                    // tp_iter, __iter__
-  0,		                    // tp_iternext
-  tcdPyData_methods,              // tp_methods
-  tcdPyData_members,              // tp_members
-  0,                                // tp_getset
-  0,                                // tp_base
-  0,                                // tp_dict, __dict__
-  0,                                // tp_descr_get
-  0,                                // tp_descr_set
-  0,                                // tp_dictoffset
-  (initproc)tcdPyData_init,         // tp_init, __init__
-  0,                                // tp_alloc
-  tcdPyData_new,                    // tp_new
+static PyType_Spec tcdPyData_Spec = {
+  "_tcd.tcdData",
+  sizeof(tcdPyData),
+  0,
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+  tcdPyData_Slots
 };
+
+static PyTypeObject *tcdPyData_Type = NULL;
+
 
 static void _normalize_kernel( double* res, long len ) {
 
@@ -999,21 +976,20 @@ static struct PyModuleDef psf = {
     PsfFcts
 };
 
-PyMODINIT_FUNC PyInit__psf(void) {
-  if( PyType_Ready(&tcdPyData_Type) < 0 )
+PyMODINIT_FUNC
+PyInit__psf(void) {
+
+  import_array();
+
+  PyObject* m = PyModule_Create(&psf);
+  if (m == NULL)
     return NULL;
 
-   import_array();
-
-   PyObject* m;
-   m = PyModule_Create(&psf);
-
-  if( m == NULL )
+  tcdPyData_Type = (PyTypeObject *) PyType_FromSpec(&tcdPyData_Spec);
+  if (PyModule_AddObject(m, (char*)"tcdData", (PyObject*)tcdPyData_Type) < 0) {
+    Py_DECREF(m);
     return NULL;
-
-  Py_INCREF(&tcdPyData_Type);
-
-  PyModule_AddObject(m, (char*)"tcdData", (PyObject*)&tcdPyData_Type);
+  }
 
   return m;
 }
