@@ -17,7 +17,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+"""Provides the Session class for interactive use of Sherpa.
 
+"""
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence

@@ -4,15 +4,6 @@
 Available Models
 ****************
 
-.. todo::
-
-   I am not convinced separating the models out here from the
-   API below is a good idea, as we end up with multiple pages
-   describing the `sherpa.astro.xspec` module (for instance).
-   It seems less of an issue than I was originally worried about,
-   but this should still be reviewed (in particular when looking
-   at the auto-generated index or module-list pages).
-
 .. note::
 
    The models in :py:mod:`sherpa.astro.xspec` are only available if
@@ -25,14 +16,23 @@ to describe and fit data, while the
 :ref:`Reference/API <models-reference-api>`
 section below describes the classes used to create these models.
 
+
 .. toctree::
    :maxdepth: 2
 
    usermodel
-   basic
-   astro_models
-   astro_optical
-   astro_xspec
+
+Models included in Sherpa
+=========================
+
+.. automodapi:: sherpa.models.basic
+
+.. automodapi:: sherpa.astro.models
+
+.. automodapi:: sherpa.astro.optical
+
+.. automodapi:: sherpa.astro.xspec
+
 
 .. _models-reference-api:
 
@@ -43,15 +43,20 @@ This section describes the classes used to create models and
 the :ref:`Available Models <available-models>` section above
 contains the classes that implement various models.
 
-.. toctree::
-   :maxdepth: 2
+.. automodapi:: sherpa.models.model
 
-   model
-   parameters
-   op
-   regrid
-   instrument
-   template
-   astro_instrument
-   xspec_model
-   xspec_utils
+.. automodapi:: sherpa.models.parameter
+
+.. automodapi:: sherpa.models.op
+
+.. automodapi:: sherpa.models.regrid
+
+.. automodapi:: sherpa.instrument
+
+.. automodapi:: sherpa.models.template
+
+.. automodapi:: sherpa.astro.instrument
+
+.. automodapi:: sherpa.astro.xspec
+
+.. automodapi:: sherpa.astro.xspec.utils

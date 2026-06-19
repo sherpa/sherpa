@@ -429,15 +429,5 @@ Astronomy data
 
 Reference/API
 =============
-
-.. todo::
-
-   There are a bunch of methods that seem out of place;
-   e.g. Data1D has get_x0 even though it's not ND!
-
-.. toctree::
-   :maxdepth: 2
-   :name: api_data
-
-   data
-   astrodata
+.. automodapi:: sherpa.data
+.. automodapi:: sherpa.astro.data

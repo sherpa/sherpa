@@ -1476,7 +1476,7 @@ class Delta2D(RegriddableModel2D):
 
 
 class Gauss2D(RegriddableModel2D):
-    """Two-dimensional gaussian function.
+    r"""Two-dimensional gaussian function.
 
     Attributes
     ----------
@@ -1502,13 +1502,13 @@ class Gauss2D(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
+
+    .. math::
 
         f(x0,x1) = ampl * exp(-4 * log(2) * r(x0,x1)^2)
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                fwhm^2 * (1-ellip)^2
+        r(x0,x1)^2 = \frac{xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2}{fwhm^2 * (1-ellip)^2}
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
@@ -1678,13 +1678,13 @@ class NormGauss2D(RegriddableModel2D):
     -----
     The functional form of the model for points is::
 
+    .. math::
+    
         f(x0,x1) = 4 * log(2) * ampl * exp(-4 * log(2) * r(x0,x1)^2)
                    -------------------------------------------------
                        pi * fwhm * fwhm * sqrt(1 - ellip * ellip)
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                 fwhm^2 * (1-ellip)^2
+        r(x0,x1)^2 = \frac{xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2}{fwhm^2 * (1-ellip)^2}
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 

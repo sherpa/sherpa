@@ -125,22 +125,19 @@ set to `None`).
 Reference/API
 =============
 
-.. toctree::
-   :maxdepth: 2
-
-   sherpa
-   err
-   logging
-   parallel
-   random
-   guess
-   utils
-   testing
-   io
-   astro
-   astro_io
-   astro_io_types
-   astro_io_wcs
-   astro_io_xstable
-   astro_utils
-   astro_utils_xspec
+.. automodapi:: sherpa
+.. automodapi:: sherpa.utils.err
+.. automodapi:: sherpa.utils.logging
+.. automodapi:: sherpa.utils.parallel
+.. automodapi:: sherpa.utils.random
+.. automodapi:: sherpa.utils.guess
+.. automodapi:: sherpa.utils
+.. automodapi:: sherpa.utils.testing
+.. automodapi:: sherpa.io
+.. automodapi:: sherpa.astro
+.. automodapi:: sherpa.astro.io
+.. automodapi:: sherpa.astro.io.types
+.. automodapi:: sherpa.astro.io.wcs
+.. automodapi:: sherpa.astro.io.xstable
+.. automodapi:: sherpa.astro.utils
+.. automodapi:: sherpa.astro.utils.xspec

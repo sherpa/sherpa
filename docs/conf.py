@@ -123,6 +123,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'matplotlib.sphinxext.plot_directive',
+    'sphinx_automodapi.automodapi',
     # Use napoleon over numpydoc for now since it stops a large number
     # of warning messages (about missing links) that I don't have time
     # to investigate.
@@ -315,6 +316,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # Setting from sphinx_astropy for numpydoc xref settings
 numpydoc_xref_param_type = True
+# Avoid methods and attributes show up more than once when using automodapi
+numpydoc_show_class_members=False
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 #

@@ -17,7 +17,10 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+"""Astronomy-specific `~sherpa.astro.ui.utils.Session`.
 
+This class that provides the data-management code used by the `sherpa.astro.ui` module.
+"""
 import sherpa.all
 import sherpa.astro.all
 import sherpa.astro.ui.utils

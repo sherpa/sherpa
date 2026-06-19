@@ -258,13 +258,14 @@ The routines are listed below:
   to find a global minimum. It is over-kill for relatively simple problems.
 
 
-Reference/API
-=============
+API for optimisers
+==================
 
-.. toctree::
-   :maxdepth: 2
+.. automodapi:: sherpa.optmethods
 
-   optmethods
-   optscipy
-   optoptimagic
-   optfcts
+.. automodapi:: sherpa.optmethods.optscipy
+
+.. automodapi:: sherpa.optmethods.optoptimagic
+
+.. automodapi:: sherpa.optmethods.optfcts
+

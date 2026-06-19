@@ -17,6 +17,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+"""Provides the Session class for interactive use of Sherpa.
+
+This  module provides an interface to the `sherpa.ui.utils.Session`
+object, where a singleton class is used to provide the access but
+hidden away. This needs better explanation...
+"""
 
 from __future__ import annotations
 

@@ -400,8 +400,24 @@ For the special class of `~sherpa.astro.data.DataPHA` described in
 function has to include the response of the instrument. See the
 `sherpa.astro.data.DataPHA.to_plot` documentation for an example.
 
+.. toctree::
+   :maxdepth: 2
+
+    backends
+
 Reference/API
 =============
+
+.. automodapi:: sherpa.plot
+.. automodapi:: sherpa.astro.plot
+.. automodapi:: sherpa.image
+.. automodapi:: sherpa.plot.backends
+.. automodapi:: sherpa.plot.backend_utils
+.. automodapi:: sherpa.plot.pylab_backend
+.. automodapi:: sherpa.plot.pylab_area_backend
+.. automodapi:: sherpa.plot.bokeh_backend
+.. automodapi:: sherpa.plot.utils
+.. automodapi:: sherpa.plot.testing
 
 .. toctree::
    :maxdepth: 2

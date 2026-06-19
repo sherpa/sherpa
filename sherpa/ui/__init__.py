@@ -16,6 +16,11 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+"""Session management for interactive use of Sherpa.
+
+This module contains the `~sherpa.ui.utils.Session` class that
+provides the data-management code used by the `sherpa.ui` module.
+"""
 
 import sherpa.all
 import sherpa.ui.utils

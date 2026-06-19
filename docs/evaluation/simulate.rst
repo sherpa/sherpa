@@ -291,17 +291,5 @@ astrophysical component, so it gets folded through the response:
     >>> samplebgplot.plot(overplot=True, label='Sample Background', linestyle="solid")
     >>> modelbgplot.plot(overplot=True, label='Model Background', linestyle="solid")
 
-
-Reference/API
-=============
-
-.. currentmodule:: sherpa.astro.fake
-
-.. automodule:: sherpa.astro.fake
-
-   .. rubric:: Functions
-
-   .. autosummary::
-      :toctree: api
-
-      fake_pha
+.. automodapi:: sherpa.astro.fake
+   :headings: =-

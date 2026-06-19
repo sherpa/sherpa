@@ -999,12 +999,7 @@ More on fitting
    poisson
    strategies
 
-
 Reference/API
 =============
-
-.. toctree::
-   :maxdepth: 2
-
-   fit
-   estmethods
+.. automodapi:: sherpa.fit
+.. automodapi:: sherpa.estmethods

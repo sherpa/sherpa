@@ -73,14 +73,5 @@ astronomical X-ray spectral data with an associated response
 
 .. _evaluation-reference-api:
 
-Reference/API
-=============
-
-This section describes some of the classes used to evaluate the
-models, in particular in supporting models evaluated against
-:py:class:`~sherpa.astro.data.DataPHA` objects.
-
-.. toctree::
-   :maxdepth: 2
-
-   astro_background
+.. automodapi:: sherpa.astro.background
+   :headings: =-

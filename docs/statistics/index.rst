@@ -73,8 +73,5 @@ data. It is also possible to add your own statistic class.
 Reference/API
 =============
 
-.. toctree::
-   :maxdepth: 2
-
-   stats
+.. automodapi:: sherpa.stats
    

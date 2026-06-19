@@ -375,12 +375,8 @@ available plotting functions and statistical diagnostics.
 
 Reference/API
 =============
-
-.. toctree::
-   :maxdepth: 2
-
-   sim
-   mh
-   sample
-   simulate
+.. automodapi:: sherpa.sim
+.. automodapi:: sherpa.sim.mh
+.. automodapi:: sherpa.sim.sample
+.. automodapi:: sherpa.sim.simulate
 
