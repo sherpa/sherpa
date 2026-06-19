@@ -2427,21 +2427,26 @@ class InterpolatedTableModel1D(TableModelBase):
     The model values - the y argument to `load` - are multiplied by
     the `ampl` parameter of the model.
 
+    Parameters
+    ----------
+    name : str, optional
+        The name of the model, by default 'interpolatedtablemodel1d'
+    x : sequence, optional
+        The independent axis values, by default None
+    y : sequence, optional
+        The dependent axis values, by default None
+    method : callable, optional
+        The interpolation method, by default `sherpa.utils.linear_interp`.
+    integrate_method : callable, optional
+        The integration method, by default
+        `sherpa.utils.integrate_tabulated_function`.
+    integrate_kwargs : dict, optional
+        Used to pass extra parameters to the integrator, by default an empty dict.
+
     Attributes
     ----------
     ampl
         The linear scaling factor for the table values
-    interpolate_method : callable
-        The interpolation method. The method argument is a function that accepts arguments (xout,
-        xin, yin) and returns the yout values from interpolating xout onto
-        (xin, yin). The default is linear interpolation
-        (`sherpa.utils.linear_interp`).
-    integrate_method : callable
-        The integration method.
-    integrate_kwargs
-            Used to pass extra parameters to the integrator (currently
-            `epsabs`, `epsrel`, `maxeval`, `errflag`, and `logger`).
-            Only used if the `integrate` attribute is set to True.
 
     See Also
     --------
@@ -2472,11 +2477,14 @@ class InterpolatedTableModel1D(TableModelBase):
     ndim = 1
 
     def __init__(self, name: str='interpolatedtablemodel1d',
-                 x: Sequence | None=None, y: Sequence | None=None):
+                 x: Sequence | None=None, y: Sequence | None=None,
+                 method: Callable = linear_interp,
+                 integrate_method: Callable = integrate_tabulated_function,
+                 integrate_kwargs: dict = {}):
         self._x = None
-        self._method = linear_interp
-        self._integrate_kwargs = {}
-        self._integrate_method = integrate_tabulated_function
+        self._method = method
+        self._integrate_kwargs: dict = integrate_kwargs
+        self._integrate_method = integrate_method
         super().__init__(name)
         self.load(x, y)
 
@@ -2484,9 +2492,9 @@ class InterpolatedTableModel1D(TableModelBase):
     def method(self):
         """The interpolation method.
 
-        The method argument is a function that accepts arguments (xout,
-        xin, yin) and returns the yout values from interpolating xout onto
-        (xin, yin). The default is linear interpolation
+        The method argument is a function that accepts arguments (x_out,
+        x_in, y_in) and returns the y_out values from interpolating x_out onto
+        (x_in, y_in). The default is linear interpolation
         (`sherpa.utils.linear_interp`).
         """
         return self._method
@@ -2504,10 +2512,7 @@ class InterpolatedTableModel1D(TableModelBase):
     def integrate_method(self):
         """The integration method.
 
-        The method argument is a function that accepts arguments (xout,
-        xin, yin) and returns the yout values from interpolating xout onto
-        (xin, yin). The default is linear interpolation
-        (`sherpa.utils.linear_interp`).
+        Only used if the `integrate` attribute is set to True.
         """
         return self._integrate_method
 
