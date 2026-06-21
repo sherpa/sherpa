@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014-2016, 2020, 2022, 2024-2025
+#  Copyright (C) 2014-2016, 2020, 2022, 2024-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -55,9 +55,10 @@ class sherpa_config(Command):
                     ('install_dir', None, "Directory where external dependencies must be installed (--prefix)"),
                     ('configure', None, "Additional configure flags for the external dependencies"),
                     ('group_cflags', None, "Additional cflags for building the grouping library"),
+                    ('disable_extern', None, "Disable building any of the extern code")
                     ]
 
-    def initialize_options(self):
+    def initialize_options(self) -> None:
         self.install_dir = os.path.join(os.getcwd(), 'build')
         self.fftw = None
         self.fftw_include_dirs = None
@@ -80,8 +81,9 @@ class sherpa_config(Command):
         self.group_cflags = None
         self.stk_location = None
         self.disable_stk = False
+        self.disable_extern = False
 
-    def finalize_options(self):
+    def finalize_options(self) -> None:
         incdir = os.path.join(self.install_dir, 'include')
         libdir = os.path.join(self.install_dir, 'lib')
 
@@ -132,11 +134,20 @@ class sherpa_config(Command):
         if self.stk_location is None:
             self.stk_location = os.path.join(pydir, 'stk.so')
 
-    def build_configure(self):
+    def build_configure(self) -> list[str] | None:
+        """Set up fir building compiled code.
 
-        # can we find ascdm.h (if so we can support FITS region files as long
-        # as the other settings are set up to include ascdm)?
-        #
+        This handles setting up the optional extension modules as
+        well as building anything needed from the extern directory.
+
+        The return value is the configure command to setup the
+        extern code, or None if the extern code is not being built.
+
+        There is limited checks that these make sense, relying on the
+        build failing if they do not.
+
+        """
+
         if not self.disable_region:
             region_macros = None
             if self.region_use_cxc_parser:
@@ -152,15 +163,21 @@ class sherpa_config(Command):
             wcsext = build_ext(self, 'wcs')
             self.distribution.ext_modules.append(wcsext)
 
+        # It is easiest to build up configure even if it not going to
+        # be used.
+        #
         configure = ['./configure', '--prefix=' + self.install_dir,
                      '--with-pic', '--enable-standalone']
 
         if self.group_cflags is not None:
             configure.append(f'GROUP_CFLAGS="{self.group_cflags}"')
+
         if self.configure != 'None':
             configure.extend(self.configure.split(' '))
+
         if self.fftw != 'local':
             configure.append('--enable-fftw')
+
         if not self.disable_region and self.region != 'local':
             configure.append('--enable-region')
 
@@ -190,9 +207,12 @@ class sherpa_config(Command):
         if not self.disable_wcs and self.wcs != 'local':
             configure.append('--enable-wcs')
 
+        if self.disable_extern:
+            return None
+
         self.warn(f'built configure string {configure}')
         return configure
 
-    def run(self):
+    def run(self) -> None:
         configure = self.build_configure()
         build_deps(configure)

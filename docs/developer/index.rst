@@ -221,8 +221,7 @@ replaced by its actual value, and the ``xspec_version`` line
 should be updated to match the output above::
 
     install_dir=${ASCDS_INSTALL}
-
-    configure=None
+    disable_extern=True
 
     disable_group=True
     disable_stk=True
