@@ -45,7 +45,7 @@ namespace sherpa { namespace astro { namespace utils {
     npy_intp nelem = source.get_size();
 
     if ( effarea.get_size() != nelem ) {
-      ostringstream err;
+      std::ostringstream err;
       err << "input array sizes do not match, "
 	  << "source: " << nelem << " vs effarea: " << effarea.get_size();
       PyErr_SetString( PyExc_TypeError, err.str().c_str() );
@@ -119,7 +119,7 @@ namespace sherpa { namespace astro { namespace utils {
   }
 
   template <typename FloatArrayType, typename IntArrayType>
-  PyObject* do_group( PyObject* self, PyObject* args )
+  PyObject* do_group_name( PyObject* self, PyObject* args )
   {
 
     FloatArrayType data;
@@ -137,7 +137,7 @@ namespace sherpa { namespace astro { namespace utils {
     return NULL;
 
     if ( data.get_size() != group.get_size() ) {
-      ostringstream err;
+      std::ostringstream err;
       err << "input array sizes do not match, "
 	  << "data: " << data.get_size() << " vs group: " << group.get_size();
       PyErr_SetString( PyExc_TypeError, err.str().c_str() );
@@ -145,21 +145,63 @@ namespace sherpa { namespace astro { namespace utils {
     }
 
     try {
-      if( EXIT_SUCCESS != _do_group(data.get_size(), data,
-				    group.get_size(), group,
-				    grouped, type) ) {
+      if( EXIT_SUCCESS != _do_group_name(data.get_size(), data, group,
+					 grouped, type) ) {
 	PyErr_SetString( PyExc_ValueError,
 			 (char*)"group data is invalid or inconsistent" );
 	return NULL;
       }
     } catch ( std::out_of_range& ) {
-      ostringstream err;
+      std::ostringstream err;
       err << "unsupported group function: " << type;
       PyErr_SetString( PyExc_ValueError, err.str().c_str() );
       return NULL;
     }
 
-  return grouped.return_new_ref();
+    return grouped.return_new_ref();
+
+  }
+
+
+  template <typename FloatArrayType, typename IntArrayType>
+  PyObject* do_group_call( PyObject* self, PyObject* args )
+  {
+
+    FloatArrayType data;
+    FloatArrayType grouped;
+    IntArrayType group;
+    PyObject *group_func;
+
+    if ( !PyArg_ParseTuple( args, (char*)"O&O&O",
+			    (converter)convert_to_array< FloatArrayType >,
+			    &data,
+			    (converter)convert_to_array< IntArrayType >,
+			    &group,
+			    &group_func))
+      return NULL;
+
+    if ( data.get_size() != group.get_size() ) {
+      std::ostringstream err;
+      err << "input array sizes do not match, "
+	  << "data: " << data.get_size() << " vs group: " << group.get_size();
+      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+      return NULL;
+    }
+
+    if (PyCallable_Check(group_func) == 0) {
+      PyErr_SetString( PyExc_ValueError,
+		       "group function is not callable" );
+      return NULL;
+    }
+
+    if( EXIT_SUCCESS != _do_group_call(data.get_size(), data, group,
+				       grouped, group_func) ) {
+      PyErr_SetString( PyExc_ValueError,
+		       (char*)"group data is invalid, inconsistent, or the group function failed" );
+      return NULL;
+    }
+
+    return grouped.return_new_ref();
 
   }
 
@@ -184,7 +226,7 @@ namespace sherpa { namespace astro { namespace utils {
     return NULL;
 
     if ( specresp.get_size() != arf_lo.get_size() ) {
-      ostringstream err;
+      std::ostringstream err;
       err << "input array sizes do not match, "
 	  << "specresp: " << specresp.get_size()
 	  << " vs arf_lo: " << arf_lo.get_size();
@@ -228,10 +270,10 @@ namespace sherpa { namespace astro { namespace utils {
     FloatArrayType matrix;
 
     BoolArray mask;
-    vector<FloatType> resp_buf;
-    vector<IntType> f_buf;
-    vector<IntType> n_buf;
-    vector<IntType> grp_buf;
+    std::vector<FloatType> resp_buf;
+    std::vector<IntType> f_buf;
+    std::vector<IntType> n_buf;
+    std::vector<IntType> grp_buf;
 
     FloatArrayType resp;
     IntArrayType grp;
@@ -430,7 +472,9 @@ static PyMethodDef UtilsFcts[] = {
   FCTSPEC( rmf_fold, (sherpa::astro::utils::rmf_fold< SherpaFloatArray,
 		      SherpaUIntArray >) ),
 
-  FCTSPECDOC( do_group, (sherpa::astro::utils::do_group<SherpaFloatArray, IntArray>),
+  FCTSPEC( do_group_call, (sherpa::astro::utils::do_group_call<SherpaFloatArray, IntArray>) ) ,
+
+  FCTSPECDOC( do_group, (sherpa::astro::utils::do_group_name<SherpaFloatArray, IntArray>),
 	      "Group the array using OGIP standards.\n\n"
 	      "Parameters\n"
 	      "----------\n"
