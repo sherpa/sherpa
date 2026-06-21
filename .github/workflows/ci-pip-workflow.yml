@@ -102,12 +102,12 @@ jobs:
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
       run: |
-        pip install . --verbose
+        pip install .[test] --verbose
 
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
       run: |
-        pip install -e . --verbose
+        pip install -e .[test] --verbose
 
     # This isn't always going to be used, but it is easiest to
     # always create it.
@@ -150,8 +150,6 @@ jobs:
     - name: Submodule test with pytest
       if: matrix.test-data == 'submodule'
       run: |
-        pip install -r test_requirements.txt
-        pip install pytest-cov
         cd $HOME
         pytest --cov=sherpa --cov-report=xml:${{ github.workspace }}/coverage.xml
 
