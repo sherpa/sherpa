@@ -20,8 +20,7 @@
 
 #define _INTEGRATIONMODULE
 
-#define Py_LIMITED_API 0x030B0000
-#include <Python.h>
+#include <sherpa/python.hh>
 
 #include "sherpa/integration.hh"
 #include <iostream>
