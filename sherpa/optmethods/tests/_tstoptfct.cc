@@ -30,6 +30,8 @@
 #include <sherpa/extension.hh>
 #include "tstoptfct.hh"
 
+#include <cstring>
+
 static PyObject *Ackley( PyObject *self, PyObject *args ) {
   DoubleArray xpar, fvec;
   if ( !PyArg_ParseTuple( args, "O&", CONVERTME(DoubleArray), &xpar ) )
