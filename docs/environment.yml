@@ -6,6 +6,7 @@ channels:
   - nodefaults
 
 dependencies:
+  - gxx=14.2
   - bison
   - python=3.13
   - numpy
