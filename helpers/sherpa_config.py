@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014-2016, 2020, 2022, 2024-2025
+#  Copyright (C) 2014-2016, 2020, 2022, 2024-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -55,6 +55,8 @@ class sherpa_config(Command):
                     ('install_dir', None, "Directory where external dependencies must be installed (--prefix)"),
                     ('configure', None, "Additional configure flags for the external dependencies"),
                     ('group_cflags', None, "Additional cflags for building the grouping library"),
+                    ('c_standard', None, "Added to CFLAGS unless -std= is already present or value is empty"),
+                    ('cxx_standard', None, "Added to CXXFLAGS unless -std= is already present or value is empty"),
                     ]
 
     def initialize_options(self):
@@ -78,6 +80,8 @@ class sherpa_config(Command):
         self.disable_group = False
         self.configure = '--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib'
         self.group_cflags = None
+        self.c_standard = '-std=gnu11'
+        self.cxx_standard = '-std=c++11'
         self.stk_location = None
         self.disable_stk = False
 
@@ -193,6 +197,40 @@ class sherpa_config(Command):
         self.warn(f'built configure string {configure}')
         return configure
 
+    def setup_standard(self, name: str, value: str) -> None:
+        """Ensure the standard is included in the env variable, if not empty.
+
+        Parameters
+        ----------
+        name
+           Assumed to be CFLAGS or CXXFLAGS
+        value
+           The value to add: shjould be empty (skip) or "-std=...".
+
+        """
+
+        if value == "":
+            return
+
+        oldval = os.environ.get(name, None)
+        if oldval is None:
+            os.environ[name] = value
+            self.warn(f"* setting {name} to {value}")
+            return
+
+        # It there's alrady a standard, skip the setting
+        if "-std=" in oldval:
+            return
+
+        os.environ[name] = f"{oldval} {value}"
+        self.warn(f"* adding {value} to {name}")
+
     def run(self):
+
+        # Setup CFLAGS/CXXFLAGS for building the compiled code.
+        #
+        self.setup_standard("CFLAGS", self.c_standard)
+        self.setup_standard("CXXFLAGS", self.cxx_standard)
+
         configure = self.build_configure()
         build_deps(configure)
