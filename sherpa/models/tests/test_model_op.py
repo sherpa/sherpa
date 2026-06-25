@@ -438,7 +438,7 @@ def test_load_table_model(make_data_path):
     s = Session()
     s.load_table_model('tbl', make_data_path('double.dat'))
     tbl = s.get_model_component('tbl')
-    assert tbl.ndim is None
+    assert tbl.ndim == 1
 
 
 @pytest.mark.parametrize("flag", [True, False])
