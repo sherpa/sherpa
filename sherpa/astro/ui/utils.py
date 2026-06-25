@@ -4372,7 +4372,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -4522,7 +4522,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
 
         Examples
@@ -8539,7 +8539,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -8642,7 +8642,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -8721,7 +8721,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -8795,7 +8795,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -8882,7 +8882,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -8968,7 +8968,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -11111,8 +11111,8 @@ class Session(sherpa.ui.utils.Session):
                            etable=False) -> None:
         """Load a XSPEC table model.
 
-        Create an additive ('atable', [1]), multiplicative
-        ('mtable', [2]), or exponential ('etable', [3]) XSPEC
+        Create an additive ('atable', [1]_), multiplicative
+        ('mtable', [2]_), or exponential ('etable', [3]_) XSPEC
         table model component. These models may have multiple model
         parameters.
 
@@ -11131,7 +11131,7 @@ class Session(sherpa.ui.utils.Session):
            The identifier for this model component.
         filename : str
            The name of the FITS file containing the data, which should
-           match the XSPEC table model definition [4].
+           match the XSPEC table model definition [4]_.
         etable : bool, optional
            Set if this is an etable (as there's no way to determine this
            from the file itself). Defaults to False.
@@ -11165,13 +11165,13 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        1. https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+        .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
 
-        2. https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+        .. [2] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
 
-        3. https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelEtable.html
+        .. [3] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelEtable.html
 
-        4. `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [4] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -16945,7 +16945,7 @@ class Session(sherpa.ui.utils.Session):
                    bkg_id: IdType | None = None):
         """Calculate the K correction for a model.
 
-        The K correction ([1], [2], [3], [4]) is the numeric
+        The K correction ([1]_, [2]_, [3]_, [4]_) is the numeric
         factor applied to measured energy fluxes in an observed
         energy band to estimate the flux in a given rest-frame
         energy band. It accounts for the change in spectral energy
@@ -17009,16 +17009,16 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        1. `"The K correction", Hogg, D.W., et al. <https://arxiv.org/abs/astro-ph/0210394>`_
+        .. [1] `"The K correction", Hogg, D.W., et al. <https://arxiv.org/abs/astro-ph/0210394>`_
 
-        2. `Appendix B of Jones et al. 1998, ApJ, vol 495,
+        .. [2] `Appendix B of Jones et al. 1998, ApJ, vol 495,
            p. 100-114 <https://adsabs.harvard.edu/abs/1998ApJ...495..100J>`_
 
-        3. `"K and evolutionary corrections from UV to IR",
+        .. [3] `"K and evolutionary corrections from UV to IR",
            Poggianti, B.M., A&AS, 1997, vol 122, p. 399-407.
            <https://adsabs.harvard.edu/abs/1997A%26AS..122..399P>`_
 
-        4. `"Galactic evolution and cosmology - Probing the
+        .. [4] `"Galactic evolution and cosmology - Probing the
            cosmological deceleration parameter", Yoshii, Y. &
            Takahara, F., ApJ, 1988, vol 326, p. 1-18.
            <https://adsabs.harvard.edu/abs/1988ApJ...326....1Y>`_
