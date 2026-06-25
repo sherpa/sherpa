@@ -46,9 +46,6 @@ information is available in the extern/wcssubs/ directory
 of this archive. wcssubs is released under the terms of the
 LGPLv2.1+ license.
 
-fftw3, various authors, released under the terms of the GPLv2+
-license.
-
 Xspec 12 was developed by Keith Arnaud, Ben Dorman, and Craig Gordon,
 HEASARC Software Development, Astrophysics Science Divsion,
 Code 660.1, NASA/GSFC, Greenbelt MD 20771

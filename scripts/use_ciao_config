@@ -88,7 +88,6 @@ sed -i="" "s|#wcs_include.dirs=build/include|wcs_include_dirs=${CONDA_PREFIX}/in
 sed -i="" "s|#wcs_lib_dirs=build/lib|wcs_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
 sed -i="" "s|#wcs_libraries=wcs|wcs_libraries=wcs|" $cfg
 
-sed -i="" "s|#fftw=local|fftw=local|" $cfg
 sed -i="" "s|#fftw_include_dirs=build/include|fftw_include_dirs=${CONDA_PREFIX}/include|" $cfg
 sed -i="" "s|#fftw_lib_dirs=build/lib|fftw_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
 sed -i="" "s|#fftw_libraries=fftw3|fftw_libraries=fftw3|" $cfg

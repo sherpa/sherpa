@@ -51,7 +51,7 @@ if installed:
   you find.
 * `scipy <https://www.scipy.org>`_ for the `sherpa.optmethods.optscipy`
   module, which provides an interface to several optimizers from Scipy.
-* `optimagic <https://optimagic.readthedocs.io>`_ for the 
+* `optimagic <https://optimagic.readthedocs.io>`_ for the
   `sherpa.optmethods.optoptimagic` module which provides an interface to `optimagic.minimize`.
   Optimagic provides a single interface to dozens of optimizers, many of which
   rely on other external packages that need to be `installed separately
@@ -148,6 +148,7 @@ The prerequisites for building from source are:
   automatically installed by ``pip``)
 * System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
   ``bison``, ``ar`` (which may be provided by the ``binutils`` package), ``file``.
+* Optional: :ref:`build-fftw`.
 
 The aim is to support recent versions of these tools and libraries;
 please report problems to the
@@ -164,8 +165,10 @@ created during the tests.
 
 .. note::
 
-   As of the Sherpa 4.10.1 release, a Fortran compiler is no-longer
-   required to build Sherpa.
+   If :ref:`PSF convolution <build-fftw>` support is needed then the
+   `fftw library <https://www.fftw.org/>`_ library must be
+   installed. This is a change to the build requirements in Sherpa
+   4.19.0.
 
 Obtaining the source package
 ----------------------------
@@ -196,21 +199,36 @@ The Sherpa build is controlled by the ``setup.cfg`` file in the
 root of the Sherpa source tree. These configuration options
 include:
 
+.. _build-fftw:
+
 FFTW
 ^^^^
 
-Sherpa ships with the `fftw library <https://www.fftw.org/>`_ source
-code and builds it by default. To use a different version, change
-the ``fftw`` options in the ``sherpa_config`` section of the
-``setup.cfg`` file. The options to change are::
+Sherpa can use the `fftw library <https://www.fftw.org/>`_ library
+(version 3) to support PSF convolution for 1D and 2D cases. The
+``sherpa_config`` section of the ``setup_cfg`` file contains a number
+of options.
 
-    fftw=local
-    fftw_include_dirs=/usr/local/include
-    fftw_lib_dirs=/use/local/lib
-    fftw_libraries=fftw3
+To disable support, set::
 
-The ``fftw`` option must be set to ``local`` and then the remaining
-options changed to match the location of the local installation.
+    disable_fftw = True
+
+To build against an installed version of FFTW set the following options
+(e.g. to the output of ``pkg_config --cflags-only-I fftw3``,
+``pkg_config --libs-only-L fftw3``, and
+``pkg_config --libs-only-l fftw3``)::
+
+    fftw_include_dirs = /usr/local/include
+    fftw_lib_dirs = /use/local/lib
+    fftw_libraries = fftw3
+
+.. note::
+   Prior to Sherpa 4.19.0, Sherpa provided its own copy of the
+   FFTW source code, and would use it by default. The FFTW library
+   **must** now be installed before Sherpa can use it.
+
+   The ``fftw`` option in the ``sherpa_config`` section is now
+   ignored (and is deprecated).
 
 .. _build-xspec:
 
