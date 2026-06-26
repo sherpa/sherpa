@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023
+#  Copyright (C) 2021, 2023, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -38,8 +38,6 @@ in serial.
 
 """
 
-import logging
-
 import numpy as np
 
 import pytest
@@ -50,8 +48,7 @@ from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.data import Data2D
 from sherpa.models import basic
 
-from sherpa.stats import Chi2Gehrels
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr
+from sherpa.utils.err import DS9Err
 from sherpa.utils.testing import requires_ds9
 
 
@@ -97,7 +94,9 @@ def example_psf():
     return psf
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 @pytest.mark.parametrize("shape", [None, (9, 9)])
 def test_load_arrays2d(session, shape):
     """Does load_arrays work with 2D data?"""
@@ -126,7 +125,9 @@ def test_load_arrays2d(session, shape):
         assert got.shape == pytest.approx(shape)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_data_image(session):
     from sherpa.image import DataImage
 
@@ -165,7 +166,9 @@ def test_data_image_show(session, check_str):
                ])
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_model_image(session):
     from sherpa.image import ModelImage
 
@@ -188,7 +191,9 @@ def test_get_model_image(session):
     assert y[3, 3] == pytest.approx(102.0)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_model_component_image(session):
     from sherpa.image import ComponentModelImage
 
@@ -214,7 +219,9 @@ def test_get_model_component_image(session):
     assert y[3, 3] == pytest.approx(100.0)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_model_component_image_with_convolution(session):
     """What happens if there's a convolution component in play?"""
 
@@ -249,7 +256,9 @@ def test_get_model_component_image_with_convolution(session):
     assert y[3, 3] == pytest.approx(42.25302)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_source_image(session):
     """Note that here there's no difference of source and model"""
     from sherpa.image import SourceImage
@@ -273,7 +282,9 @@ def test_get_source_image(session):
     assert y[3, 3] == pytest.approx(102.0)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_source_component_image(session):
     """Note that here there's no difference of source and model"""
     from sherpa.image import ComponentSourceImage
@@ -297,7 +308,9 @@ def test_get_source_component_image(session):
     assert y[3, 3] == pytest.approx(100.0)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_source_component_image_with_convolution(session):
     """There is a difference thanks to the PSF"""
     from sherpa.image import ComponentSourceImage
@@ -325,7 +338,9 @@ def test_get_source_component_image_with_convolution(session):
     assert y[3, 3] == pytest.approx(100.0)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_resid_image(session):
     from sherpa.image import ResidImage
 
@@ -349,7 +364,9 @@ def test_get_resid_image(session):
     assert y[3, 3] == pytest.approx(-71.0983)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_ratio_image(session):
     from sherpa.image import RatioImage
 
@@ -373,7 +390,9 @@ def test_get_ratio_image(session):
     assert y[3, 3] == pytest.approx(0.302958)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_psf_image(session):
     from sherpa.image import PSFImage
 
@@ -397,7 +416,9 @@ def test_get_psf_image(session):
     assert obj.y == pytest.approx(y)
 
 
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_get_kernel_image(session):
     from sherpa.image import PSFKernelImage
 
@@ -459,7 +480,9 @@ def check_xpa_resid(backend):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_data(session):
     from sherpa.image import backend
 
@@ -474,7 +497,9 @@ def test_image_data(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_model(session):
     from sherpa.image import backend
 
@@ -491,7 +516,9 @@ def test_image_model(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_model_component(session):
     from sherpa.image import backend
 
@@ -508,7 +535,9 @@ def test_image_model_component(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_model_component_with_convolution(session):
     """The convolution component changes the data."""
     from sherpa.image import backend
@@ -529,7 +558,9 @@ def test_image_model_component_with_convolution(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_source(session):
     from sherpa.image import backend
 
@@ -548,7 +579,9 @@ def test_image_source(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_source_component(session):
     from sherpa.image import backend
 
@@ -567,7 +600,9 @@ def test_image_source_component(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_source_component_with_convolution(session):
     """Unlike model, this does not change the component."""
     from sherpa.image import backend
@@ -588,7 +623,9 @@ def test_image_source_component_with_convolution(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_resid(session):
     from sherpa.image import backend
 
@@ -605,7 +642,9 @@ def test_image_resid(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_ratio(session):
     from sherpa.image import backend
 
@@ -624,7 +663,9 @@ def test_image_ratio(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_fit(session):
     from sherpa.image import backend
 
@@ -655,7 +696,9 @@ def test_image_fit(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_psf(session):
     from sherpa.image import backend
 
@@ -678,7 +721,9 @@ def test_image_psf(session):
 
 
 @requires_ds9
-@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
 def test_image_kernel(session):
     from sherpa.image import backend
 
@@ -698,3 +743,97 @@ def test_image_kernel(session):
     # Check the same reagion as test_image_psf
     grid = '0\n0.166667\n0\n0.166667\n0.166667\n0\n0\n0\n0.166667\n0.166667\n0\n0\n0.166667\n0\n0\n0\n'
     check_xpa(backend, 'data image 4 5 4 4 yes', grid)
+
+
+@requires_ds9
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
+def test_image_getregion_starts_empty(session):
+
+    s = session()
+    d = example_data()
+    s.set_data(d)
+    s.image_data()
+    outreg = s.image_getregion()
+    assert outreg == ""
+
+
+@requires_ds9
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
+def test_image_setregion_invalid_string(session):
+
+    s = session()
+    d = example_data()
+    s.set_data(d)
+    s.image_data()
+
+    # "rect" is not part of https://ds9.si.edu/doc/ref/region.html
+    reg = "rect(2,3,3,4)"
+    with pytest.raises(DS9Err,
+                       match=r"^Could not use rect\(2,3,3,4\) as a "
+                       "region or region file$"):
+        s.image_setregion(reg)
+
+
+@requires_ds9
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
+@pytest.mark.parametrize("coord", ["", "image"])
+def test_image_setregion_string(session, coord):
+
+    s = session()
+    d = example_data()
+    s.set_data(d)
+    s.image_data()
+
+    inreg = "circle(2,3,3)"
+    s.image_setregion(inreg, coord)
+    outreg = s.image_getregion()
+    assert outreg == f"{inreg};"
+
+
+@requires_ds9
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
+@pytest.mark.parametrize("coord", ["", "image"])
+def test_image_setregions_string(session, coord):
+
+    s = session()
+    d = example_data()
+    s.set_data(d)
+    s.image_data()
+
+    # Add a "blank" region, and box gets changed by DS9 to
+    # include the rotation angle
+    inreg1 = "circle(2,3,3)"
+    inreg2 = "box(1,2,4,5)"
+    s.image_setregion(f"{inreg1};;{inreg2}", coord)
+
+    outreg = s.image_getregion()
+    assert outreg == f"{inreg1};box(1,2,4,5,0);"
+
+
+@requires_ds9
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
+@pytest.mark.parametrize("coord", ["", "image"])
+def test_image_setregion_file(session, coord, tmp_path):
+
+    s = session()
+    d = example_data()
+    s.set_data(d)
+    s.image_data()
+
+    inreg = "circle(2,3,3)"
+    regfile = tmp_path / "store.reg"
+    regfile.write_text(inreg)
+
+    s.image_setregion(str(regfile), coord)
+    outreg = s.image_getregion()
+    assert outreg == f"{inreg};"

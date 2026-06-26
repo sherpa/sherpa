@@ -41,6 +41,7 @@ jobs:
             matplotlib-version: 3
             bokeh-version: 3
             xspec-version: 12.14.0i
+            skip-ds9: "true"
 
           - name: MacOS ARM Full Build (Python 3.12)
             os: macos-14
@@ -140,11 +141,12 @@ jobs:
     # been tied to XSPEC, which is why this rule checks for XSPEC
     # support.
     #
-    # The DS9 tests have been shown to be problematic on macOS/GitHub
-    # so we do not install DS9 on this platform.
+    # The DS9 tests are not run on macOS intel as that platform is
+    # slow and depracated. It is easiest to do this with an explicit
+    # check of a matrix field.
     #
     - name: Conda Setup (DS9)
-      if: matrix.xspec-version != '' && runner.os != 'macOS'
+      if: matrix.xspec-version != '' && matrix.skip-ds9 != 'true'
       run: |
         source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
@@ -196,17 +198,19 @@ jobs:
       env:
         XSPECVER: ${{ matrix.xspec-version }}
         FITS: ${{ matrix.fits }}
+        SKIPDS9: ${{ matrix.skip-ds9 }}
       run: |
-        if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
+        # XSPEC testing also means DS9 testing, apart from macOS/Intel.
+        #
+        if [ -n "${XSPECVER}" ]; then
+          if [ "${SKIPDS9}" == "true" ]; then
+            XSPECTEST="-x";
+          else
+            XSPECTEST="-x -d";
+          fi
+        fi
         if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
         smokevars="${XSPECTEST} ${FITSTEST} -v 3"
-
-        # special case the macOS build as we currently do not
-        # include DS9; as we know the XSPECVER/FITS sittings for
-        # this it is hard-coded
-        if [ "$RUNNER_OS" == "macOS" ]; then
-          smokevars="-x -f ${FITS} -v 3"
-        fi
 
         echo "** smoke test: ${smokevars}"
         source ${conda_loc}/etc/profile.d/conda.sh
@@ -263,4 +267,3 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ${{ github.workspace }}/coverage.xml
         verbose: true
-
