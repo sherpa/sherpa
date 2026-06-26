@@ -28,7 +28,7 @@ import os
 from sherpa.image import Image, DataImage, ModelImage, RatioImage, \
     ResidImage
 
-from sherpa.utils.err import DS9Err, RuntimeErr
+from sherpa.utils.err import ArgumentTypeErr, DS9Err, RuntimeErr
 from sherpa.utils.testing import requires_ds9
 
 
@@ -102,8 +102,9 @@ def get_arr_from_imager(im, yexp):
 
 @requires_ds9
 def test_ds9():
-    from sherpa.image import DS9
-    im = DS9.DS9Win(DS9._DefTemplate, False)
+    from sherpa.image import DS9, backend
+    template = backend.get_template()
+    im = DS9.DS9Win(template, False)
     im.doOpen()
     im.showArray(data.y)
     data_out = get_arr_from_imager(im, data.y)
@@ -210,9 +211,9 @@ def test_image_getregion(coordsys):
     """
 
     # This is not ideal.
-    from sherpa.image import ds9_backend
+    from sherpa.image import backend
 
-    im = ds9_backend.imager
+    im = backend.imager
     im.doOpen()
     im.showArray(data.y)
 
@@ -221,7 +222,7 @@ def test_image_getregion(coordsys):
     im.xpaset('regions format ds9')
     im.xpaset('regions', data=imshape)
 
-    rval = ds9_backend.get_region(coordsys)
+    rval = backend.get_region(coordsys)
 
     im.xpaset("quit")
 
@@ -267,3 +268,25 @@ def test_xpaset_error():
         "undefined command for this xpa "
     with pytest.raises(RuntimeErr, match=msg):
         im.xpaset(command)
+
+
+@pytest.mark.parametrize("arg,emsg",
+                         [(23, "a string"),
+                          (None, "a string"),
+                          ("", "not empty"),
+                          ("  ", "a string without whitespace"),
+                          ("a space", "a string without whitespace"),
+                          (" space", "a string without whitespace"),
+                          ("spacer ", "a string without whitespace")
+                          ])
+def test_set_template_checks_argument(arg, emsg):
+    """Check we error out."""
+
+    from sherpa.image import set_template, get_template
+
+    with pytest.raises(ArgumentTypeErr,
+                       match=f"^'template' must be {emsg}$"):
+        set_template(arg)
+
+    # Check the template hasn't changed.
+    assert get_template() == "sherpa"
