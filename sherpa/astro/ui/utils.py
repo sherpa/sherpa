@@ -25,7 +25,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 import logging
 import os
-from typing import Any
+from typing import Any, Type
 import sys
 
 import numpy as np
@@ -1540,7 +1540,11 @@ class Session(sherpa.ui.utils.Session):
     # as it's needed in multiple places (ideally in the
     # DataX class documentation, but users may not find it)
     # DOC-TODO: what do the shape arguments for Data2D/Data2DInt mean?
-    def load_table(self, id, filename=None, ncols=2, colkeys=None,
+    def load_table(self,
+                   id,
+                   filename=None,
+                   ncols: int = 2,
+                   colkeys: Sequence[str] | None = None,
                    dstype=Data1D) -> None:
         """Load a FITS binary file as a data set.
 
@@ -1651,16 +1655,26 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if filename is None:
-            id, filename = filename, id
+            idval = self.get_default_id()
+            filename = id
+        else:
+            idval = self._fix_id(id)
 
-        self.set_data(id, self.unpack_table(filename, ncols, colkeys, dstype))
+        data = self.unpack_table(filename, ncols, colkeys, dstype)
+        self.set_data(idval, data)
 
     # DOC-TODO: should unpack_ascii be merged into unpack_table?
     # DOC-TODO: I am going to ignore the crates support here as
     # it is somewhat meaningless, since the crate could
     # have been read from a FITS binary table.
-    def unpack_ascii(self, filename, ncols=2, colkeys=None,
-                     dstype=Data1D, sep=' ', comment='#'):
+    def unpack_ascii(self,
+                     filename,
+                     ncols: int = 2,
+                     colkeys: Sequence[str] | None = None,
+                     dstype: Type[Data1D] = Data1D,
+                     sep: str = ' ',
+                     comment: str = '#'
+                     ) -> Data1D:
         """Unpack an ASCII file into a data structure.
 
         Parameters
@@ -1736,9 +1750,14 @@ class Session(sherpa.ui.utils.Session):
     # have been read from a FITS binary table.
     # DOC-TODO: how best to include datastack support?
     # DOC-TODO: what does shape mean here (how is it encoded)?
-    def load_ascii(self, id, filename=None, ncols=2, colkeys=None,
-                   dstype=Data1D, sep=' ',
-                   comment='#') -> None:
+    def load_ascii(self,
+                   id,
+                   filename=None,
+                   ncols: int = 2,
+                   colkeys: Sequence[str] | None = None,
+                   dstype: type[Data1D] = Data1D,
+                   sep: str = ' ',
+                   comment: str = '#') -> None:
         """Load an ASCII file as a data set.
 
         The standard behavior is to create a single data set, but
@@ -1845,11 +1864,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if filename is None:
-            id, filename = filename, id
+            idval = self.get_default_id()
+            filename = id
+        else:
+            idval = self._fix_id(id)
 
-        self.set_data(id, self.unpack_ascii(filename, ncols=ncols,
-                                            colkeys=colkeys, dstype=dstype,
-                                            sep=sep, comment=comment))
+        data = self.unpack_ascii(filename, ncols=ncols,
+                                 colkeys=colkeys, dstype=dstype,
+                                 sep=sep, comment=comment)
+        self.set_data(idval, data)
 
     # DOC-NOTE: also in sherpa.utils
     def unpack_data(self, filename, *args, **kwargs):
@@ -1900,19 +1923,21 @@ class Session(sherpa.ui.utils.Session):
         >>> set_data('src', dat)
 
         """
-        try:
-            return self.unpack_pha(filename, *args, **kwargs)
-        except Exception:
-            try:
-                return self.unpack_image(filename, *args, **kwargs)
-            except Exception:
-                try:
-                    return self.unpack_table(filename, *args, **kwargs)
-                except Exception:
-                    # If this errors out then so be it
-                    return self.unpack_ascii(filename, *args, **kwargs)
 
-    def load_ascii_with_errors(self, id, filename=None,
+        for func in [self.unpack_pha,
+                     self.unpack_image,
+                     self.unpack_table]:
+            with suppress(Exception):
+                return func(filename, *args, **kwargs)
+
+        # If this errors out then so be it. Perhaps it should
+        # raise an error related to unpack_data.
+        #
+        return self.unpack_ascii(filename, *args, **kwargs)
+
+    def load_ascii_with_errors(self,
+                               id,
+                               filename=None,
                                colkeys: Sequence[str] | None = None,
                                sep: str = ' ',
                                comment: str = '#',
@@ -2018,13 +2043,16 @@ class Session(sherpa.ui.utils.Session):
         """
 
         if filename is None:
-            id, filename = filename, id
-        self.set_data(id, self.unpack_ascii(filename, ncols=4,
-                                            colkeys=colkeys,
-                                            dstype=Data1DAsymmetricErrs,
-                                            sep=sep, comment=comment))
+            idval = self.get_default_id()
+            filename = id
+        else:
+            idval = self._fix_id(id)
 
-        data = self.get_data(id)
+        data = self.unpack_ascii(filename, ncols=4,
+                                 colkeys=colkeys,
+                                 dstype=Data1DAsymmetricErrs,
+                                 sep=sep, comment=comment)
+        self.set_data(idval, data)
 
         if not delta:
             data.elo = data.y - data.elo
@@ -2164,7 +2192,10 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils without the support for
     #           multiple datasets.
     #
-    def load_data(self, id, filename=None, *args,
+    def load_data(self,
+                  id,
+                  filename=None,
+                  *args,
                   **kwargs) -> None:
         # pylint: disable=W1113
         """Load a data set from a file.
@@ -2233,10 +2264,13 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if filename is None:
-            id, filename = filename, id
+            idval = self.get_default_id()
+            filename = id
+        else:
+            idval = self._fix_id(id)
 
         datasets = self.unpack_data(filename, *args, **kwargs)
-        self._load_data(id, datasets, filename=filename, kwargs=kwargs)
+        self._load_data(idval, datasets, filename=filename, kwargs=kwargs)
 
     def unpack_image(self, arg, coord='logical',
                      dstype=DataIMG):
@@ -2297,7 +2331,10 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
-    def load_image(self, id, arg=None, coord='logical',
+    def load_image(self,
+                   id,
+                   arg=None,
+                   coord: str = 'logical',
                    dstype=DataIMG) -> None:
         """Load an image as a data set.
 
@@ -2362,11 +2399,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
-        self.set_data(id, self.unpack_image(arg, coord, dstype))
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
+
+        data = self.unpack_image(arg, coord, dstype)
+        self.set_data(idval, data)
 
     # DOC-TODO: what does this return when given a PHA2 file?
-    def unpack_pha(self, arg, use_errors=False):
+    def unpack_pha(self, arg, use_errors: bool = False):
         """Create a PHA data structure.
 
         Any instrument or background data sets referenced in the
@@ -2471,7 +2513,9 @@ class Session(sherpa.ui.utils.Session):
                                         use_background=True)
 
     # DOC-TODO: how best to include datastack support?
-    def load_pha(self, id, arg=None,
+    def load_pha(self,
+                 id,
+                 arg=None,
                  use_errors: bool = False) -> None:
         """Load a PHA data set.
 
@@ -6370,15 +6414,18 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arf is None:
-            id, arf = arf, id
+            idval = self.get_default_id()
+            arf = id
+        else:
+            idval = self._fix_id(id)
 
         # store only the ARF dataset in the PHA response dict
         if type(arf) in (sherpa.astro.instrument.ARF1D,):
             arf = arf._arf
         _check_type(arf, sherpa.astro.data.DataARF, 'arf', 'an ARF data set')
 
-        data = self._get_pha_data(id, bkg_id)
-        data.set_arf(arf, resp_id)
+        data = self._get_pha_data(idval, bkg_id)
+        data.set_arf(arf, id=resp_id)
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
             data._set_initial_quantity()
@@ -6437,7 +6484,9 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
-    def load_arf(self, id, arg=None,
+    def load_arf(self,
+                 id,
+                 arg=None,
                  resp_id: IdType | None = None,
                  bkg_id: IdType | None = None
                  ) -> None:
@@ -6516,8 +6565,13 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
-        self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
+
+        arf = self.unpack_arf(arg)
+        self.set_arf(idval, arf, resp_id=resp_id, bkg_id=bkg_id)
 
     def get_bkg_arf(self,
                     id: IdType | None = None):
@@ -6565,12 +6619,16 @@ class Session(sherpa.ui.utils.Session):
         >>> set_arf(2, arf1, bkg_id=1)
 
         """
-        bkg_id = self._get_pha_data(id).default_background_id
-        resp_id = self._get_pha_data(id).primary_response_id
-        return self.get_arf(id, resp_id, bkg_id)
+        data = self._get_pha_data(id)
+        bkg_id = data.default_background_id
+        resp_id = data.primary_response_id
+        return self.get_arf(id, resp_id=resp_id, bkg_id=bkg_id)
 
     # DOC-TODO: how to describe I/O backend support?
-    def load_bkg_arf(self, id, arg=None) -> None:
+    def load_bkg_arf(self,
+                     id,
+                     arg=None
+                     ) -> None:
         """Load an ARF from a file and add it to the background of a
         PHA data set.
 
@@ -6625,11 +6683,19 @@ class Session(sherpa.ui.utils.Session):
         >>> load_bkg_arf('core', 'core_bkg.arf')
 
         """
+
+        # Note: this is very similar to load_arf
         if arg is None:
-            id, arg = arg, id
-        bkg_id = self._get_pha_data(id).default_background_id
-        resp_id = self._get_pha_data(id).primary_response_id
-        self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
+
+        data = self._get_pha_data(idval)
+        bkg_id = data.default_background_id
+        resp_id = data.primary_response_id
+        arf = self.unpack_arf(arg)
+        self.set_arf(idval, arf, resp_id=resp_id, bkg_id=bkg_id)
 
     def load_multi_arfs(self, id, filenames, resp_ids=None) -> None:
         """Load multiple ARFs for a PHA data set.
@@ -6689,22 +6755,18 @@ class Session(sherpa.ui.utils.Session):
         >>> load_multi_arfs('lowstate', arfs, [1, 2, 3])
 
         """
-# if type(filenames) not in (list, tuple):
-#             raise ArgumentError('Filenames must be contained in a list')
-# if type(resp_ids) not in (list, tuple):
-#             raise ArgumentError('Response IDs must be contained in a list')
 
         if resp_ids is None:
             id, filenames, resp_ids = resp_ids, id, filenames
 
         filenames = list(filenames)
         resp_ids = list(resp_ids)
-
         if len(filenames) != len(resp_ids):
             raise ArgumentErr('multirsp')
 
+        idval = self._fix_id(id)
         for filename, resp_id in zip(filenames, resp_ids):
-            self.load_arf(id, filename, resp_id)
+            self.load_arf(idval, filename, resp_id=resp_id)
 
     def get_rmf(self,
                 id: IdType | None = None,
@@ -6848,15 +6910,18 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if rmf is None:
-            id, rmf = rmf, id
+            idval = self.get_default_id()
+            rmf = id
+        else:
+            idval = self._fix_id(id)
 
         # store only the RMF dataset in the PHA response dict
         if type(rmf) in (sherpa.astro.instrument.RMF1D,):
             rmf = rmf._rmf
         _check_type(rmf, sherpa.astro.data.DataRMF, 'rmf', 'an RMF data set')
 
-        data = self._get_pha_data(id, bkg_id)
-        data.set_rmf(rmf, resp_id)
+        data = self._get_pha_data(idval, bkg_id)
+        data.set_rmf(rmf, id=resp_id)
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
             data._set_initial_quantity()
@@ -6920,7 +6985,9 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
-    def load_rmf(self, id, arg=None,
+    def load_rmf(self,
+                 id,
+                 arg=None,
                  resp_id: IdType | None = None,
                  bkg_id: IdType | None = None
                  ) -> None:
@@ -7004,8 +7071,13 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if arg is None:
-            id, arg = arg, id
-        self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
+
+        rmf = self.unpack_rmf(arg)
+        self.set_rmf(idval, rmf, resp_id=resp_id, bkg_id=bkg_id)
 
     def get_bkg_rmf(self,
                     id: IdType | None = None):
@@ -7048,12 +7120,16 @@ class Session(sherpa.ui.utils.Session):
         >>> set_rmf(2, arf1, bkg_id=1)
 
         """
-        bkg_id = self._get_pha_data(id).default_background_id
-        resp_id = self._get_pha_data(id).primary_response_id
-        return self.get_rmf(id, resp_id, bkg_id)
+        data = self._get_pha_data(id)
+        bkg_id = data.default_background_id
+        resp_id = data.primary_response_id
+        return self.get_rmf(id, resp_id=resp_id, bkg_id=bkg_id)
 
     # DOC-TODO: how to describe I/O backend support?
-    def load_bkg_rmf(self, id, arg=None) -> None:
+    def load_bkg_rmf(self,
+                     id,
+                     arg=None
+                     ) -> None:
         """Load a RMF from a file and add it to the background of a
         PHA data set.
 
@@ -7108,11 +7184,19 @@ class Session(sherpa.ui.utils.Session):
         >>> load_bkg_rmf('core', 'core_bkg.rmf')
 
         """
+
+        # Note: this is very similar to load_rmf
         if arg is None:
-            id, arg = arg, id
-        bkg_id = self._get_pha_data(id).default_background_id
-        resp_id = self._get_pha_data(id).primary_response_id
-        self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
+            idval = self.get_default_id()
+            arg = id
+        else:
+            idval = self._fix_id(id)
+
+        data = self._get_pha_data(idval)
+        bkg_id = data.default_background_id
+        resp_id = data.primary_response_id
+        rmf = self.unpack_rmf(arg)
+        self.set_rmf(idval, rmf, resp_id=resp_id, bkg_id=bkg_id)
 
     def load_multi_rmfs(self, id, filenames, resp_ids=None) -> None:
         """Load multiple RMFs for a PHA data set.
@@ -7172,22 +7256,18 @@ class Session(sherpa.ui.utils.Session):
         >>> load_multi_rmfs('lowstate', rmfs, [1, 2, 3])
 
         """
-# if type(filenames) not in (list, tuple):
-#             raise ArgumentError('Filenames must be contained in a list')
-# if type(resp_ids) not in (list, tuple):
-#             raise ArgumentError('Response IDs must be contained in a list')
 
         if resp_ids is None:
             id, filenames, resp_ids = resp_ids, id, filenames
 
         filenames = list(filenames)
         resp_ids = list(resp_ids)
-
         if len(filenames) != len(resp_ids):
             raise ArgumentErr('multirsp')
 
+        idval = self._fix_id(id)
         for filename, resp_id in zip(filenames, resp_ids):
-            self.load_rmf(id, filename, resp_id)
+            self.load_rmf(idval, filename, resp_id=resp_id)
 
     def get_bkg(self,
                 id: IdType | None = None,
@@ -17153,10 +17233,16 @@ class Session(sherpa.ui.utils.Session):
 
          1. numeric values may not be recorded to their full precision
 
-         2. data sets are not included in the file
+         2. data sets are not included in the file (e.g. the commmand
+            ``load_pha("src.pi")`` requires the file src.pi, and any
+            associated files, to exist)
 
          3. some settings and values may not be recorded (such as
             header information).
+
+        .. versionchanged:: 4.19.0
+           PSF models now also save the radial and norm parameters, if
+           available.
 
         .. versionchanged:: 4.18.0
            Handling of PHA data has been improved, and the output now
@@ -17204,8 +17290,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        save : Save the current Sherpa session to a file.
-        restore : Load in a Sherpa session from a file.
+        save, restore
 
         Notes
         -----

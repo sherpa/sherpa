@@ -43,6 +43,8 @@ from sherpa.astro.io.wcs import WCS
 
 from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.models.basic import UserModel
+from sherpa.models.parameter import Parameter
+from sherpa.utils import get_keyword_defaults
 from sherpa.utils.types import IdType
 
 if TYPE_CHECKING:
@@ -186,7 +188,7 @@ def _save_entries(out: OutType,
     store
        A container with keys. The elements of the container are
        passed to tostatement to create the string that is then
-       written to fh.
+       saved in out.
     tostatement : func
        A function which accepts two arguments, the key and value
        from store, and returns a string. The reason for the name
@@ -374,9 +376,6 @@ def _save_pha_grouping(out: OutType,
     bid
        If not ``None`` then this indicates that the background dataset
        is to be used.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     _save_pha_array(out, state, pha, "grouping", id, bid=bid)
@@ -1097,16 +1096,19 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
             _output(out, par_attributes)
             linkstr = linkstr + par_linkstr
 
-        # If the model is a PSFModel, could have special
-        # attributes "size" and "center" -- if so, record them.
+        # If the model is a PSFModel then there are a number of
+        # attributes we want to set, but they are not stored in the
+        # .pars attribute. Drop the "kernel" field as it is a string.
+        #
         if typename == "psfmodel":
             spacer = False
-            if hasattr(mod, "size") and mod.size is not None:
-                _output(out, f"{modelname}.size = {mod.size}")
-                spacer = True
+            for parname in ["size", "center", "radial", "norm"]:
+                parval = getattr(mod, parname, None)
+                if parval is None:
+                    continue
 
-            if hasattr(mod, "center") and mod.center is not None:
-                _output(out, f"{modelname}.center = {mod.center}")
+                val = parval.val if isinstance(parval, Parameter) else parval
+                _output(out, f"{modelname}.{parname} = {val}")
                 spacer = True
 
             if spacer:
@@ -1171,12 +1173,12 @@ def _save_models(out: OutType, state: SessionType) -> None:
         try:
             try:
                 the_source = state.get_source(id)
-            except:
+            except Exception:
                 the_source = None
 
             try:
                 the_full_model = state.get_model(id)
-            except:
+            except Exception:
                 the_full_model = None
 
             have_source = the_source is not None
@@ -1188,7 +1190,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
                     # used by PHA data sets.
                     try:
                         is_pha = isinstance(state.get_data(id), DataPHA)
-                    except:
+                    except Exception:
                         is_pha = False
 
                     if is_pha and repr(the_source) == repr(the_full_model):
@@ -1206,7 +1208,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
 
             _output(out, cmd)
             _output_nl(out)
-        except:
+        except Exception:
             pass
 
         # Set background models (if any) associated with backgrounds
@@ -1220,12 +1222,12 @@ def _save_models(out: OutType, state: SessionType) -> None:
 
                 try:
                     the_bkg_source = state.get_bkg_source(id, bkg_id=bid)
-                except:
+                except Exception:
                     the_bkg_source = None
 
                 try:
                     the_bkg_full_model = state.get_bkg_model(id, bkg_id=bid)
-                except:
+                except Exception:
                     the_bkg_full_model = None
 
                 have_source = the_bkg_source is not None
@@ -1252,7 +1254,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
                 _output(out, cmd)
                 _output_nl(out)
 
-        except:
+        except Exception:
             pass
 
     # separate out the pileup models from the source models
@@ -1260,7 +1262,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
     for id in ids:
         try:
             pname = state.get_pileup_model(id).name
-        except:
+        except Exception:
             continue
 
         cmd_id = _id_to_str(id)
@@ -1718,10 +1720,10 @@ def save_all(state: SessionType,
 
     _save_id(out, state)
 
-    if fh is None:
-        fh = sys.stdout
+    outfh = sys.stdout if fh is None else fh
 
-    write = lambda msg: fh.write(f"{msg}\n")
+    def write(msg: str) -> None:
+        outfh.write(f"{msg}\n")
 
     # Hard code the required imports.
     #
