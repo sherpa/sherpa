@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020-2025
+#  Copyright (C) 2016, 2018, 2020-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -4504,14 +4504,12 @@ def check_moncar(ncores, fr, g1, g2) -> None:
             # test for this (so we know if/when this assumption
             # changes).
             #
-            if platform.machine() == "x86_64":
+            if platform.machine() in ["x86_64", "aarch64"]:
                 nexp = 13788
                 gleft = g2
                 gright = g1
 
             else:
-                # This is known to work with Linux/aarch64 and
-                # Darwin/arm64.
                 nexp = 13785
                 gleft = g1
                 gright = g2
