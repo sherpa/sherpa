@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016-2017, 2021, 2026
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,9 +18,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import time
 from os import access, R_OK
+import time
 
+from sherpa.astro.io.wcs import WCS
 from sherpa.utils.err import DS9Err
 
 from . import DS9
@@ -93,54 +95,69 @@ def image(arr, newframe=False, tile=False):
         raise DS9Err('noimage')
 
 
-def _set_wcs(keys):
+def _set_wcs(keys: tuple[WCS | None, WCS | None, str]) -> str:
+    """Convert the settings into a string to send via XPA"""
+
     eqpos, sky, name = keys
 
-    phys = ''
-    wcs = "OBJECT = '%s'\n" % name
-
-    if eqpos is not None:
-        wcrpix = eqpos.crpix
-        wcrval = eqpos.crval
-        wcdelt = eqpos.cdelt
+    # DS9 can be very particular about the WCS settings, so attempt to
+    # set everything to avoid problems with ds9 preference settings.
+    #
+    out = [f"OBJECT = '{name}'"]
 
     if sky is not None:
         pcrpix = sky.crpix
         pcrval = sky.crval
         pcdelt = sky.cdelt
 
-        # join together all strings with a '\n' between each
-        phys = '\n'.join(["WCSNAMEP = 'PHYSICAL'",
-                          "CTYPE1P = 'x       '",
-                          'CRVAL1P = %.14E' % pcrval[0],
-                          'CRPIX1P = %.14E' % pcrpix[0],
-                          'CDELT1P = %.14E' % pcdelt[0],
-                          "CTYPE2P = 'y       '",
-                          'CRVAL2P = %.14E' % pcrval[1],
-                          'CRPIX2P = %.14E' % pcrpix[1],
-                          'CDELT2P = %.14E' % pcdelt[1]])
+        crval = [f'{pcrval[0]:.14E}', f'{pcrval[1]:.14E}']
+        crpix = [f'{pcrpix[0]:.14E}', f'{pcrpix[1]:.14E}']
+        cdelt = [f'{pcdelt[0]:.14E}', f'{pcdelt[1]:.14E}']
 
-        if eqpos is not None:
-            wcdelt = wcdelt * pcdelt
-            wcrpix = (wcrpix - pcrval) / pcdelt + pcrpix
+    else:
+        # Ensure we have the identity transform defined.
+        crval = ['1.0', '1.0']
+        crpix = ['1.0', '1.0']
+        cdelt = ['1.0', '1.0']
+
+    out.extend(['WCSAXESP = 2',
+                "WCSNAMEP = 'PHYSICAL'",
+                "CTYPE1P  = 'x       '",
+                "CTYPE2P  = 'y       '",
+                f'CRVAL1P  = {crval[0]}',
+                f'CRPIX1P  = {crpix[0]}',
+                f'CDELT1P  = {cdelt[0]}',
+                f'CRVAL2P  = {crval[1]}',
+                f'CRPIX2P  = {crpix[1]}',
+                f'CDELT2P  = {cdelt[1]}'])
 
     if eqpos is not None:
-        # join together all strings with a '\n' between each
-        wcs = wcs + '\n'.join(["RADECSYS = 'ICRS    '",
-                               "CTYPE1  = 'RA---TAN'",
-                               'CRVAL1  = %.14E' % wcrval[0],
-                               'CRPIX1  = %.14E' % wcrpix[0],
-                               'CDELT1  = %.14E' % wcdelt[0],
-                               "CTYPE2  = 'DEC--TAN'",
-                               'CRVAL2  = %.14E' % wcrval[1],
-                               'CRPIX2  = %.14E' % wcrpix[1],
-                               'CDELT2  = %.14E' % wcdelt[1]])
 
-    # join the wcs and physical with '\n' between them and at the end
-    return ('\n'.join([wcs, phys]) + '\n')
+        wcrval = eqpos.crval
+        if sky is not None:
+            wcdelt = eqpos.cdelt * sky.cdelt
+            wcrpix = (eqpos.crpix - sky.crval) / sky.cdelt + sky.crpix
+        else:
+            wcdelt = eqpos.cdelt
+            wcrpix = eqpos.crpix
+
+        out.extend(['WCSAXES = 2',
+                    "RADECSYS = 'ICRS    '",
+                    "CTYPE1  = 'RA---TAN'",
+                    "CTYPE2  = 'DEC--TAN'",
+                    f'CRVAL1  = {wcrval[0]:.14E}',
+                    f'CRPIX1  = {wcrpix[0]:.14E}',
+                    f'CDELT1  = {wcdelt[0]:.14E}',
+                    f'CRVAL2  = {wcrval[1]:.14E}',
+                    f'CRPIX2  = {wcrpix[1]:.14E}',
+                    f'CDELT2  = {wcdelt[1]:.14E}'])
+
+    # Ensure the string ends with a new-line
+    out.append('')
+    return '\n'.join(out)
 
 
-def wcs(keys):
+def wcs(keys: tuple[WCS | None, WCS | None, str]) -> None:
 
     if not imager.isOpen():
         raise DS9Err('open')
@@ -148,7 +165,6 @@ def wcs(keys):
     info = _set_wcs(keys)
 
     try:
-        # use stdin to pass the WCS info
         imager.xpaset('wcs replace', info)
     except:
         raise DS9Err('setwcs')
