@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014, 2017 - 2024
+# Copyright (C) 2014, 2017-2024, 2026
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -91,4 +91,4 @@ for opt, help in HELP.items():
 
 setup(version=versioneer.get_version(),
       cmdclass=versioneer.get_cmdclass(sherpa_commands),
-      ext_modules=static_ext_modules)
+      ext_modules=static_ext_modules())

@@ -1,5 +1,6 @@
 // 
-//  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2015, 2026
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -22,7 +23,8 @@
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
-#include <Python.h>
+#include <sherpa/python.hh>
+
 #include <numpy/arrayobject.h>
 
 

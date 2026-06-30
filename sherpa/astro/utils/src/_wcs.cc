@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2025
+//  Copyright (C) 2009, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -22,6 +22,7 @@
 #include "sherpa/extension.hh"
 #include <sstream>
 #include <iostream>
+#include <cstring>
 
 extern "C" {
 #include "wcs.h"
