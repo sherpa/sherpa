@@ -1,6 +1,6 @@
-/*                                                                
-**  Copyright (C) 2002-2005,2007  Smithsonian Astrophysical Observatory 
-*/                                                                
+/*
+**  Copyright (C) 2002-2005,2007,2025  Smithsonian Astrophysical Observatory
+*/
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
@@ -18,7 +18,7 @@
 /*                                                                          */
 
 
- 
+
 #include "grplib.h"
 #include "grp_priv.h"
 
@@ -55,7 +55,7 @@ int grp_do_num_bins(long numChans, long numBins, short *groupCol,
                     "invalid value.\n");
         return(GRP_ERROR);
     }
-    
+
     numTabStops = count_bad_chans(tabStops, numChans);
     binWidth = (double) ((double) numChans -
 			 (double) numTabStops) / (double) numBins;
@@ -70,7 +70,7 @@ int grp_do_num_bins(long numChans, long numBins, short *groupCol,
         binWidth = 1;
         returnVal = GRP_WARNING;
     }
-    
+
     isError = grp_do_bin_width(numChans, binWidth, groupCol,
                                qualCol, tabStops, errList);
     if(isError){
@@ -78,7 +78,7 @@ int grp_do_num_bins(long numChans, long numBins, short *groupCol,
             return(GRP_ERROR);
         else returnVal = GRP_WARNING;
     }
-    
+
     numGroups = count_groups(groupCol, qualCol, numChans);
     /* More groups produced than requested? */
     if(numGroups > numBins){
@@ -98,7 +98,7 @@ int grp_do_num_bins(long numChans, long numBins, short *groupCol,
             err_msg("ERROR: Fewer groups produced than requested.\n");
         return(GRP_ERROR);
     }
-    
+
     return(returnVal);
 }
 
@@ -131,7 +131,7 @@ int grp_do_num_counts(double *dataCol, long numChans, double numCounts,
                     "invalid value.\n");
         return(GRP_ERROR);
    }
-   
+
    if(maxLength <= 0.0)
        maxLength = MAX_BIN_LENGTH;
 
@@ -179,7 +179,7 @@ int grp_do_num_counts(double *dataCol, long numChans, double numCounts,
            totCounts += dataCol[ii];
        }
    } /* end for(ii) */
-   
+
    return(GRP_SUCCESS);
 }
 
@@ -217,12 +217,11 @@ int grp_do_bin(double *dataCol, long numChans, double *binLow,
                     "invalid value.\n");
         return(GRP_ERROR);
     }
-    
 
     /* Check for monotonically increasing or decreasing  data */
     if (check_increasing(dataCol, numChans) == 0) {
       isAscending = 1;
-    } else { 
+    } else {
       if ( check_decreasing(dataCol, numChans) != 0 ) {
 	if(errList)
 	  dsErrAdd(errList, dsDMGROUPBADDATAORDERERR, Accumulation,
@@ -252,14 +251,50 @@ int grp_do_bin(double *dataCol, long numChans, double *binLow,
             err_msg("ERROR: At least two bins in binspec overlap.\n");
         return(GRP_ERROR);
     }
-    
+
     /* Go through all binLow-binHigh pairs */
     for(ii = 0; ii < numBins; ii++){
 
-        tempLow = lower_bound(binLow[ii], dataCol, numChans, isAscending, 
-			      errList);
-        tempHigh = upper_bound(binHigh[ii], dataCol, numChans, isAscending, 
-			       isColReal, errList);
+        long err_count_before = 0;
+        if (errList)
+            err_count_before = dsErrGetErrorCt(errList);
+
+        tempLow = lower_bound(binLow[ii], dataCol, numChans, isAscending, errList);
+
+        if (tempLow == GRP_ERROR) {
+            /* Check if the specific error we are interested in was just added */
+            if (errList && (dsErrGetErrorCt(errList) > err_count_before))
+            {
+                long num_lower_bound_errors = dsErrGetNumOccur(errList, dsDMGROUPLOWERBOUNDERR, Individual);
+                if (num_lower_bound_errors > 0) {
+                    /* This is the recoverable error from lower_bound. Remove all occurrences and continue. */
+                    dsErrRemoveAllCode(errList, dsDMGROUPLOWERBOUNDERR, Individual);
+                    continue;
+                }
+            }
+            /* If it was a different error, or no new error was added, it's a more serious problem. */
+            return(GRP_ERROR);
+        }
+
+        if (errList)
+            err_count_before = dsErrGetErrorCt(errList);
+
+        tempHigh = upper_bound(binHigh[ii], dataCol, numChans, isAscending, isColReal, errList);
+
+        if(tempHigh == GRP_ERROR) {
+            /* Check if the specific error we are interested in was just added */
+            if (errList && (dsErrGetErrorCt(errList) > err_count_before))
+            {
+                long num_upper_bound_errors = dsErrGetNumOccur(errList, dsDMGROUPUPPERBOUNDERR, Individual);
+                if (num_upper_bound_errors > 0) {
+                    /* This is the recoverable error from upper_bound. Remove all occurrences and continue. */
+                    dsErrRemoveAllCode(errList, dsDMGROUPUPPERBOUNDERR, Individual);
+                    continue;
+                }
+            }
+            /* If it was a different error, or no new error was added, it's a more serious problem. */
+            return(GRP_ERROR);
+        }
 
 	if (!isAscending) {
 	  tmpVar = tempLow;
@@ -267,10 +302,6 @@ int grp_do_bin(double *dataCol, long numChans, double *binLow,
 	  tempHigh = tmpVar;
 	}
 
-        if((tempLow == GRP_ERROR) || (tempHigh == GRP_ERROR))
-	  continue;
-	/*            return(GRP_ERROR); */
-        
         /* If there are no data within the pair, skip to next pair */
         if((tempHigh - tempLow) < 0)
             continue;
@@ -289,7 +320,7 @@ int grp_do_bin(double *dataCol, long numChans, double *binLow,
         }
 
         isComplete = GRP_TRUE;
-        
+
         /* Check for a complete group */
         for(jj = tempLow; jj <= tempHigh; jj++){
             if ( (jj > chanHigh) || tabStops[jj] ) {
@@ -303,9 +334,9 @@ int grp_do_bin(double *dataCol, long numChans, double *binLow,
         if( (partialBin && (ii == (numBins - 1))) ||
 	    ((!isAscending) && (binLength < (numBins-1))) )
             isComplete = GRP_FALSE;
-        
+
         counter = 0;
-        
+
         /* Create group - good or bad */
         for(jj = tempLow; jj <= tempHigh; jj++){
             /* Are we in a tab or stop? */
@@ -367,7 +398,7 @@ int grp_do_bin(double *dataCol, long numChans, double *binLow,
             }
         } /* end for(jj) */
     } /* end for(ii) */
-    
+
     return(GRP_SUCCESS);
 }
 
@@ -397,7 +428,7 @@ int grp_do_bin_width(long numChans, long binWidth, short *groupCol,
                     "invalid value.\n");
         return(GRP_ERROR);
     }
-    
+
     for(ii = 0; ii < numChans; ii++){
         /* Are we in a tab or stop? */
         if(tabStops[ii]){
@@ -437,8 +468,8 @@ int grp_do_bin_width(long numChans, long binWidth, short *groupCol,
             counter++;
         }
     } /* end for(ii) */
-    
-    return(GRP_SUCCESS);   
+
+    return(GRP_SUCCESS);
 }
 
 /* SNR
@@ -476,21 +507,24 @@ int grp_do_snr(double *dataCol, long numChans, double snr,
                     "invalid value.\n");
         return(GRP_ERROR);
     }
-    
+
     if(maxLength <= 0.0)
         maxLength = MAX_BIN_LENGTH;
-   
+
     for(ii = 0; ii < numChans; ii++){
 
-        if(tabStops[ii]){
-            if(counter != 0){
+        if(tabStops[ii]){ /* if the current tabStop should be filtered out/returns GRP_TRUE */
+            if(counter != 0){ /* And if the counter isn't 0, 
+                                 meaning that we aren't at the beginning a group */
+                /* Then clear out any partial group's accumulated data */
                 set_incomplete(groupCol, qualCol, ii - counter,
                                ii - 1);
-                runningSnr = 0.0;
-		runningSignal=0.0;
-		runningNoise=0.0;
-                counter = 0;
+                runningSnr = 0.0; /* reset the running SNR       */
+		runningSignal=0.0;        /* reset the running signal    */
+		runningNoise=0.0;         /* reset the running noise     */
+                counter = 0;      /* reset the counter           */
             }
+            continue;         /* move on to the next channel immediately */
         }
         /* Are we at the end of the table? */
         else if(ii == (numChans - 1)){
@@ -601,7 +635,7 @@ int grp_do_snr(double *dataCol, long numChans, double snr,
             counter++;
         }
     } /* end for(ii) */
-    
+
     return(returnVal);
 }
 
@@ -619,7 +653,7 @@ int grp_do_snr(double *dataCol, long numChans, double snr,
 int grp_do_adaptive(double *dataCol, long numChans, double minCounts,
                     short *groupCol, short *qualCol, short *tabStops,
                     double maxLength, dsErrList *errList){
-    
+
     short *usedChans;
     long ii, jj, tempLength, tempMax, curWidth = 0;
     long counter = 0;
@@ -636,10 +670,10 @@ int grp_do_adaptive(double *dataCol, long numChans, double minCounts,
                     "invalid value.\n");
         return(GRP_ERROR);
     }
-    
+
     if(maxLength <= 0.0)
         maxLength = MAX_BIN_LENGTH;
-   
+
     /* Create and initialize used channel list */
     usedChans = (short *) calloc(numChans, sizeof(short));
     for(ii = 0; ii < numChans; ii++){
@@ -648,11 +682,11 @@ int grp_do_adaptive(double *dataCol, long numChans, double minCounts,
         else
             usedChans[ii] = GRP_FALSE;
     }
-    
+
     /* Main loop through adaptive group sizes */
     while((curWidth + 1) <= maxLength){
         curWidth++;
-        
+
         /* Determine maxLength each time as it might be limited */
         tempLength = 0;
         tempMax = 0;
@@ -667,7 +701,7 @@ int grp_do_adaptive(double *dataCol, long numChans, double minCounts,
         }
         if(tempMax < maxLength)
             maxLength = tempMax;
-        
+
         /* Iterate over each row for each group size */
         for(ii = 0; ii < (numChans - curWidth); ii++){
             if(usedChans[ii]) continue;
@@ -688,7 +722,7 @@ int grp_do_adaptive(double *dataCol, long numChans, double minCounts,
             } /* end for(jj) */
         } /* end for(ii) */
     } /* end while() */
-    
+
     /* Put unused channels into "bad" groups */
     for(ii = 0; ii < numChans; ii++){
         /* Are we in a used channel? */
@@ -717,7 +751,7 @@ int grp_do_adaptive(double *dataCol, long numChans, double minCounts,
             counter++;
         }
     } /* end for(ii) */
-    
+
     free(usedChans);
     return(GRP_SUCCESS);
 }
@@ -760,10 +794,10 @@ int grp_do_adaptive_snr(double *dataCol, long numChans, double snr,
                     "invalid value.\n");
         return(GRP_ERROR);
     }
-    
+
     if(maxLength <= 0.0)
        maxLength = MAX_BIN_LENGTH;
-   
+
    /* Create used channel list */
    usedChans = (short *) calloc(numChans, sizeof(short));
    for(ii = 0; ii < numChans; ii++){
@@ -888,7 +922,7 @@ int grp_do_adaptive_snr(double *dataCol, long numChans, double snr,
  */
 int grp_do_bin_file(double *dataCol, long numChans, short *groupCol,
                     short *qualCol, short *tabStops, double *fDataCol,
-                    long fNumChans, short *fGroupCol, short *fQualCol, 
+                    long fNumChans, short *fGroupCol, short *fQualCol,
 		    int isColReal, dsErrList *errList){
 
     short isError = GRP_FALSE;
@@ -908,7 +942,7 @@ int grp_do_bin_file(double *dataCol, long numChans, short *groupCol,
                     "invalid value.\n");
         return(GRP_ERROR);
     }
-      
+
     binLow = (double *) calloc(fNumChans, sizeof(double));
     binHigh = (double *) calloc(fNumChans, sizeof(double));
     tBinLow = (double *) calloc(fNumChans, sizeof(double));
@@ -922,10 +956,10 @@ int grp_do_bin_file(double *dataCol, long numChans, short *groupCol,
         else
             tabStops[ii] = GRP_FALSE;
     }
-    
+
     /* Need to determine binLow, binHigh, numBins, tabStops */
     for(ii = 0; ii < (fNumChans - 1); ii++){
-        
+
         /* Are we starting a group? */
         if((groupBegin < 0) && (fGroupCol[ii] == GRP_BEGIN))
             groupBegin = ii;
@@ -933,7 +967,7 @@ int grp_do_bin_file(double *dataCol, long numChans, short *groupCol,
         /* Are we starting a tab? */
         if((tabBegin < 0) && (fQualCol[ii] == GRP_TABBED))
             tabBegin = ii;
-        
+
         /* Are we at the end of a group? */
         if((groupBegin >= 0) && ((fGroupCol[ii + 1] == GRP_BEGIN) ||
                           (fQualCol[ii + 1] == GRP_TABBED))){
@@ -943,7 +977,7 @@ int grp_do_bin_file(double *dataCol, long numChans, short *groupCol,
             groupBegin = -1;
             index++;
         }
-        
+
         /* Are we at the end of a tab? */
         if((tabBegin >= 0) && (fQualCol[ii + 1] != GRP_TABBED)){
             /* Make tab */
@@ -952,7 +986,7 @@ int grp_do_bin_file(double *dataCol, long numChans, short *groupCol,
             tabBegin = -1;
             tIndex++;
         }
-        
+
         /* Are we at the end of the table? Handle grouping. */
         if((ii == (fNumChans - 2)) && (fQualCol[ii] != GRP_TABBED)){
             if((groupBegin < 0) && (fGroupCol[ii + 1] == GRP_BEGIN)){
@@ -967,7 +1001,7 @@ int grp_do_bin_file(double *dataCol, long numChans, short *groupCol,
                 index++;
             }
         }
-        
+
         /* Are we at the end of the table? Handle tabs. */
         if(ii == (fNumChans - 2)){
             if((tabBegin < 0) && (fQualCol[ii + 1] == GRP_TABBED)){
@@ -982,9 +1016,9 @@ int grp_do_bin_file(double *dataCol, long numChans, short *groupCol,
             }
         }
     } /* end for(ii) */
-   
-    isError = grp_do_bin(dataCol, numChans, binLow, binHigh, 
-			 index, groupCol, qualCol, tabStops, 
+
+    isError = grp_do_bin(dataCol, numChans, binLow, binHigh,
+			 index, groupCol, qualCol, tabStops,
 			 errList, 0, isColReal);
     if(isError)
         return(GRP_ERROR);
@@ -1000,7 +1034,7 @@ int grp_do_bin_file(double *dataCol, long numChans, short *groupCol,
     free(binHigh);
     free(tBinLow);
     free(tBinHigh);
-    
+
     return(GRP_SUCCESS);
 }
 
@@ -1025,13 +1059,13 @@ int grp_do_none(long numChans, short *groupCol, short *qualCol,
                     "invalid value.\n");
         return(GRP_ERROR);
     }
-    
+
     /* Reset all columns */
     for(ii = 0; ii < numChans; ii++){
         groupCol[ii] = GRP_BEGIN;
         qualCol[ii] = GRP_GOOD;
     }
-    
+
     return(GRP_SUCCESS);
 }
 
@@ -1056,7 +1090,7 @@ int grp_do_min_slope(double *dataCol, double *binCol, long numChans,
     double range = 0.0;
     double tempSlope = 0.0;
     short *usedChans;
-    
+
     /* Check for obviously bad inputs */
     if(!dataCol || !binCol || (numChans < 2) || (slope <= 0)
        || !groupCol || !qualCol || !tabStops){
@@ -1068,10 +1102,10 @@ int grp_do_min_slope(double *dataCol, double *binCol, long numChans,
                     "invalid value.\n");
         return(GRP_ERROR);
     }
-    
+
     if(maxlength <= 0.0)
         maxlength = MAX_BIN_LENGTH;
-    
+
     /* Create and initialize used channel list */
     usedChans = (short *) calloc(numChans, sizeof(short));
     for(ii = 0; ii < numChans; ii++){
@@ -1080,11 +1114,11 @@ int grp_do_min_slope(double *dataCol, double *binCol, long numChans,
         else
             usedChans[ii] = GRP_FALSE;
     }
-    
+
     ii = 0;
     jj = 1;
     while(ii < (numChans - 1)){
-        
+
         /* Are we in a tab or stop? */
         if(tabStops[ii]){
             ii++;
@@ -1092,13 +1126,13 @@ int grp_do_min_slope(double *dataCol, double *binCol, long numChans,
         }
         else{
             while(jj < numChans){
-                
+
                 /* Calculate current slope */
                 tempSlope = fabs(((binCol[jj] - binCol[ii])
                                   / (dataCol[jj] - dataCol[ii])));
-                
+
                 range = (dataCol[jj] - dataCol[ii]);
-                
+
                 /* Are we in a tab or stop? */
                 if(tabStops[jj]){
                     ii++;
@@ -1135,11 +1169,11 @@ int grp_do_min_slope(double *dataCol, double *binCol, long numChans,
                 }
                 /* Keep looking */
                 else jj++;
-                
+
             } /* end while(jj) */
         } /* end if */
     } /* end while(ii) */
-    
+
     /* Put unused channels into "bad" groups */
     for(ii = 0; ii < numChans; ii++){
         /* Are we in a used channel? */
@@ -1168,7 +1202,7 @@ int grp_do_min_slope(double *dataCol, double *binCol, long numChans,
             counter++;
         }
     } /* end for(ii) */
-    
+
     free(usedChans);
     return(GRP_SUCCESS);
 }
@@ -1189,12 +1223,12 @@ int grp_do_max_slope(double *dataCol, double *binCol, long numChans,
                      double slope, short *groupCol, short *qualCol,
                      short *tabStops, double maxlength,
                      dsErrList *errList){
-    
+
     long ii, jj, counter = 0;
     double range = 0.0;
     double tempSlope = 0.0;
     short *usedChans;
-    
+
     /* Check for obviously bad inputs */
     if(!dataCol || !binCol || (numChans < 2) || (slope <= 0)
        || !groupCol || !qualCol || !tabStops){
@@ -1206,10 +1240,10 @@ int grp_do_max_slope(double *dataCol, double *binCol, long numChans,
                     "invalid value.\n");
         return(GRP_ERROR);
     }
-    
+
     if(maxlength <= 0.0)
         maxlength = MAX_BIN_LENGTH;
-    
+
     /* Create and initialize used channel list */
     usedChans = (short *) calloc(numChans, sizeof(short));
     for(ii = 0; ii < numChans; ii++){
@@ -1218,11 +1252,11 @@ int grp_do_max_slope(double *dataCol, double *binCol, long numChans,
         else
             usedChans[ii] = GRP_FALSE;
     }
-    
+
     ii = 0;
     jj = 1;
     while(ii < (numChans - 1)){
-        
+
         /* Are we in a tab or stop? */
         if(tabStops[ii]){
             ii++;
@@ -1230,13 +1264,13 @@ int grp_do_max_slope(double *dataCol, double *binCol, long numChans,
         }
         else{
             while(jj < numChans){
-                
+
                 /* Calculate current slope */
                 tempSlope = fabs(((binCol[jj] - binCol[ii])
                                   / (dataCol[jj] - dataCol[ii])));
-                
+
                 range = (dataCol[jj] - dataCol[ii]);
-                
+
                 /* Are we in a tab or stop? */
                 if(tabStops[jj]){
                     ii++;
@@ -1273,11 +1307,11 @@ int grp_do_max_slope(double *dataCol, double *binCol, long numChans,
                 }
                 /* Keep looking */
                 else jj++;
-                
+
             } /* end while(jj) */
         } /* end if */
     } /* end while(ii) */
-    
+
     /* Put unused channels into "bad" groups */
     for(ii = 0; ii < numChans; ii++){
         /* Are we in a used channel? */
@@ -1306,7 +1340,7 @@ int grp_do_max_slope(double *dataCol, double *binCol, long numChans,
             counter++;
         }
     } /* end for(ii) */
-    
+
     free(usedChans);
     return(GRP_SUCCESS);
 }
@@ -1320,7 +1354,7 @@ int create_tabstops(long numChans, double *stopCol, double *tabCol,
 		    int isStopColReal, int isTabColReal,
                     double *tBinLow, double *tBinHigh, long tNumBins,
                     double *sBinLow, double *sBinHigh, long sNumBins,
-                    short *tabStops, int isAscending, 
+                    short *tabStops, int isAscending,
 		    dsErrList *errList){
 
     long ii, jj, tempLow, tempHigh, tmpVar;
@@ -1329,7 +1363,7 @@ int create_tabstops(long numChans, double *stopCol, double *tabCol,
     for(ii = 0; ii < numChans; ii++)
         tabStops[ii] = GRP_FALSE;
 
-    /* Go through stops */ 
+    /* Go through stops */
     for(ii = 0; ii < sNumBins; ii++){
       tempLow = lower_bound(sBinLow[ii], stopCol, numChans, isAscending,
                               errList);
@@ -1353,10 +1387,10 @@ int create_tabstops(long numChans, double *stopCol, double *tabCol,
                 tabStops[jj] = GRP_TRUE;
         }
     }
-    
-    /* Go through tabs */ 
+
+    /* Go through tabs */
     for(ii = 0; ii < tNumBins; ii++){
-        tempLow = lower_bound(tBinLow[ii], tabCol, numChans, isAscending, 
+        tempLow = lower_bound(tBinLow[ii], tabCol, numChans, isAscending,
 			      errList);
         tempHigh = upper_bound(tBinHigh[ii], tabCol, numChans, isAscending,
                                isTabColReal, errList);
@@ -1383,7 +1417,7 @@ int create_tabstops(long numChans, double *stopCol, double *tabCol,
 /* Set tabs in quality column given tabspec */
 int set_tabs(double *dataCol, short *groupCol, short *qualCol,
              long numChans, double *binLow, double *binHigh,
-             long numBins, int isAscending, 
+             long numBins, int isAscending,
 	     int isColReal, dsErrList *errList){
 
     long ii, jj;
@@ -1391,10 +1425,10 @@ int set_tabs(double *dataCol, short *groupCol, short *qualCol,
 
     /* Go through the binlow-binhigh pairs */
     for(ii = 0; ii < numBins; ii++){
-        tempLow = lower_bound(binLow[ii], dataCol, numChans, 
+        tempLow = lower_bound(binLow[ii], dataCol, numChans,
 			      isAscending, errList);
-        tempHigh = upper_bound(binHigh[ii], dataCol, numChans, 
-			       isAscending, isColReal, 
+        tempHigh = upper_bound(binHigh[ii], dataCol, numChans,
+			       isAscending, isColReal,
                                errList);
 
 	if (!isAscending) {
@@ -1420,7 +1454,7 @@ int set_tabs(double *dataCol, short *groupCol, short *qualCol,
 /* Set stops in grouping & quality columns given stopspec */
 int set_stops(double *dataCol, short *groupCol, short *qualCol,
               long numChans, double *binLow, double *binHigh,
-              long numBins, int isAscending, 
+              long numBins, int isAscending,
               int isColReal, dsErrList *errList){
 
     long ii, jj;
@@ -1428,9 +1462,9 @@ int set_stops(double *dataCol, short *groupCol, short *qualCol,
 
     /* Go through the binlow-binhigh pairs */
     for(ii = 0; ii < numBins; ii++){
-        tempLow = lower_bound(binLow[ii], dataCol, numChans, 
+        tempLow = lower_bound(binLow[ii], dataCol, numChans,
 			      isAscending, errList);
-        tempHigh = upper_bound(binHigh[ii], dataCol, numChans, 
+        tempHigh = upper_bound(binHigh[ii], dataCol, numChans,
 			       isAscending, isColReal, errList);
 	if (!isAscending) {
 	  tmpVar = tempLow;
@@ -1455,9 +1489,9 @@ int set_grp_data(double *dataCol, short *groupCol, double *grpDataCol,
 
     long ii, jj, stopChan;
     double counter = 0.0;
-    
+
     stopChan = (numChans - 1);
-    
+
     for(ii = (numChans - 1); ii >= 0; ii--){
         if(groupCol[ii] == GRP_UNUSED){
 	  grpDataCol[ii] = dataCol[ii];
@@ -1474,7 +1508,7 @@ int set_grp_data(double *dataCol, short *groupCol, double *grpDataCol,
         }
         else counter += dataCol[ii];
     }
-    
+
     return(GRP_SUCCESS);
 }
 
@@ -1486,7 +1520,7 @@ int set_chans_per_grp(short *groupCol, long *chansPerGrpCol,
     long counter = 1;
 
     stopChan = (numChans - 1);
-    
+
     for(ii = (numChans - 1); ii >= 0; ii--){
       if (groupCol[ii] == GRP_UNUSED) {
 	chansPerGrpCol[ii] = 1;
@@ -1530,21 +1564,21 @@ int set_grp_num(short *groupCol, long *grpNumCol, long numChans){
 int set_grp_stat_err(double *grpStatErrCol, short *groupCol,
                      double *statErrCol, long numChans)
 {
-  
-  
+
+
   long ii, jj, stopChan;
   double runningTotal = 0.0;
-  
+
   stopChan = numChans -1;
-  
+
   for (ii=0;ii<=stopChan;ii++) {
-    
+
     switch ( groupCol[ii] ) {
-      
+
     case GRP_UNUSED:
       grpStatErrCol[ii] = statErrCol[ii];
       break;
-      
+
     case GRP_BEGIN:
       runningTotal = statErrCol[ii] * statErrCol[ii];
       jj = ii+1;
@@ -1560,19 +1594,18 @@ int set_grp_stat_err(double *grpStatErrCol, short *groupCol,
 	jj++;
       }
       ii=jj-1;
-      
+
       break;
-      
-      
+
+
     case GRP_MIDDLE:
     default:
       /* Should never get here */
       return( GRP_ERROR );
     }
-    
+
   }
-  
-  
+
+
   return(GRP_SUCCESS);
 }
-

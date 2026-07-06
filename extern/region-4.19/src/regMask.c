@@ -1,3 +1,7 @@
+/*                                                                
+**  Copyright (C) -2025 2026  Smithsonian Astrophysical Observatory 
+*/                                                                
+
 /*
  * Includes operations for regMask type shapes.
  *
@@ -19,6 +23,10 @@ void regToStringMask( regShape *, char *, long );
 
 regShape* regCreateMask( regFlavor include, int wcoord, int wsize )
 {
+     (void)include;   /* suppress 'warning: unused parameter' */
+     (void)wcoord;    /* suppress 'warning: unused parameter' */
+     (void)wsize;     /* suppress 'warning: unused parameter' */
+     
     // NOTE:
     //  Only weird thing I see going on is in regConvertWorldShape. DM_FLAG_LOGICAL?
 	fprintf( stderr, "ERROR: Cannot create a regMask type shape\n" ); 
@@ -50,38 +58,57 @@ regShape* regCreateMask( regFlavor include, int wcoord, int wsize )
 
 // copy
 regShape* regCopyMask( regShape* shape ) {
-    // Ditto, not sure what's going on with the user field in regMASK objects.
+        (void)shape;   /* suppress 'warning: unused parameter' */
+	
+	// Ditto, not sure what's going on with the user field in regMASK objects.
 	fprintf( stderr, "ERROR: Cannot copy regMask type shape\n" );
 	return(NULL);
 }
 
 // equals
 int regIsEqualMask( regShape* thisShape, regShape* otherShape ) {
+        (void)thisShape; (void)otherShape;   /* suppress 'warning: unused parameter' */
+
 	fprintf( stderr, "ERROR: Cannot test equality for a regMask type shape\n" ); 
-    return 1;
+	return 1;
 }
 
 // calcArea
 double regCalcAreaMask( regShape* shape ) {
+        (void)shape;   /* suppress 'warning: unused parameter' */
+	
 	fprintf( stderr, "ERROR: Cannot calculate area for a regMask type shape\n" ); 
-    return 0;
+	return 0;
 }
 
 // calcExtent
 // TODO:
 //   Based on what's in region_extent.c there's probably more to do for this.
 int regCalcExtentMask( regShape* shape, double* xpos, double* ypos ) {
+        (void)shape;   /* suppress 'warning: unused parameter' */
+        (void)xpos;    /* suppress 'warning: unused parameter' */
+        (void)ypos;    /* suppress 'warning: unused parameter' */
+	
 	fprintf( stderr, "ERROR: Cannot calculate extent for a regMask type shape\n" ); 
-    return 0;
+	return 0;
 }
 
 // inside
 int regInsideMask( regShape* shape, double x, double y ) {
+        (void)shape;   /* suppress 'warning: unused parameter' */
+        (void)x;       /* suppress 'warning: unused parameter' */
+        (void)y;       /* suppress 'warning: unused parameter' */
+
 	fprintf( stderr, "ERROR: Cannot compute inside for a regMask type shape\n" ); 
-    return 0;
+
+	return 0;
 }
 
 // toString
 void regToStringMask( regShape* shape, char* ptr, long maxlength) {
+        (void)shape;       /* suppress 'warning: unused parameter' */
+        (void)ptr;         /* suppress 'warning: unused parameter' */
+        (void)maxlength;   /* suppress 'warning: unused parameter' */
+
 	fprintf( stderr, "ERROR: Cannot create string for a regMask type shape\n" ); 
 }

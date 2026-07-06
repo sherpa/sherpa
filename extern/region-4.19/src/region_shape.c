@@ -1,5 +1,5 @@
 /*                                                                
-**  Copyright (C) 2015, 2017, 2024  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2015, 2017, 2024,2026  Smithsonian Astrophysical Observatory 
 */                                                                
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
@@ -650,6 +650,8 @@ void regAddShapeByCpt(regRegion *region, regShape *inShape, long component)
    ----------------------------------------------------------------------- */
 void regFreeShape( regRegion* region, regShape* atShape )
 {
+  (void)region;  /* suppress 'warning: unused parameter' */
+
   if( !atShape )
     return;
 

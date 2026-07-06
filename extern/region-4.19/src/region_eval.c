@@ -1,5 +1,5 @@
 /*                                                                
-**  Copyright (C) 2015-2016  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2015-2016,2026  Smithsonian Astrophysical Observatory 
 */                                                                
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
@@ -181,19 +181,5 @@ int regOverlapRegion(regRegion* region1, regRegion* region2) {
           region1->yregbounds,
           region2->xregbounds,
           region2->yregbounds);
-}
-
-int reg_compare_shape( regShape* Shape1, regShape* Shape2 )
-{
-    // NEW CODE
-    if ((!Shape1) && (!Shape2)) {
-        return 1;
-    }
-
-    if ((!Shape1) || (!Shape2)) {
-        return 0;
-    }
-
-    return Shape1->isEqual(Shape1, Shape2);
 }
 

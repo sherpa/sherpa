@@ -1,3 +1,7 @@
+/*                                                                
+**  Copyright (C) -2025 2026  Smithsonian Astrophysical Observatory 
+*/                                                                
+
 #include "region_priv.h"
 
 regShape* regCopyPoint( regShape * );
@@ -112,6 +116,8 @@ int regIsEqualPoint( regShape* thisShape, regShape* otherShape ) {
 
 // calcArea
 double regCalcAreaPoint( regShape* shape ) {
+  (void)shape;   /* suppress 'warning: unused parameter' */
+
   return 0;  // always zero
 }
 

@@ -1,3 +1,7 @@
+/*                                                                
+**  Copyright (C) -2025 2026  Smithsonian Astrophysical Observatory 
+*/                                                                
+
 /*
  * Includes operations for regSector type shapes.
  */
@@ -125,12 +129,19 @@ int regIsEqualSector( regShape* thisShape, regShape* otherShape ) {
 double regCalcAreaSector( regShape* shape ) {
     // This is meaningless without information about the field. AFAICT we
     // are always returning 0 now, so maintaining that behavior.
+
+    (void)shape;  /* suppress 'warning: unused parameter' */
+
+
     return 1.0;
 }
 
 // calcExtent
 int regCalcExtentSector( regShape* shape, double* xpos, double* ypos ) {
-    // Nothing needs to be calculated here.  Maintaining previous behavior.
+    (void)xpos;   /* suppress 'warning: unused parameter' */
+    (void)ypos;   /* suppress 'warning: unused parameter' */
+    (void)shape;  /* suppress 'warning: unused parameter' */
+
     return 1;
 }
 

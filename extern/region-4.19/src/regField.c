@@ -1,3 +1,8 @@
+/*                                                                
+**  Copyright (C) -2025 2026  Smithsonian Astrophysical Observatory 
+*/      
+
+
 /* 
  * Includes operations for regField type shapes.
  */
@@ -86,26 +91,53 @@ int regIsEqualField( regShape* thisShape, regShape* otherShape ) {
 
     return 1;
 }
+/*                                                                
+**  Copyright (C) -2025 2026  Smithsonian Astrophysical Observatory 
+*/                                                                
+/*                                                                          */
+/*  This program is free software; you can redistribute it and/or modify    */
+/*  it under the terms of the GNU General Public License as published by    */
+/*  the Free Software Foundation; either version 3 of the License, or       */
+/*  (at your option) any later version.                                     */
+/*                                                                          */
+/*  This program is distributed in the hope that it will be useful,         */
+/*  but WITHOUT ANY WARRANTY; without even the implied warranty of          */
+/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           */
+/*  GNU General Public License for more details.                            */
+/*                                                                          */
+/*  You should have received a copy of the GNU General Public License along */
+/*  with this program; if not, write to the Free Software Foundation, Inc., */
+/*  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.             */
+/*                                                                          */
 
-// calcArea
-// this is currently calculated in the regBoundsArea function and
-// passed through to area calculation. A field shape has no knowledge 
-// the field it is in, so in some sense this function is unecessary.
-// That being said, it should* return field_area as defined in
-// region_extent.
+/* calcArea
+ * this is currently calculated in the regBoundsArea function and
+ * passed through to area calculation. A field shape has no knowledge 
+ * the field it is in, so in some sense this function is unecessary.
+ * That being said, it should* return field_area as defined in
+ * region_extent.
+ */
 double regCalcAreaField( regShape* shape ) {
+    (void)shape;  /* suppress 'warning: unused parameter' */
     return 0;
 }
 
-// calcExtent
-// Does nothing for fields
+/* calcExtent
+ * Does nothing for fields
+ */
 int regCalcExtentField( regShape* shape, double* xpos, double* ypos ) {
-    return 1;
+    (void)xpos;   /* suppress 'warning: unused parameter' */
+    (void)ypos;   /* suppress 'warning: unused parameter' */
+    (void)shape;  /* suppress 'warning: unused parameter' */
+
+  return 1;
 }
 
-// inside
+/* inside */
 int regInsideField( regShape* shape, double x, double y ) {
-    
+    (void)x;  /* suppress 'warning: unused parameter' */
+    (void)y;  /* suppress 'warning: unused parameter' */
+
     if (shape->include == regInclude) {
         return 1;
     }
@@ -113,7 +145,7 @@ int regInsideField( regShape* shape, double x, double y ) {
     return 0;
 }
 
-// toString
+/* toString */
 void regToStringField( regShape* shape, char* ptr, long maxlength) {
     if (!shape) return;
 
