@@ -15,5 +15,26 @@ dsErrCode dsErrAdd( dsErrList *blah, ... )
 }
 
 
+long dsErrGetErrorCt( dsErrList *blah )
+{
+  return(0);
+}
+
+long dsErrGetNumOccur( dsErrList *blah, ... )
+{
+  return(0);
+}
+
+dsErrBool dsErrRemoveN( dsErrList *blah, ... )
+{
+  return(0);
+}
+
+dsErrBool dsErrRemoveAllCode( dsErrList *error_list_p, ... )
+{
+  return(0);
+} 
+
+
 #endif
 
