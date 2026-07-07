@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2006-2010, 2016-2021, 2025-2026
-#     Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,119 +18,16 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-r"""
-Interface for viewing images with the ds9 image viewer.
-Loosely based on XPA, by Andrew Williams.
+"""Interface for viewing images with the ds9 image viewer.
 
-For more information, see the XPA Access Points section
-of the ds9 reference manual (under Help in ds9).
+Loosely based on XPA, by Andrew Williams, with the original code by
+ROwen 2004-2005 and then the Sherpa team from 2006. This code has
+been simplified to only support the features that Sherpa needs.
 
-Requirements:
-
-*** Unix Requirements
-- ds9 and xpa must be installed somewhere on your $PATH
-
-*** MacOS X Requirements
-- The MacOS X ds9.app must be in one of the two *standard* locations
-  applications (e.g. ~/Applications or /Applications on English systems).
-  and/or, if you prefer:
-- xpa for darwin installed somewhere on your $PATH
-- ds9 for darwin installed somewhere on your $PATH
-
-  Note: as I write this, ds9 4.0b7 is out and the MacOS X application
-  does not include xpa. They plan to fix this, but if your ds9.app
-  does not include xpa then you MUST install darwin xpa.
-
-*** Windows Requirements
-- Mark Hammond's pywin32 package: <https://sourceforge.net/projects/pywin32/>
-- ds9 installed in the default directory (C:\Program Files\ds9\
-  on English systems)
-- xpa executables installed in the default directory (C:\Program Files\\xpa\)
-  or in the same directory as ds9.exe. Why might you choose the latter?
-  Because (at least for ds9 3.0.3) to use ds9 with xpa from the command line,
-  the xpa executables should be in with ds9.exe. Otherwise ds9 can't find
-  xpans when it starts up and so fails to register itself.
-
-Extra Keyword Arguments:
-Many commands take additional keywords as arguments. These are sent
-as separate commands after the main command is executed.
-Useful keywords for viewing images include: scale, orient and zoom.
-See the XPA Access Points section of the ds9 reference manual
-for more information. Note that the value of each keyword
-is sent as an unquoted string. If you want quotes, provide them
-as part of the value string.
-
-Template Argument:
-The template argument allows you to specify which copy of ds9
-or which other software you wish to command via xpa.
-One common use is to have multiple copies of ds9 on your own machine
-(often necessary because ds9 only has one window, grr).
-If you launch ds9 with the -title command-line option then you can
-send commands to that ds9 by using that title as the template.
-See the XPA documentation for other uses for template, such as talking
-to ds9 on a remote host.
-
-For a list of local servers try % xpaget xpans
-
-History:
-2004-04-15 ROwen        First release.
-2004-04-20 ROwen        showarry improvements:
-                                        - Accepts any array whose values can be represented as signed ints.
-                                        - Bug fix: x and y dimensions were swapped (#@$@# numarray)
-2004-04-29 ROwen        Added xpaset function.
-2004-05-05 ROwen        Added DS9Win class and moved the showXXX functions to it.
-                                        Added function xpaget.
-                                        Added template argument to xpaset.
-2004-10-15 ROwen        Bug fix: could only communicate with one ds9;
-                                        fixed by specifying port=0 when opening ds9.
-2004-11-02 ROwen        Improved Mac compatibility (now looks in [~]/Applications).
-                                        Made compatible with Windows, except showArray is broken;
-                                        this appears to be a bug in ds9 3.0.3.
-                                        loadFITSFile no longer tests the file name's extension.
-                                        showArray now handles most array types without converting the data.
-                                        Eliminated showBinFile because I could not get it to work;
-                                        this seems to be an bug or documentation bug in ds9.
-                                        Changed order of indices for 3-d images from (y,x,z) to (z,y,x).
-2004-11-17 ROwen        Corrected a bug in the subprocess version of xpaget.
-                                        Updated header comments for big-fixed version of subprocess.
-2004-12-01 ROwen        Bug fix in xpaset: terminate data with \n if not already done.
-                                        Modified to use subprocess module (imported from RO.Future
-                                        if Python is old enough not to include it).
-                                        Added __all__.
-2004-12-13 ROwen        Bug fix in DS9Win; the previous version was missing
-                                        the code that waited for DS9 to launch.
-2005-05-16 ROwen        Added doRaise argument to xpaget, xpaset and DS9Win;
-                                        the default is False so the default behavior has changed.
-2005-09-23 ROwen        Bug fix: used the warnings module without importing it.
-2005-09-27 ROwen        Added function setup.
-                                        Checks for xpa and ds9. If not found at import
-                                        then raise a warning make DS9Win. xpaset and xpaget
-                                        retry the check and raise RuntimeError on failure
-                                        (so you can install xpa and ds9 and run without reloading).
-                                        MacOS X: modified to launch X11 if not already running.
-2005-09-30 ROwen        Windwows: only look for xpa in ds9's directory
-                                        (since ds9 can't find it in the default location);
-                                        updated the installation instructions accordingly.
-2005-10-05 ROwen        Bug fix: Windows path joining via string concatenation was broken;
-                                        switched to os.path.join for all path joining.
-                                        Bug fix: Windows search for xpa was broken ("break" only breaks one level).
-2005-10-11 ROwen        MacOS X: add /usr/local/bin to env var PATH and set env var DISPLAY, if necessary
-                                        (because apps do not see the user's shell modifications to env variables).
-2005-10-13 ROwen        MacOS X and Windows: add ds9 and xpa to the PATH if found
-                                        MacOS X: look for xpaget in <applications>/ds9.app as well as on the PATH
-                                        Windows: look for xpaget in <program files>\\xpa\ as well as ...\ds9\
-2005-10-31 ROwen        Bug fix: showArray mis-handled byteswapped arrays.
-2005-11-02 ROwen        Improved fix for byteswapped arrays that avoids copying the array
-                                        (based on code by Tim Axelrod).
-2005-11-04 ROwen        Simplified byte order test as suggested by Rick White.
-2006-06-01 Stephen Doe  Downloaded RO package to evaluate DS9 interface for CIAO.  Stripped all references to RO package from this file (so it can be used without the rest of the RO package).  Converted it from using numarray to numpy for use in Sherpa Python package.
-2006-06-13 Stephen Doe  Removed findApp, all references to Mac or Windows operating systems.  Porting CIAO to Linux and OS X, so treat these all as Unix systems for now.  Worry about Mac, Windows backends later.  (This also means that ds9 and xpaget, xpaset must be in the PATH.)
-2006-08-04 Stephen Doe  Increase timeout interval.
-2008-05-28 Stephen Doe  Always raise exception on error (doRaise=True always)
-2008-11-25 Stephen Doe  Search PATH for access to application, rather than shell out to use 'which' -- PATH sometimes not correctly inherited by shell via Popen, for csh on some Mac, Solaris machines.
 """
 
 import os
+import shlex
 import sys
 import time
 import warnings
@@ -249,107 +146,106 @@ _OpenCheckInterval = 0.2  # seconds
 _MaxOpenTime = 60.0  # seconds
 
 
-def xpaget(cmd, template=_DefTemplate, doRaise=True):
-    """Executes a simple xpaget command:
-            xpaset -p <template> <cmd>
-    returning the reply.
+def xpaget(cmd: str,
+           template: str = _DefTemplate,
+           doRaise: bool = True
+           ) -> str:
+    """Executes a simple xpaget command, returning the reply.
 
-    Inputs:
-    - cmd                command to execute; may be a string or a list
-    - template        xpa template; can be the ds9 window title
-                            (as specified in the -title command-line option)
-                            host:port, etc.
-    - doRaise        if True, raise RuntimeError if there is a communications error,
-                            else issue a UserWarning warning
+    Parameters
+    ----------
+    cmd
+       The XPA command.
+    template
+       The target of the XPA call. It can be the ds9 window title,
+       a string giving "host:port", or other supported forms.
+    doRaise
+       Should an error from xpaget raise an exception?
 
-    Raises RuntimeError or issues a warning (depending on doRaise)
-    if anything is written to stderr.
+    Returns
+    -------
+    response
+       The response from DS9 to the query.
+
     """
-    # Would be better to make a sequence rather than have to quote arguments
-    fullCmd = 'xpaget %s "%s"' % (template, cmd,)
 
+    fullCmd = ['xpaget', template, cmd]
     with _Popen(args=fullCmd,
-                shell=True,
+                shell=False,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE) as p:
-        try:
-            p.stdin.close()
-            errMsg = p.stderr.read()
-            if errMsg:
-                errMsgStr = errMsg.decode()
-                if doRaise:
-                    raise RuntimeErr('cmdfail', fullCmd, errMsgStr)
 
-                fullErrMsg = f"{repr(fullCmd)} failed: {errMsgStr}"
-                warnings.warn(fullErrMsg)
+        p.stdin.close()
+        errMsg = p.stderr.read()
+        if errMsg:
+            errMsgStr = errMsg.decode()
+            cmdStr = shlex.join(fullCmd)
+            if doRaise:
+                raise RuntimeErr('cmdfail', cmdStr, errMsgStr)
 
-            return_value = p.stdout.read()
-            return return_value.decode()
-        finally:
-            p.stdout.close()
-            p.stderr.close()
+            fullErrMsg = f"{cmdStr} failed: {errMsgStr}"
+            warnings.warn(fullErrMsg)
+
+        return_value = p.stdout.read()
+        return return_value.decode()
 
 
-def xpaset(cmd, data=None, dataFunc=None, template=_DefTemplate,
-           doRaise=True):
-    """Executes a simple xpaset command:
-            xpaset -p <template> <cmd>
-    or else feeds data to:
-            xpaset <template> <cmd>
+def xpaset(cmd: str,
+           data=None,
+           dataFunc=None,
+           template: str = _DefTemplate,
+           doRaise: bool = True
+           ) -> None:
+    """Executes a simple xpaset command.
 
-    The command must not return any output for normal completion.
+    Parameters
+    ----------
+    cmd
+       The XPA command.
+    data
+       Extra data to send via stdout (a trailing new-line character is
+       added if needed).
+    dataFunc
+       Unused
+    template
+       The target of the XPA call. It can be the ds9 window title,
+       a string giving "host:port", or other supported forms.
+    doRaise
+       Should an error from xpaget raise an exception?
 
-    Inputs:
-    - cmd                command to execute
-    - data                data to write to xpaset's stdin; ignored if dataFunc specified.
-                            If data[-1] is not \n then a final \n is appended.
-    - dataFunc        a function that takes one argument, a file-like object,
-                            and writes data to that file. If specified, data is ignored.
-                            Warning: if a final \n is needed, dataFunc must supply it.
-    - template        xpa template; can be the ds9 window title
-                            (as specified in the -title command-line option)
-                            host:port, etc.
-    - doRaise        if True, raise RuntimeError if there is a communications error,
-                            else issue a UserWarning warning
-
-    Raises RuntimeError or issues a warning (depending on doRaise)
-    if anything is written to stdout or stderr.
     """
-    # Would be better to make a sequence rather than have to quote arguments
-    if data or dataFunc:
-        fullCmd = 'xpaset %s "%s"' % (template, cmd)
-    else:
-        fullCmd = 'xpaset -p %s "%s"' % (template, cmd)
 
+    fullCmd = ['xpaset']
+    if not data and not dataFunc:
+        fullCmd.append('-p')
+
+    fullCmd.extend([template, cmd])
     with _Popen(args=fullCmd,
-                shell=True,
+                shell=False,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT) as p:
+
         try:
-            try:
-                data = bytearray(data, "UTF-8")
-            except:
-                pass
+            data = bytearray(data, "UTF-8")
+        except:
+            pass
 
-            if data:
-                p.stdin.write(data)
-                if data[-1] != b'\n':
-                    p.stdin.write(b'\n')
-            p.stdin.close()
-            reply = p.stdout.read()
-            if reply:
-                errMsgStr = reply.strip().decode()
-                if doRaise:
-                    raise RuntimeErr('cmdfail', fullCmd, errMsgStr)
+        if data:
+            p.stdin.write(data)
+            if data[-1] != b'\n':
+                p.stdin.write(b'\n')
+        p.stdin.close()
+        reply = p.stdout.read()
+        if reply:
+            errMsgStr = reply.strip().decode()
+            cmdStr = shlex.join(fullCmd)
+            if doRaise:
+                raise RuntimeErr('cmdfail', cmdStr, errMsgStr)
 
-                fullErrMsg = f"{repr(fullCmd)} failed: {errMsgStr}"
-                warnings.warn(fullErrMsg)
-
-        finally:
-            p.stdin.close()  # redundant
-            p.stdout.close()
+            fullErrMsg = f"{cmdstr} failed: {errMsgStr}"
+            warnings.warn(fullErrMsg)
 
 
 def _computeCnvDict():
@@ -446,29 +342,29 @@ class DS9Win:
         if self.isOpen():
             return
 
-        # We want to fork ds9. This is possible with os.fork, but
-        # it doesn't work on Windows. At present Sherpa does not
-        # run on Windows, so it is not a serious problem, but it is
-        # not clear if it is an acceptable, or sensible, option.
-        #
-        p = _Popen(
-            args=('ds9', '-title', self.template, '-port', "0"),
-            cwd=None,
-            close_fds=True, stdin=None, stdout=None, stderr=None
-        )
+        fullCmd = ['ds9', '-title', self.template, '-port', '0']
+        with _Popen(
+                args=fullCmd,
+                shell=False,
+                cwd=None,
+                close_fds=True,
+                stdin=None,
+                stdout=None,
+                stderr=None) as p:
 
-        startTime = time.time()
-        while True:
-            time.sleep(_OpenCheckInterval)
-            if self.isOpen():
-                # Trick to stop a ResourceWarning warning to be created when
-                # running sherpa/tests/test_image.py
-                #
-                # Adapted from https://hg.python.org/cpython/rev/72946937536e
-                p.returncode = 0
-                return
-            if time.time() - startTime > _MaxOpenTime:
-                raise RuntimeErr('nowin', self.template)
+            startTime = time.time()
+            while True:
+                time.sleep(_OpenCheckInterval)
+                if self.isOpen():
+                    # Trick to stop a ResourceWarning warning to be created when
+                    # running sherpa/tests/test_image.py
+                    #
+                    # Adapted from https://hg.python.org/cpython/rev/72946937536e
+                    p.returncode = 0
+                    return
+
+                if time.time() - startTime > _MaxOpenTime:
+                    raise RuntimeErr('nowin', self.template)
 
     def isOpen(self):
         """Return True if this ds9 window is open
@@ -618,16 +514,21 @@ class DS9Win:
         for keyValue in kargs.items():
             self.xpaset(cmd=' '.join(keyValue))
 
-    def xpaget(self, cmd):
+    def xpaget(self,
+               cmd: str
+               ) -> str:
         """Execute a simple xpaget command and return the reply.
 
-        The command is of the form:
-                xpaset -p <template> <cmd>
+        Parameters
+        ----------
+        cmd
+           The XPA command.
 
-        Inputs:
-        - cmd                command to execute
+        Returns
+        -------
+        response
+           The response from DS9 to the query.
 
-        Raises RuntimeError if anything is written to stderr.
         """
         return xpaget(
             cmd=cmd,
@@ -635,23 +536,25 @@ class DS9Win:
             doRaise=self.doRaise,
         )
 
-    def xpaset(self, cmd, data=None, dataFunc=None):
-        """Executes a simple xpaset command:
-                xpaset -p <template> <cmd>
-        or else feeds data to:
-                xpaset <template> <cmd>
+    def xpaset(self,
+               cmd: str,
+               data=None,
+               dataFunc=None
+               ) -> None:
+        """Executes a simple xpaset command.
 
-        The command must not return any output for normal completion.
+        Parameters
+        ----------
+        cmd
+           The XPA command.
+        data
+           Extra data to send via stdout (a trailing new-line
+           character is added if needed).
+        dataFunc
+           Unused
 
-        Inputs:
-        - cmd                command to execute
-        - data                data to write to xpaset's stdin; ignored if dataFunc specified
-        - dataFunc        a function that takes one argument, a file-like object,
-                                and writes data to that file. If specified, data is ignored.
-
-        Raises RuntimeError if anything is written to stdout or stderr.
         """
-        return xpaset(
+        xpaset(
             cmd=cmd,
             data=data,
             dataFunc=dataFunc,
