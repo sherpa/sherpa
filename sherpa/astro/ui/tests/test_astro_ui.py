@@ -829,6 +829,8 @@ def test_group_snr_oddity(make_data_path, clean_astro_ui):
 
     This is a regression test (checking the behavior).
 
+    Resolved in CIAO fix SL-316: dmgroup - issue with SNF option (CIAO 4.19b1)
+
     """
 
     with SherpaVerbosity("ERROR"):
@@ -843,10 +845,7 @@ def test_group_snr_oddity(make_data_path, clean_astro_ui):
 
     ui.group_snr(3, tabStops=~ui.get_data().get_mask())
 
-    # Why has the filter changed? One channel mask has been reset
-    # from False to True.
-    #
-    assert ui.get_data().get_filter(format="%.3f") == "0.482:6.001"
+    assert ui.get_data().get_filter(format="%.3f") == "0.496:6.001"
 
 
 # bug #12578
