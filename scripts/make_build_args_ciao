@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+#
+# What are the build options for Sherpa within CIAO?
+#
+
+import os
+
+
+def doit():
+    """Create the build arguments."""
+
+    # If ASCDS_INSTALL is not set up then return nothing (this could
+    # error out but it doesn't seem to be worth it).
+    #
+    try:
+        prefix = os.environ["ASCDS_INSTALL"]
+    except KeyError:
+        return
+
+    args = []
+    for name, value in [
+            ("build-group", "false"),
+            ("build-stk", "false"),
+            ("build-region", "false"),
+            ("build-wcssubs", "false"),
+            ("region-prefix", prefix),
+            ("wcssubs-prefix", prefix),
+            ("xspec-prefix", prefix)
+    ]:
+        args.append(f"-Csetup-args=-D{name}={value}")
+
+    print(" ".join(args))
+
+
+if __name__ == "__main__":
+
+    # For now ignore any arguments
+    doit()
