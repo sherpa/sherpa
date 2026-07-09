@@ -9,6 +9,8 @@ dependencies:
   - gxx=14.2
   - bison
   - python=3.13
+  - pkg-config
+  - fftw
   - numpy
   - pandoc
   - matplotlib

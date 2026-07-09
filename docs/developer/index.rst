@@ -204,7 +204,7 @@ value) can be used. For most cases, the ``scripts/use_ciao_config``
 script can be used::
 
   % ./scripts/use_ciao_config
-  Found XSPEC version: 12.14.1
+  Found XSPEC version: 12.14.0
   Updating setup.cfg
   % git diff setup.cfg
   ...
@@ -213,7 +213,7 @@ Otherwise the file can be edited manually. First find out what
 XSPEC version is present with::
 
   % conda list xspec-modelsonly --json | grep version
-      "version": "12.14.1"
+      "version": "12.14.0k"
 
 then change the ``setup.cfg`` to change the following lines, noting
 that the `${ASCDS_INSTALL}` environment variable **must** be
@@ -227,7 +227,6 @@ should be updated to match the output above::
     disable_group=True
     disable_stk=True
 
-    fftw=local
     fftw_include_dirs=${ASCDS_INSTALL}/include
     fftw_lib_dirs=${ASCDS_INSTALL}/lib
     fftw_libraries=fftw3
@@ -244,12 +243,12 @@ should be updated to match the output above::
     wcs_libraries=wcs
 
     with_xspec=True
-    xspec_version = 12.14.1
+    xspec_version = 12.14.0
     xspec_lib_dirs = ${ASCDS_INSTALL}/lib
     xspec_include_dirs = ${ASCDS_INSTALL}/include
 
 .. note::
-   The XSPEC version may include the patch level, such as ``12.14.1d``,
+   The XSPEC version may include the patch level, such as ``12.14.0k``,
    and this can be included in the configuration file.
 
 To avoid accidentally committing the modified ``setup.cfg`` into git,
@@ -261,6 +260,7 @@ the file can be marked as "assumed unchanged".
 
 After these steps, Sherpa can be built from source::
 
+    touch extern/built
     pip install .
 
 .. warning::

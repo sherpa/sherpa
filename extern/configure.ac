@@ -12,15 +12,6 @@ AM_MAINTAINER_MODE([enable])
 
 LT_INIT
 
-AC_ARG_ENABLE([fftw],
-  AS_HELP_STRING([--enable-fftw], [Build fftw library shipped with Sherpa]))
-
-AS_IF([test "x$enable_fftw" = "xyes"], [
-  AC_CONFIG_SUBDIRS([fftw-3.3.10])
-  AC_SUBST(fftw, fftw-3.3.10)
-  touch fftw-3.3.10/doc/fftw3.info
-])
-
 AC_ARG_ENABLE([region],
   AS_HELP_STRING([--enable-region], [Build region library shipped with Sherpa]))
 

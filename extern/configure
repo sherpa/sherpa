@@ -667,7 +667,6 @@ stklib
 wcssubs
 grplib
 region
-fftw
 subdirs
 LT_SYS_LIBRARY_PATH
 OTOOL64
@@ -802,7 +801,6 @@ enable_dependency_tracking
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
-enable_fftw
 enable_region
 enable_group
 enable_wcssubs
@@ -817,8 +815,7 @@ LDFLAGS
 LIBS
 CPPFLAGS
 LT_SYS_LIBRARY_PATH'
-ac_subdirs_all='fftw-3.3.10
-region-4.18
+ac_subdirs_all='region-4.18
 grplib-4.18
 wcssubs
 stklib-4.18'
@@ -1463,7 +1460,6 @@ Optional Features:
   --disable-dependency-tracking
                           speeds up one-time build
   --disable-libtool-lock  avoid locking (might break parallel builds)
-  --enable-fftw           Build fftw library shipped with Sherpa
   --enable-region         Build region library shipped with Sherpa
   --enable-group          Build group module shipped with Sherpa
   --enable-wcssubs        Build wcssubs library shipped with Sherpa
@@ -12460,26 +12456,6 @@ CC=$lt_save_CC
 
 
 
-# Check whether --enable-fftw was given.
-if test ${enable_fftw+y}
-then :
-  enableval=$enable_fftw;
-fi
-
-
-
-
-if test "x$enable_fftw" = "xyes"
-then :
-
-  subdirs="$subdirs fftw-3.3.10"
-
-  fftw=fftw-3.3.10
-
-  touch fftw-3.3.10/doc/fftw3.info
-
-fi
-
 # Check whether --enable-region was given.
 if test ${enable_region+y}
 then :
@@ -14826,5 +14802,3 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
-
-

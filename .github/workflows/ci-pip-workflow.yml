@@ -29,6 +29,7 @@ jobs:
             os: ubuntu-latest
             python-version: "3.11"
             numpy-pkg: 'numpy>=2'
+            disable-fftw: 'true'
             install-type: develop
             test-data: none
 
@@ -39,7 +40,7 @@ jobs:
             install-type: install
             test-data: package
             fits-pkg: 'astropy'
-            matplotlib-pkg: 'matplotlib>=3,<4'
+            matplotlib-pkg: 'matplotlib>=3,<3.11.0'
             bokeh-pkg: 'bokeh>=3,<4'
             ncores: 1
 
@@ -64,7 +65,7 @@ jobs:
             python-version: "3.13"
             numpy-pkg: 'numpy'
             install-type: develop
-            matplotlib-pkg: 'matplotlib>=3,<4'
+            matplotlib-pkg: 'matplotlib>=3,<3.11.0'
             bokeh-pkg: 'bokeh>=3,<4'
             arviz-pkg: 'arviz>=1.0.0'
             fits-pkg: 'astropy'
@@ -80,6 +81,32 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+
+    - name: Install FFTW
+      if: matrix.disable-fftw != 'true'
+      run: |
+        # Do not worry about specifying a version
+        sudo apt install libfftw3-dev pkg-config
+        echo "# --cflags: $(pkg-config --cflags fftw3)"
+        echo "# --libs:   $(pkg-config --libs fftw3)"
+        echo "# --cflags: $(pkg-config --cflags-only-I fftw3)"
+        echo "# --libs:   $(pkg-config --libs-only-L fftw3)"
+        echo "# --libs:   $(pkg-config --libs-only-l fftw3)"
+        ./scripts/update_config
+        #
+        echo "* START setup.cfg"
+        git diff setup.cfg
+        echo "* END   setup.cfg"
+
+    - name: Disable FFTW
+      if: matrix.disable-fftw == 'true'
+      run: |
+        # This could be folded into update_config but leave separate for now
+        sed -i.orig "s|#disable_fftw=True|disable_fftw = True|" setup.cfg
+        #
+        echo "* START setup.cfg"
+        git diff setup.cfg
+        echo "* END   setup.cfg"
 
     - name: Pip Testing Setup - Dependencies
       env:
@@ -167,7 +194,7 @@ jobs:
         FITS: ${{ matrix.fits-pkg }}
       run: |
         smokevars="-v 3"
-        if [ ${FITS} != '' ] ; then
+        if [ -n "${FITS}" ] ; then
             smokevars="-f ${FITS} ${smokevars}"
         fi
         echo "** smoke test: ${smokevars}"
