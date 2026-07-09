@@ -756,8 +756,15 @@ class NumberChecker:
         lhs, value, rhs = self.split(got)
         assert lhs == self.lhs
         assert rhs == self.rhs
+
+        # See https://github.com/mesonbuild/meson-python/issues/646
+        # as the --import-mode=importlib approach does not seem to
+        # work for Sherpa.
+        #
+        emsg = f"assert {value} == {self.number} += {self.rtol} / {self.atol}"
         assert value == pytest.approx(self.number,
-                                      rel=self.rtol, abs=self.atol)
+                                      rel=self.rtol, abs=self.atol), \
+                                      emsg
 
 
 def check_str_fixture(out, expecteds):
@@ -803,7 +810,9 @@ def check_str_fixture(out, expecteds):
                 pat.check(tok)
                 continue
 
-            assert tok == expected
+            # See https://github.com/mesonbuild/meson-python/issues/646
+            #
+            assert tok == expected, f"assert '{tok}' == '{expected}'"
 
     assert len(toks) == len(expecteds)
 
