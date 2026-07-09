@@ -40,7 +40,7 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             bokeh-version: 3
-            xspec-version: 12.14.0i
+            xspec-version: 12.14.0k
 
           - name: MacOS ARM Full Build (Python 3.12)
             os: macos-14
@@ -50,7 +50,7 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             bokeh-version: 3
-            xspec-version: 12.13.1e
+            xspec-version: 12.14.0k
 
           - name: Linux Minimum Setup (Python 3.11)
             os: ubuntu-latest
@@ -74,7 +74,7 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             bokeh-version: 3
-            xspec-version: 12.14.0i
+            xspec-version: 12.14.0k
 
           - name: Linux Full Build (Python 3.12)
             os: ubuntu-latest
@@ -84,7 +84,7 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             bokeh-version: 3
-            xspec-version: 12.14.0i
+            xspec-version: 12.14.0k
 
           - name: Linux Full Build (Python 3.11)
             os: ubuntu-latest
@@ -93,7 +93,7 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
-            xspec-version: 12.13.1
+            xspec-version: 12.14.0k
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
