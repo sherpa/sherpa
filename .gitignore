@@ -14,23 +14,7 @@ extern/confdefs.h
 config.log
 config.status
 libtool
-extern/**/Makefile
-extern/built
-extern/fftw-*/api/fftw3.f03
-extern/fftw-*/config.h
-extern/fftw-*/fftw.pc
-extern/fftw-*/fftw3.pc
-extern/fftw-*/libbench2/libbench2.a
-extern/fftw-*/mpi/fftw3-mpi.f03
-extern/fftw-*/mpi/fftw3l-mpi.f03
-extern/fftw-*/stamp-h1
-extern/fftw-*/tests/bench
-extern/fftw-*/tools/fftw-wisdom
-extern/fftw-*/tools/fftw-wisdom-to-conf
-extern/fftw-*/tools/fftw_wisdom.1
-extern/fftw-*/FFTW3Config.cmake
-extern/fftw-*/FFTW3ConfigVersion.cmake
-extern/fftw-*/tools/fftw-wisdom.1
+extern/.wraplock
 
 sherpa/optmethods/src/_minimmodule.c
 sherpa/optmethods/src/minpack/_minpack-f2pywrappers.f
