@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015 - 2019, 2021 - 2025
+#  Copyright (C) 2007, 2015-2019, 2021-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -697,10 +697,10 @@ def _extract_rmf(matrix: MatrixBlock,
 
     # Since these values are sent to the fold_rmf routine in
     # sherpa.astro.utils._utils, we want the types to match up to
-    # avoid conversion time in that routine. The n_grp, f_chan, and
-    # n_chan arrays should be SherpaUIntArray and the matrix should be
-    # given by sherpa.utils.numeric_types. This conversion should
-    # probably be done by DataRMF itself though.
+    # avoid any need for datatype conversion in that routine. The
+    # n_grp, f_chan, and n_chan arrays should be SherpaUIntArray and
+    # the matrix should be given by sherpa.utils.numeric_types. This
+    # conversion should probably be done by DataRMF itself though.
     #
     f_chan_l = []
     n_chan_l = []
