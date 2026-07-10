@@ -57,7 +57,7 @@ from sherpa.data import Data, Data1D, Data1DAsymmetricErrs, Data2D, \
 from sherpa.fit import Fit
 import sherpa.io
 from sherpa.models.basic import TableModel, UserModel
-from sherpa.models.model import Model
+from sherpa.models.model import Model, model_deconstruct
 import sherpa.plot
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     ReSampleData
@@ -12152,6 +12152,91 @@ class Session(sherpa.ui.utils.Session):
             return plotobj
 
         return super().get_model_component_plot(id, model=model, recalc=recalc)
+
+    # We can not just copy over the docstring from sherpa.ui.utils
+    #
+    def get_model_components_plot(self,
+                                  id: IdType | None = None
+                                  ) -> sherpa.plot.MultiPlot:
+        """Return the data used by plot_model_components.
+
+        .. versionchanged:: 4.18.1
+           Background model components will now be included.
+
+        .. versionadded:: 4.16.1
+
+        Parameters
+        ----------
+        id : int, str, or None, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+
+        Returns
+        -------
+        plot : MultiPlot
+           A plot object containing the individual plot objects.
+
+        See Also
+        --------
+        get_model_plot, plot_model, plot_model_component,
+        plot_model_components
+
+        Notes
+        -----
+
+        Unlike get_model_component this routine does not accept
+        either model or recalc arguments.
+
+        Examples
+        --------
+
+        Return the plot data for the individual components used in the
+        default data set. In this case it will report plots for
+        ``gal * pl`` and ``gal * gline``:
+
+        >>> set_source(xsphabs.gal * (powlaw1d.pl + gauss1d.gline))
+        >>> cplots = get_model_components_plot()
+
+        """
+
+        idval = self._fix_id(id)
+        model = self.get_source(idval)
+        data = self.get_data(idval)
+        if isinstance(data, DataPHA):
+            # Replicate much of get_response_for_pha
+            resp = self.get_response(idval)  # TODO: bkg_id?
+            if not data.subtracted:
+
+                bkg_srcs = sherpa.astro.background.get_bkg_srcs(self, idval)
+                if len(bkg_srcs) > 0:
+
+                    out = sherpa.astro.background.get_full_expr(idval,
+                                                                data,
+                                                                resp,
+                                                                model,
+                                                                bkg_srcs)
+                    base_model, bmodels = out
+
+                    # Do we need to worry about separate background models?
+                    if len(bmodels) == 0:
+                        model = base_model
+
+                    else:
+                        # Manually expand base_models.
+                        cpts = model_deconstruct(base_model)
+
+                        # Create a single model (that will then get
+                        # decomposed in get_components_helper, but
+                        # this lets any individual components in
+                        # base_model get separated).
+                        #
+                        rcpts = [resp(cpt) for cpt in cpts] + \
+                            [scale * resp(bmdl)
+                             for scale, bmdl in bmodels]
+                        model = sum(rcpts[1:], start=rcpts[0])
+
+        return sherpa.ui.utils.get_components_helper(self.get_model_component_plot,
+                                                     model=model, idval=idval)
 
     # copy doc string from sherpa.utils
     def get_source_component_plot(self, id, model=None, recalc: bool = True):
