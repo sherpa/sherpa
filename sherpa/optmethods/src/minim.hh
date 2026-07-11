@@ -827,6 +827,13 @@ namespace sherpa {
 
   protected:
 
+    // We overload the parent routine with a different signature.  It
+    // is probably possible to change the signature to use
+    // sherpa::Array1D rather than std::vector here, but this is a
+    // simpler solution.
+    //
+    using Minim<Func, Data, real>::check_limits;
+
     virtual void check_limits( sherpa::Array2D<sherpa::Array1D<real>, real>& G,
                                int I, int IROW,
                                const std::vector<real>& lb,
