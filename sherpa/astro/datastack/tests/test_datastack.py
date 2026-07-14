@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014-2016, 2018-2021, 2025
+#  Copyright (C) 2014-2016, 2018-2021, 2025-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,7 +30,7 @@ from sherpa.utils.testing import requires_fits, requires_group, requires_stk
 from sherpa.astro import ui
 from sherpa.astro import datastack
 from sherpa.astro.datastack import DataStack
-from acis_bkg_model import acis_bkg_model
+from .acis_bkg_model import acis_bkg_model
 
 logger = logging.getLogger('sherpa')
 

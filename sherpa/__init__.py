@@ -1043,7 +1043,8 @@ def clitest() -> None:
     import pytest
 
     # Add in command-line arguments to allow configuring the Sherpa tests
-    args = [os.path.dirname(__file__), '-rs'] + sys.argv[1:]
+    args = [os.path.dirname(__file__), '-rs',
+            '--import-mode=importlib'] + sys.argv[1:]
 
     # passing the plugins that have been installed "now".
     errno = pytest.main(args, plugins=plugins)
