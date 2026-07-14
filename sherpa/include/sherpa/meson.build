@@ -1,6 +1,7 @@
 # sherpa/include/sherpa
 
 data = [
+  'python.hh',
   'array.hh',
   'constants.hh',
   'extension.hh',
