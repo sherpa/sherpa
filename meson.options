@@ -29,6 +29,14 @@ option('wcssubs-prefix', type: 'string', value: '',
        '$ASCDS_INSTALL. Only used if build-wcssubs is false. ' +
        'Leave as the empty string to build without wcssubs-library support.')
 
+option('build-tcdlib', type: 'boolean', value: true,
+       description: 'Is the tcdlib support module built? CIAO users ' +
+       'should set this to false and set the tcdlib-prefix option.')
+option('tcdlib-prefix', type: 'string', value: '',
+       description: 'Location of include/ and lib/ directories for ' +
+       'the tcd library. CIAO users should set this to ' +
+       '$ASCDS_INSTALL. If build-tcdlib is false then this must be set.')
+
 option('xspec-prefix', type: 'string', value: '',
        description: 'Location of include/ and lib/ directories for ' +
        'the XSPEC model library. This is expected to be set to $HEADAS. ' +

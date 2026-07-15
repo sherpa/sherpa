@@ -29,7 +29,7 @@
 extern "C" {
 
 #include "structmember.h"
-#include "tcd/tcd.h"
+#include "tcd.h"
 
 }
 

@@ -20,10 +20,12 @@ def doit():
     args = []
     for name, value in [
             ("build-group", "false"),
-            ("build-stk", "false"),
             ("build-region", "false"),
+            ("build-stk", "false"),
+            ("build-tcdlib", "false"),
             ("build-wcssubs", "false"),
             ("region-prefix", prefix),
+            ("tcdlib-prefix", prefix),
             ("wcssubs-prefix", prefix),
             ("xspec-prefix", prefix)
     ]:

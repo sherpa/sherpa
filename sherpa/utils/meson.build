@@ -84,21 +84,12 @@ py.extension_module(
 # extension: _psf
 #
 psf_sources = [
-  'src/tcd/tcdCastArray.c',
-  'src/tcd/tcdError.c',
-  'src/tcd/tcdFFTConvolve.c',
-  'src/tcd/tcdInitConvolveOut.c',
-  'src/tcd/tcdInitTransform.c',
-  'src/tcd/tcdPadData.c',
-  'src/tcd/tcdPixelArith.c',
-  'src/tcd/tcdTransform.c',
   'src/_psf.cc'
 ]
 
 psf_include = [
   incdir_numpy,
-  '../include',
-  'src/tcd'
+  '../include'
 ]
 
 py.extension_module(
@@ -106,7 +97,7 @@ py.extension_module(
   psf_sources,
   subdir: 'sherpa/utils',
   include_directories: psf_include,
-  dependencies: [fftw3_dep],
+  dependencies: [tcdlib_dep],
   install: true
 )
 

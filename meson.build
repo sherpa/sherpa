@@ -136,13 +136,35 @@ else
   endif
 endif
 
-# The idea is to make FFTW3 an optional dependency, but for now
-# require it is available.
+# The tcd library code can either come from extern/ or CIAO,
+# similar to region/wcs. At present it is required, not optional.
 #
-# Sherpa 4.18.0 and earlier used a built-in copy of FFTW3 if one was
-# not present on the system but this has been dropped.
-#
-fftw3_dep = dependency('fftw3', required : true)
+if get_option('build-tcdlib')
+  tcdlib_dep = subproject('tcdlib').get_variable('tcd_dep')
+
+else
+  tcdlib_prefix = get_option('tcdlib-prefix')
+  if tcdlib_prefix == ''
+    # tcdlib_dep = disabler()
+    error('tcdlib-prefix can not be empty when build-tcdlib is false')
+  else
+    tcd_libdir = tcdlib_prefix / 'lib'
+    tcd_incdir = include_directories(tcdlib_prefix / 'include')
+    tcd_dep = cc.find_library(
+      'tcd',
+      dirs: tcd_libdir,
+      has_headers: ['tcd.h'],
+      header_include_directories: tcd_incdir,
+      required: false,
+      disabler: true
+    )
+
+    tcdlib_dep = declare_dependency(
+      dependencies: [tcd_dep],
+      include_directories: tcd_incdir
+    )
+  endif
+endif
 
 # Configure the XSPEC module. Rather than have a separate
 # build-xspec option (to indicate the module should be built)
@@ -206,7 +228,6 @@ message('Build summary:')
 deps = {
   'region': region_dep,
   'wcssubs': wcssubs_dep,
-  'fftw3': fftw3_dep,      # this is currently a requirement
   'xspec': xspec_dep
 }
 
