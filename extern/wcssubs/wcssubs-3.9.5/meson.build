@@ -30,9 +30,14 @@ sources = [
   'fitsfile.h'
 ]
 
+extra_args = [
+  '-Wno-deprecated-non-prototype'  # hide these warnings
+]
+
 wcssubs = static_library(
   'wcssubs',
   sources,
+  c_args: extra_args,
   install: false
 )
 
