@@ -7,10 +7,15 @@ sources = [
   'grp_priv.h',
   ]
 
+extra_args = [
+  '-DSTUB_ERROR_LIB=1',
+  '-Wno-unused-but-set-variable'
+]
+
 grp = static_library(
   'grp',
   sources,
-  c_args: '-DSTUB_ERROR_LIB=1',
+  c_args: extra_args,
   install: false,
 )
 

@@ -55,7 +55,7 @@ sources = [
 extra_args = [
   '-D_POSIX_C_SOURCE',  # fileno
   '-D_DEFAULT_SOURCE',  # str[n]casecmp, glibc
-  '-D_BSD_SOURCE',      # str[n]casecmp, glibc <= 2.19
+  '-D_BSD_SOURCE',      # str[n]casecmp, glibc <= 2.19,
 ]
 
 if host_machine.system() == 'darwin'
@@ -63,6 +63,14 @@ if host_machine.system() == 'darwin'
     '-D_DARWIN_C_SOURCE',   # snprintf
   ]
 endif
+
+# Clean up warning messages
+extra_args += [
+  '-Wno-misleading-indentation',
+  '-Wno-unneeded-internal-declaration',
+  '-Wno-unused-but-set-variable',
+  '-Wno-unused-function'
+]
 
 region = static_library(
   'region',

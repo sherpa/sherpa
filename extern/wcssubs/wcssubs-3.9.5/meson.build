@@ -30,9 +30,34 @@ sources = [
   'fitsfile.h'
 ]
 
+# Hide compiler warnings
+extra_args = [
+  '-Wno-deprecated-non-prototype',
+  '-Wno-format',
+  '-Wno-misleading-indentation',
+]
+
+if cc.get_id() == 'gcc'
+  extra_args += [
+    '-Wno-format-overflow',
+    '-Wno-stringop-truncation',
+    '-Wno-stringop-overflow',
+    '-Wno-unused-result',
+    '-Wno-maybe-uninitialized'
+  ]
+elif cc.get_id() == 'clang'
+  extra_args += [
+    '-Wno-array-parameter',
+    '-Wno-absolute-value',
+    '-Wno-sometimes-uninitialized',
+    '-Wno-constant-logical-operand'
+  ]
+endif
+
 wcssubs = static_library(
   'wcssubs',
   sources,
+  c_args: extra_args,
   install: false
 )
 
