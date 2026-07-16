@@ -9,12 +9,8 @@ project('region',
 py = import('python').find_installation(pure: false)
 
 bison = find_program('bison', required: false)
-bison_no_deprecated = false
-if bison.found()
-  if find_program('bison', required: false, version: '> 2.3').found()
-    bison_no_deprecated = true
-  endif
-else
+if not bison.found()
+  # This path has not been tested
   bison = find_program('byacc', required: true)
 endif
 

@@ -5,23 +5,13 @@ lgen = generator(
   arguments: ['-o', '@OUTPUT@', '@INPUT@']
 )
 
-bison_args1 = [
-  '-Wno-deprecated'
-]
-bison_args2 = [
+bison_args = [
   '-d',
   '--name-prefix=regYY',
   '@INPUT@',
   '--defines=@OUTPUT1@',
   '--output=@OUTPUT0@'
 ]
-
-# This does not seem to help, so is it worth doing?
-if bison_no_deprecated
-  bison_args = bison_args1 + bison_args2
-else
-  bison_args = bison_args2
-endif
 
 pgen = generator(
   bison,
