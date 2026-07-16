@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2018, 2020, 2021, 2024
+#  Copyright (C) 2007, 2018, 2020-2021, 2024, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,7 +20,7 @@
 
 import sherpa.all
 import sherpa.astro.all
-import sherpa.astro.ui.utils
+from sherpa.astro.ui import utils
 from sherpa.utils import calc_mlr, calc_ftest, rebin, histogram1d, \
     histogram2d, gamma, lgam, igamc, igam, incbet, multinormal_pdf, \
     multit_pdf
