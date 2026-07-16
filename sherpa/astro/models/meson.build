@@ -27,6 +27,7 @@ py.extension_module(
   modelfcts_sources,
   subdir: 'sherpa/astro/models',
   include_directories: modelfcts_include,
+  limited_api: limited_api_version,
   install: true
 )
 

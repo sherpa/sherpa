@@ -28,6 +28,7 @@ py.extension_module(
   est_funcs_sources,
   subdir: 'sherpa/estmethods',
   include_directories: est_funcs_include,
+  limited_api: limited_api_version,
   install: true
 )
 

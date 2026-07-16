@@ -15,6 +15,7 @@ grplib = py.extension_module(
   c_args: ['-DSTUB_ERROR_LIB=1'],
   dependencies: grp_dep,
   include_directories: includes,
+  limited_api: limited_api_version,
   install: true,
 )
 

@@ -25,6 +25,7 @@ py.extension_module(
   statfcts_sources,
   subdir: 'sherpa/stats',
   include_directories: statfcts_include,
+  limited_api: limited_api_version,
   install: true
 )
 

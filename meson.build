@@ -16,9 +16,15 @@ project(
   meson_version: '>= 1.6.0',
   default_options: [
     'c_std=c11',
-    'cpp_std=c++11'
+    'cpp_std=c++11',
+    'python.allow_limited_api=false'
   ]
 )
+
+# If a limited API is used, what is the version to use (this needs to
+# be updated to match the minimum-supported Python version in pyproject.toml).
+#
+limited_api_version = '3.11'
 
 fs = import('fs')
 

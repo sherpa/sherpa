@@ -34,6 +34,7 @@ py.extension_module(
   saoopt_sources,
   subdir: 'sherpa/optmethods',
   include_directories: saoopt_include,
+  limited_api: limited_api_version,
   install: true
 )
 
@@ -53,6 +54,7 @@ py.extension_module(
   tstoptfct_sources,
   subdir: 'sherpa/optmethods',
   include_directories: tstoptfct_include,
+  limited_api: limited_api_version,
   install: true
 )
 

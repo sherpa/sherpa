@@ -31,6 +31,7 @@ py.extension_module(
   modelfcts_sources,
   subdir: 'sherpa/models',
   include_directories: modelfcts_include,
+  limited_api: limited_api_version,
   install: true
 )
 

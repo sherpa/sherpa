@@ -10,6 +10,7 @@ sources = [
 stk = py.extension_module(
   'stk',
   sources,
+  limited_api: limited_api_version,
   install: true
 )
 

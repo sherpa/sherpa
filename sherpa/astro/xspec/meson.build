@@ -33,6 +33,7 @@ if xspec_dep.found()
     subdir: 'sherpa/astro/xspec',
     include_directories: xspec_include,
     dependencies: xspec_dep,
+    limited_api: limited_api_version,
     install: true
   )
 endif

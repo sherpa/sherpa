@@ -70,3 +70,6 @@ Issues = "https://github.com/sherpa/sherpa/issues"
 [project.scripts]
 sherpa_test = "sherpa:clitest"
 sherpa_smoke = "sherpa:_smoke_cli"
+
+[tool.meson-python]
+limited-api = true

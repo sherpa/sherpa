@@ -29,6 +29,7 @@ if wcssubs_dep.found()
     subdir: 'sherpa/astro/utils',
     include_directories: wcs_include,
     dependencies: wcssubs_dep,
+    limited_api: limited_api_version,
     install: true
   )
 endif
@@ -53,6 +54,7 @@ if region_dep.found()
     include_directories: region_include,
     install: true,
     dependencies: region_dep,
+    limited_api: limited_api_version,
     cpp_args: reg_macros
   )
 endif
@@ -75,6 +77,7 @@ py.extension_module(
   pileup_sources,
   subdir: 'sherpa/astro/utils',
   include_directories: pileup_include,
+  limited_api: limited_api_version,
   install: true
 )
 
@@ -94,6 +97,7 @@ py.extension_module(
   utils_sources,
   subdir: 'sherpa/astro/utils',
   include_directories: utils_include,
+  limited_api: limited_api_version,
   install: true
 )
 

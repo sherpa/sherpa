@@ -55,6 +55,7 @@ py.extension_module(
   c_args: extra_args,
   subdir: 'sherpa/utils',
   include_directories: utils_include,
+  limited_api: limited_api_version,
   install: true
 )
 
@@ -83,6 +84,7 @@ py.extension_module(
   integration_sources,
   subdir: 'sherpa/utils',
   include_directories: integration_include,
+  limited_api: limited_api_version,
   install: true
 )
 
@@ -112,6 +114,7 @@ py.extension_module(
   subdir: 'sherpa/utils',
   include_directories: psf_include,
   dependencies: [fftw3_dep],
+  limited_api: limited_api_version,
   install: true
 )
 
