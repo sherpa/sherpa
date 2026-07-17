@@ -4,6 +4,8 @@ project(
   'stklib',
   ['c'],
   version: '4.11',
+
+  meson_version: '>=1.3.0',
   default_options: [
     'c_std=c11',
     'python.allow_limited_api=false'
