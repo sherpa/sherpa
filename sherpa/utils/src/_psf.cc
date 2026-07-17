@@ -967,28 +967,39 @@ static PyMethodDef PsfFcts[] = {
 
 //// Initialize the module
 
-static struct PyModuleDef psf = {
-    PyModuleDef_HEAD_INIT,
-    "_psf",
-    NULL,
-    -1,
-    PsfFcts
-};
-
-PyMODINIT_FUNC
-PyInit__psf(void) {
-
-  import_array();
-
-  PyObject* m = PyModule_Create(&psf);
-  if (m == NULL)
-    return NULL;
+static int
+exec_psf(PyObject *m) {
+  if (PyArray_ImportNumPyAPI() < 0) { return -1; }
 
   tcdPyData_Type = (PyTypeObject *) PyType_FromSpec(&tcdPyData_Spec);
   if (PyModule_AddObject(m, (char*)"tcdData", (PyObject*)tcdPyData_Type) < 0) {
     Py_DECREF(m);
-    return NULL;
+    return -1;
   }
 
-  return m;
+  return 0;
+}
+
+static PyModuleDef_Slot slots_psf[] = {
+  {Py_mod_exec, (void *) exec_psf},
+#if defined(Py_GIL_DISABLED)
+  {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+  {0, NULL}
+};
+
+static struct PyModuleDef psf = {
+    PyModuleDef_HEAD_INIT,
+    "_psf",
+    NULL,
+    0,
+    PsfFcts,
+    slots_psf,
+    NULL,
+    NULL,
+    NULL
+};
+
+PyMODINIT_FUNC PyInit__psf(void) {
+  return PyModuleDef_Init(&psf);
 }
