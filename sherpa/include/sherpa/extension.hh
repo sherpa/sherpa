@@ -52,7 +52,7 @@ typedef int (*converter)( PyObject*, void* );
 // and so can be used with no GIL when building as a free-threaded
 // build, which - for Python 3.14 and earlier, means no limited-API.
 //
-#if defined(Py_GIL_DISABLED) && !defined(Py_LIMITED_API)
+#if defined(Py_GIL_DISABLED)
 #define _SHERPAMOD_SLOTS_GIL {Py_mod_gil, Py_MOD_GIL_NOT_USED},
 #else
 #define _SHERPAMOD_SLOTS_GIL

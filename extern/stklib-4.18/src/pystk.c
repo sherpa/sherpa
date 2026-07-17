@@ -50,7 +50,7 @@ static PyMethodDef stkMethods[] =
  * */
 
 static PyModuleDef_Slot stkSlots[] = {
-#if defined(Py_GIL_DISABLED) && !defined(Py_LIMITED_API)
+#if defined(Py_GIL_DISABLED)
   {Py_mod_gil, Py_MOD_GIL_NOT_USED},
 #endif
   {0, NULL}
