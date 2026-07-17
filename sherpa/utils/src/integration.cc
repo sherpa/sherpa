@@ -162,33 +162,48 @@ namespace sherpa { namespace integration {
 
 }  }  /* namespace integration, namespace sherpa */
 
-static struct PyModuleDef integration = {
-    PyModuleDef_HEAD_INIT,
-    "integration",
-    NULL,
-    -1,
-    NULL
-};
 
-PyMODINIT_FUNC PyInit_integration(void) {
-
+// This could over-write the _SHERPAMOD_EXEC macro from extension.hh
+// but that brings in NumPy which is not needed here, so create the
+// extension directly.
+//
+static int integrationExec(PyObject *m) {
   static void *Integration_API[3];
   Integration_API[0] = (void*)sherpa::integration::integrate_1d;
   Integration_API[1] = (void*)sherpa::integration::integrate_Nd;
   Integration_API[2] = (void*)sherpa::integration::py_integrate_1d;
-
-  PyObject *m;
-
-  if ( NULL == ( m = PyModule_Create( &integration ) ) )
-    return NULL;
 
   PyObject *api_cobject = PyCapsule_New( (void*)Integration_API,
 					 INTEGRATION_CAPSULE_NAME,
 					 NULL );
   if (PyModule_AddObject(m, (char *) "_C_API", api_cobject) < 0) {
     Py_XDECREF(api_cobject);
-    return NULL;
+    return -1;
   }
+  return 0;
+}
 
-  return m;
+static PyModuleDef_Slot integrationSlots[] = {
+  {Py_mod_exec, (void *) integrationExec},
+#if defined(Py_GIL_DISABLED)
+  {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+  {0, NULL}
+};
+
+static struct PyModuleDef integrationModuledef = {
+  PyModuleDef_HEAD_INIT,
+  "integration",
+  NULL,
+  0,
+  NULL,
+  integrationSlots,
+  NULL,
+  NULL,
+  NULL
+};
+
+PyMODINIT_FUNC PyInit_integration(void)
+{
+  return PyModuleDef_Init(&integrationModuledef);
 }
