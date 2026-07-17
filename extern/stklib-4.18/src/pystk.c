@@ -48,27 +48,29 @@ static PyMethodDef stkMethods[] =
 /*
  * Initialize the module
  * */
+
+static PyModuleDef_Slot stkSlots[] = {
+#if defined(Py_GIL_DISABLED) && !defined(Py_LIMITED_API)
+  {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+  {0, NULL}
+};
+
+static struct PyModuleDef stkModuledef = {
+  PyModuleDef_HEAD_INIT,
+  "stk",
+  "stk",
+  0,
+  stkMethods,
+  stkSlots,
+  NULL,
+  NULL,
+  NULL
+};
+
 PyMODINIT_FUNC PyInit_stk(void)
 {
-  PyObject *mod = NULL;
-  
-  static struct PyModuleDef moduledef = {
-    PyModuleDef_HEAD_INIT,
-    "stk",
-    "stk",
-    -1,
-    stkMethods,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-  };
-  mod = PyModule_Create(&moduledef);
-  if (mod == NULL) {
-    return NULL;
-  }
-  
-  return mod;
+  return PyModuleDef_Init(&stkModuledef);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * *

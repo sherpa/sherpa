@@ -139,49 +139,35 @@ static PyMethodDef
 /*
  * Initialize the module
  * */
-PyMODINIT_FUNC PyInit_group(void);
+
+static int groupExec(PyObject *Py_UNUSED(m)) {
+  if (PyArray_ImportNumPyAPI() < 0) { return -1; }
+  return 0;
+}
+
+static PyModuleDef_Slot groupSlots[] = {
+  {Py_mod_exec, (void *) groupExec},
+#if defined(Py_GIL_DISABLED) && !defined(Py_LIMITED_API)
+  {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+  {0, NULL}
+};
+
+static struct PyModuleDef groupModuledef = {
+  PyModuleDef_HEAD_INIT,
+  "group",
+  "group",
+  0,
+  groupMethods,
+  groupSlots,
+  NULL,
+  NULL,
+  NULL
+};
 
 PyMODINIT_FUNC PyInit_group(void)
 {
-  PyObject *mod = NULL;
-  static struct PyModuleDef moduledef = {
-    PyModuleDef_HEAD_INIT,
-    "group",
-    "group",
-    -1,
-    groupMethods,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-  };
-  mod = PyModule_Create(&moduledef);
-  if ( mod == NULL )
-  {
-    return NULL;
-  }
-
-  // if module created then add version info
-  // this is handled in the __init__.py function
-  // if (mod)
-  // {
-  //    PyObject *vstr = NULL, *vm = PyImport_ImportModule("ciao_version");
-  //    if (!vm) 
-  //    {
-  //       PyErr_WarnEx(NULL, "Unable to load the ciao_version module to determine version number- defaulting 'group' version to 0.0.0", 0);
-  //       PyErr_Clear();
-  //       vstr = Py_BuildValue("s", "0.0.0");
-  //    }
-  //    else 
-  //    {
-  //       vstr =  PyObject_CallMethod(vm, "get_ciao_version", NULL); 
-  //    }
-  //    if (vstr)  PyModule_AddObject(mod, "__version__", vstr);
-  // }
-  
-  import_array(); /* Must be present for NumPy.  Called first after above line. */
-
-  return mod;
+  return PyModuleDef_Init(&groupModuledef);
 }
 
 /* Error Message Format Strings */
