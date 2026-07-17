@@ -323,32 +323,15 @@ static PyObject* region_invert( PyRegion* self, PyObject* args )
   Py_RETURN_NONE;
 }
 
-#ifndef PyMODINIT_FUNC	// declarations for DLL import/export
-#define PyMODINIT_FUNC void
-#endif
 
-static struct PyModuleDef module_region = {
-    PyModuleDef_HEAD_INIT,
-    "_region",
-    "Defines the Region type.",
-    -1,
-    NULL
-};
-
-PyMODINIT_FUNC
-PyInit__region(void)
-{
-
-  import_array();
-
-  PyObject *m = PyModule_Create(&module_region);
-  if (m == NULL)
-    return NULL;
+static int
+exec_region(PyObject *m) {
+  if (PyArray_ImportNumPyAPI() < 0) { return -1; }
 
   pyRegion_Type = (PyTypeObject *) PyType_FromSpec(&pyRegion_Spec);
   if (PyModule_AddObject(m, (char*)"Region", (PyObject*)pyRegion_Type) < 0) {
     Py_DECREF(m);
-    return NULL;
+    return -1;
   }
 
   // Add a symbol to indicate whether the module was built with the
@@ -360,6 +343,31 @@ PyInit__region(void)
   PyModule_AddIntConstant(m, "USE_CXCDM_PARSER", 0);
 #endif
 
-  return m;
+  return 0;
+}
 
+static PyModuleDef_Slot slots_region[] = {
+  {Py_mod_exec, (void *) exec_region},
+#if defined(Py_GIL_DISABLED)
+  {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+  {0, NULL}
+};
+
+static struct PyModuleDef module_region = {
+    PyModuleDef_HEAD_INIT,
+    "_region",
+    "Defines the Region type.",
+    0,
+    NULL,
+    slots_region,
+    NULL,
+    NULL,
+    NULL
+};
+
+PyMODINIT_FUNC
+PyInit__region(void)
+{
+  return PyModuleDef_Init(&module_region);
 }
