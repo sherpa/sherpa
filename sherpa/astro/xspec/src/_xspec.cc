@@ -1,4 +1,4 @@
-//  Copyright (C) 2007, 2015 - 2025
+//  Copyright (C) 2007, 2015-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -996,19 +996,41 @@ static PyMethodDef XSpecMethods[] = {
 
 };
 
+// It is not clear how well this module will support
+// re-initialization.  For now assume that this woks, and if this
+// turns out to be wrong it can be addressed then.
+//
+static int
+exec_xspec(PyObject *Py_UNUSED(m)) {
+  if (PyArray_ImportNumPyAPI() < 0) { return -1; }
+
+  // Ensure the XSPEC library is initialized.
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
+    return -1;
+
+  return 0;
+}
+
+static PyModuleDef_Slot slots_xspec[] = {
+  {Py_mod_exec, (void *) exec_xspec},
+#if defined(Py_GIL_DISABLED)
+  {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+  {0, NULL}
+};
+
 static struct PyModuleDef xspec_module = {
         PyModuleDef_HEAD_INIT,
         "_xspec",
         NULL,
-        -1,
+        0,
         XSpecMethods,
+	slots_xspec,
+	NULL,
+	NULL,
+	NULL
 };
 
 PyMODINIT_FUNC PyInit__xspec(void) {
-  // Ensure the XSPEC library is initialized.
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
-
-  import_array();
-  return PyModule_Create(&xspec_module);
+  return PyModuleDef_Init(&xspec_module);
 }
