@@ -430,21 +430,20 @@ namespace sherpa { namespace models {
 
 }  }  /* namespace models, namespace sherpa */
 
-#define SHERPAMODELMOD(name, fctlist) \
-static struct PyModuleDef module##name = {\
-PyModuleDef_HEAD_INIT, \
-#name, \
-NULL, \
--1, \
-fctlist \
-}; \
-\
-PyMODINIT_FUNC PyInit_##name(void) { \
-  import_array(); \
-  if ( -1 == import_integration() ) \
-    return NULL; \
-  return PyModule_Create(&module##name); \
-}
+// See SHERPAMOD macro in extension.hh. The _SHERPAMOD_EXEC is
+// over-written as models need to import array and integration
+// code, but the rest remains as SHERPAMOD.
+//
+
+#undef _SHERPAMOD_EXEC
+#define _SHERPAMOD_EXEC(name) \
+  static int exec##name(PyObject *Py_UNUSED(m)) { \
+    if (PyArray_ImportNumPyAPI() < 0) { return -1; } \
+    if ( -1 == import_integration() ) { return -1; } \
+    return 0; \
+  }
+
+#define SHERPAMODELMOD(name, fctlist)  _SHERPAMOD(name, fctlist, NULL)
 
 // Allow this to be customized on a per-file basis
 
