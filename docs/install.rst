@@ -143,7 +143,7 @@ Building from source
    The build backend was changed from ``setuptools`` to ``meson-python``
    in the Sherpa 4.19.0 release. There are therefore a number of
    changes to what is needed to install Sherpa, how to configure the
-   build, and how to test Sherpa changes.
+   build, and how to test Sherpa.
 
 Prerequisites
 -------------
@@ -209,6 +209,21 @@ the syntax (this needs to be done for each option)::
    ``setup.cfg`` file. The names and options have been changed,
    and they are now specified when building Sherpa, and not read from
    a file.
+
+.. _build_limited_api:
+
+Python limited API
+^^^^^^^^^^^^^^^^^^
+
+The build can select the
+`Python limited API <https://docs.python.org/3/c-api/stable.html>`_
+by setting::
+
+  -Csetup-args=-Dpython.allow_limited_api=true
+
+This uses the minimum-supported Python version (currently Python 3.11)
+and produces a wheel that can be installed with different Python
+versions.
 
 .. _build_group:
 
