@@ -1,5 +1,5 @@
 /*                                                                
-**  Copyright (C) 2007-2008,2010,2012,2015-2016,2025  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2007-2008,2010,2012,2015-2016,2025-2026  Smithsonian Astrophysical Observatory
 */                                                                
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
@@ -38,35 +38,6 @@
 #include "pygrplib.h"
 #include "grplib.h"
 #include "grp_priv.h"
-
-/** 
- * For supporting both python 2 and 3, we include macros that abstract out
- * differences in module initialization and other issues described in:
- * 
- * http://python3porting.com/cextensions.html
- */
-#if PY_MAJOR_VERSION >= 3
-#define MOD_ERROR_VAL NULL
-#define MOD_SUCCESS_VAL(val) val
-#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
-#define MOD_DEF(ob, name, doc, methods) \
-        static struct PyModuleDef moduledef = { \
-          PyModuleDef_HEAD_INIT, name, doc, -1, methods, NULL, NULL, NULL, NULL }; \
-        ob = PyModule_Create(&moduledef);
-#define MOD_NEWOBJ(newval, val) newval = PyCapsule_New((void *)val, NULL, NULL);
-
-#define PyString_AsString PyUnicode_AsUTF8
-#define PyString_FromString PyUnicode_FromString
-#define PyString_Check PyUnicode_Check
-
-#else
-#define MOD_ERROR_VAL
-#define MOD_SUCCESS_VAL(val)
-#define MOD_INIT(name) PyMODINIT_FUNC init##name(void)
-#define MOD_DEF(ob, name, doc, methods) \
-        ob = Py_InitModule3(name, methods, doc);
-#define MOD_NEWOBJ(newval, val) newval = PyCObject_FromVoidPtr((void*)val, NULL);
-#endif
 
 /* * * * * * * * * * * * * * * * * * * * * * * *
  * Utilities for Python Interaction
@@ -168,15 +139,26 @@ static PyMethodDef
 /*
  * Initialize the module
  * */
-MOD_INIT(group);
+PyMODINIT_FUNC PyInit_group(void);
 
-MOD_INIT(group)
+PyMODINIT_FUNC PyInit_group(void)
 {
   PyObject *mod = NULL;
-  MOD_DEF(mod, "group", "group", groupMethods)
+  static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "group",
+    "group",
+    -1,
+    groupMethods,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+  };
+  mod = PyModule_Create(&moduledef);
   if ( mod == NULL )
   {
-    return MOD_ERROR_VAL;
+    return NULL;
   }
 
   // if module created then add version info
@@ -199,7 +181,7 @@ MOD_INIT(group)
   
   import_array(); /* Must be present for NumPy.  Called first after above line. */
 
-  return MOD_SUCCESS_VAL(mod);
+  return mod;
 }
 
 /* Error Message Format Strings */
@@ -222,7 +204,7 @@ char groupmsg[1024];
  * input data (countsArray) after it has been adaptively grouped so that
  * each group contains at least numCounts counts.
  */
-static PyObject *grpAdaptive(PyObject *self, /*i: Used by Python */
+static PyObject *grpAdaptive(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -256,7 +238,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"countsArray", "minCounts", "maxLength", "tabStops",
                            NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!d|dO!", kwlist,
                                    &PyArray_Type, &py_countsArray, &minCounts, /* mandatory args */
@@ -414,7 +395,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * it is not supplied then the error is taken to be the square root of the
  * element value.
  */
-static PyObject *grpAdaptiveSnr(PyObject *self, /*i: Used by Python */
+static PyObject *grpAdaptiveSnr(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -455,7 +436,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
   static char *kwlist[] = {"countsArray", "snr", "maxLength", "tabStops",
                            "errorCol", NULL};
 
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!d|dO!O!", kwlist,
                                    &PyArray_Type, &py_countsArray, &snr, /* mandatory args */
@@ -672,7 +652,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * defined by the low (binLowArray) and high (binHighArray) boundaries when
  * applied to the axis values of the data (axisArray).
  */
-static PyObject *grpBin(PyObject *self, /*i: Used by Python */
+static PyObject *grpBin(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -714,7 +694,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"dataArray", "binLowArray", "binHighArray",
                            "tabStops", NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!O!|O!", kwlist,
                                    &PyArray_Type, &py_dataArray, &PyArray_Type,
@@ -907,7 +886,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * group the input data (the axisArray array) to match the grouping of another
  * dataset
  */
-static PyObject *grpBinFile(PyObject *self, /*i: Used by Python */
+static PyObject *grpBinFile(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -953,7 +932,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"dataArray", "fDataArray", "fGroupCol", "fQualCol",
                            "tabStops", NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!O!O!|O!", kwlist,
                                    &PyArray_Type, &py_dataArray, &PyArray_Type,
@@ -1161,7 +1139,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * array of numChans elements in which the groups are each grpWidth elements
  * wide.
  */
-static PyObject *grpBinWidth(PyObject *self, /*i: Used by Python */
+static PyObject *grpBinWidth(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -1189,7 +1167,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
   PyArrayObject *quality = NULL; /* The result obtained from grplib.c */
 
   static char *kwlist[] = {"numChans", "binWidth", "tabStops", NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "ll|O!", kwlist, &numChans,
                                    &binWidth, /* mandatory args */
@@ -1306,7 +1283,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * data (the dataArray argument) and each element within a group contains the
  * same value.
  */
-static PyObject *grpGetChansPerGroup(PyObject *self, /*i: Used by Python */
+static PyObject *grpGetChansPerGroup(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -1328,7 +1305,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
   PyArrayObject *chansPerGrp = NULL; /* The result obtained from grplib.c */
 
   static char *kwlist[] = {"groupCol", NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!", kwlist, &PyArray_Type,
                                    &py_groupCol))
@@ -1418,7 +1394,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * equals that of the input data (the dataArray argument) and each element
  * within a group contains the same value.
  */
-static PyObject *grpGetGroupSum(PyObject *self, /*i: Used by Python */
+static PyObject *grpGetGroupSum(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -1444,7 +1420,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
   PyArrayObject *grpData = NULL; /* The result obtained from grplib.c */
 
   static char *kwlist[] = {"dataArray", "groupCol", NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!", kwlist, &PyArray_Type,
                                    &py_dataArray, &PyArray_Type, &py_groupCol))
@@ -1550,7 +1525,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * an array whose length equals that of the input data (the grouping argument)
  * and each element within a group contains the same value.
  */
-static PyObject *grpGetGroupNum(PyObject *self, /*i: Used by Python */
+static PyObject *grpGetGroupNum(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -1572,7 +1547,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
   PyArrayObject *grpNum = NULL; /* The result obtained from grplib.c */
 
   static char *kwlist[] = {"groupCol", NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!", kwlist, &PyArray_Type,
                                    &py_groupCol))
@@ -1659,7 +1633,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * of the input data (the axisArray and binArray arguments) is less than
  * the threshold value (the slope argument).
  */
-static PyObject *grpMaxSlope(PyObject *self, /*i: Used by Python */
+static PyObject *grpMaxSlope(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -1698,7 +1672,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"dataArray", "binArray", "slope", "maxLength",
                            "tabStops", NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!d|dO!", kwlist,
                                    &PyArray_Type, &py_dataArray, &PyArray_Type,
@@ -1872,7 +1845,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * the input data (the axisArray and binArray arguments) is more than the
  * threshold value (the slope argument).
  */
-static PyObject *grpMinSlope(PyObject *self, /*i: Used by Python */
+static PyObject *grpMinSlope(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -1911,7 +1884,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"dataArray", "binArray", "slope", "maxLength",
                            "tabStops", NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!d|dO!", kwlist,
                                    &PyArray_Type, &py_dataArray, &PyArray_Type,
@@ -2084,7 +2056,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * This function returns the grouping and quality arrays that represent an
  * array of numChans elements grouped into numGroups groups.
  */
-static PyObject *grpNumBins(PyObject *self, /*i: Used by Python */
+static PyObject *grpNumBins(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -2112,7 +2084,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
   PyArrayObject *quality = NULL; /* The result obtained from grplib.c */
 
   static char *kwlist[] = {"numChans", "numBins", "tabStops", NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "ll|O!", kwlist, &numChans,
                                    &numBins, /* mandatory args */
@@ -2229,7 +2200,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * can be combined and an array representing those elements that should
  * be ignored respectively.
  */
-static PyObject *grpNumCounts(PyObject *self, /*i: Used by Python */
+static PyObject *grpNumCounts(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -2263,7 +2234,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"countsArray", "numCounts", "maxLength", "tabStops",
                            NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!d|dO!", kwlist,
                                    &PyArray_Type, &py_countsArray, &numCounts, /* mandatory args */
@@ -2428,7 +2398,7 @@ PyObject *kwds /*i: Python tuple of keywords */)
  * gives the error for each element of the original array: if it is not
  * supplied then the error is taken to be the square root of the element value.
  */
-static PyObject *grpSnr(PyObject *self, /*i: Used by Python */
+static PyObject *grpSnr(PyObject *Py_UNUSED(self), /*i: Used by Python */
 PyObject *args, /*i: Python tuple of the arguments */
 PyObject *kwds /*i: Python tuple of keywords */)
 {
@@ -2468,7 +2438,6 @@ PyObject *kwds /*i: Python tuple of keywords */)
 
   static char *kwlist[] = {"countsArray", "snr", "maxLength", "tabStops",
                            "errorCol", NULL};
-  (void)self; /* avoid compiler warning */
 
   if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!d|dO!O!", kwlist,
                                    &PyArray_Type, &py_countsArray, &snr, /* mandatory args */

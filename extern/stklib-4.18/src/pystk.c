@@ -1,5 +1,5 @@
 /*                                                                
-**  Copyright (C) 2011,2015-2016,2025  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2011,2015-2016,2025-2026  Smithsonian Astrophysical Observatory
 */                                                                
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
@@ -26,32 +26,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-/** 
- * For supporting both python 2 and 3, we include macros that abstract out
- * differences in module initialization and other issues described in:
- * 
- * http://python3porting.com/cextensions.html
- */
-#if PY_MAJOR_VERSION >= 3
-#define MOD_ERROR_VAL NULL
-#define MOD_SUCCESS_VAL(val) val
-#define MOD_INIT(name) PyMODINIT_FUNC PyInit_##name(void)
-#define MOD_DEF(ob, name, doc, methods) \
-        static struct PyModuleDef moduledef = { \
-          PyModuleDef_HEAD_INIT, name, doc, -1, methods, NULL, NULL, NULL, NULL }; \
-        ob = PyModule_Create(&moduledef);
-#define MOD_NEWOBJ(newval, val) newval = PyCapsule_New((void *)val, NULL, NULL);
-#define PyString_FromString PyUnicode_FromString
-#else
-#define MOD_ERROR_VAL
-#define MOD_SUCCESS_VAL(val)
-#define MOD_INIT(name) PyMODINIT_FUNC init##name(void)
-#define MOD_DEF(ob, name, doc, methods) \
-        ob = Py_InitModule3(name, methods, doc);
-#define MOD_NEWOBJ(newval, val) newval = PyCObject_FromVoidPtr((void*)val, NULL);
-#endif
-
-MOD_INIT(stk);
+PyMODINIT_FUNC PyInit_stk(void);
 
 static PyMethodDef stkMethods[] =
 {
@@ -73,16 +48,27 @@ static PyMethodDef stkMethods[] =
 /*
  * Initialize the module
  * */
-MOD_INIT(stk)
+PyMODINIT_FUNC PyInit_stk(void)
 {
   PyObject *mod = NULL;
   
-  MOD_DEF(mod, "stk", "stk", stkMethods)
+  static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "stk",
+    "stk",
+    -1,
+    stkMethods,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+  };
+  mod = PyModule_Create(&moduledef);
   if (mod == NULL) {
-    return MOD_ERROR_VAL;
+    return NULL;
   }
   
-  return MOD_SUCCESS_VAL(mod);
+  return mod;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * *
@@ -98,14 +84,12 @@ MOD_INIT(stk)
  * Returns 
  *   Python List containing all stack entries.
  */
-static PyObject* _stk_build(PyObject *self, PyObject *args)
+static PyObject* _stk_build(PyObject *Py_UNUSED(self), PyObject *args)
 {
   char *buff; 
   int  status = 0;
-  (void)self; /* avoid compiler warning */
 
   /* Parse arguments, allow str, unicode or bytes input string.  */
-#if PY_MAJOR_VERSION >= 3
   if (!PyArg_ParseTuple(args, "s", &buff))
   {
     /* attempt using bytes type before giving up. */
@@ -119,10 +103,6 @@ static PyObject* _stk_build(PyObject *self, PyObject *args)
       status = 1;
     }
   } 
-#else
-  if (!PyArg_ParseTuple(args, "s", &buff))
-    status = 1;
-#endif
 
   /* handle argument parsing error */
   if ( status == 1 )
@@ -203,7 +183,7 @@ static PyObject* _stk_build(PyObject *self, PyObject *args)
     }
     
     /* Convert to python string object */
-    PyObject *pstr = PyString_FromString( ibuff );
+    PyObject *pstr = PyUnicode_FromString( ibuff );
     if ( NULL == pstr ) 
     {
       PyErr_SetString(PyExc_ValueError, "Cannot convert to python string");
