@@ -45,6 +45,9 @@ from ._utils import hist1d, hist2d  # type: ignore
 from . import _utils  # type: ignore
 from . import _psf    # type: ignore
 
+# Allow access to sherpa.utils.integration._C_API capsule
+from . import integration
+
 from .err import IOErr
 
 # We re-export symbols from sherpa.utils modules but this will be

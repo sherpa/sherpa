@@ -178,19 +178,17 @@ PyMODINIT_FUNC PyInit_integration(void) {
   Integration_API[2] = (void*)sherpa::integration::py_integrate_1d;
 
   PyObject *m;
-  PyObject *api_cobject;
 
   if ( NULL == ( m = PyModule_Create( &integration ) ) )
     return NULL;
 
-  if ( NULL == ( api_cobject = PyCapsule_New( (void*)Integration_API,
-                              NULL,
-						      NULL) ) )
+  PyObject *api_cobject = PyCapsule_New( (void*)Integration_API,
+					 INTEGRATION_CAPSULE_NAME,
+					 NULL );
+  if (PyModule_AddObject(m, (char *) "_C_API", api_cobject) < 0) {
+    Py_XDECREF(api_cobject);
     return NULL;
-
-  // Since the actual data is static, we can let PyModule_AddObject()
-  // steal the reference
-  PyModule_AddObject( m, (char*)"_C_API", api_cobject );
+  }
 
   return m;
 }
