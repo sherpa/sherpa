@@ -94,6 +94,7 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             xspec-version: 12.14.0k
+            limited-api: true
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
@@ -156,10 +157,12 @@ jobs:
       if: matrix.install-type == 'install'
       env:
         PYTHON_LDFLAGS: " "
+        LIMITED_API: ${{ matrix.limited-api }}
       run: |
         source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
         build_args=`scripts/make_build_args_conda`
+        if [ -n "${LIMITED_API}" ]; then build_args="$build_args -Csetup-args=-Dpython.allow_limited_api=true"; fi
         echo "** build_args: ${build_args}"
         pip install .[test] $build_args --verbose
 
@@ -167,10 +170,12 @@ jobs:
       if: matrix.install-type == 'develop'
       env:
         PYTHON_LDFLAGS: " "
+        LIMITED_API: ${{ matrix.limited-api }}
       run: |
         source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
         build_args=`scripts/make_build_args_conda`
+        if [ -n "${LIMITED_API}" ]; then build_args="$build_args -Csetup-args=-Dpython.allow_limited_api=true"; fi
         echo "** build_args: ${build_args}"
         pip install numpy ninja meson meson-python
         pip install -e .[test] $build_args --verbose --no-build-isolation
