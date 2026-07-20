@@ -2559,7 +2559,7 @@ set_xsxsect("bcmc")
     xsver = tuple([int(t) for t in toks] + [patch])
 
     # Add in the XSET settings, but only for XSPEC 12.15.1 and
-    # later. Since the versions can be uptated, take advantage of the
+    # later. Since the versions can be updated, take advantage of the
     # ellipsis support to avoid explicit checks.
     #
     if xsver >= (12, 15, 1, ''):
