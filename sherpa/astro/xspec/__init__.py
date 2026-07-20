@@ -127,6 +127,12 @@ from sherpa.utils.numeric_types import SherpaFloat
 from .utils import ModelMeta, version_at_least, equal_or_greater_than
 from . import _xspec  # type: ignore
 
+# The documentation tests can leave the XSPEC library in an unexpected
+# state, causing problems for other test runs. There are also tests
+# such as "what is the version" or "what is the default abundance
+# table" which change over time. So just skip these tests.
+#
+__doctest_skip__ = ['*']
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -258,7 +264,7 @@ def get_xsabundances(table: str | None = None) -> dict[str, float]:
     >>> get_xsabundances()
     {'H': 1.0, 'He': ...}
 
-    >>> set_xsabud("angr")
+    >>> set_xsabund("angr")
     >>> get_xsabundances()["Cu"]
     1.619999956403717e-08
     >>> get_xsabundances("felc")["Cu"]
@@ -414,7 +420,7 @@ def get_xsabundances_path() -> Path:
     --------
 
     >>> get_xsabundances_path()
-    PosixPath('/path/to/spectral/manager/abundances.dat')
+    PosixPath('.../spectral/manager/abundances.dat')
 
     """
 
@@ -485,7 +491,7 @@ def get_xsversion() -> str:
     --------
 
     >>> get_xsversion()
-    '12.11.0m'
+    '12.14.0k'
     """
 
     return _xspec.get_xsversion()
@@ -508,7 +514,7 @@ def get_xsxsect() -> str:
     --------
 
     >>> get_xsxsect()
-    'bcmc'
+    'vern'
     """
 
     return _xspec.get_xsxsect()
@@ -550,9 +556,10 @@ def set_xsabund(abundance: str) -> None:
 
     The values for these tables are given at [1]_.
 
-    Data files should be in ASCII format, containing a single
-    numeric (floating-point) column of the abundance values,
-    relative to Hydrogen.
+    Data files should be in ASCII format, containing a single numeric
+    (floating-point) column of the abundance values, relative to
+    Hydrogen. The `set_xsabundances` is an alternative approach to
+    setting the abundances without having to create a text file.
 
     The screen output of this function is controlled by the
     X-Spec chatter setting (`set_xschatter`).
@@ -767,8 +774,8 @@ def clear_xsxset() -> None:
     --------
 
     >>> set_xsxset("POW_EMIN", "0.5")
-    >>> get_xsxset()
-    {'POW_EMIN': '0.5'}
+    >>> get_xsxset()["POW_EMIN"]
+    '0.5'
     >>> clear_xsxset()
     >>> get_xsxset()
     {}
@@ -921,7 +928,7 @@ def get_xspath_manager() -> str:
     --------
 
     >>> get_xspath_manager()
-    '/usr/local/heasoft-6.22/x86_64-unknown-linux-gnu-libc2.24/../spectral/manager'
+    '.../spectral/manager'
     """
 
     return _xspec.get_xspath_manager()
@@ -944,7 +951,7 @@ def get_xspath_model() -> str:
     --------
 
     >>> get_xspath_model()
-    '/usr/local/heasoft-6.22/x86_64-unknown-linux-gnu-libc2.24/../spectral/modelData'
+    '.../spectral/modelData/'
     """
 
     return _xspec.get_xspath_model()
@@ -1283,15 +1290,17 @@ class XSBaseParameter(Parameter):
     --------
 
     >>> p = XSBaseParameter('mod', 'p', 2, min=1, max=9, hard_min=0, hard_max=10)
-    >>> p.min
+    >>> print(p.min)
     0.0
-    >>> p.hard_min
+    >>> print(p.hard_min)
     0.0
-    >>> p.max
+    >>> print(p.max)
     10.0
-    >>> p.hard_max
+    >>> print(p.hard_max)
     10.0
     >>> p.val = 20
+    Traceback (most recent call last):
+        ...
     sherpa.utils.err.ParameterErr: parameter mod.p has a maximum of 10
 
     """
@@ -1344,22 +1353,26 @@ class XSParameter(XSBaseParameter):
     >>> p = XSParameter('mod', 'p', 2, min=1, max=9, hard_min=0, hard_max=10)
     >>> p.frozen
     False
-    >>> p.min
+    >>> print(p.min)
     0.0
-    >>> p.hard_min
+    >>> print(p.hard_min)
     0.0
-    >>> p.max
+    >>> print(p.max)
     10.0
-    >>> p.hard_max
+    >>> print(p.hard_max)
     10.0
     >>> p.val = 20
+    Traceback (most recent call last):
+        ...
     sherpa.utils.err.ParameterErr: parameter mod.p has a maximum of 10
     >>> p.max = 30
+    Traceback (most recent call last):
+        ...
     sherpa.utils.err.ParameterErr: parameter mod.p has a hard maximum of 10
     >>> p.hard_max = 30
-    >>> p.max
+    >>> print(p.max)
     30.0
-    >>> p.hard_max
+    >>> print(p.hard_max)
     30.0
     >>> p.val = 20
     >>> p.frozen
@@ -1995,8 +2008,8 @@ class XSConvolutionKernel(XSModel):
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        xscflux.Emin frozen          0.5            0        1e+06        keV
-       xscflux.Emax frozen           10            0        1e+06        keV
-       xscflux.lg10Flux thawed          -12         -100          100        cgs
+       xscflux.Emax frozen            7            0        1e+06        keV
+       xscflux.lg10Flux thawed        -12.1         -100          100        cgs
 
     The convolution models are not evaluated directly. Instead they
     are applied to a model expression which you specify as the
@@ -2130,21 +2143,21 @@ class XSConvolutionModel(CompositeModel, XSModel):
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        xscflux.Emin frozen          0.5            0        1e+06        keV
-       xscflux.Emax frozen           10            0        1e+06        keV
-       xscflux.lg10Flux thawed          -12         -100          100        cgs
-       phabs.nH     thawed            1            0       100000 10^22 atoms / cm^2
-       powerlaw.PhoIndex thawed            1           -2            9
+       xscflux.Emax frozen            7            0        1e+06        keV
+       xscflux.lg10Flux thawed        -12.1         -100          100        cgs
+       phabs.nH     thawed            1            0        1e+06 10^22 atoms / cm^2
+       powerlaw.PhoIndex thawed            1           -3           10
        powerlaw.norm frozen            1            0        1e+24
 
     >>> print(mdl2)
     phabs * xscflux(powerlaw)
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       phabs.nH     thawed            1            0       100000 10^22 atoms / cm^2
+       phabs.nH     thawed            1            0        1e+06 10^22 atoms / cm^2
        xscflux.Emin frozen          0.5            0        1e+06        keV
-       xscflux.Emax frozen           10            0        1e+06        keV
-       xscflux.lg10Flux thawed          -12         -100          100        cgs
-       powerlaw.PhoIndex thawed            1           -2            9
+       xscflux.Emax frozen            7            0        1e+06        keV
+       xscflux.lg10Flux thawed        -12.1         -100          100        cgs
+       powerlaw.PhoIndex thawed            1           -3           10
        powerlaw.norm frozen            1            0        1e+24
 
     """
