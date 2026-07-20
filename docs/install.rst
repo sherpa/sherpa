@@ -257,7 +257,7 @@ Other
 """""
 
 Modern XSPEC builds use run-time search paths to reference most of the
-libraries it uses, so the only settings that should be necessary are
+libraries they use, so the only settings that should be necessary are
 ``with_xspec`` and ``xspec_version``.
 
 If the build fails then various settings can be changed, such as
