@@ -1369,7 +1369,6 @@ class Session(sherpa.ui.utils.Session):
         try:
             return sherpa.astro.io.read_arrays(*args)
         except NotImplementedError:
-            # if the astro backend is not set, fall back on io module version.
             return super().unpack_arrays(*args)
 
     # DOC-NOTE: also in sherpa.utils

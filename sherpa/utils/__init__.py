@@ -34,7 +34,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Any, Dict, Generic, TypeVar, overload
+from typing import Any, Generic, TypeVar, overload
 import warnings
 
 import numpy as np
@@ -2402,7 +2402,7 @@ def integrate_tabulated_function(x0: np.ndarray, x1: np.ndarray,
 
 def integrate(x0: np.ndarray, x1: np.ndarray, xin: np.ndarray, yin: np.ndarray,
               interpolate_func: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray] = linear_interp,
-              integrate_func: Callable[[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Callable, Dict], np.ndarray] = integrate_tabulated_function,
+              integrate_func: Callable[[np.ndarray, np.ndarray, np.ndarray, np.ndarray, Callable, dict | None], np.ndarray] = integrate_tabulated_function,
               **kwargs):
     """One-dimensional integration.
 

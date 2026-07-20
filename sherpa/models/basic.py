@@ -2441,9 +2441,8 @@ class InterpolatedTableModel1D(TableModelBase):
         The integration method, by default
         `sherpa.utils.integrate_tabulated_function`.
     integrate_kwargs : dict, optional
-        Used to pass extra parameters to the integrator, by default an empty dict.
-
-    Attributes
+        Used to pass extra parameters to the integrator.
+        If not specified or `None`, no extra arguments are passed to the integrator.
     ----------
     ampl
         The linear scaling factor for the table values
@@ -2480,10 +2479,10 @@ class InterpolatedTableModel1D(TableModelBase):
                  x: Sequence | None=None, y: Sequence | None=None,
                  method: Callable = linear_interp,
                  integrate_method: Callable = integrate_tabulated_function,
-                 integrate_kwargs: dict = {}):
+                 integrate_kwargs: dict| None = None):
         self._x = None
         self._method = method
-        self._integrate_kwargs: dict = integrate_kwargs
+        self._integrate_kwargs: dict = integrate_kwargs if integrate_kwargs is not None else {}
         self._integrate_method = integrate_method
         super().__init__(name)
         self.load(x, y)
