@@ -583,9 +583,9 @@ class Lorentz1D(RegriddableModel1D):
     -----
     The functional form of the model for points is::
 
-        f(x) =              ampl * fwhm
-               --------------------------------------
-               2 * pi * (0.25 * fwhm^2 + (x - pos)^2)
+        f(x) = ampl * fwhm / denom(x)
+
+        denom(x) = 2 * pi * (0.25 * fwhm^2 + (x - pos)^2)
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -838,7 +838,7 @@ class PseudoVoigt1D(RegriddableModel1D):
 class NormBeta1D(RegriddableModel1D):
     """One-dimensional normalized beta model function.
 
-    This is the same model as the ``Beta1D`` model but with a
+    This is the same model as the `Beta1D` model but with a
     different slope parameter and normalisation.
 
     Attributes
@@ -989,9 +989,11 @@ class Beta2D(RegriddableModel2D):
 
         f(x0,x1) = ampl * (1 + r(x0,x1)^2)^(-alpha)
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                  r0^2 * (1-ellip)^2
+        r(x0,x1)^2 = num(x0,x1) / denom(x0,x1)
+
+        num(x0,x1) = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
+
+        denom(x0,x1) = r0^2 * (1-ellip)^2
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
@@ -1054,7 +1056,7 @@ class DeVaucouleurs2D(RegriddableModel2D):
 
     A spatial de Vaucouleurs profile which is a formulation of the
     R^(1/4) law introduced by [1]_. It is a special case of the
-    ``Sersic2D`` model with ``n=4``, as described in [2]_, [3]_,
+    `Sersic2D` model with ``n=4``, as described in [2]_, [3]_,
     and [4]_.
 
     Attributes
@@ -1079,7 +1081,7 @@ class DeVaucouleurs2D(RegriddableModel2D):
 
     Notes
     -----
-    The model used is the same as the ``Sersic2D`` model with ``n=4``.
+    The model used is the same as the `Sersic2D` model with ``n=4``.
 
     References
     ----------
@@ -1161,9 +1163,11 @@ class HubbleReynolds(RegriddableModel2D):
 
         f(x0,x1) = ampl / (1 + r(x0,x1))^2
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                  r0^2 * (1-ellip)^2
+        r(x0,x1)^2 = num(x0,x1) / denom(x0,x1)
+
+        num(x0,x1) = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
+
+        denom(x0,x1) = r0^2 * (1-ellip)^2
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
@@ -1248,9 +1252,11 @@ class Lorentz2D(RegriddableModel2D):
 
         f(x0,x1) = ampl / (1 + 4 * r(x0,x1)^2)
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                 fwhm^2 * (1-ellip)^2
+        r(x0,x1)^2 = num(x0,x1) / denom(x0,x1)
+
+        num(x0,x1) = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
+
+        denom(x0,x1) = fwhm^2 * (1-ellip)^2
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
@@ -1410,7 +1416,7 @@ class JDPileup(RegriddableModel1D):
 class Sersic2D(RegriddableModel2D):
     """Two-dimensional Sersic model.
 
-    This is a generalization of the ``DeVaucouleurs2D`` model,
+    This is a generalization of the `DeVaucouleurs2D` model,
     in which the exponent ``n`` can vary ([1]_, [2]_, and [3]_).
 
     Attributes
@@ -1429,7 +1435,7 @@ class Sersic2D(RegriddableModel2D):
     ampl
         The amplitude refers to the maximum peak of the model.
     n
-        The Sersic index (n=4 replicates the ``DeVaucouleurs2D``
+        The Sersic index (n=4 replicates the `DeVaucouleurs2D`
         model).
 
     See Also
@@ -1445,13 +1451,15 @@ class Sersic2D(RegriddableModel2D):
 
             b(n) = 2 * n - 1 / 3 + 4 / (405 * n) + 46 / (25515 * n^2)
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                  r0^2 * (1-ellip)^2
+        r(x0,x1)^2 = num(x0,x1) / denom(x0,x1)
 
-        xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+        num(x0,x1) = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
 
-        yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+        denom(x0,x1) = r0^2 * (1-ellip)^2
+
+         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+
+         yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
