@@ -152,6 +152,16 @@ That way, we do not need to clutter the example with long directory names, but t
 `sherpa-test-data` directory has to be present as a submodule to successfully pass all
 doctests.
 
+Re-build extension models during developmemt
+--------------------------------------------
+
+When using editable builds the extension models will automatically be
+re-built when installed - e.g. when running the tests or importing the
+module from within a python session - but if there is an error then
+the screen output may lack information. In this case the code can be
+rebuilt directly with the command::
+
+  ninja -C build/cp<version>/
 
 How do I ...
 ============
@@ -544,9 +554,9 @@ The following steps are needed to update to a newer version, and
 assume that you have the new version of XSPEC, or its model library,
 available.
 
-#. Add a new version define in ``helpers/xspec_config.py``.
+#. Add a new version define in ``scripts/make_xspec_macros``.
 
-   Current version: `helpers/xspec_config.py <https://github.com/sherpa/sherpa/blob/master/helpers/xspec_config.py>`_.
+   Current version: `scripts/make_xspec_macros <https://github.com/sherpa/sherpa/blob/main/scripts/make_xspec_macros>`_.
 
    When adding support for XSPEC 12.12.1, the top-level
    ``SUPPORTED_VERSIONS`` list was changed to include the triple
@@ -559,30 +569,19 @@ available.
    named ``XSPEC_<a>_<b>_<c>`` for each supported XSPEC release
    ``<a>.<b>.<c>`` (the XSPEC patch level is not included).
 
-   .. note:: The Sherpa build system requires that the user indicate the
-	     version of XSPEC being used, via the ``xspec_config.xspec_version``
-	     setting in their ``setup.cfg`` file (as attempts to identify
-	     this value automatically were not successful). This version is
-	     the value used in the checks in ``helpers/xspec_config.py``.
-
 #. Add the new version to ``sherpa/astro/utils/xspec.py``
 
    The ``models_to_compiled`` routine also contains a ``SUPPORTED_VERSIONS``
    list which should be kept in sync with the version in
-   ``xspec_config.py``.
+   ``make_xspec_macros``.
 
 #. Attempt to build the XSPEC interface with::
 
-     pip install -e . --verbose
+     pip install -e . --no-build-isolation --verbose \
+       -Csetup-args=-Dxspec-prefix=$HEADAS
 
-   This requires that the ``xspec_config`` section of the ``setup.cfg``
-   file has been set up correctly for the new XSPEC release. The exact
-   settings depend on how XSPEC was built (e.g. model only or as a
-   full application), and are described in the
-   :ref:`building XSPEC <build-xspec>` documentation. The most-common
-   changes are that the version numbers of the ``CCfits``, ``wcslib``,
-   and ``hdsp`` libraries need updating, and these can be checked by
-   looking in ``$HEADAS/lib``.
+   See the :ref:`building XSPEC <build-xspec>` documentation for more
+   details.
 
    If the build succeeds, you can check that it has worked by directly
    importing the XSPEC module, such as with the following, which should
@@ -671,7 +670,7 @@ available.
 
    a. ``sherpa/astro/xspec/src/_xspec.cc``
 
-      Current version: `sherpa/astro/xspec/src/_xspec.cc <https://github.com/sherpa/sherpa/blob/master/sherpa/astro/xspec/src/_xspec.cc>`_.
+      Current version: `sherpa/astro/xspec/src/_xspec.cc <https://github.com/sherpa/sherpa/blob/main/sherpa/astro/xspec/src/_xspec.cc>`_.
 
       New functions are added to the ``XspecMethods`` array, using
       macros defined in
@@ -771,7 +770,7 @@ available.
 
    b. ``sherpa/astro/xspec/__init__.py``
 
-      Current version: `sherpa/astro/xspec/__init__.py <https://github.com/sherpa/sherpa/blob/master/sherpa/astro/xspec/__init__.py>`_.
+      Current version: `sherpa/astro/xspec/__init__.py <https://github.com/sherpa/sherpa/blob/main/sherpa/astro/xspec/__init__.py>`_.
 
       This is where the Python classes are added for additive and multiplicative
       models. The code additions are defined by the model and parameter
@@ -814,7 +813,7 @@ available.
 
    c. ``sherpa/astro/xspec/tests/test_xspec.py``
 
-      Current version: `sherpa/astro/xspec/tests/test_xspec.py <https://github.com/sherpa/sherpa/blob/master/sherpa/astro/xspec/tests/test_xspec.py>`_.
+      Current version: `sherpa/astro/xspec/tests/test_xspec.py <https://github.com/sherpa/sherpa/blob/main/sherpa/astro/xspec/tests/test_xspec.py>`_.
 
       The ``XSPEC_MODELS_COUNT`` version should be increased by the number
       of models classes added to ``__init__.py``.
@@ -827,7 +826,7 @@ available.
 
    d. ``docs/model_classes/astro_xspec.rst``
 
-      Current version: `docs/model_classes/astro_xspec.rst <https://github.com/sherpa/sherpa/blob/master/docs/model_classes/astro_xspec.rst>`_.
+      Current version: `docs/model_classes/astro_xspec.rst <https://github.com/sherpa/sherpa/blob/main/docs/model_classes/astro_xspec.rst>`_.
 
       New models should be added to both the ``Classes`` rubric - sorted
       by addtive and then multiplicative models, using an alphabetical
@@ -842,9 +841,8 @@ available.
    The ``docs/indices.rst`` file should be updated to add the new version
    to the list of supported versions, under the :term:`XSPEC` term, and
    ``docs/developer/index.rst`` also lists the supported versions
-   (:ref:`developer-update-xspec`). The installation page ``docs/install.rst`` should
-   be updated to add an entry for the ``setup.cfg`` changes in
-   :ref:`build-xspec`.
+   (:ref:`developer-update-xspec`). The :ref:`build-xspec` section
+   should be reviewed.
 
    The ``sherpa/astro/xspec/__init__.py`` file also lists the supported
    XSPEC versions.
