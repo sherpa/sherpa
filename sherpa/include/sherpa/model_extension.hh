@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2016, 2019, 2020, 2023
+//  Copyright (C) 2007, 2016, 2019-2020, 2023, 2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -182,10 +182,8 @@ namespace sherpa { namespace models {
     
     if( logger && err.str() != "" ) {
 
-      PyObject *rv = PyObject_CallFunction( logger, (char*)"s",
-					    err.str().c_str() );
-      (void)rv;
-
+      PyObject *Py_UNUSED(rv) = PyObject_CallFunction( logger, (char*)"s",
+						       err.str().c_str() );
     }
     
     return result.return_new_ref();
@@ -470,12 +468,5 @@ namespace sherpa { namespace models {
   _MODELFCTSPEC_NOINT(name, modelfct1d, integrated_model1d, npars)
 #define MODELFCT2D_NOINT(name, npars) \
   _MODELFCTSPEC_NOINT(name, modelfct2d, integrated_model2d, npars)
-
-#define MODSPEC_INT(name, func, doc) \
-  { (char*)name, (PyCFunction)((PyCFunctionWithKeywords)func), METH_VARARGS|METH_KEYWORDS, \
-    (char*)doc }
-
-#define PY_MODELFCT1D_INT(name, doc) \
-  MODSPEC_INT(name, sherpa::models::py_modelfct1d_int<SherpaFloatArray>, doc)
 
 #endif /* __sherpa_model_extension_hh__ */

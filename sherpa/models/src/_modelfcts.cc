@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2010, 2020, 2021, 2025
+//  Copyright (C) 2010, 2020-2021, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -53,33 +53,36 @@ static PyMethodDef ModelFcts[] = {
   MODELFCT2D_NOINT( ngauss2d, 6 ),
   MODELFCT2D( poly2d, 9 ),
 
-  PY_MODELFCT1D_INT((char*)"integrate1d",
-		 (char*)"Integrate a one-dimensional model.\n\n"
-		    "Parameters\n"
-		    "----------\n"
-		    "model : callable\n"
-		    "    The model to evaluate, which is called with the model\n"
-		    "    parameters and the array of x values, returning the array\n"
-		    "    of model values.\n"
-		    "pars : array\n"
-		    "    The parameter values for the model.\n"
-		    "xlo, xhi : array\n"
-		    "    The bin edges, which must match in size and have xhi_i > xlo_i\n"
-		    "errflag : int, optional\n"
-		    "    Currently unused.\n"
-		    "epsabs : number, optional\n"
-		    "    The maximum absolute difference. The default is the 64-bit\n"
-		    "    float epsilon.\n"
-		    "epsrel : number, optional\n"
-		    "    The maximum relative difference. The default is 0.0.\n"
-		    "maxeval : int, optional\n"
-		    "    The maximum number of evaluations. The default is 10000.\n"
-		    "logger : callable or None, optional\n"
-                    "    If set and an error was reported then this function will be\n"
-		    "    called with the error message as the argument.\n\n"
-		    "Examples\n"
-		    "--------\n"
-		    ">>> ans = integrate1d(func, pars, xlo, xhi)\n" ),
+  { (char*)"integrate1d",
+    (PyCFunction)((PyCFunctionWithKeywords)sherpa::models::py_modelfct1d_int<SherpaFloatArray>),
+    METH_VARARGS|METH_KEYWORDS,
+    (char*)"Integrate a one-dimensional model.\n\n"
+           "Parameters\n"
+           "----------\n"
+           "model : callable\n"
+           "    The model to evaluate, which is called with the model\n"
+           "    parameters and the array of x values, returning the array\n"
+           "    of model values.\n"
+           "pars : array\n"
+           "    The parameter values for the model.\n"
+           "xlo, xhi : array\n"
+           "    The bin edges, which must match in size and have xhi_i > xlo_i\n"
+           "errflag : int, optional\n"
+           "    Currently unused.\n"
+           "epsabs : number, optional\n"
+           "    The maximum absolute difference. The default is the 64-bit\n"
+           "    float epsilon.\n"
+           "epsrel : number, optional\n"
+           "    The maximum relative difference. The default is 0.0.\n"
+           "maxeval : int, optional\n"
+           "    The maximum number of evaluations. The default is 10000.\n"
+           "logger : callable or None, optional\n"
+           "    If set and an error was reported then this function will be\n"
+           "    called with the error message as the argument.\n\n"
+           "Examples\n"
+           "--------\n"
+           ">>> ans = integrate1d(func, pars, xlo, xhi)\n"
+  },
 
   { NULL, NULL, 0, NULL }
 
