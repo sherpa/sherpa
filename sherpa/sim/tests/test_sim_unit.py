@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2021, 2023-2025
+#  Copyright (C) 2017, 2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -31,7 +31,8 @@ from sherpa.data import Data1D
 from sherpa.fit import Fit
 from sherpa.models.basic import Polynom1D
 from sherpa import sim
-from sherpa.sim.mh import dmvnorm, dmvt, rmvt
+from sherpa.sim.mh import MetropolisMH, MH, Sampler, Walk, \
+    dmvnorm, dmvt, rmvt
 from sherpa.stats import Chi2DataVar, LeastSq
 from sherpa.utils.err import EstErr
 
@@ -194,3 +195,60 @@ def test_parameterscale_checks_samples_size_matrix(myscales):
                        match="^scales must be a numpy array "
                        r"of size \(2,2\)$"):
         _ = p.get_scales(f, myscales=myscales)
+
+
+@pytest.mark.parametrize("name", ["MH", "mH",
+                                  "MetropolisMH", "metropolismh"])
+def test_mcmc_set_sampler_string_valid(name):
+    """Just check we can call this."""
+
+    mcmc = sim.MCMC()
+    mcmc.set_sampler(name)
+    sampler = mcmc.sampler
+    assert issubclass(sampler, Sampler)
+    assert sampler.__name__.endswith("MH")
+
+    # This is not the most-useful check
+    assert mcmc.walker == Walk
+
+
+@pytest.mark.parametrize("cls", [MH, MetropolisMH])
+def test_mcmc_set_sampler_class_valid(cls):
+    """Just check we can call this."""
+
+    mcmc = sim.MCMC()
+    mcmc.set_sampler(cls)
+    sampler = mcmc.sampler
+    assert sampler == cls
+
+    # This is not the most-useful check
+    assert mcmc.walker == Walk
+
+
+def test_mcmc_set_sampler_string_invalid():
+    """Check the error."""
+
+    mcmc = sim.MCMC()
+    with pytest.raises(TypeError,
+                       match="^Unknown sampler 'not-a-mh'$"):
+        mcmc.set_sampler("not-a-mh")
+
+
+def test_mcmc_set_sample_invalid_class():
+    """Check the error."""
+
+    mcmc = sim.MCMC()
+    with pytest.raises(TypeError,
+                       match="^Unknown sampler '<class 'sherpa.sim.mh.Walk'>'$"):
+        mcmc.set_sampler(Walk)
+
+
+def test_mcmc_set_sample_invalid_not_a_class():
+    """Check the error."""
+
+    # The error handling of set_sampler is not great. Hopefully
+    # the issubclass error does not change with Python version.
+    mcmc = sim.MCMC()
+    with pytest.raises(TypeError,
+                       match=r"^issubclass\(\) arg 1 must be a class$"):
+        mcmc.set_sampler(Walk())
