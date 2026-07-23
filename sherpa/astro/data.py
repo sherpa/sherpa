@@ -5572,6 +5572,9 @@ class DataIMG(Data2D):
             >>> y = np.sqrt((x0[:, np.newaxis] - 10)**2 + (x1[np.newaxis, :] - 31)**2)
             >>> reg2d = DataIMG.from_2d_array("regular2d", x0=x0, x1=x1, y=y)
 
+        .. versionchanged:: 4.19.0
+            The ``get_axis`` method has been removed because it had inconsistent outputs.
+            Use `get_x0` and `get_x1` or `get_indep` instead.
         '''
         if y.ndim != 2:
             raise ValueError(f"Expected 2D array for y, got {y.ndim}D array instead.")
@@ -6135,6 +6138,9 @@ class DataIMGInt(DataIMG):
         >>> image = DataIMGInt.from_2d_array("binned_image", y=hist,
         ...                    x0_bounds=x0edges, x1_bounds=x1edges)
 
+    .. versionchanged:: 4.19.0
+        The ``get_axis`` method has been removed because it had inconsistent outputs.
+        Use `get_x0lo` and `get_x0hi` etc. or `get_indep` instead.
     '''
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,

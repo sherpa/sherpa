@@ -2447,6 +2447,10 @@ class Data2D(Data):
     .. note::
         Sherpa provides the `~sherpa.astro.data.DataIMG` class to handle
         regularly-gridded data more easily.
+
+    .. versionchanged:: 4.19.0
+        The ``get_axis`` method has been removed because it had inconsistent outputs.
+        Use `get_x0` and `get_x1` or `get_indep` instead.
     '''
     _fields: FieldsType = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
     ndim = 2
