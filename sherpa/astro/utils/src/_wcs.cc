@@ -20,9 +20,6 @@
 
 
 #include "sherpa/extension.hh"
-#include <sstream>
-#include <iostream>
-#include <cstring>
 
 extern "C" {
 #include "wcs.h"
@@ -52,13 +49,12 @@ static PyObject* pix2world( PyObject* self, PyObject* args )
 
   if ( ( cdelt.get_size() != crpix.get_size() ) ||
        ( crpix.get_size() != crval.get_size() ) ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "cdelt: " << cdelt.get_size()
-	<< " vs crpix: " << crpix.get_size()
-	<< " vs crval: " << crval.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
+    return PyErr_Format( PyExc_TypeError,
+			 (char*)"input array sizes do not match, "
+			 "cdelt: %ld vs crpix: %ld vs crval: %ld",
+			 cdelt.get_size(),
+			 crpix.get_size(),
+			 crval.get_size() );
   }
 
   if ( x0.get_size() != x1.get_size() ) {
@@ -173,13 +169,12 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
 
   if ( ( cdelt.get_size() != crpix.get_size() ) ||
        ( crpix.get_size() != crval.get_size() ) ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "cdelt: " << cdelt.get_size()
-	<< " vs crpix: " << crpix.get_size()
-	<< " vs crval: " << crval.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
+    return PyErr_Format( PyExc_TypeError,
+			 (char*)"input array sizes do not match, "
+			 "cdelt: %ld vs crpix: %ld vs crval: %ld",
+			 cdelt.get_size(),
+			 crpix.get_size(),
+			 crval.get_size() );
   }
 
   if ( x0.get_size() != x1.get_size() ) {
