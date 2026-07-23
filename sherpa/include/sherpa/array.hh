@@ -1,4 +1,4 @@
-// 
+//
 //  Copyright (C) 2007, 2015, 2026
 //  Smithsonian Astrophysical Observatory
 //
@@ -36,6 +36,9 @@ namespace sherpa {
 
   public:
 
+    // Provide access to the template data type.
+    using value_type = CType;
+
     ~Array() { Py_XDECREF( array ); }
 
     Array()
@@ -60,7 +63,7 @@ namespace sherpa {
     int zeros( int ndim, const npy_intp* dims )
     {
       return init( PyArray_Zeros( ndim, const_cast< npy_intp* >( dims ),
-				  PyArray_DescrFromType( ArrayType ), 0 ) ); 
+				  PyArray_DescrFromType( ArrayType ), 0 ) );
     }
 
     PyObject* borrowed_ref()
