@@ -1,6 +1,6 @@
 //
-//  Copyright (C) 2007, 2018, 2019, 2021
-//        Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2018, 2019, 2021, 2026
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -838,11 +838,7 @@ static PyObject* py_minim( PyObject* self, PyObject* args,
     else
       nm = new sherpa::MinimNoReflect<Func, PyObject*, double>( callback_func, py_function );
 
-#if (__cplusplus < 201103L)
-    std::auto_ptr< sherpa::Minim<Func, PyObject*, double> > minim(nm);
-#else
     std::unique_ptr< sherpa::Minim<Func, PyObject*, double> > minim(nm);
-#endif
 
     minim->minim( mypar, mystep, npar, fval, maxnfev, verbose, ftol, iquad,
                   simp, vc, ierr, nfev, bounds);
