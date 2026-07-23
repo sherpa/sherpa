@@ -377,9 +377,11 @@ namespace sherpa { namespace astro { namespace utils {
 
     typedef void (*fptr)( const FloatArrayType&, IndexType, IndexType,
 			  typename FloatArrayType::value_type& );
-    string funcname(type);
+    std::string funcname(type);
     map<string, fptr> funcs;
     fptr func = NULL;
+
+    const std::string make_groups("_make_groups");
 
     funcs["sum"] = _sum;
     funcs["_sum_sq"] = _sum_sq;
@@ -387,7 +389,7 @@ namespace sherpa { namespace astro { namespace utils {
     funcs["_min"] = _min;
     funcs["_middle"] = _middle;
 
-    if ( funcname != "_make_groups" ) {
+    if ( funcname != make_groups ) {
       // An invalid function will raise std::out_of_range
       func = funcs.at(funcname);
     }
