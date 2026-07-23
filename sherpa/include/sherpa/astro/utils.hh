@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2021, 2024
+//  Copyright (C) 2007, 2021, 2024, 2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -30,10 +30,6 @@
 #include <vector>
 #include <algorithm>
 using namespace std;
-
-#ifndef MID
-#define MID( a, b ) (( a + b ) / 2.0 )
-#endif
 
 namespace sherpa { namespace astro { namespace utils {
 
@@ -345,7 +341,7 @@ namespace sherpa { namespace astro { namespace utils {
       min = std::min( min, data[ ii + 1 ] );
       max = std::max( max, data[ ii + 1 ] );
     }
-    val = MID( min, max );
+    val = (min + max) / 2.0;
   }
 
   template <typename ConstFloatArrayType, typename FloatArrayType,
