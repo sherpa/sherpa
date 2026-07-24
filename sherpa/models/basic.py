@@ -752,9 +752,11 @@ class NormGauss1D(RegriddableModel1D):
     -----
     The functional form of the model for points is::
 
-        f(x) = ampl * exp(-4 * log(2) * (x - pos)^2 / fwhm^2)
-               ----------------------------------------------
-                       sqrt(pi / (4 * log(2))) * fwhm
+        f(x) = num(x) / denom(x)
+
+        num(x) = ampl * exp(-4 * log(2) * (x - pos)^2 / fwhm^2)
+
+        denom(x) = sqrt(pi / (4 * log(2))) * fwhm
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -1506,9 +1508,9 @@ class Gauss2D(RegriddableModel2D):
 
         f(x0,x1) = ampl * exp(-4 * log(2) * r(x0,x1)^2)
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                fwhm^2 * (1-ellip)^2
+        r(x0,x1)^2 = num(x0,x1) / (fwhm^2 * (1-ellip)^2)
+
+        num(x0,x1) = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
@@ -1678,13 +1680,15 @@ class NormGauss2D(RegriddableModel2D):
     -----
     The functional form of the model for points is::
 
-        f(x0,x1) = 4 * log(2) * ampl * exp(-4 * log(2) * r(x0,x1)^2)
-                   -------------------------------------------------
-                       pi * fwhm * fwhm * sqrt(1 - ellip * ellip)
+        f(x0,x1) = num(x0,x1) / denom(x0,x1)
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                 fwhm^2 * (1-ellip)^2
+        num(x0,x1) = 4 * log(2) * ampl * exp(-4 * log(2) * r(x0,x1)^2)
+
+        denom(x0,x1) = pi * fwhm * fwhm * sqrt(1 - ellip * ellip)
+
+        r(x0,x1)^2 = rnum(x0,x1) / (fwhm^2 * (1-ellip)^2)
+
+        rnum(x0,x1) = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
