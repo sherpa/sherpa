@@ -191,7 +191,7 @@ inline void MTRand::reload()
   static const int MmN = int(M) - int(N);  // in case enums are unsigned
   uint32 *p = state;
   int i;
-  for( i = N - M; i--; ++p )
+  for( i = int(N) - int(M); i--; ++p )
     *p = twist( p[M], p[0], p[1] );
   for( i = M; --i; ++p )
     *p = twist( p[MmN], p[0], p[1] );
