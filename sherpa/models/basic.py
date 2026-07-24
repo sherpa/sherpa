@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018-2025
+#  Copyright (C) 2010, 2016, 2018-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1516,7 +1516,7 @@ class Gauss2D(RegriddableModel2D):
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
-    on code from HIntLib ([1]_) and GSL ([2]_).
+    on code from HIntLib [1]_ and GSL [2]_.
 
     References
     ----------
@@ -1605,7 +1605,7 @@ class SigmaGauss2D(Gauss2D):
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
-    on code from HIntLib ([1]_) and GSL ([2]_).
+    on code from HIntLib [1]_ and GSL [2]_.
 
     References
     ----------
@@ -1692,7 +1692,7 @@ class NormGauss2D(RegriddableModel2D):
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
-    on code from HIntLib ([1]_) and GSL ([2]_).
+    on code from HIntLib [1]_ and GSL [2]_.
 
     References
     ----------
