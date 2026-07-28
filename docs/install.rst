@@ -472,7 +472,7 @@ Building the documentation requires a Sherpa installation, *including*
 the test data suite (either as a submodule or installed with the
 ``sherpa-test-data`` package), and several additional packages:
 
-* `Sphinx <https://sphinx.pocoo.org/>`_, version 1.8 or later
+* `Sphinx <https://sphinx.pocoo.org/>`_, version 5 or later
 * The ``sphinx_rtd_theme``
 * NumPy and `sphinx-astropy <https://github.com/astropy/sphinx-astropy/>`_
   (the latter can be installed with ``pip``)

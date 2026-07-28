@@ -47,7 +47,7 @@ test = [
 # needs non-python packages such as pandoc and graphviz
 doc = [
   # code needed for the documentation
-  "sphinx>=5,<8",
+  "sphinx>=5",
   "sphinx_rtd_theme>=3.0.0",
   "sphinx-astropy",
   "nbsphinx",
