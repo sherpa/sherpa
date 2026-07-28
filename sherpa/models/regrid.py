@@ -31,6 +31,8 @@ match the desired grid.
 from abc import ABCMeta, abstractmethod
 import itertools
 import logging
+import re
+from typing import Iterable, Self
 import warnings
 
 import numpy as np
@@ -45,8 +47,10 @@ warning = logging.getLogger(__name__).warning
 
 PIXEL_RATIO_THRESHOLD = 0.1
 
+# Match patterns like "x2lo" or "x1"
+X_ATTR_NAME = re.compile("x(?P<ndim>[0-9]?)(?P<hilo>(hi|lo)?)")
 
-def _to_readable_array(x):
+def _to_readable_array(x: Iterable | None) -> np.ndarray | None:
     """Convert x into a ndarray that can not be edited (or is None)."""
 
     if x is None:
@@ -67,10 +71,10 @@ class Axis(metaclass=ABCMeta):
     """Represent an axis of a N-D object."""
 
     # This is set when the data is set
-    _is_ascending = None
+    _is_ascending: bool | None = None
 
     @property
-    def is_empty(self):
+    def is_empty(self) -> bool:
         """Is the axis empty?
 
         An empty axis is either set to `None` or a zero-element
@@ -80,12 +84,12 @@ class Axis(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def is_integrated(self):
+    def is_integrated(self) -> bool | None:
         """Is the axis integrated?"""
         pass
 
     @property
-    def is_ascending(self):
+    def is_ascending(self) -> bool | None:
         """Is the axis ascending?
 
         The axis is ascending if the elements in `lo` are sorted in
@@ -98,13 +102,12 @@ class Axis(metaclass=ABCMeta):
         return self._is_ascending
 
     @property
-    @abstractmethod
     def start(self):
         """The starting point (lowest value) of the data axis."""
-        pass
+        if self.is_empty:
+            raise DataErr("Axis is empty or has a size of 0")
 
     @property
-    @abstractmethod
     def end(self):
         """The ending point of the data axis
 
@@ -115,15 +118,15 @@ class Axis(metaclass=ABCMeta):
         of the `hi` array or of the `lo` array, depending on whether
         the axis is integrated or not, respectively.
         """
-        pass
+        if self.is_empty:
+            raise DataErr("Axis is empty or has a size of 0")
 
     @property
-    @abstractmethod
-    def size(self):
+    def size(self) -> int:
         """The size of the axis."""
-        pass
+        return 0
 
-    def overlaps(self, other):
+    def overlaps(self, other: Self) -> bool:
         """Check if this axis overlaps with another.
 
         Parameters
@@ -141,12 +144,54 @@ class Axis(metaclass=ABCMeta):
         #
         # if not isinstance(other, Axis):
         #     raise TypeError("other argument must be an axis")
+        if self.is_empty or other.is_empty:
+            return False
 
         num = max(0, min(self.end, other.end) - max(self.start, other.start))
         return bool(num != 0)
 
+class UnorderedPointAxis(Axis):
+    """Represent a point (not integrated) axis of a N-D object.
 
-class PointAxis(Axis):
+    The length can not be changed once set.
+
+    Parameters
+    ----------
+    x : array_like
+        The starting point of the axis. If `None` or `[]` then the
+        data axis is said to be empty. The axis can be in ascending or
+        descending order but this is not checked.
+
+    """
+    def __init__(self, x : np.ndarray | None):
+        self._x = x
+
+    @property
+    def is_integrated(self):
+        return False
+
+    @property
+    def x(self):
+        # if self.is_empty:
+        #    raise DataErr("Axis is empty or has a size of 0")
+        return self._x
+
+    @property
+    def start(self):
+        return np.min(self.x)
+
+    @property
+    def end(self):
+        return np.max(self.x)
+
+    @property
+    def size(self):
+        if self._x is None:
+            return 0
+        return self._x.size
+
+
+class PointAxis(UnorderedPointAxis):
     """Represent a point (not integrated) axis of a N-D object.
 
     The length can not be changed once set.
@@ -160,46 +205,18 @@ class PointAxis(Axis):
 
     """
 
-    def __init__(self, x):
-        self._x = _to_readable_array(x)
-        if self._x is None:
+    def __init__(self, x: np.ndarray | None):
+        super().__init__(x)
+        if self._x is None or len(self._x) == 0:
             return
+        #if not self._x.size:
+        #    raise DataErr("Axis is empty or has a size of 0")
+        # Should check this is actually strictly ascending?
+        # This version worked for ordered, but not strictly ascending
+        # array, e.g. a flattened 2D index.
+        self._is_ascending = self._x[-1] > self._x[0]
 
-        nx = len(self._x)
-        if nx > 0:
-            self._is_ascending = self._x[-1] > self._x[0]
-
-    @property
-    def x(self):
-        return self._x
-
-    @property
-    def is_integrated(self):
-        return False
-
-    @property
-    def start(self):
-        if self.is_ascending:
-            return self.x[0]
-
-        return self.x[-1]
-
-    @property
-    def end(self):
-        if self.is_ascending:
-            return self.x[-1]
-
-        return self.x[0]
-
-    @property
-    def size(self):
-        if self.x is None:
-            return 0
-
-        return self.x.size
-
-
-class IntegratedAxis(Axis):
+class UnorderedIntegratedAxis(Axis):
     """Represent an integrated axis of a N-D object.
 
     Parameters
@@ -216,17 +233,15 @@ class IntegratedAxis(Axis):
 
     """
 
-    _lo = None
-    _hi = None
+    def __init__(self, lo: np.ndarray | None, hi: np.ndarray | None):
+        self._lo = lo
+        self._hi = hi
 
-    def __init__(self, lo, hi):
-        self._lo = _to_readable_array(lo)
-        self._hi = _to_readable_array(hi)
+        if lo is None and hi is None:
+            return
 
-        if self._lo is None:
-            if self._hi is None:
-                return
-
+        # and hi is not None (otherwise it would have returned earlier)
+        if lo is None:
             raise DataErr("mismatchn", "lo", "hi", "None", len(self._hi))
 
         nlo = len(self._lo)
@@ -237,81 +252,159 @@ class IntegratedAxis(Axis):
         if nlo != nhi:
             raise DataErr("mismatchn", "lo", "hi", nlo, nhi)
 
-        if nlo > 0:
-            self._is_ascending = lo[-1] > lo[0]
-
-    @property
-    def lo(self):
-        return self._lo
-
-    @property
-    def hi(self):
-        return self._hi
-
     @property
     def is_integrated(self):
         return True
 
     @property
-    def start(self):
-        if self.is_ascending:
-            return self.lo[0]
+    def lo(self) -> np.ndarray:
+        #if self.is_empty:
+        #    raise DataErr("Axis is empty or has a size of 0")
+        return self._lo
 
-        return self.lo[-1]
+    @property
+    def hi(self) -> np.ndarray:
+        #if self.is_empty:
+        #    raise DataErr("Axis is empty or has a size of 0")
+        return self._hi
+
+    @property
+    def start(self):
+        return np.min(self.lo)
 
     @property
     def end(self):
-        if self.is_ascending:
-            return self.hi[-1]
-
-        return self.hi[0]
+        return np.max(self.hi)
 
     @property
     def size(self):
-        if self.lo is None:
+        if self._lo is None:
             return 0
+        return self._lo.size
 
-        return self.lo.size
-
-
-class EvaluationSpace1D():
-    """Class for 1D Evaluation Spaces.
-
-    An Evaluation Space is a set of data axes representing the data
-    space over which a model can be evaluated. A 1D Evaluation Space
-    has only one axis.
+class IntegratedAxis(UnorderedIntegratedAxis):
+    """Represent an integrated axis of a N-D object.
 
     Parameters
     ----------
-    x : array_like or None, optional
-        The data array, or the low end of the data bins if the dataset is "integrated"
-    xhi : array_like or None, optional
-        The high end of the data bins for integrated datasets.
+    lo : array_like or None
+        The starting point of the axis.  If `lo` is `None` or `[]`
+        then the data axis is said to be empty. The axis can be in
+        ascending or descending order.
+    hi : array_like or None
+        The ending point of the axis. The number of elements must match `lo` (either `None`
+        or a sequence of the same size). Each element is expected to
+        be larger than the corresponding element of the `lo` axis,
+        even if the `lo` array is in descending order.
+
     """
-    def __init__(self, x=None, xhi=None):
-        """The input arrays are used to instantiate a single axis."""
-        if xhi is None:
-            self.x_axis = PointAxis(x)
+    def __init__(self, lo: np.ndarray | None, hi: np.ndarray | None):
+        super().__init__(lo, hi)
+
+        if (lo is None or len(lo) == 0) and (hi is None or len(hi) == 0):
+            return
+        # Should check that lo (and hi?) are actually strictly ascending?
+        self._is_ascending = lo[-1] > lo[0]
+
+
+# TO-DO: Why does this not inherit from NoNewAttributesAfterInit?
+class EvaluationSpaceND():
+    """Class for N-D Evaluation Spaces.
+
+    Some methods return flat-True by default, others do not.
+    Currently, I trying to set the default behavior such that it's
+    backwards compatible, but some consistency would also be useful.
+
+    Also, if we did ways with the ability to initialize with None,
+    that would help a lot and simplify the code conceptually
+    (and also reduce length and make typing more useful).
+
+    Parameters
+    ----------
+    axes : sequence of array_like or None
+        The data arrays for each axis, or the low and high ends of the
+        data bins if the dataset is "integrated". If `None` or `[]`
+        then the corresponding data axis is said to be empty.
+    integrated : bool, optional
+        If True, the dataset is treated as integrated (i.e., it has
+        low and high edges for each bin).
+    clean : bool, optional
+        Multi-D spaces try to reconstruct the original 1D input arrays by
+        removing duplicates if set to True.
+
+    """
+    def __init__(self, axes, integrated=False, clean=True, flat=False):
+        self.flat = flat
+        if integrated and not len(axes) % 2 == 0:
+            raise ValueError("In integrated mode, independent variables must be pairs of lo, hi.")
+        axes = [_to_readable_array(a) for a in axes]
+        if clean:
+            axes = [self._clean(arg) for arg in axes]
+
+        if flat and len(axes) > 1 and not all(a is None for a in axes):
+            for i, ax in enumerate(axes):
+                sizea = None if axes[0] is None else axes[0].size
+                sizeb = None if ax is None else ax.size
+                if sizea != sizeb:
+                    raise DataErr("mismatchn", "x0", f"x{i}", sizea, sizeb)
+
+
+        if not integrated:
+            self.axes = [PointAxis(arg) for arg in axes]
         else:
-            self.x_axis = IntegratedAxis(x, xhi)
+            self.axes = [IntegratedAxis(arg[0], arg[1]) for arg in zip(axes[:len(axes)//2],
+                                                                       axes[len(axes)//2:])]
+
+    @property
+    def ndim(self):
+        """The number of dimensions of the space."""
+        return len(self.axes)
+
+    def __getattr__(self, name: str) -> np.ndarray:
+        attr_match = X_ATTR_NAME.fullmatch(name)
+
+        if attr_match:
+            if attr_match.group("ndim") == "" and self.ndim == 1:
+                ndim = 0
+            else:
+                ndim = int(attr_match.group("ndim"))
+
+            axes = self.axes
+            if ndim < self.ndim:
+                match attr_match.group("hilo"):
+                    case "":
+                        return axes[ndim].x
+                    case "lo":
+                        return axes[ndim].lo
+                    case "hi":
+                        return axes[ndim].hi
+
+        return super().__getattribute__(name)
+
+    @staticmethod
+    def _clean(array):
+        if array is None:
+            return None
+
+        # We need to take extra care not to change the order of the arrays, hence
+        # the additional complexity
+        array_unique, indexes = np.unique(array, return_index=True)
+        return array_unique[indexes.argsort()]
 
     @property
     def is_empty(self):
         """Is the space empty (the x axis has no elements)?"""
-        return self.x_axis.is_empty
+        return any([a.is_empty for a in self.axes])
 
     @property
     def is_integrated(self):
         """Is the space integrated?"""
-        return self.x_axis.is_integrated
+        # We currently only support all axes to be integrated or none of them
+        # so it's sufficient to check the first one here.
+        return self.axes[0].is_integrated
 
     @property
-    def is_ascending(self):
-        """Is the space ascending?"""
-        return self.x_axis.is_ascending
-
-    @property
-    def grid(self):
+    def grid(self, flat=True):
         """The grid representation of the space.
 
         Returns
@@ -320,20 +413,90 @@ class EvaluationSpace1D():
             A tuple representing the x axis. The tuple will contain
             two arrays if the dataset is integrated, one otherwise.
         """
-        # We can not just rely on the is_integrated setting since
-        # an integrated axis can have is_integrated set to False
-        #
-        # TODO: should we fix this? It only affects a few corner-case tests
-        #       so maybe it's something we can address upstream? Or work out
-        #       why we want is_integrated to be False when the axis size is 0?
-        #
-        if self.x_axis.is_integrated:
-            return self.x_axis.lo, self.x_axis.hi
+        if self.flat and not flat:
+            raise ValueError("Cannot request non-flat grid when because axes are stored flattened already.")
+        if self.is_integrated:
+            out = tuple(axis.lo for axis in self.axes)
+            out2 = tuple(axis.hi for axis in self.axes)
+        else:
+            out = tuple(axis.x for axis in self.axes)
+            out2 = ()
 
-        if isinstance(self.x_axis, IntegratedAxis):
-            return self.x_axis.lo,
+        # Again: Special treatment for None. Would be so much easier
+        # if we did not allow initializing with empty axes.
+        if flat and not self.flat and not any(o is None for o in out):
+            meshgrid_axes = np.meshgrid(*out)
+            meshgrid_axes2 = np.meshgrid(*out2)
+            # meshgrid create a copy by default, so writing into
+            # the result would not propagate back to the original arrays.
+            # To avoid user confusion, make sure it's not writable.
+            for m in meshgrid_axes + meshgrid_axes2:
+                m.flags.writeable = False
+            return tuple(m.ravel() for m in meshgrid_axes) + tuple(m.ravel() for m in meshgrid_axes2)
 
-        return self.x_axis.x,
+        return out + out2
+
+    @property
+    def is_ascending(self):
+        """Is the space ascending?
+
+        Returns
+        -------
+        (xflag, yflag) : (bool, bool)
+            True if the axis is ascending, False otherwise, for the
+            x and y axes respectively.
+        """
+        return tuple(a.is_ascending for a in self.axes)
+
+    @property
+    def start(self):
+        """The start (lowest value) of the space.
+
+        Returns
+        -------
+        (xstart, ystart) : (number, number)
+            The start of the x and y axis arrays, respectively.
+        """
+        return tuple(a.start for a in self.axes)
+
+    @property
+    def end(self):
+        """The end (highest value) of the space.
+
+        Returns
+        -------
+        (xend, yend) : (number, number)
+            The end of the x and y axis arrays, respectively.
+        """
+        return tuple(a.end for a in self.axes)
+
+    @property
+    def shape(self):
+        """The sizes of the x and y axes."""
+        if self.flat:
+            return self.axes[0].size
+        return tuple(a.size for a in self.axes)
+
+    @property
+    def size(self):
+        """The total number of elements in the space."""
+        if self.flat:
+            return self.axes[0].size
+        sizes = [a.size for a in self.axes]
+        return int(np.prod(sizes))
+
+    def zeros_like(self, flat=True):
+        """Returns zeroes for each element of the space.
+
+        Returns
+        -------
+        array
+            A one-dimensional array.
+        """
+        zeros = np.zeros(self.shape)
+        if flat:
+            return zeros.ravel()
+        return zeros
 
     @property
     def midpoint_grid(self):
@@ -348,37 +511,20 @@ class EvaluationSpace1D():
             for each bin, or the non-integrated x axis array.
 
         """
-        if self.x_axis.is_integrated:
-            return (self.x_axis.lo + self.x_axis.hi)/2
+        axes = self.axes
+        if self.is_integrated:
+            if any(axis.is_empty for axis in axes):
+                return tuple(None for axis in self.axes)
+            return tuple((axis.lo + axis.hi)/2 for axis in self.axes)
 
-        return self.x_axis.x
-
-    @property
-    def start(self):
-        """The start (lowest value) of the space."""
-        return self.x_axis.start
-
-    @property
-    def end(self):
-        """The end (highest value) of the space."""
-        return self.x_axis.end
-
-    def zeros_like(self):
-        """Returns zeroes for each element of the space.
-
-        Returns
-        -------
-        array
-            A one-dimensional array.
-        """
-        return np.zeros(self.x_axis.size)
+        return tuple(axis.x for axis in self.axes)
 
     def overlaps(self, other):
         """Check if this evaluation space overlaps with another.
 
         Parameters
         ----------
-        other : EvaluationSpace1D
+        other : EvaluationSpaceND
             The space to compare to.
 
         Returns
@@ -386,7 +532,9 @@ class EvaluationSpace1D():
         bool
             True if they overlap, False if not
         """
-        return self.x_axis.overlaps(other.x_axis)
+        if len(self.axes) != len(other.axes):
+            raise ValueError("Can only compare spaces with the same number of axes")
+        return any(a.overlaps(b) for a, b in zip(self.axes, other.axes))
 
     def __contains__(self, other):
         """Are all elements of other within the range (start, end) of this space?
@@ -400,14 +548,91 @@ class EvaluationSpace1D():
         -------
         boolean
         """
+        if len(self.axes) != len(other.axes):
+            raise ValueError("Can only compare spaces with the same number of axes")
 
         # OL: I have mixed feelings about overriding this method. On one hand it makes the
         # tests more expressive and natural, on the other this method is intended to check
         # if an element is in a collection, so it's a bit of a stretch semantically.
-        return self.start <= other.start and self.end >= other.end
+        for a, b in zip(self.axes, other.axes):
+            if a.is_empty or b.is_empty:
+                raise DataErr("Axis is empty or has a size of 0")
+        return all(a.start <= b.start and a.end >= b.end for a, b in zip(self.axes, other.axes))
+
+class EvaluationSpace1D(EvaluationSpaceND):
+    """Class for 1D Evaluation Spaces.
+
+    An Evaluation Space is a set of data axes representing the data
+    space over which a model can be evaluated. A 1D Evaluation Space
+    has only one axis.
+
+    Parameters
+    ----------
+    x : array_like or None, optional
+        The data array, or the low end of the data bins if the dataset is "integrated"
+    xhi : array_like or None, optional
+        The high end of the data bins for integrated datasets.
+    """
+    def __init__(self, x=None, xhi=None, **kwargs):
+        """The input arrays are used to instantiate a single axis."""
+        # The second condition is for when we want to make an empty integrated space.
+        if xhi is None and not kwargs.get('integrated', False):
+            super().__init__((x,), **kwargs)
+        else:
+            kwargs['integrated'] = True
+            super().__init__((x, xhi), **kwargs)
 
 
-class EvaluationSpace2D():
+    # Multi-D spaces try to reconstruct the original 1D input arrays by
+    # removing duplicates. In 1D we've never done that and allowed
+    # several points to have the same x-value.
+    # Do we want to unify that?
+    # For now, keep the old behavior.
+    #@staticmethod
+    #def _clean(array):
+    #    return array
+
+    @property
+    def is_ascending(self):
+        """Is the space ascending?"""
+        return super().is_ascending[0]
+
+    @property
+    def midpoint_grid(self):
+        """The mid-points of the space.
+
+        For non-integrated spaces this returns the X axis.
+
+        Returns
+        -------
+        array
+            Return the average point of the bins of integrated axes,
+            for each bin, or the non-integrated x axis array.
+
+        """
+        return super().midpoint_grid[0]
+
+    @property
+    def start(self):
+        """The start (lowest value) of the space."""
+        return super().start[0]
+
+    @property
+    def end(self):
+        """The end (highest value) of the space."""
+        return super().end[0]
+
+    @property
+    def x_axis(self):
+        """The x axis of the space.
+
+        Or not deprecated? Used in RMFs internally.
+        Deprecated: For backwards compatibility
+        """
+        return self.axes[0]
+
+
+class EvaluationSpace2D(EvaluationSpaceND):
     """Class for 2D Evaluation Spaces.
 
     An Evaluation Space is a set of data axes representing the data
@@ -423,7 +648,7 @@ class EvaluationSpace2D():
         The high end of the x and y data bins for integrated datasets.
     """
 
-    def __init__(self, x=None, y=None, xhi=None, yhi=None):
+    def __init__(self, x=None, y=None, xhi=None, yhi=None, **kwargs):
         # In the 2D case the arrays are redundant, as they are flattened from a meshgrid.
         # We need to clean them up first to have proper axes.
         # This may happen when an EvaluationSpace2D is instantiated using the arrays passed to
@@ -432,79 +657,39 @@ class EvaluationSpace2D():
         # This means that this class does not check that x and y (if set) have
         # the same length.
         #
-        x_unique, y_unique, xhi_unique, yhi_unique = self._clean_arrays(x, y, xhi, yhi)
+        # The following cleaning is now done in the Evaluation space.
+        #x_unique, y_unique, xhi_unique, yhi_unique = self._clean_arrays(x, y, xhi, yhi)
 
-        if xhi_unique is None and yhi_unique is None:
-            self.x_axis = PointAxis(x_unique)
-            self.y_axis = PointAxis(y_unique)
+        # The second condition is for when we want to make an empty integrated space.
+        if xhi is None and yhi is None and not kwargs.get('integrated', False):
+            kwargs['integrated'] = False
+            super().__init__((x, y), **kwargs)
         else:
-            self.x_axis = IntegratedAxis(x_unique, xhi_unique)
-            self.y_axis = IntegratedAxis(y_unique, yhi_unique)
-
-    def _clean_arrays(self, x, y, xhi, yhi):
-        return self._clean(x), self._clean(y), self._clean(xhi), self._clean(yhi)
-
-    @staticmethod
-    def _clean(array):
-        if array is None:
-            return None
-
-        # We need to take extra care not to change the order of the arrays, hence
-        # the additional complexity
-        array_unique, indexes = np.unique(array, return_index=True)
-        return array_unique[indexes.argsort()]
+            kwargs['integrated'] = True
+            super().__init__((x, y, xhi, yhi), **kwargs)
 
     @property
-    def is_empty(self):
-        """Is the space empty (the x axis has no elements)?"""
-        return self.x_axis.is_empty or self.y_axis.is_empty
+    def x_axis(self):
+        """The x axis of the space.
 
-    @property
-    def is_integrated(self):
-        """Is the space integrated?"""
-        return (not self.is_empty) \
-            and self.x_axis.is_integrated \
-            and self.y_axis.is_integrated
-
-    @property
-    def is_ascending(self):
-        """Is the space ascending?
-
-        Returns
-        -------
-        (xflag, yflag) : (bool, bool)
-            True if the axis is ascending, False otherwise, for the
-            x and y axes respectively.
+        Or not deprecated? Used in RMFs internally.
+        Deprecated: For backwards compatibility
         """
-        return self.x_axis.is_ascending, self.y_axis.is_ascending
+        return self.axes[0]
 
     @property
-    def start(self):
-        """The start (lowest value) of the space.
+    def y_axis(self):
+        """The y axis of the space.
 
-        Returns
-        -------
-        (xstart, ystart) : (number, number)
-            The start of the x and y axis arrays, respectively.
+        Or not deprecated? Used in RMFs internally.
+        Deprecated: For backwards compatibility
         """
-        return self.x_axis.start, self.y_axis.start
+        return self.axes[1]
 
-    @property
-    def end(self):
-        """The end (highest value) of the space.
-
-        Returns
-        -------
-        (xend, yend) : (number, number)
-            The end of the x and y axis arrays, respectively.
-        """
-        return self.x_axis.end, self.y_axis.end
-
-    @property
-    def shape(self):
-        """The sizes of the x and y axes."""
-        return self.x_axis.size, self.y_axis.size
-
+    # TO-DO: This would more accurately be called "same-endpoints"
+    # Why are we more stringent in 2D than in 1D?
+    # Do we want to change that? For now, but leave like this for backwards
+    # compatibility.
     def overlaps(self, other):
         """Check if this evaluation space overlaps with another.
 
@@ -521,43 +706,12 @@ class EvaluationSpace2D():
         bool
             True if they overlap, False if not
         """
-        return bool(self.x_axis.start == other.x_axis.start
+        overlaps = any(a.overlaps(b) for a, b in zip(self.axes, other.axes))
+        same_endpoint = bool(self.x_axis.start == other.x_axis.start
                     and self.y_axis.start == other.y_axis.start
                     and self.x_axis.end == other.x_axis.end
                     and self.y_axis.end == other.y_axis.end)
-
-    @property
-    def grid(self):
-        """The grid representation of the space.
-
-        The x and y arrays in the grid are one-dimensional
-        representations of the meshgrid obtained from the x and y axis
-        arrays, as in `numpy.meshgrid(x, y)[0].ravel()`
-
-        Returns
-        -------
-        tuple
-            A two element (x, y) or 4 element (x, y, xhi, yhi) tuple.
-
-        """
-        if self.x_axis.is_integrated:
-            x, y = reshape_2d_arrays(self.x_axis.lo, self.y_axis.lo)
-            xhi, yhi = reshape_2d_arrays(self.x_axis.hi, self.y_axis.hi)
-            return x, y, xhi, yhi
-
-        return reshape_2d_arrays(self.x_axis.x, self.y_axis.x)
-
-    def zeros_like(self):
-        """Returns zeroes for each element of the space.
-
-        Returns
-        -------
-        array
-            A one dimensional array.
-        """
-        size = self.x_axis.size * self.y_axis.size
-        return np.zeros(size)
-
+        return overlaps and same_endpoint
 
 class ModelDomainRegridder1D():
     """Allow 1D models to be evaluated on a different grid.

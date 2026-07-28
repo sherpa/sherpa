@@ -66,8 +66,8 @@ def multivariate_t(mean: ArrayType,
     ----------
     mean : 1-D array_like, length N
         Mean of the N-dimensional distribution
-    cov : 2-D array_like, shape (N, N)
-        Covariate matrix of the distribution.  Must be symmetric and
+    cov : 2-D array_like
+        Covariate matrix of the distribution of shape (N, N).  Must be symmetric and
         positive semi-definite for "physically meaningful" results.
     df : int
         Degrees of freedom of the distribution
