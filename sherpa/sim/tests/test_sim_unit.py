@@ -246,9 +246,7 @@ def test_mcmc_set_sample_invalid_class():
 def test_mcmc_set_sample_invalid_not_a_class():
     """Check the error."""
 
-    # The error handling of set_sampler is not great. Hopefully
-    # the issubclass error does not change with Python version.
     mcmc = sim.MCMC()
     with pytest.raises(TypeError,
-                       match=r"^issubclass\(\) arg 1 must be a class$"):
+                       match=r"^Unknown sampler '<sherpa.sim.mh.Walk object at .*>'$"):
         mcmc.set_sampler(Walk())
