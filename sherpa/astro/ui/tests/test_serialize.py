@@ -2905,6 +2905,28 @@ def test_canonical_empty_iterstat(check_str):
     compare(check_str, _canonical_empty_iterstat)
 
 
+@pytest.mark.xfail  # ISSUE: 2504
+def test_estmethod_opt(check_str):
+    """"Check other options for the estmethods
+
+    This does not check the actual output against a canonical
+    version, just whether we can restore the settings.
+    """
+
+    # Change proj, conf, and covar options. Use sigma as
+    # present in all methods.
+    #
+    ui.set_proj_opt('sigma', 1.8)
+    ui.set_conf_opt('sigma', 1.8)
+    ui.set_covar_opt('sigma', 1.8)
+
+    restore()
+
+    assert ui.get_proj_opt('sigma') == pytest.approx(1.8)
+    assert ui.get_conf_opt('sigma') == pytest.approx(1.8)
+    assert ui.get_covar_opt('sigma') == pytest.approx(1.8)
+
+
 @requires_data
 @requires_xspec
 @requires_fits
