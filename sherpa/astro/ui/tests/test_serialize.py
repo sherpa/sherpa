@@ -3920,6 +3920,30 @@ def test_link_par(check_str):
     assert m2.c0.link.name == "m1.c0 + sep.c0"
 
 
+def test_multi_link_par(check_str):
+    """Check we can set up multiple parameter links.
+
+    Unlike test_link_par we do not check the serialization,
+    just that it works.
+
+    """
+
+    m1 = ui.create_model_component("const1d", "m1")
+    m2 = ui.create_model_component("const1d", "m2")
+    sep = ui.create_model_component("const1d", "sep")
+
+    m1.c0.freeze()
+    ui.link(m2.c0, m1.c0)
+    ui.link(sep.c0, m2.c0 + 5)
+
+    restore()
+
+    assert m1.c0.link is None
+    assert m2.c0.link.name == "c0"   # TODO: why not "m1.c0"
+    assert sep.c0.link.name == "m2.c0 + 5"
+    assert m1.c0.frozen
+
+
 @pytest.mark.xfail
 @requires_data
 @requires_fits
