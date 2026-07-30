@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015-2016, 2019, 2021, 2023-2025
+#  Copyright (C) 2015-2016, 2019, 2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,7 +25,7 @@ intended for public use. The API and semantics of the
 routines in this module are subject to change.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import suppress
 import inspect
 import logging
@@ -33,7 +33,7 @@ import os
 import sys
 import textwrap
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Mapping, TextIO, TypedDict
+from typing import TYPE_CHECKING, Any, TextIO, TypedDict
 
 import numpy
 
@@ -42,6 +42,7 @@ from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
 
 from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
+from sherpa.models import Model
 from sherpa.models.basic import UserModel
 from sherpa.models.parameter import Parameter
 from sherpa.utils.types import IdType
@@ -946,7 +947,7 @@ def _handle_usermodel(out: OutType,
 
     try:
         pycode = inspect.getsource(mod.calc)
-    except IOError:
+    except OSError:
         pycode = None
 
     # in case getsource can return None, have check here
@@ -999,6 +1000,131 @@ def _handle_usermodel(out: OutType,
     _output(out, f"{spaces})\n")
 
 
+def _get_cpt_name(mod: Model) -> str:
+    """Return the component name."""
+
+    # If we have a name "aa.bb" then return "bb" otherwise
+    # return the name unchanged.
+    #
+    name = mod.name
+    try:
+        return name.split(".")[1]
+    except IndexError:
+        return name
+
+
+def _handle_model(out: OutType,
+                  mod: Model
+                  ) -> bool:
+    """Dispatch on the model type.
+
+    Returns a value indicating whether this is an XSPEC model.
+
+    """
+
+    typename = mod.type
+    modelname = _get_cpt_name(mod)
+    found_xspec = False
+    if typename == "usermodel":
+        _handle_usermodel(out, mod, modelname)
+
+    elif typename == "psfmodel":
+        cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
+        _output(out, cmd)
+
+    elif typename in ["fixedtablemodel", "interpolatedtablemodel1d"]:
+        cmd = f'load_table_model("{modelname}", "{mod.filename}")'
+        _output(out, cmd)
+
+    elif typename == "xstablemodel":
+        cmd = f'load_xstable_model("{modelname}", "{mod.filename}"'
+        if mod.etable:
+            cmd += ', etable=True'
+
+        cmd += ')'
+        _output(out, cmd)
+        found_xspec = True
+
+    else:
+        # Normal case:  create an instance of the model.
+        cmd = f'create_model_component("{typename}", "{modelname}")'
+        _output(out, cmd)
+
+        # Is this an XSPEC model? We only care if it's the first
+        # one we find.
+        #
+        if not found_xspec and xspec is not None:
+            found_xspec = isinstance(mod, xspec.XSModel)
+
+    # QUS: should this be included in the above checks?
+    #      @DougBurke doesn't think so, as the "normal
+    #      case" above should probably be run , but there's
+    #      no checks to verify this.
+    #
+    if typename == "convolutionkernel":
+        # Create general convolution kernel with load_conv
+        cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
+        _output(out, cmd)
+
+    if hasattr(mod, "integrate"):
+        cmd = f"{modelname}.integrate = {mod.integrate}"
+        _output(out, cmd)
+        _output_nl(out)
+
+    return found_xspec
+
+
+def _handle_parameters(out: OutType,
+                       mod: Model
+                       ) -> str:
+    """Display the model parameters.
+
+    Returns information on any parameter links.
+
+    """
+
+    # Write out the parameters in the order they are stored in
+    # the model.
+    #
+    linkstr = ""
+    for par in mod.pars:
+        par_attributes, par_linkstr = _print_par(par)
+        _output(out, par_attributes)
+        linkstr += par_linkstr
+
+    # If the model is a PSFModel then there are a number of
+    # attributes we want to set, but they are not stored in the
+    # .pars attribute. Not all are Parameter objects.
+    #
+    # Drop the "kernel" field as it should not be user settable.  Do
+    # not worry about other parameter attrbutes such as a frozen flag
+    # or limits.
+    #
+    # It is possible to loop over all attributes - e.g. drop ones
+    # beginning with "_", those that are callable, and those in
+    # the .pars attribute - rather than hard code the list, but as
+    # this is already special cased (the mod.type check) then it
+    # is not worth it at this time.
+    #
+    if mod.type == "psfmodel":
+        modelname = _get_cpt_name(mod)
+        spacer = False
+
+        for parname in ["size", "center", "radial", "norm"]:
+            parval = getattr(mod, parname, None)
+            if parval is None:
+                continue
+
+            val = parval.val if isinstance(parval, Parameter) else parval
+            _output(out, f"{modelname}.{parname} = {val}")
+            spacer = True
+
+        if spacer:
+            _output_nl(out)
+
+    return linkstr
+
+
 def _save_model_components(out: OutType, state: SessionType) -> bool:
     """Save the model components.
 
@@ -1015,13 +1141,11 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
 
     """
 
-    found_xspec = False
-
     # Try to be careful about the ordering of the components here.
     #
     all_model_components = state.list_model_components()
     if len(all_model_components) == 0:
-        return found_xspec
+        return False
 
     all_model_components.reverse()
     _output_banner(out, "Set Model Components and Parameters")
@@ -1031,87 +1155,12 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
     # link commands to outfile -- *all* models need to be created before
     # *any* links between parameters can be established.
     linkstr = ""
+    found_xspec = False
     for modval in all_model_components:
 
-        # get actual model instance from the name we are given
-        # then get model type, and name of this instance.
         mod = eval(modval)
-        typename = mod.type
-        modelname = mod.name.split(".")[1]
-
-        if typename == "usermodel":
-            _handle_usermodel(out, mod, modelname)
-
-        elif typename == "psfmodel":
-            cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
-            _output(out, cmd)
-
-        elif typename in ["fixedtablemodel", "interpolatedtablemodel1d"]:
-            cmd = f'load_table_model("{modelname}", "{mod.filename}")'
-            _output(out, cmd)
-
-        elif typename == "xstablemodel":
-            cmd = f'load_xstable_model("{modelname}", "{mod.filename}"'
-            if mod.etable:
-                cmd += ', etable=True'
-
-            cmd += ')'
-            _output(out, cmd)
-            found_xspec = True
-
-        else:
-            # Normal case:  create an instance of the model.
-            cmd = f'create_model_component("{typename}", "{modelname}")'
-            _output(out, cmd)
-
-            # Is this an XSPEC model? We only care if it's the first
-            # one we find.
-            #
-            if not found_xspec and xspec is not None:
-                found_xspec = isinstance(mod, xspec.XSModel)
-
-        # QUS: should this be included in the above checks?
-        #      @DougBurke doesn't think so, as the "normal
-        #      case" above should probably be run , but there's
-        #      no checks to verify this.
-        #
-        if typename == "convolutionkernel":
-            # Create general convolution kernel with load_conv
-            cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
-            _output(out, cmd)
-
-        if hasattr(mod, "integrate"):
-            cmd = f"{modelname}.integrate = {mod.integrate}"
-            _output(out, cmd)
-            _output_nl(out)
-
-        # Write out the parameters in the order they are stored in
-        # the model. The original version of the code iterated
-        # through mod.__dict__.values() and picked out Parameter
-        # values.
-        #
-        for par in mod.pars:
-            par_attributes, par_linkstr = _print_par(par)
-            _output(out, par_attributes)
-            linkstr = linkstr + par_linkstr
-
-        # If the model is a PSFModel then there are a number of
-        # attributes we want to set, but they are not stored in the
-        # .pars attribute. Drop the "kernel" field as it is a string.
-        #
-        if typename == "psfmodel":
-            spacer = False
-            for parname in ["size", "center", "radial", "norm"]:
-                parval = getattr(mod, parname, None)
-                if parval is None:
-                    continue
-
-                val = parval.val if isinstance(parval, Parameter) else parval
-                _output(out, f"{modelname}.{parname} = {val}")
-                spacer = True
-
-            if spacer:
-                _output_nl(out)
+        found_xspec |= _handle_model(out, mod)
+        linkstr += _handle_parameters(out, mod)
 
     # If there were any links made between parameters, send those
     # link commands to outfile now; else, linkstr is just an empty string
@@ -1145,6 +1194,115 @@ def _save_psf_components(out: OutType, state: SessionType) -> None:
         _output(out, f"set_psf({cmd_id}, {psfmod._name})")
 
 
+def _save_source(out: OutType,
+                 state: SessionType,
+                 id: IdType
+                 ) -> None:
+    """Create the save_source/model/full_model line."""
+
+    cmd_id = _id_to_str(id)
+
+    # If a data set has a source model associated with it,
+    # set that here -- try to distinguish cases where
+    # source model is different from whole model.
+    # If not, just pass
+    try:
+        try:
+            the_source = state.get_source(id)
+        except:
+            the_source = None
+
+        try:
+            the_full_model = state.get_model(id)
+        except:
+            the_full_model = None
+
+        have_source = the_source is not None
+        have_full_model = the_full_model is not None
+
+        if have_source:
+            if have_full_model:
+                # for now assume that set_full_model is only
+                # used by PHA data sets.
+                try:
+                    is_pha = isinstance(state.get_data(id), DataPHA)
+                except:
+                    is_pha = False
+
+                if is_pha and repr(the_source) == repr(the_full_model):
+                    cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
+                else:
+                    cmd = f"set_source({cmd_id}, {the_source.name})"
+            else:
+                cmd = f"set_source({cmd_id}, {the_source.name})"
+
+        elif have_full_model:
+            cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
+
+        else:
+            return
+
+        _output(out, cmd)
+        _output_nl(out)
+    except:
+        pass
+
+
+def _save_bkg_source(out: OutType,
+                     state: SessionType,
+                     id: IdType
+                     ) -> None:
+    """Create the save_bkg_source/model/full_model line."""
+
+    # Set background models (if any) associated with backgrounds
+    # tied to this data set -- if none, then pass.  Again, try
+    # to distinguish cases where background "source" model is
+    # different from whole background model.
+    try:
+        bids = state.list_bkg_ids(id)
+        cmd_id = _id_to_str(id)
+
+        for bid in bids:
+            cmd_bkg_id = _id_to_str(bid)
+
+            try:
+                the_bkg_source = state.get_bkg_source(id, bkg_id=bid)
+            except:
+                the_bkg_source = None
+
+            try:
+                the_bkg_full_model = state.get_bkg_model(id, bkg_id=bid)
+            except:
+                the_bkg_full_model = None
+
+            have_source = the_bkg_source is not None
+            have_full_model = the_bkg_full_model is not None
+
+            if have_source:
+                # This does not check for the dataset being a DataPHA
+                # object, since (at present) it has to be, as it's the
+                # only one to support backgrounds
+                if have_full_model:
+                    if repr(the_bkg_source) == repr(the_bkg_full_model):
+                        cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
+                    else:
+                        cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
+                else:
+                    cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
+
+            elif have_full_model:
+                cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
+
+            else:
+                return
+
+            _output(out, cmd)
+            _output_nl(out)
+
+    except:
+        pass
+
+
 def _save_models(out: OutType, state: SessionType) -> None:
     """Save the source, pileup, and background models.
 
@@ -1163,98 +1321,8 @@ def _save_models(out: OutType, state: SessionType) -> None:
     orig_pos = _get_out_pos(out)
 
     for id in ids:
-        cmd_id = _id_to_str(id)
-
-        # If a data set has a source model associated with it,
-        # set that here -- try to distinguish cases where
-        # source model is different from whole model.
-        # If not, just pass
-        try:
-            try:
-                the_source = state.get_source(id)
-            except:
-                the_source = None
-
-            try:
-                the_full_model = state.get_model(id)
-            except:
-                the_full_model = None
-
-            have_source = the_source is not None
-            have_full_model = the_full_model is not None
-
-            if have_source:
-                if have_full_model:
-                    # for now assume that set_full_model is only
-                    # used by PHA data sets.
-                    try:
-                        is_pha = isinstance(state.get_data(id), DataPHA)
-                    except:
-                        is_pha = False
-
-                    if is_pha and repr(the_source) == repr(the_full_model):
-                        cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
-                    else:
-                        cmd = f"set_source({cmd_id}, {the_source.name})"
-                else:
-                    cmd = f"set_source({cmd_id}, {the_source.name})"
-
-            elif have_full_model:
-                cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
-
-            else:
-                continue
-
-            _output(out, cmd)
-            _output_nl(out)
-        except:
-            pass
-
-        # Set background models (if any) associated with backgrounds
-        # tied to this data set -- if none, then pass.  Again, try
-        # to distinguish cases where background "source" model is
-        # different from whole background model.
-        try:
-            bids = state.list_bkg_ids(id)
-            for bid in bids:
-                cmd_bkg_id = _id_to_str(bid)
-
-                try:
-                    the_bkg_source = state.get_bkg_source(id, bkg_id=bid)
-                except:
-                    the_bkg_source = None
-
-                try:
-                    the_bkg_full_model = state.get_bkg_model(id, bkg_id=bid)
-                except:
-                    the_bkg_full_model = None
-
-                have_source = the_bkg_source is not None
-                have_full_model = the_bkg_full_model is not None
-
-                if have_source:
-                    # This does not check for the dataset being a DataPHA
-                    # object, since (at present) it has to be, as it's the
-                    # only one to support backgrounds
-                    if have_full_model:
-                        if repr(the_bkg_source) == repr(the_bkg_full_model):
-                            cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
-                        else:
-                            cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
-                    else:
-                        cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
-
-                elif have_full_model:
-                    cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
-
-                else:
-                    continue
-
-                _output(out, cmd)
-                _output_nl(out)
-
-        except:
-            pass
+        _save_source(out, state, id)
+        _save_bkg_source(out, state, id)
 
     # separate out the pileup models from the source models
     #
