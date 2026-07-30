@@ -801,7 +801,7 @@ def _save_data(out: OutType,
         _handle_filter(out, state, data, idval)
 
 
-def _print_par(par: ParameterType) -> tuple[str, str]:
+def _print_par(par: ParameterType) -> tuple[str, str | None]:
     """Convert a Sherpa parameter to a string.
 
     Note that we have to be careful with XSParameter parameters,
@@ -814,14 +814,15 @@ def _print_par(par: ParameterType) -> tuple[str, str]:
 
     Returns
     -------
-    out_pars, out_link : (str, str)
+    out_pars, out_link : (str, str | None)
        A multi-line string serializing the contents of the
        parameter and then any link setting.
     """
 
-    linkstr = ""
     if par.link is not None:
-        linkstr = f"\nlink({par.fullname}, {par.link.fullname})\n"
+        linkstr = f"link({par.fullname}, {par.link.fullname})"
+    else:
+        linkstr = None
 
     unitstr = ""
     if isinstance(par.units, string_types):
@@ -1076,7 +1077,7 @@ def _handle_model(out: OutType,
 
 def _handle_parameters(out: OutType,
                        mod: Model
-                       ) -> str:
+                       ) -> list[str]:
     """Display the model parameters.
 
     Returns information on any parameter links.
@@ -1086,11 +1087,12 @@ def _handle_parameters(out: OutType,
     # Write out the parameters in the order they are stored in
     # the model.
     #
-    linkstr = ""
+    links = []
     for par in mod.pars:
         par_attributes, par_linkstr = _print_par(par)
         _output(out, par_attributes)
-        linkstr += par_linkstr
+        if par_linkstr is not None:
+            links.append(par_linkstr)
 
     # If the model is a PSFModel then there are a number of
     # attributes we want to set, but they are not stored in the
@@ -1122,7 +1124,7 @@ def _handle_parameters(out: OutType,
         if spacer:
             _output_nl(out)
 
-    return linkstr
+    return links
 
 
 def _save_model_components(out: OutType, state: SessionType) -> bool:
@@ -1154,17 +1156,26 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
     # Then, *after* processing all models in the for loop below, send
     # link commands to outfile -- *all* models need to be created before
     # *any* links between parameters can be established.
-    linkstr = ""
+    links = []
     found_xspec = False
     for modval in all_model_components:
 
         mod = eval(modval)
         found_xspec |= _handle_model(out, mod)
-        linkstr += _handle_parameters(out, mod)
+        newlinks = _handle_parameters(out, mod)
+        links.extend(newlinks)
+
+    _output_nl(out)
 
     # If there were any links made between parameters, send those
-    # link commands to outfile now; else, linkstr is just an empty string
-    _output(out, linkstr)
+    # link commands to outfile now, after all the model components
+    # have been created:
+    if links:
+        for linkstr in links:
+            _output(out, linkstr)
+
+        _output_nl(out)
+
     return found_xspec
 
 
