@@ -1,5 +1,5 @@
-// 
-//  Copyright (C) 2007, 2016, 2019, 2020, 2023
+//
+//  Copyright (C) 2007, 2016, 2019, 2020, 2023, 2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -35,7 +35,7 @@ class FunctionWithParams {
 public:
 
   FunctionWithParams(ArrayType *p, PyObject *f) : params(p), model_func(f) {}
-  
+
   ~FunctionWithParams() {}
 
   ArrayType& get_params() {
@@ -45,56 +45,56 @@ public:
   }
 
   PyObject* get_func() {
-    
+
     return static_cast< PyObject* >(model_func);
 
   }
-  
+
 
 protected:
   ArrayType *params;
   PyObject *model_func;
-  
+
 };
 
 
 namespace sherpa { namespace models {
 
   static  int integrand_1d_cb(double *xptr, int len, void* params) {
-      
+
     DoubleArray x;
     DoubleArray res;
     npy_intp dims[1];
     dims[0] = npy_intp(len);
-    
+
     if ( EXIT_SUCCESS != x.create(1, dims, xptr) )
       return EXIT_FAILURE;
 
     PyObject *rv_obj = NULL;
     FunctionWithParams<DoubleArray> *funcAndPars = \
       static_cast< FunctionWithParams<DoubleArray>* >( params );
-    
+
     /* call arbitrary user-defined model */
     rv_obj = PyObject_CallFunction( funcAndPars->get_func(),
 				    (char*)"NN",
 				    funcAndPars->get_params().new_ref(),
 				    x.new_ref() );
-    
+
     if ( rv_obj == NULL || rv_obj == Py_None ) {
       return EXIT_FAILURE;
     }
-    
+
     // convert pyobject into double array obj
     CONVERTME(DoubleArray)(rv_obj, &res);
-    
+
     // fill res pointer
     for( int ii = 0; ii < len; ii++ )
       xptr[ii] = res[ii];
-    
+
     Py_DECREF( rv_obj );
-    
+
     return EXIT_SUCCESS;
-  
+
   }
 
   static int py_integrated_1d(const double xlo, const double xhi, double &val,
@@ -103,12 +103,12 @@ namespace sherpa { namespace models {
 		       unsigned int maxeval, std::ostringstream& err)
   {
     double abserr;
-    
+
     return py_integrate_1d( (integrand_1d_vec)(integrand_1d_cb),
 			    (void*)funcAndPars, xlo, xhi,
 			    maxeval, epsabs, epsrel, val, abserr, errflag,
 			    err);
-    
+
   }
 
   template <typename ArrayType>
@@ -144,12 +144,13 @@ namespace sherpa { namespace models {
       return NULL;
 
     npy_intp nelem = xlo.get_size();
-    std::ostringstream err;
 
     if ( xhi.get_size() != nelem ) {
-      err << "1D integrated model evaluation input array sizes do not match, "
-	  << "xlo: " << nelem << " vs xhi: " << xhi.get_size();
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"1D integrated model evaluation input "
+			   "array sizes do not match, "
+			   "xlo: %ld vs xhi: %ld",
+			   nelem, xhi.get_size() );
       return NULL;
     }
 
@@ -162,10 +163,11 @@ namespace sherpa { namespace models {
 		       (char*)"model object is not callable" );
       return NULL;
     }
-    
+
     FunctionWithParams<ArrayType> *funcAndPars =		\
       new FunctionWithParams<ArrayType>(&pars, model_func);
-    
+    std::ostringstream err;
+
     for ( npy_intp ii = 0; ii < nelem; ii++ )
       if ( EXIT_SUCCESS != py_integrated_1d( xlo[ii], xhi[ii],
 					     result[ii], funcAndPars,
@@ -178,8 +180,7 @@ namespace sherpa { namespace models {
       }
 
     delete funcAndPars;
-    
-    
+
     if( logger && err.str() != "" ) {
 
       PyObject *rv = PyObject_CallFunction( logger, (char*)"s",
@@ -187,7 +188,7 @@ namespace sherpa { namespace models {
       (void)rv;
 
     }
-    
+
     return result.return_new_ref();
 
   }
@@ -294,30 +295,27 @@ namespace sherpa { namespace models {
 			   (converter)convert_to_array< ArrayType >, &xhi,
 			   &integrate) )
       return NULL;
-    
+
     npy_intp npars = pars.get_size();
 
     if ( NumPars != npars ) {
-      std::ostringstream err;
-      err << "expected " << NumPars << " parameters, got " << npars;
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"expected %ld parameters, got %ld",
+			   NumPars, npars );
     }
 
     npy_intp nelem = xlo.get_size();
 
     if ( xhi && ( xhi.get_size() != nelem ) ) {
-      std::ostringstream err;
-      err << "1D model evaluation input array sizes do not match, "
-	  << "xlo: " << nelem << " vs xhi: " << xhi.get_size();
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"1D model evaluation input array sizes "
+			   "do not match, xlo: %ld vs xhi: %ld",
+			   nelem, xhi.get_size() );
     }
 
     ArrayType result;
     if ( EXIT_SUCCESS != result.create( xlo.get_ndim(), xlo.get_dims() ) )
       return NULL;
-
 
     if ( !(xhi && integrate) ) {
 
@@ -338,7 +336,6 @@ namespace sherpa { namespace models {
 	}
 
     }
-
 
     return result.return_new_ref();
 
@@ -376,10 +373,9 @@ namespace sherpa { namespace models {
     npy_intp npars = pars.get_size();
 
     if ( NumPars != npars ) {
-      std::ostringstream err;
-      err << "expected " << NumPars << " parameters, got " << npars;
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );      
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"expected %ld parameters, got %ld",
+			   NumPars, npars );
     }
 
     if ( x0hi && !x1hi )  {
@@ -389,7 +385,7 @@ namespace sherpa { namespace models {
 
     npy_intp nelem = x0lo.get_size();
 
-    if ( ( x1lo.get_size() != nelem ) || 
+    if ( ( x1lo.get_size() != nelem ) ||
 	 ( x0hi &&
 	   ( ( x0hi.get_size() != nelem ) ||
 	     ( x1hi.get_size() != nelem ) ) ) ) {

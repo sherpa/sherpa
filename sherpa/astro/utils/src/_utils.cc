@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2017, 2021-2022, 2024-2025
+//  Copyright (C) 2009, 2017, 2021-2022, 2024-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -20,9 +20,6 @@
 
 #include "sherpa/extension.hh"
 #include "sherpa/astro/utils.hh"
-#include <sstream>
-#include <iostream>
-#include <stdexcept>
 
 typedef sherpa::Array< npy_bool, NPY_BOOL > BoolArray;
 
@@ -45,11 +42,10 @@ namespace sherpa { namespace astro { namespace utils {
     npy_intp nelem = source.get_size();
 
     if ( effarea.get_size() != nelem ) {
-      ostringstream err;
-      err << "input array sizes do not match, "
-	  << "source: " << nelem << " vs effarea: " << effarea.get_size();
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"input array sizes do not match, "
+			   "source: %ld vs effarea: %ld",
+			   nelem, effarea.get_size() );
     }
 
     ArrayType result;
@@ -137,26 +133,23 @@ namespace sherpa { namespace astro { namespace utils {
     return NULL;
 
     if ( data.get_size() != group.get_size() ) {
-      ostringstream err;
-      err << "input array sizes do not match, "
-	  << "data: " << data.get_size() << " vs group: " << group.get_size();
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"input array sizes do not match, "
+			   "data: %ld vs group: %ld",
+			   data.get_size(), group.get_size() );
     }
 
     try {
-      if( EXIT_SUCCESS != _do_group(data.get_size(), data,
-				    group.get_size(), group,
+      if( EXIT_SUCCESS != _do_group(data.get_size(), data, group,
 				    grouped, type) ) {
 	PyErr_SetString( PyExc_ValueError,
 			 (char*)"group data is invalid or inconsistent" );
 	return NULL;
       }
-    } catch ( std::out_of_range& ) {
-      ostringstream err;
-      err << "unsupported group function: " << type;
-      PyErr_SetString( PyExc_ValueError, err.str().c_str() );
-      return NULL;
+    } catch ( const std::out_of_range& ) {
+      return PyErr_Format( PyExc_ValueError,
+			   (char*)"unsupported group function: %s",
+			   type );
     }
 
   return grouped.return_new_ref();
@@ -184,12 +177,10 @@ namespace sherpa { namespace astro { namespace utils {
     return NULL;
 
     if ( specresp.get_size() != arf_lo.get_size() ) {
-      ostringstream err;
-      err << "input array sizes do not match, "
-	  << "specresp: " << specresp.get_size()
-	  << " vs arf_lo: " << arf_lo.get_size();
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char *)"input array sizes do not match, "
+			   "specresp: %ld vs arf_lo: %ld",
+			   specresp.get_size(), arf_lo.get_size() );
     }
 
     if ( rmf_lo.get_size() > specresp.get_size() ) {

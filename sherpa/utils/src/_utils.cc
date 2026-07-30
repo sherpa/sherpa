@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2015-2016, 2018-2019, 2025
+//  Copyright (C) 2007, 2015-2016, 2018-2019, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -21,8 +21,6 @@
 #include <cmath>
 #include <vector>
 #include <limits>
-#include <iostream>
-#include <sstream>
 
 #include "sherpa/extension.hh"
 #include "sherpa/utils.hh"
@@ -34,6 +32,14 @@ extern "C" {
 #include "cephes.h"
 
 }
+
+#define SIZE_MATCH_ERR(xlabel, ylabel, xsize, ysize) \
+    return PyErr_Format( PyExc_TypeError, \
+			 (char*)"input array sizes do not match, %s: %ld vs %s: %s", \
+			 xlabel, xsize, ylabel, ysize );
+
+#define SIZE_MATCH(xlabel, ylabel, xsize, ysize) \
+  if ( xsize != ysize ) { SIZE_MATCH_ERR(xlabel, ylabel, xsize, ysize) }
 
 static PyObject* wofz( PyObject* self, PyObject* args )
 {
@@ -76,29 +82,9 @@ static PyObject* ftest( PyObject* self, PyObject* args )
 
   npy_intp nelem = dof_1.get_size();
 
-  if ( dof_2.get_size() != nelem ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "dof_1: " << nelem << " vs dof_2: " << dof_2.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
-
-  if ( chisq_1.get_size() != nelem ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "dof_1: " << nelem << " vs chisq_1: " << chisq_1.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
-
-  if ( chisq_2.get_size() != nelem ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "dof_1: " << nelem << " vs chisq_2: " << chisq_2.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  SIZE_MATCH("dof_1", "dof_2", nelem, dof_2.get_size() );
+  SIZE_MATCH("dof_1", "chisq_1", nelem, chisq_1.get_size() );
+  SIZE_MATCH("dof_1", "chisq_2", nelem, chisq_2.get_size() );
 
   DoubleArray result;
   if ( EXIT_SUCCESS != result.create( dof_1.get_ndim(), dof_1.get_dims() ) )
@@ -108,31 +94,27 @@ static PyObject* ftest( PyObject* self, PyObject* args )
 
     const double delta_dof = dof_1[ii] - dof_2[ii];
     if ( 0.0 == chisq_2[ii] ) {
-      std::ostringstream err;
-      err << "chisq_2[" << ii << "] cannot be equal to 0: ";
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"chisq_2[%ld] cannot be equal to 0: ",
+			   ii );
     }
     if ( 0.0 == dof_2[ii] ) {
-      std::ostringstream err;
-      err << "dof_2[" << ii << "] cannot be equal to 0: ";
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"dof_2[%ld] cannot be equal to 0: ",
+			   ii );
     }
     if ( 0.0 == delta_dof ) {
-      std::ostringstream err;
-      err << "dof_1[" << ii << "] cannot be equal to dof_2[" << ii << "]: ";
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"dof_1[%ld] cannot be equal to dof_2[%ld]: ",
+			   ii, ii );
     }
     const double delta_chi = chisq_1[ii] - chisq_2[ii];
     const double f = delta_chi / delta_dof / (chisq_2[ii] / dof_2[ii]);
     const double tmp = dof_2[ii] + delta_dof * f;
     if ( 0.0 == tmp ) {
-      std::ostringstream err;
-      err << "dof_2[" << ii << "] + delta_dof * f cannot be equal to 0,\nwhere f = delta_chi / delta_dof / (chisq_2[" << ii << "] / dof_2[" << ii << " ]: ";
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
+      return PyErr_Format( PyExc_TypeError,
+			   (char*)"dof_2[%ld] + delta_dof * f cannot be equal to 0,\nwhere f = delta_chi / delta_dof / (chisq_2[%ld)] / dof_2[%ld ]: ",
+			   ii, ii, ii );
     }
     result[ii] = incbet( dof_2[ii] * 0.5 , delta_dof * 0.5,
                          (dof_2[ii] / ( tmp ) ) );
@@ -159,14 +141,7 @@ static PyObject* mlr( PyObject* self, PyObject* args )
 
   npy_intp nelem = delta_dof.get_size();
 
-  if ( delta_chisq.get_size() != nelem  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "delta_dof: " << nelem
-	<< " vs delta_chisq: " << delta_chisq.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  SIZE_MATCH("delta_dof", "delta_chisq", nelem, delta_chisq.get_size() );
 
   DoubleArray result;
   if ( EXIT_SUCCESS != result.create( delta_dof.get_ndim(),
@@ -199,7 +174,7 @@ static PyObject* gamma( PyObject* self, PyObject* args )
     result[ii] = Gamma(x[ii]);
     result[ii] *= sgngam;
   }
-  
+
   return result.return_new_ref();
 
 }
@@ -217,16 +192,9 @@ static PyObject* igam( PyObject* self, PyObject* args )
 			 &x ) )
     return NULL;
 
-  npy_intp asize = a.get_size();
   npy_intp xsize = x.get_size();
 
-  if ( asize != xsize  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "a: " << asize << " vs x: " << xsize;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  SIZE_MATCH("a", "x", a.get_size(), xsize );
 
   DoubleArray result;
   if ( EXIT_SUCCESS != result.create( x.get_ndim(),
@@ -261,16 +229,9 @@ static PyObject* igamc( PyObject* self, PyObject* args )
 			 &x ) )
     return NULL;
 
-  npy_intp asize = a.get_size();
   npy_intp xsize = x.get_size();
 
-  if ( asize != xsize  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "a: " << asize << " vs x: " << xsize;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  SIZE_MATCH("a", "x", a.get_size(), xsize );
 
   DoubleArray result;
   if ( EXIT_SUCCESS != result.create( x.get_ndim(),
@@ -332,23 +293,9 @@ static PyObject* incbet( PyObject* self, PyObject* args )
 
   npy_intp xsize = x.get_size();
   npy_intp asize = a.get_size();
-  npy_intp bsize = b.get_size();
 
-  if ( asize != xsize  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "a: " << asize << " vs x: " << xsize;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
-
-  if ( asize != bsize  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "a: " << asize << " vs b: " << bsize;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  SIZE_MATCH("a", "x", asize, xsize );
+  SIZE_MATCH("a", "b", asize, b.get_size() );
 
   DoubleArray result;
   if ( EXIT_SUCCESS != result.create( x.get_ndim(),
@@ -442,11 +389,7 @@ PyObject* _sherpa_fcmp( PyObject *self, PyObject *args )
   npy_intp n2 = x2.get_size();
 
   if ( n1 > 1 && n1 != n2 ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "x2: " << n2 << " vs x1: " << n1;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
+    SIZE_MATCH_ERR("x2", "x1", n2, n1);
   }
 
   IntArray result;
@@ -493,29 +436,13 @@ PyObject* rebin( PyObject* self, PyObject* args )
 
     return NULL;
 
-  if ( x0.get_size() != x0lo.get_size()  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "x0: " << x0.get_size() << " vs x0lo: " << x0lo.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  npy_intp x0size = x0.get_size();
+  npy_intp x0losize = x0lo.get_size();
+  npy_intp x1losize = x1lo.get_size();
 
-  if ( x0hi.get_size() != x0lo.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "x0hi: " << x0hi.get_size() << " vs x0lo: " << x0lo.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
-
-  if ( x1hi.get_size() != x1lo.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "x1hi: " << x1hi.get_size() << " vs x1lo: " << x1lo.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  SIZE_MATCH("x0", "x0lo", x0size, x0losize );
+  SIZE_MATCH("x0hi", "x0lo", x0hi.get_size(), x0losize );
+  SIZE_MATCH("x1hi", "x1lo", x1hi.get_size(), x1losize );
 
   if ( EXIT_SUCCESS != x1.create( x1lo.get_ndim(), x1lo.get_dims() ) )
     return NULL;
@@ -523,9 +450,9 @@ PyObject* rebin( PyObject* self, PyObject* args )
   if ( EXIT_SUCCESS != (sherpa::utils::rebin_histogram <DataType, ArrayType>
 			(
 			 x0, x0lo, x0hi,
-			 x0.get_size(),
+			 x0size,
 			 x1, x1lo, x1hi,
-			 x1lo.get_size() ) ) ){
+			 x1losize ) ) ){
     PyErr_SetString( PyExc_ValueError, (char*)"rebinning data failed" );
     return NULL;
   }
@@ -553,15 +480,13 @@ PyObject* histogram1d( PyObject* self, PyObject* args )
 			  &x_hi ))
     return NULL;
 
-  if ( x_lo.get_size() != x_hi.get_size()  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "x_lo: " << x_lo.get_size() << " vs x_hi: " << x_hi.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  npy_intp x_losize = x_lo.get_size();
+  npy_intp x_hisize = x_hi.get_size();
+  npy_intp xsize = x.get_size();
 
-  if ( (x.get_size() < 1) || (x_lo.get_size() < 1) || (x_hi.get_size() < 1) ) {
+  SIZE_MATCH("x_lo", "x_hi", x_losize, x_hisize );
+
+  if ( (xsize < 1) || (x_losize < 1) ) {
     PyErr_SetString( PyExc_TypeError,
 		     (char*)"need at least one element for histogram");
     return NULL;
@@ -602,15 +527,11 @@ PyObject* histogram2d( PyObject* self, PyObject* args )
 			  &y_grid))
     return NULL;
 
-  if ( x.get_size() != y.get_size()  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "x: " << x.get_size() << " vs y: " << y.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  npy_intp xsize = x.get_size();
 
-  if ( x.get_size() < 1 ) {
+  SIZE_MATCH("x", "y", xsize, y.get_size() );
+
+  if ( xsize < 1 ) {
     PyErr_SetString( PyExc_TypeError,
 		     (char*)"need at least one element for histogram");
     return NULL;
@@ -652,13 +573,7 @@ PyObject* sum_intervals( PyObject* self, PyObject* args )
 			  &indx1))
     return NULL;
 
-  if ( indx0.get_size() != indx1.get_size()  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "indx0: " << indx0.get_size() << " vs indx1: " << indx1.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  SIZE_MATCH("indx0", "indx1", indx0.get_size(), indx1.get_size() );
 
   if ( EXIT_SUCCESS != model.zeros( indx0.get_ndim(), indx0.get_dims() ) )
     return NULL;
@@ -692,13 +607,7 @@ PyObject* neville( PyObject* self, PyObject* args )
 			  &yin))
     return NULL;
 
-  if ( xin.get_size() != yin.get_size()  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "xin: " << xin.get_size() << " vs yin: " << yin.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
+  SIZE_MATCH("xin", "yin", xin.get_size(), yin.get_size() );
 
   if ( EXIT_SUCCESS != result.zeros( xout.get_ndim(), xout.get_dims() ) )
     return NULL;

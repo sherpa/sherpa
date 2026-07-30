@@ -285,12 +285,12 @@ def test_pad_bounding_box_fail():
 
     kernel = numpy.arange(12)
     mask = numpy.ones(10)
-    with pytest.raises(TypeError) as excinfo:
+
+    emsg = '^kernel size: 12 is > than mask size: 10$'
+    with pytest.raises(TypeError,
+                       match=emsg):
 
         pad_bounding_box(kernel, mask)
-
-    emsg = 'kernel size: 12 is > than mask size: 10'
-    assert str(excinfo.value) == emsg
 
 
 @pytest.mark.parametrize("mask, expected",

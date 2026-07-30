@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2016, 2018, 2020-2021, 2025
+//  Copyright (C) 2007, 2016, 2018, 2020-2021, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -23,8 +23,6 @@
 #include <cfloat>
 #include <numeric>
 #include <vector>
-#include <sstream>
-#include <iostream>
 
 extern "C" {
 
@@ -138,10 +136,6 @@ static int _pad(const long length, long& factor)
   } else
     factor = 0;
 
-  std::ostringstream err;
-  err << "Padding dimension length " << length << " not supported";
-  PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-
   return EXIT_FAILURE;
 }
 
@@ -173,10 +167,6 @@ static int _pad_data(const int dim, double* res, double* src,
 
     return EXIT_SUCCESS;
   }
-
-  std::ostringstream err;
-  err << "Padding dimension not supported";
-  PyErr_SetString( PyExc_TypeError, err.str().c_str() );
 
   return EXIT_FAILURE;
 }
@@ -257,20 +247,19 @@ static int _convolve( tcdPyData* self, double* source, double* kernel,
   return EXIT_SUCCESS;
 }
 
-static bool same_size_arrays( npy_intp size1, npy_intp size2,
-                              const char *name1, const char *name2,
-                              const char* suffix = NULL ) {
-  if ( size1 != size2 ) {
-    std::ostringstream err;
-    err << "input array sizes do not match";
-    if ( suffix )
-      err << " " << suffix;
-    err << ", " << name1 << ": " << size1 << " vs " << name2 << ": " << size2;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return false;
-  } else
-    return true;
-}
+#define SAME_SIZE_ARRAYS_SUFFIX(size1, size2, name1, name2, suffix) \
+  if ( size1 != size2 ) { \
+    return PyErr_Format( PyExc_TypeError, \
+			 (char*)"input array sizes do not match %s, %s: %ld vs %s: %ld", \
+			 suffix, name1, size1, name2, size2 ); \
+  }
+
+#define SAME_SIZE_ARRAYS(size1, size2, name1, name2) \
+  if ( size1 != size2 ) { \
+    return PyErr_Format( PyExc_TypeError, \
+			 (char*)"input array sizes do not match, %s: %ld vs %s: %ld", \
+			 name1, size1, name2, size2 ); \
+  }
 
 static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
 {
@@ -294,13 +283,10 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
 			  &center) )
     return NULL;
 
-  if( !same_size_arrays( dims_src.get_size(), dims_kern.get_size(),
-                         "dims_src", "dims_kern" ) )
-    return NULL;
-
-  if( !same_size_arrays( dims_kern.get_size(), center.get_size(),
-                         "dims_kern", "center" ) )
-    return NULL;
+  SAME_SIZE_ARRAYS( dims_src.get_size(), dims_kern.get_size(),
+		    "dims_src", "dims_kern" );
+  SAME_SIZE_ARRAYS( dims_kern.get_size(), center.get_size(),
+		    "dims_kern", "center" );
 
   // src and kernel dims should be equal length
   long num = dims_kern.get_size();
@@ -311,13 +297,10 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
                                     &dims_src[0] + num,
                                     1, std::multiplies<long>() );
 
-  if( !same_size_arrays( source.get_size(), src_size,
-                         "source size", "source dim", "dimensions" ) )
-    return NULL;
-
-  if( !same_size_arrays( kernel.get_size(), kern_size,
-                         "kernel size", "kernel dim",  "dimensions" ) )
-    return NULL;
+  SAME_SIZE_ARRAYS_SUFFIX( source.get_size(), src_size,
+			   "source size", "source dim", "dimensions" );
+  SAME_SIZE_ARRAYS_SUFFIX( kernel.get_size(), kern_size,
+			   "kernel size", "kernel dim",  "dimensions" );
 
   const long nAxes = (long) dims_kern.get_size();
   double* output = NULL;
@@ -334,8 +317,11 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
 
       long padSize = std::max(dims_src[ii], dims_kern[ii]);
 
-      if ( EXIT_SUCCESS != _pad(padSize, padfactor ) )
-	return NULL;
+      if ( EXIT_SUCCESS != _pad(padSize, padfactor ) ) {
+	return PyErr_Format( PyExc_TypeError,
+			     (char*) "Padding dimension length %ld not supported",
+			     padSize );
+      }
 
       if (padfactor != dims_pad[ii]) need_to_pad = true;
       dims_pad[ii] = padfactor;
@@ -353,8 +339,10 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
     dims = (long*) &dims_pad[0];
 
     if( EXIT_SUCCESS != _pad_data(nAxes, data, &source[0],
-				  dims, &dims_src[0]) )
+				  dims, &dims_src[0]) ) {
+      PyErr_SetString( PyExc_TypeError, (char*)"Padding dimension not supported");
       return NULL;
+    }
 
   }
 
@@ -379,11 +367,9 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
     // unpad data
     if( EXIT_SUCCESS != _unpad_data(nAxes, &result[0], output,
 				    self->newAxes, &dims_src[0]) ) {
-      std::ostringstream err;
-      err << "Padding dimension not supported";
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-
       if(output) free(output);
+      PyErr_SetString( PyExc_TypeError,
+		       (char*)"Padding dimension not supported" );
       return NULL;
 
     }
@@ -722,25 +708,11 @@ static PyObject* extract_kernel( PyObject* self, PyObject* args )
   const long nAxes = (long) dims_kern.get_size();
 
 
-  if( !same_size_arrays( dims_new.get_size(), nAxes,
-                         "dims_new", "dims_kern" ) )
-     return NULL;
-
-  if( !same_size_arrays( nAxes, center.get_size(),
-                         "dims_kern", "center" ) )
-    return NULL;
-
-  if( !same_size_arrays( nAxes, xlo.get_size(),
-                         "dims_kern", "xlo" ) )
-    return NULL;
-
-  if( !same_size_arrays( nAxes, xhi.get_size(),
-                         "dims_kern", "xhi" ) )
-    return NULL;
-
-  if( !same_size_arrays( nAxes, widths.get_size(),
-                         "dims_kern", "widths" ) )
-    return NULL;
+  SAME_SIZE_ARRAYS( dims_new.get_size(), nAxes, "dims_new", "dims_kern" );
+  SAME_SIZE_ARRAYS( nAxes, center.get_size(), "dims_kern", "center" );
+  SAME_SIZE_ARRAYS( nAxes, xlo.get_size(), "dims_kern", "xlo" );
+  SAME_SIZE_ARRAYS( nAxes, xhi.get_size(), "dims_kern", "xhi" );
+  SAME_SIZE_ARRAYS( nAxes, widths.get_size(), "dims_kern", "widths" );
 
   if( EXIT_SUCCESS != lo.zeros( 1, dims_kern.get_dims() ) )
     return NULL;
@@ -807,26 +779,22 @@ static PyObject* get_padsize( PyObject* self, PyObject* args )
   if ( !PyArg_ParseTuple( args, (char*)"l", &size) )
     return NULL;
 
-  if( EXIT_SUCCESS != _pad( size, factor  ) )
-    return NULL;
+  if( EXIT_SUCCESS != _pad( size, factor  ) ) {
+    return PyErr_Format( PyExc_TypeError,
+			 (char*) "Padding dimension length %ld not supported",
+			 size );
+  }
 
   return Py_BuildValue( (char*)"l", factor );
 }
 
-static bool padshape_smaller_then_shape( npy_intp ii, long padshape,
-                                         long shape ) {
-
-  if ( padshape < shape ) {
-      std::ostringstream err;
-      err << "pad size is smaller than data shape, "
-	  << "padshape[" << ii << "]: " << padshape
-	  << " < shape[" << ii << "]: " << shape;
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return true;
-  } else
-    return false;
-
-}
+#define VALIDATE_PADSHAPE(ii, padshape, shape) \
+  if (padshape < shape) { \
+      return PyErr_Format( PyExc_TypeError, \
+			   (char*)"pad size is smaller than data shape, " \
+			   "padshape[%ld]: %ld < shape[%ld]: %ld", \
+			   ii, padshape, ii, shape ); \
+  }
 
 static PyObject* pad_data( PyObject* self, PyObject* args )
 {
@@ -842,23 +810,19 @@ static PyObject* pad_data( PyObject* self, PyObject* args )
 			  CONVERTME(LongArray), &padshape) )
     return NULL;
 
-  if( !same_size_arrays( shape.get_size(), padshape.get_size(),
-                         "shape", "padshape" ) )
-    return NULL;
+  SAME_SIZE_ARRAYS( shape.get_size(), padshape.get_size(),
+		    "shape", "padshape" );
 
   long size=1, padsize=1;
   for( npy_intp ii = 0; ii < shape.get_size(); ii++ ) {
     size *= shape[ii];
 
-    if( padshape_smaller_then_shape( ii, padshape[ii], shape[ii] ) )
-      return NULL;
-
+    VALIDATE_PADSHAPE(ii, padshape[ii], shape[ii]);
     padsize *= padshape[ii];
   }
 
-  if ( !same_size_arrays( kernel.get_size(), size,
-                          "kernel size", "kernel dim", "dimensions" ) )
-    return NULL;
+  SAME_SIZE_ARRAYS_SUFFIX( kernel.get_size(), size,
+			   "kernel size", "kernel dim", "dimensions" );
 
   npy_intp dims[1];
   dims[0] = padsize;
@@ -868,8 +832,10 @@ static PyObject* pad_data( PyObject* self, PyObject* args )
     return NULL;
 
   if( EXIT_SUCCESS != _pad_data( (int)shape.get_size(), &res[0], &kernel[0],
-				 &padshape[0], &shape[0] ) )
+				 &padshape[0], &shape[0] ) ) {
+    PyErr_SetString( PyExc_TypeError, (char*)"Padding dimension not supported" );
     return NULL;
+  }
 
   return res.return_new_ref();
 }
@@ -887,23 +853,19 @@ static PyObject* unpad_data( PyObject* self, PyObject* args )
 			  CONVERTME(LongArray), &shape) )
     return NULL;
 
-  if( !same_size_arrays( shape.get_size(), padshape.get_size(),
-                        "shape", "padshape" ) )
-    return NULL;
+  SAME_SIZE_ARRAYS( shape.get_size(), padshape.get_size(),
+		    "shape", "padshape" );
 
   long size=1, padsize=1;
   for( npy_intp ii = 0; ii < shape.get_size(); ii++ ) {
     size *= shape[ii];
 
-    if( padshape_smaller_then_shape( ii, padshape[ii], shape[ii] ) )
-      return NULL;
-
+    VALIDATE_PADSHAPE(ii, padshape[ii], shape[ii]);
     padsize *= padshape[ii];
   }
 
-  if ( !same_size_arrays( kernel.get_size(), padsize,
-                          "kernel size",  "kernel dim",  "dimensions" ) )
-    return NULL;
+  SAME_SIZE_ARRAYS_SUFFIX( kernel.get_size(), padsize,
+			   "kernel size",  "kernel dim",  "dimensions" );
 
   npy_intp dims[1];
   dims[0] = size;
@@ -944,11 +906,9 @@ static PyObject* pad_bounding_box( PyObject* self, PyObject* args )
   int ksize = kernel.get_size();
 
   if ( ksize > msize ) {
-    std::ostringstream err;
-    err << "kernel size: " << ksize
-	<< " is > than mask size: " << msize;
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
+    return PyErr_Format( PyExc_TypeError,
+			 (char*)"kernel size: %d is > than mask size: %d",
+			 ksize, msize );
   }
 
   // Create a zeros array to padding size

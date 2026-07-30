@@ -1,6 +1,6 @@
 //
-//  Copyright (C) 2007, 2018, 2019, 2021
-//        Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2018, 2019, 2021, 2026
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -22,8 +22,6 @@
 #include <sherpa/extension.hh>
 #include <sherpa/functor.hh>
 
-#include <iostream>
-#include <stdexcept>
 #include <memory>
 
 #include "DifEvo.hh"
@@ -93,7 +91,7 @@ static void lmdif_callback_fdjac( int mfct, int npar, double* xpars,
     ierr = EXIT_FAILURE;
     return;
   }
-  
+
   PyObject* rv = PyObject_CallFunction( py_fcn, (char*)"NN",
                                         pars_array.new_ref(), fvec_array.new_ref() );
   if ( NULL == rv ) {
@@ -123,15 +121,13 @@ static void lmdif_callback_fdjac( int mfct, int npar, double* xpars,
 
 }
 
-static bool same_size( int size1, int size2, const char* format ) {
+#define SAME_SIZE(label1, label2, size1, size2)	\
+  if ( size1 != size2 ) { \
+    return PyErr_Format( PyExc_ValueError, \
+                         (char*)"%s=%ld != %s=%ld", \
+                         label1, size1, label2, size2 );			\
+  }
 
-  if ( size1 == size2 )
-    return true;
-
-  PyErr_Format( PyExc_ValueError, format, size1, size2 );
-  return false;
-
-}
 
 //*****************************************************************************
 //
@@ -163,14 +159,9 @@ static PyObject* py_cpp_lmdif( PyObject* self, PyObject* args, Func func, Jac fd
   const int mn = mfct * npar;
   sherpa::Array1D<double> jacobian( mn );
 
-  if ( !same_size( lb.get_size(), npar, "len(lb)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( fjac.get_size( ), mn, "len(fjac)=%d != m * n =%d" ) )
-    return NULL;
+  SAME_SIZE("len(lb)", "len(par)", lb.get_size(), npar);
+  SAME_SIZE("len(ub)", "len(par)", ub.get_size(), npar);
+  SAME_SIZE("len(fjac)", "m * n ", fjac.get_size(), mn);
 
   try {
 
@@ -311,14 +302,9 @@ static PyObject* py_cpp_lmder( PyObject* self, PyObject* args, Func func ) {
   const int mn = mfct * npar;
   sherpa::Array1D<double> jacobian(mn);
 
-  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( fjac.get_size( ), mn, "len(fjac)=%d != m * n =%d" ) )
-    return NULL;
+  SAME_SIZE("len(lb)", "len(par)", lb.get_size(), npar);
+  SAME_SIZE("len(ub)", "len(par)", ub.get_size(), npar);
+  SAME_SIZE("len(fjac)", "m * n ", fjac.get_size(), mn);
 
   try {
 
@@ -407,11 +393,8 @@ static PyObject* py_difevo_levmar( PyObject* self, PyObject* args,
 
   const int npar = par.get_size( );
 
-  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
-    return NULL;
+  SAME_SIZE("len(lb)", "len(par)", lb.get_size(), npar);
+  SAME_SIZE("len(ub)", "len(par)", ub.get_size(), npar);
 
   try {
 
@@ -533,11 +516,8 @@ static PyObject* py_difevo_neldermead( PyObject* self, PyObject* args,
 
   const int npar = par.get_size( );
 
-  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
-    return NULL;
+  SAME_SIZE("len(lb)", "len(par)", lb.get_size(), npar);
+  SAME_SIZE("len(ub)", "len(par)", ub.get_size(), npar);
 
   try {
 
@@ -623,11 +603,8 @@ static PyObject* py_difevo( PyObject* self, PyObject* args, Func func ) {
 
   const int npar = par.get_size( );
 
-  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
-    return NULL;
+  SAME_SIZE("len(lb)", "len(par)", lb.get_size(), npar);
+  SAME_SIZE("len(ub)", "len(par)", ub.get_size(), npar);
 
   try {
 
@@ -714,14 +691,9 @@ static PyObject* py_neldermead( PyObject* self, PyObject* args,
 
   const int npar = par.get_size( );
 
-  if ( !same_size( step.get_size( ), npar, "len(step)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
-    return NULL;
+  SAME_SIZE("len(step)", "len(par)", step.get_size(), npar);
+  SAME_SIZE("len(lb)", "len(par)", lb.get_size(), npar);
+  SAME_SIZE("len(ub)", "len(par)", ub.get_size(), npar);
 
   try {
 
@@ -814,14 +786,9 @@ static PyObject* py_minim( PyObject* self, PyObject* args,
 
   const int npar = par.get_size( );
 
-  if ( !same_size( step.get_size( ), npar, "len(step)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( lb.get_size( ), npar, "len(lb)=%d != len(par)=%d" ) )
-    return NULL;
-
-  if ( !same_size( ub.get_size( ), npar, "len(ub)=%d != len(par)=%d" ) )
-    return NULL;
+  SAME_SIZE("len(step)", "len(par)", step.get_size(), npar);
+  SAME_SIZE("len(lb)", "len(par)", lb.get_size(), npar);
+  SAME_SIZE("len(ub)", "len(par)", ub.get_size(), npar);
 
   try {
 
@@ -838,11 +805,7 @@ static PyObject* py_minim( PyObject* self, PyObject* args,
     else
       nm = new sherpa::MinimNoReflect<Func, PyObject*, double>( callback_func, py_function );
 
-#if (__cplusplus < 201103L)
-    std::auto_ptr< sherpa::Minim<Func, PyObject*, double> > minim(nm);
-#else
     std::unique_ptr< sherpa::Minim<Func, PyObject*, double> > minim(nm);
-#endif
 
     minim->minim( mypar, mystep, npar, fval, maxnfev, verbose, ftol, iquad,
                   simp, vc, ierr, nfev, bounds);

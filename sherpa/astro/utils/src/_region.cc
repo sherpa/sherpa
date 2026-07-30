@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2016, 2020-2022, 2025
+//  Copyright (C) 2009, 2016, 2020-2022, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -20,9 +20,6 @@
 
 
 #include "sherpa/extension.hh"
-#include <sstream>
-#include <iostream>
-#include <string>
 
 extern "C" {
 #include "cxcregion.h"
@@ -163,11 +160,10 @@ static PyObject* region_mask( PyRegion* self, PyObject* args, PyObject *kwargs )
 
   npy_intp size = xpos.get_size();
   if ( size != ypos.get_size() ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "xpos: " << size << " vs ypos: " << ypos.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
+    return PyErr_Format( PyExc_TypeError,
+			 (char*)"input array sizes do not match, "
+			 "xpos: %ld vs ypos: %ld",
+			 size, ypos.get_size() );
   }
 
   IntArray mask;

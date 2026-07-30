@@ -1,5 +1,6 @@
-// 
-//  Copyright (C) 2009, 2015, 2016, 2017  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2009, 2015, 2016, 2017, 2026
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -22,7 +23,12 @@
 
 #include <sherpa/extension.hh>
 
-#include <sstream>
+#define SIZE_MATCH(ylabel, xsize, ysize) \
+  if ( xsize != ysize ) { \
+    return PyErr_Format( PyExc_TypeError, \
+                        (char*)"static array mismatch: data size=%ld %s=%ld", \
+                        xsize, ylabel, ysize ); \
+  }
 
 namespace sherpa { namespace stats {
 
@@ -48,7 +54,7 @@ namespace sherpa { namespace stats {
 		       (char*)"calculation of errors has failed using current statistic");
       return NULL;
     }
-    
+
     return err.return_new_ref();
 
   }
@@ -60,7 +66,7 @@ namespace sherpa { namespace stats {
 			     const ArrayType& staterror,
 			     const ArrayType& syserror,
 			     const ArrayType& weight,
-			     ArrayType& fvec, DataType& val, 
+			     ArrayType& fvec, DataType& val,
 			     DataType& trunc_value )>
   PyObject* statfct( PyObject* self, PyObject* args )
   {
@@ -143,46 +149,12 @@ namespace sherpa { namespace stats {
 
       const npy_intp nelem = yraw.get_size();
 
-      if ( model.get_size() != nelem ) {
-        std::ostringstream err;
-        err << "statistic array mismatch: data size=" << nelem <<
-          " model size=" << model.get_size();
-        PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-        return NULL;
-      }
+      SIZE_MATCH("model size", nelem, model.get_size() );
+      SIZE_MATCH("background size", nelem, bkg.get_size() );
+      SIZE_MATCH("backscale ratio size", nelem, backscale_ratio.get_size() );
+      SIZE_MATCH("exposure size (src)", nelem, exposure_src.get_size() );
+      SIZE_MATCH("exposure size (bkg)", nelem, exposure_bkg.get_size() );
 
-      if ( bkg.get_size() != nelem ) {
-        std::ostringstream err;
-        err << "statistic array mismatch: data size=" << nelem <<
-          " background size=" << bkg.get_size();
-        PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-        return NULL;
-      }
-
-      if ( backscale_ratio.get_size() != nelem ) {
-        std::ostringstream err;
-        err << "statistic array mismatch: data size=" << nelem <<
-          " backscale ratio size=" << backscale_ratio.get_size();
-        PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-        return NULL;
-      }
-
-      if ( exposure_src.get_size() != nelem ) {
-        std::ostringstream err;
-        err << "statistic array mismatch: data size=" << nelem <<
-          " exposure size (src)=" << exposure_src.get_size();
-        PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-        return NULL;
-      }
-      
-      if ( exposure_bkg.get_size() != nelem ) {
-        std::ostringstream err;
-        err << "statistic array mismatch: data size=" << nelem <<
-          " exposure size (bkg)=" << exposure_bkg.get_size();
-        PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-        return NULL;
-      }
-      
       npy_intp sum_data_size = 0;
       for ( npy_intp ii = 0; ii < data_size.get_size( ); ++ii )
         sum_data_size += data_size[ ii ];
@@ -196,7 +168,7 @@ namespace sherpa { namespace stats {
       if ( EXIT_SUCCESS != fvec.create( yraw.get_ndim(), yraw.get_dims() ) )
         return NULL;
       DataType val = 0.0;
-      if ( EXIT_SUCCESS != StatFunc( nelem, yraw, model, data_size, 
+      if ( EXIT_SUCCESS != StatFunc( nelem, yraw, model, data_size,
                                      exposure_src, exposure_bkg,
                                      bkg, backscale_ratio,
                                      fvec, val, trunc_value ) ) {
@@ -215,7 +187,7 @@ namespace sherpa { namespace stats {
 	    int (*StatFunc)( npy_intp num, const ArrayType& yraw,
 			     const ArrayType& model,
 			     const ArrayType& weight,
-			     ArrayType& fvec, DataType& val, 
+			     ArrayType& fvec, DataType& val,
 			     DataType& trunc_value )>
   PyObject* lklhd_statfct( PyObject* self, PyObject* args )
   {
@@ -234,20 +206,9 @@ namespace sherpa { namespace stats {
 
     npy_intp nelem = yraw.get_size();
 
-    if ( model.get_size() != nelem ) {
-      std::ostringstream err;
-      err << "statistic array mismatch: data size=" << nelem <<
-        " model size=" << model.get_size();
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
-    }
-
-    if ( weight && ( weight.get_size() != nelem ) ) {
-      std::ostringstream err;
-      err << "statistic array mismatch: data size=" << nelem <<
-        " weight size=" << model.get_size();
-      PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-      return NULL;
+    SIZE_MATCH("model size", nelem, model.get_size() );
+    if ( weight ) {
+      SIZE_MATCH("weight size", nelem, model.get_size() );
     }
 
     ArrayType fvec;
@@ -267,7 +228,7 @@ namespace sherpa { namespace stats {
   }
 
 
-    
+
 }  }  /* namespace stats, namespace sherpa */
 
 
