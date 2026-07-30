@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020 - 2024
+#  Copyright (C) 2007, 2016, 2018, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -49,7 +49,7 @@ for name in dir(basic):
 
 
 def test_expected_number():
-    assert len(TESTABLE) == 34
+    assert len(TESTABLE) == 37
 
 
 @pytest.mark.parametrize("name,cls", TESTABLE)
@@ -59,13 +59,19 @@ def test_create_and_evaluate(name, cls):
     if name in ['Integrator1D', 'Integrate1D']:
         return
 
+    # This one is an ABC
+    if name == 'TableModelBase':
+        return
+
     x = np.arange(1.0, 5.0)
 
     m = cls()
     assert type(m).__name__.lower() == m.name
 
-    if isinstance(m, basic.TableModel):
+    if isinstance(m, (basic.TableModel, basic.InterpolatedTableModel1D)):
         m.load(x, x)
+    if isinstance(m, basic.FixedTableModel):
+        m.load(x)
     if isinstance(m, basic.UserModel):
         m.calc = userfunc
 
@@ -252,19 +258,27 @@ def test_polynom2d_guess_y0():
         check(par, 0)
 
 
-def test_tablemodel_invalid_x():
+@pytest.mark.parametrize("cls", [basic.TableModel,
+                                 basic.InterpolatedTableModel1D])
+def test_tablemodel_invalid_x(cls):
     """We error out if X is invalid."""
 
-    tbl = basic.TableModel()
+    tbl = cls()
     with pytest.raises(ModelErr,
                        match="Unable to treat array as numeric"):
         tbl.load([1, 2, "x"], [3, 4, 5])
 
 
-def test_tablemodel_invalid_y():
+@pytest.mark.parametrize("cls", [basic.TableModel,
+                                 basic.InterpolatedTableModel1D,
+                                 basic.FixedTableModel])
+def test_tablemodel_invalid_y(cls):
     """We error out if y is invalid."""
 
-    tbl = basic.TableModel()
+    tbl = cls()
     with pytest.raises(ModelErr,
                        match="Unable to treat array as numeric"):
-        tbl.load([3, 4, 5], [1, 2, "x"])
+        if cls is basic.FixedTableModel:
+            tbl.load([1, 2, "x"])
+        else:
+            tbl.load([3, 4, 5], [1, 2, "x"])
