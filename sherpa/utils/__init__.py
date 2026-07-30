@@ -2350,7 +2350,7 @@ def integrate_tabulated_function(x0: np.ndarray, x1: np.ndarray,
                                  *args, **kwargs):
     '''Integrate y_points between x0 and x1
 
-    This function is meant to be used for models that linarly interpolate
+    This function is meant to be used for models that linearly interpolate
     between given points (x_points, y_points) and need to be integrated
     between arbitrary limits (x0, x1) which my or may not coincide with the
     given points. Numerical methods of integration do no always perform well
