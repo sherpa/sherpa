@@ -925,6 +925,37 @@ def _save_iter_method(out: OutType, state: SessionType) -> None:
     _output_nl(out)
 
 
+def _save_estmethod_opts(out: OutType,
+                         state: SessionType
+                         ) -> None:
+    """Add any changed settingd for the estmethods."""
+
+    names = {"projection": "proj",
+             "confidence": "conf",
+             "covariance": "covar"}
+
+    # For now the state is queried for the changed values
+    # rather than to try and identify them directly.
+    #
+    for key, opts in state._estmethods_changed.items():
+        if not opts:
+            continue
+
+        _output_banner(out, f"Set {key} option")
+
+        try:
+            optkey = names[key]
+        except Exception:
+            # Just in case an option/name has been added or removed.
+            continue
+
+        def tostatement(key, val):
+            return 'set_%s_opt("%s", %s)' % (optkey, key, val)
+
+        _save_entries(out, opts, tostatement)
+        _output_nl(out)
+
+
 # for user models, try to access the function definition via
 # the inspect module and then re-create it in the script.
 # An alternative would be to use the marshal module, and
@@ -1774,6 +1805,7 @@ def save_all(state: SessionType,
     _save_statistic(out, state)
     _save_fit_method(out, state)
     _save_iter_method(out, state)
+    _save_estmethod_opts(out, state)
     req_xspec = _save_model_components(out, state)
     _save_psf_components(out, state)
     _save_models(out, state)

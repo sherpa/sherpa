@@ -2905,7 +2905,6 @@ def test_canonical_empty_iterstat(check_str):
     compare(check_str, _canonical_empty_iterstat)
 
 
-@pytest.mark.xfail  # ISSUE: 2504
 def test_estmethod_opt(check_str):
     """"Check other options for the estmethods
 
