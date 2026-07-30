@@ -2447,6 +2447,10 @@ class Data2D(Data):
     .. note::
         Sherpa provides the `~sherpa.astro.data.DataIMG` class to handle
         regularly-gridded data more easily.
+
+    .. versionchanged:: 4.19.0
+        The ``get_axis`` method has been removed because it had inconsistent outputs.
+        Use `get_x0` and `get_x1` or `get_indep` instead.
     '''
     _fields: FieldsType = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
     ndim = 2
@@ -2556,12 +2560,6 @@ class Data2D(Data):
 
         """
         self._x1label = label
-
-    def get_axes(self) -> tuple[np.ndarray, np.ndarray]:
-        self._check_shape()
-        # FIXME: how to filter an axis when self.mask is size of self.y?
-        return (np.arange(self.shape[1]) + 1,
-                np.arange(self.shape[0]) + 1)
 
     def get_dims(self, filter: bool = False) -> tuple[int, ...]:
         if self.size is None:
