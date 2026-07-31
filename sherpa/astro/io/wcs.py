@@ -49,6 +49,11 @@ except ImportError:
         raise RuntimeError("No WCS support")
 
 
+__doctest_requires__ = {
+    '*': ['sherpa.astro.utils._wcs']
+}
+
+
 class WCS(NoNewAttributesAfterInit):
     """Represent a World Coordinate System transformation.
 
