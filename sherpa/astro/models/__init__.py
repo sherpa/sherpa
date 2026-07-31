@@ -564,7 +564,7 @@ class LineBroad(RegriddableModel1D):
 #           section confuses sphinx (it thinks it is a section title).
 #
 class Lorentz1D(RegriddableModel1D):
-    """One-dimensional normalized Lorentz model function.
+    r"""One-dimensional normalized Lorentz model function.
 
     Attributes
     ----------
@@ -581,11 +581,11 @@ class Lorentz1D(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) =              ampl * fwhm
-               --------------------------------------
-               2 * pi * (0.25 * fwhm^2 + (x - pos)^2)
+    .. math::
+
+       f(x) = \frac{ampl * fwhm}{2 * \pi * (0.25 * fwhm^2 + (x - pos)^2)}
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -957,7 +957,7 @@ class Schechter(RegriddableModel1D):
 
 
 class Beta2D(RegriddableModel2D):
-    """Two-dimensional beta model function.
+    r"""Two-dimensional beta model function.
 
     The beta model is a Lorentz model with a varying power law.
 
@@ -985,17 +985,17 @@ class Beta2D(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x0,x1) = ampl * (1 + r(x0,x1)^2)^(-alpha)
+    .. math::
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                  r0^2 * (1-ellip)^2
+        f(x_0,x_1) &= ampl * (1 + r(x_0,x_1)^2)^{-\alpha}
 
-        xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+        r(x_0,x_1)^2 &= \frac{xoff(x_0,x_1)^2 * (1-ellip)^2 + yoff(x_0,x_1)^2}{r_0^2 * (1-ellip)^2}
 
-        yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+        xoff(x_0,x_1) &= (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
+
+        yoff(x_0,x_1) &= (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
@@ -1133,7 +1133,7 @@ class DeVaucouleurs2D(RegriddableModel2D):
 
 
 class HubbleReynolds(RegriddableModel2D):
-    """Two-dimensional Hubble-Reynolds model.
+    r"""Two-dimensional Hubble-Reynolds model.
 
     Attributes
     ----------
@@ -1159,13 +1159,13 @@ class HubbleReynolds(RegriddableModel2D):
     -----
     The functional form of the model for points is::
 
-        f(x0,x1) = ampl / (1 + r(x0,x1))^2
+    .. math::
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                  r0^2 * (1-ellip)^2
+       f(x0,x1) = ampl / (1 + r(x0,x1))^2
 
-        xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+       r(x0,x1)^2 = \frac{xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2}{r0^2 * (1-ellip)^2}
+
+       xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
         yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
 
@@ -1220,7 +1220,7 @@ class HubbleReynolds(RegriddableModel2D):
 
 
 class Lorentz2D(RegriddableModel2D):
-    """Two-dimensional un-normalised Lorentz function.
+    r"""Two-dimensional un-normalised Lorentz function.
 
     Attributes
     ----------
@@ -1244,15 +1244,15 @@ class Lorentz2D(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x0,x1) = ampl / (1 + 4 * r(x0,x1)^2)
+    .. math::
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                 fwhm^2 * (1-ellip)^2
+       f(x0,x1) = ampl / (1 + 4 * r(x0,x1)^2)
 
-        xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+       r(x0,x1)^2 = \frac{xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2}{fwhm^2 * (1-ellip)^2}
+
+       xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
         yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
 
@@ -1408,7 +1408,7 @@ class JDPileup(RegriddableModel1D):
 
 
 class Sersic2D(RegriddableModel2D):
-    """Two-dimensional Sersic model.
+    r"""Two-dimensional Sersic model.
 
     This is a generalization of the ``DeVaucouleurs2D`` model,
     in which the exponent ``n`` can vary ([1]_, [2]_, and [3]_).
@@ -1439,15 +1439,15 @@ class Sersic2D(RegriddableModel2D):
     Notes
     -----
     The functional form of the model for points is can be
-    expressed as the following::
+    expressed as the following:
+
+    ..math::
 
         f(x0,x1) = ampl * exp(-b(n) * (r(x0,x1)^(1/n) - 1))
 
-            b(n) = 2 * n - 1 / 3 + 4 / (405 * n) + 46 / (25515 * n^2)
+        b(n) = 2 * n - 1 / 3 + 4 / (405 * n) + 46 / (25515 * n^2)
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-                     -------------------------------------------
-                                  r0^2 * (1-ellip)^2
+        r(x0,x1)^2 = \frac{xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2}{r0^2 * (1-ellip)^2}
 
         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
 
