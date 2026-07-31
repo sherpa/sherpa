@@ -782,8 +782,6 @@ group(1)
 
 ######### Data Spectral Responses
 
-load_arf(1, "@@/3c273.arf", resp_id=1)
-load_rmf(1, "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
@@ -791,8 +789,6 @@ group(1, bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf(1, "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -951,7 +947,7 @@ con.offset.frozen  = True
 
 ######### Set Source, Pileup and Background Models
 
-set_full_model(1, (apply_rmf(apply_arf((38564.6089269 * powlaw1d.pl))) + polynom1d.con))
+set_full_model(1, apply_rmf(apply_arf(38565.0 * powlaw1d.pl)) + polynom1d.con)
 
 """
 
@@ -3976,6 +3972,11 @@ def test_pha_full_model(make_data_path, check_str):
     """
 
     ui.load_pha(make_data_path("3c273.pi"))
+
+    # Overwrite the exposure time to make the numeric checks below easier.
+    d = ui.get_data()
+    d.exposure = 38565
+
     ui.notice(1, 6)
 
     pl = ui.create_model_component("powlaw1d", "pl")
@@ -3994,14 +3995,15 @@ def test_pha_full_model(make_data_path, check_str):
     # Can not add lo/hi arguments as calc_model_sum fails.  This is a
     # regression test.
     #
-    expected = 1501.0484798733592
+    expected = 1501.053047504343
     assert ui.calc_model_sum() == pytest.approx(expected)
 
     with pytest.raises(IdentifierErr,
                        match=". You should use get_model instead.$"):
         ui.get_source()
 
-    assert ui.get_model().name == "apply_rmf(apply_arf(38564.6089269 * powlaw1d.pl)) + polynom1d.con"
+    expected_name = "apply_rmf(apply_arf(38565.0 * powlaw1d.pl)) + polynom1d.con"
+    assert ui.get_model().name == expected_name
 
     compare(check_str, add_datadir_path(_canonical_pha_full_model))
 
