@@ -891,7 +891,10 @@ def _save_fit_method(out: OutType, state: SessionType) -> None:
         # return 'set_method_opt("{}", {})'.format(key, val)
         return 'set_method_opt("%s", %s)' % (key, val)
 
-    _save_entries(out, state.get_method_opt(), tostatement)
+    _save_entries(out,
+                  # state.get_method_opt(),  # all values
+                  state._current_method_changed,  # changed values only
+                  tostatement)
     _output_nl(out)
 
 
@@ -921,7 +924,10 @@ def _save_iter_method(out: OutType, state: SessionType) -> None:
         # so it makes no difference.
         return f'set_iter_method_opt("{key}", {val})'
 
-    _save_entries(out, state.get_iter_method_opt(), tostatement)
+    _save_entries(out,
+                  # state.get_iter_method_opt(),  # all values
+                  state._current_itermethod_changed,  # changed values only
+                  tostatement)
     _output_nl(out)
 
 

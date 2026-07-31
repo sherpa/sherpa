@@ -85,14 +85,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -110,13 +102,7 @@ set_stat("leastsq")
 
 set_method("neldermead")
 
-set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("initsimplex", 0)
-set_method_opt("iquad", 1)
 set_method_opt("maxfev", 5000)
-set_method_opt("reflect", True)
-set_method_opt("step", None)
 set_method_opt("verbose", 1)
 
 """
@@ -134,13 +120,7 @@ set_stat("leastsq")
 
 set_method("neldermead")
 
-set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("initsimplex", 0)
-set_method_opt("iquad", 1)
 set_method_opt("maxfev", 5000)
-set_method_opt("reflect", True)
-set_method_opt("step", None)
 set_method_opt("verbose", 1)
 
 
@@ -149,9 +129,6 @@ set_method_opt("verbose", 1)
 set_iter_method("sigmarej")
 
 set_iter_method_opt("grow", 1)
-set_iter_method_opt("hrej", 3)
-set_iter_method_opt("lrej", 3)
-set_iter_method_opt("maxiters", 5)
 
 """
 
@@ -195,14 +172,6 @@ set_stat("chi2datavar")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -338,14 +307,6 @@ set_stat("chi2datavar")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -402,14 +363,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -510,14 +463,6 @@ set_stat("chi2xspecvar")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -728,13 +673,6 @@ set_stat("chi2gehrels")
 
 set_method("gridsearch")
 
-set_method_opt("ftol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("method", None)
-set_method_opt("num", 16)
-set_method_opt("numcores", 1)
-set_method_opt("sequence", None)
-set_method_opt("verbose", 0)
 
 """
 
@@ -763,14 +701,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -810,14 +740,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -979,14 +901,6 @@ set_stat("cash")
 
 set_method("neldermead")
 
-set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("initsimplex", 0)
-set_method_opt("iquad", 1)
-set_method_opt("maxfev", None)
-set_method_opt("reflect", True)
-set_method_opt("step", None)
-set_method_opt("verbose", 0)
 
 
 ######### Set Model Components and Parameters
@@ -1086,14 +1000,6 @@ set_stat("cstat")
 
 set_method("neldermead")
 
-set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("initsimplex", 0)
-set_method_opt("iquad", 1)
-set_method_opt("maxfev", None)
-set_method_opt("reflect", True)
-set_method_opt("step", None)
-set_method_opt("verbose", 0)
 
 """
 
@@ -1124,14 +1030,6 @@ set_stat("cstat")
 
 set_method("neldermead")
 
-set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("initsimplex", 0)
-set_method_opt("iquad", 1)
-set_method_opt("maxfev", None)
-set_method_opt("reflect", True)
-set_method_opt("step", None)
-set_method_opt("verbose", 0)
 
 
 ######### Set Model Components and Parameters
@@ -1242,14 +1140,6 @@ set_stat("cstat")
 
 set_method("neldermead")
 
-set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("initsimplex", 0)
-set_method_opt("iquad", 1)
-set_method_opt("maxfev", None)
-set_method_opt("reflect", True)
-set_method_opt("step", None)
-set_method_opt("verbose", 0)
 
 
 ######### Set Model Components and Parameters
@@ -1342,14 +1232,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1382,14 +1264,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1450,14 +1324,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -1561,14 +1427,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1602,14 +1460,6 @@ set_stat("cash")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1633,14 +1483,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1680,14 +1522,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1732,14 +1566,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1773,14 +1599,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.1920928955078125e-07)
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.1920928955078125e-07)
-set_method_opt("gtol", 1.1920928955078125e-07)
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.1920928955078125e-07)
 
 """
 
@@ -1806,14 +1624,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -1932,14 +1742,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 
 ######### Set Model Components and Parameters
@@ -2002,14 +1804,6 @@ set_stat("chi2datavar")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -2034,14 +1828,6 @@ set_stat("chi2")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -2086,14 +1872,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -2295,14 +2073,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -2360,14 +2130,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -2412,14 +2174,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
-set_method_opt("gtol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.1920928955078125e-07)  # doctest: +FLOAT_CMP
 
 """
 
@@ -2477,14 +2231,6 @@ set_stat("cstat")
 
 set_method("neldermead")
 
-set_method_opt("finalsimplex", 9)
-set_method_opt("ftol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
-set_method_opt("initsimplex", 0)
-set_method_opt("iquad", 1)
-set_method_opt("maxfev", None)
-set_method_opt("reflect", True)
-set_method_opt("step", None)
-set_method_opt("verbose", 0)
 
 
 ######### Set Model Components and Parameters
@@ -2603,14 +2349,6 @@ set_stat("chi2gehrels")
 
 set_method("levmar")
 
-set_method_opt("epsfcn", 1.1920928955078125e-07)
-set_method_opt("factor", 100.0)
-set_method_opt("ftol", 1.1920928955078125e-07)
-set_method_opt("gtol", 1.1920928955078125e-07)
-set_method_opt("maxfev", None)
-set_method_opt("numcores", 1)
-set_method_opt("verbose", 0)
-set_method_opt("xtol", 1.1920928955078125e-07)
 
 """
 

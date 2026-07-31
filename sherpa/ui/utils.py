@@ -986,6 +986,10 @@ class Session(NoNewAttributesAfterInit):
         # Add simplex as alias to neldermead
         self._methods['simplex'] = self._methods['neldermead']
 
+        # Store changes to options
+        self._current_method_changed: dict[str, Any] = {}
+        self._current_itermethod_changed: dict[str, Any] = {}
+
         reset_interpolators()
 
         # Should some of these dictionaries have more-restrictive
@@ -2657,6 +2661,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._check_method_opt(optname)
         self._current_method.config[optname] = val
+        self._current_method_changed[optname] = val
 
     def get_iter_method_name(self) -> str:
         """Return the name of the iterative fitting scheme.
@@ -2928,6 +2933,7 @@ class Session(NoNewAttributesAfterInit):
                 'badopt', optname, self._current_itermethod['name'])
 
         self._current_itermethod[optname] = val
+        self._current_itermethod_changed[optname] = val
 
     ###########################################################################
     # Statistics
