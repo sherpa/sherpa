@@ -42,8 +42,9 @@ from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
 
 from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
+from sherpa.instrument import ConvolutionKernel, PSFModel
 from sherpa.models import Model
-from sherpa.models.basic import UserModel
+from sherpa.models.basic import TableModel, TableModelBase, UserModel
 from sherpa.models.parameter import Parameter
 from sherpa.utils.types import IdType
 
@@ -1023,21 +1024,21 @@ def _handle_model(out: OutType,
 
     """
 
-    typename = mod.type
     modelname = _get_cpt_name(mod)
     found_xspec = False
-    if typename == "usermodel":
+    if isinstance(mod, UserModel):
         _handle_usermodel(out, mod, modelname)
 
-    elif typename == "psfmodel":
+    elif isinstance(mod, PSFModel):
         cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
         _output(out, cmd)
 
-    elif typename in ["fixedtablemodel", "interpolatedtablemodel1d"]:
+    elif isinstance(mod, (TableModel, TableModelBase)):
+        # Use of TableModel is deprecated.
         cmd = f'load_table_model("{modelname}", "{mod.filename}")'
         _output(out, cmd)
 
-    elif typename == "xstablemodel":
+    elif xspec is not None and isinstance(mod, xspec.XSTableModel):
         cmd = f'load_xstable_model("{modelname}", "{mod.filename}"'
         if mod.etable:
             cmd += ', etable=True'
@@ -1048,21 +1049,20 @@ def _handle_model(out: OutType,
 
     else:
         # Normal case:  create an instance of the model.
-        cmd = f'create_model_component("{typename}", "{modelname}")'
+        cmd = f'create_model_component("{mod.type}", "{modelname}")'
         _output(out, cmd)
 
-        # Is this an XSPEC model? We only care if it's the first
-        # one we find.
+        # Is this an XSPEC model?
         #
-        if not found_xspec and xspec is not None:
-            found_xspec = isinstance(mod, xspec.XSModel)
+        if xspec is not None:
+            found_xspec |= isinstance(mod, xspec.XSModel)
 
     # QUS: should this be included in the above checks?
     #      @DougBurke doesn't think so, as the "normal
     #      case" above should probably be run , but there's
     #      no checks to verify this.
     #
-    if typename == "convolutionkernel":
+    if isinstance(mod, ConvolutionKernel):
         # Create general convolution kernel with load_conv
         cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
         _output(out, cmd)
