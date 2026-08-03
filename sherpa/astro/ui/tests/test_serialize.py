@@ -35,6 +35,8 @@ from sherpa.astro.models import JDPileup
 from sherpa.astro import ui
 from sherpa.astro.io.wcs import WCS
 
+from sherpa.data import Data1D
+
 from sherpa.models.basic import FixedTableModel
 
 from sherpa.utils.err import DataErr, \
@@ -3445,7 +3447,6 @@ def test_load_psf1d_from_file(check_str, tmp_path):
     assert g.pos.val == pytest.approx(0)
 
 
-@requires_fits
 def test_load_psf1d_from_model(check_str):
     """Can we restore a 1D PSF read from a model?
 
@@ -3517,6 +3518,72 @@ def test_load_psf1d_from_model(check_str):
 
     nmdl = sum(ui.get_model_component(n) for n in ['b1', 'b2', 'b3'])
     assert nmdl([1, 2, 3, 4, 5]) == pytest.approx([5, 2, 1, 0, 0])
+
+
+@pytest.mark.xfail  # XFAIL: 'convolutionkernel' is not a valid model type
+@requires_fits
+def test_load_conv_from_file(tmp_path):
+    """Very basic check of load_conv.
+
+    At present all we check is that we can restore a load_conv
+    statement.
+
+    """
+
+    convpath = tmp_path / "conv.dat"
+    convpath.write_text("1 5\n2 2\n3 1\n")
+
+    ui.load_conv("c1", str(convpath))
+
+    def check():
+        mdls = ui.list_model_components()
+        assert len(mdls) == 1
+        assert mdls[0] == "c1"
+
+        x1 = ui.get_model_component("c1")
+        assert x1.name == "convolutionkernel.c1"
+        assert isinstance(x1.kernel, Data1D)
+        assert x1.kernel.x == pytest.approx([1, 2, 3])
+        assert x1.kernel.y == pytest.approx([5, 2, 1])
+
+    check()
+    restore()  # XFAIL
+    check()
+
+
+@pytest.mark.xfail  # XFAIL: 'convolutionkernel' is not a valid model type
+def test_load_conv_from_model():
+    """Very basic check of load_conv.
+
+    At present all we check is that we can restore a load_conv
+    statement.
+
+    """
+
+    g1 = ui.create_model_component("gauss1d", "g1")
+    g1.fwhm = 5
+    g1.pos.freeze()
+
+    ui.load_conv("c1", g1)
+
+    def check():
+        mdls = ui.list_model_components()
+        assert len(mdls) == 2
+        assert mdls[0] == "c1"
+        assert mdls[1] == "g1"
+
+        x1 = ui.get_model_component("g1")
+        assert x1.name == "gauss1d.g1"
+        assert x1.fwhm.val == pytest.approx(5)
+        assert x1.pos.frozen
+
+        x2 = ui.get_model_component("c1")
+        assert x2.name == "convolutionkernel.c1"
+        assert x2.kernel == x1
+
+    check()
+    restore()  # XFAIL
+    check()
 
 
 @requires_data
