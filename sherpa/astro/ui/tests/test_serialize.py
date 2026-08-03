@@ -3520,7 +3520,6 @@ def test_load_psf1d_from_model(check_str):
     assert nmdl([1, 2, 3, 4, 5]) == pytest.approx([5, 2, 1, 0, 0])
 
 
-@pytest.mark.xfail  # XFAIL: 'convolutionkernel' is not a valid model type
 @requires_fits
 def test_load_conv_from_file(tmp_path):
     """Very basic check of load_conv.
@@ -3547,11 +3546,10 @@ def test_load_conv_from_file(tmp_path):
         assert x1.kernel.y == pytest.approx([5, 2, 1])
 
     check()
-    restore()  # XFAIL
+    restore()
     check()
 
 
-@pytest.mark.xfail  # XFAIL: 'convolutionkernel' is not a valid model type
 def test_load_conv_from_model():
     """Very basic check of load_conv.
 
@@ -3581,8 +3579,10 @@ def test_load_conv_from_model():
         assert x2.name == "convolutionkernel.c1"
         assert x2.kernel == x1
 
+    buff = StringIO(); ui.save_all(buff)
+
     check()
-    restore()  # XFAIL
+    restore()
     check()
 
 
