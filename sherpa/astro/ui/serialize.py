@@ -1029,11 +1029,11 @@ def _handle_model(out: OutType,
     if isinstance(mod, UserModel):
         _handle_usermodel(out, mod, modelname)
 
-    elif isinstance(mod, PSFModel):
+    elif isinstance(mod, PSFModel) and mod.kernel is not None:
         cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
         _output(out, cmd)
 
-    elif isinstance(mod, ConvolutionKernel):
+    elif isinstance(mod, ConvolutionKernel) and mod.kernel is not None:
         cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
         _output(out, cmd)
 
@@ -1280,14 +1280,11 @@ def _save_bkg_source(out: OutType,
             except:
                 the_bkg_full_model = None
 
-            have_source = the_bkg_source is not None
-            have_full_model = the_bkg_full_model is not None
-
-            if have_source:
+            if the_bkg_source is not None:
                 # This does not check for the dataset being a DataPHA
                 # object, since (at present) it has to be, as it's the
                 # only one to support backgrounds
-                if have_full_model:
+                if the_bkg_full_model is not None:
                     if repr(the_bkg_source) == repr(the_bkg_full_model):
                         cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
                     else:
@@ -1295,7 +1292,7 @@ def _save_bkg_source(out: OutType,
                 else:
                     cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
 
-            elif have_full_model:
+            elif the_bkg_full_model is not None:  # have_full_model:
                 cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
 
             else:
