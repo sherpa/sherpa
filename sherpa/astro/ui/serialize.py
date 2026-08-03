@@ -1033,6 +1033,10 @@ def _handle_model(out: OutType,
         cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
         _output(out, cmd)
 
+    elif isinstance(mod, ConvolutionKernel):
+        cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
+        _output(out, cmd)
+
     elif isinstance(mod, (TableModel, TableModelBase)):
         # Use of TableModel is deprecated.
         cmd = f'load_table_model("{modelname}", "{mod.filename}")'
@@ -1056,16 +1060,6 @@ def _handle_model(out: OutType,
         #
         if xspec is not None:
             found_xspec |= isinstance(mod, xspec.XSModel)
-
-    # QUS: should this be included in the above checks?
-    #      @DougBurke doesn't think so, as the "normal
-    #      case" above should probably be run , but there's
-    #      no checks to verify this.
-    #
-    if isinstance(mod, ConvolutionKernel):
-        # Create general convolution kernel with load_conv
-        cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
-        _output(out, cmd)
 
     if hasattr(mod, "integrate"):
         cmd = f"{modelname}.integrate = {mod.integrate}"
