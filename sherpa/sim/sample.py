@@ -18,8 +18,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections.abc import Sequence
 import logging
-from typing import Literal
+from typing import Literal, SupportsIndex
 
 import numpy as np
 
@@ -48,7 +49,7 @@ __all__ = ('multivariate_t', 'multivariate_cauchy',
 def multivariate_t(mean: ArrayType,
                    cov: np.ndarray,
                    df: int,
-                   size: tuple[int, ...] | None = None,
+                   size: SupportsIndex | Sequence[SupportsIndex] | None = None,
                    rng: random.RandomType | None = None
                    ) -> np.ndarray:
     """Draw random deviates from a multivariate Student's T distribution.
@@ -110,7 +111,7 @@ def multivariate_t(mean: ArrayType,
 #
 def multivariate_cauchy(mean: ArrayType,
                         cov: np.ndarray,
-                        size: tuple[int, ...] | None = None,
+                        size: SupportsIndex | Sequence[SupportsIndex] | None = None,
                         rng: random.RandomType | None = None
                         ) -> np.ndarray:
     """
