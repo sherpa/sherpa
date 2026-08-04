@@ -196,6 +196,7 @@ jobs:
       env:
         XSPECVER: ${{ matrix.xspec-version }}
         FITS: ${{ matrix.fits }}
+        INSTALLTYPE: ${{ matrix.install-type }}
       run: |
         if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
         if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
@@ -211,8 +212,13 @@ jobs:
         echo "** smoke test: ${smokevars}"
         source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
+        srcdir=`pwd`
         cd /home
-        sherpa_smoke ${smokevars}
+        if [ "$INSTALLTYPE" == "install" ]; then
+          sherpa_smoke ${smokevars}
+        else
+          PYTHONPATH=$srcdir sherpa_smoke ${smokevars}
+        fi
 
     - name: Internal check
       if: matrix.test-data == 'submodule' && matrix.install-type != 'develop'

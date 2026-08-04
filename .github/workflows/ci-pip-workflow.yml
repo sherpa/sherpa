@@ -165,11 +165,17 @@ jobs:
     - name: Smoke Test
       env:
         FITS: ${{ matrix.fits-pkg }}
+        INSTALLTYPE: ${{ matrix.install-type }}
       run: |
         smokevars="-v 3"
         if [ ${FITS} != '' ] ; then
             smokevars="-f ${FITS} ${smokevars}"
         fi
         echo "** smoke test: ${smokevars}"
+        srcdir=`pwd`
         cd ${HOME}
-        sherpa_smoke ${smokevars}
+        if [ "$INSTALLTYPE" == "install" ]; then
+          sherpa_smoke ${smokevars}
+        else
+          PYTHONPATH=$srcdir sherpa_smoke ${smokevars}
+        fi
