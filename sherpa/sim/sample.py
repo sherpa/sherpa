@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019-2021, 2023, 2025
+#  Copyright (C) 2011, 2015, 2016, 2019-2021, 2023, 2025-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -355,7 +355,7 @@ class ParameterScaleMatrix(ParameterScale):
         return cov
 
 
-ClipValue = Literal["none"] | Literal["hard"] | Literal["soft"]
+ClipValue = Literal["none", "hard", "soft"]
 
 
 class ParameterSample(NoNewAttributesAfterInit):
