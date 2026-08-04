@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2016, 2022
+#  Copyright (C) 2014, 2016, 2022, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -64,11 +64,22 @@ def clean_deps():
             pass
 
 
-def build_deps(configure):
-    if os.path.exists('extern/built'):
+def build_deps(configure: list[str] | None) -> None:
+    """Run configure and make install for the extern code.
+
+    These steps can be avoided (for example, if building against CIAO)
+    if
+
+    - configure is None
+    - the file extern/built exists
+
+    """
+
+    if configure is None or os.path.exists('extern/built'):
         return
 
     with in_dir("extern"):
+        # Ensure the script is executable
         os.chmod(configure[0], 0o755)
 
         env = os.environ.copy()
