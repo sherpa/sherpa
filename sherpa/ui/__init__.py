@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2018  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2018, 2026
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +19,7 @@
 #
 
 import sherpa.all
-import sherpa.ui.utils
+from sherpa.ui import utils
 from sherpa.utils import calc_mlr, calc_ftest, rebin, histogram1d, \
     histogram2d, gamma, lgam, igamc, igam, incbet, multinormal_pdf, \
     multit_pdf
