@@ -367,9 +367,13 @@ class ParameterSample(NoNewAttributesAfterInit):
                    fit: Fit,
                    *,
                    num: int = 1,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   **kwargs
                    ) -> np.ndarray:
         """Return the samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts a kwargs argument.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -486,9 +490,13 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
                    *,
                    factor: float = 4,
                    num: int = 1,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   **kwargs
                    ) -> np.ndarray:
         """Return the parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts a kwargs argument.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -542,9 +550,13 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
                    *,
                    myscales: np.ndarray | None = None,
                    num: int = 1,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   **kwargs
                    ) -> np.ndarray:
         """Return the parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts a kwargs argument.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -597,9 +609,13 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
                    *,
                    mycov: np.ndarray | None = None,
                    num: int = 1,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   **kwargs
                    ) -> np.ndarray:
         """Return the parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts a kwargs argument.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -650,8 +666,12 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
                    dof: int,
                    num: int = 1,
                    rng: random.RandomType | None = None,
+                   **kwargs
                    ) -> np.ndarray:
         """Return the parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts a kwargs argument.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -778,9 +798,13 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
                    num: int = 1,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "none"
+                   clip: ClipValue = "none",
+                   **kwargs
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts a kwargs argument.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
@@ -823,7 +847,7 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
         """
 
         # Knowledge of whether a row has been clipped is dropped
-        samples = super().get_sample(fit, num=num, rng=rng)
+        samples = super().get_sample(fit, num=num, rng=rng, **kwargs)
         clipped = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, clipped, numcores=numcores)
 
@@ -844,9 +868,13 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
                    num: int = 1,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "none"
+                   clip: ClipValue = "none",
+                   **kwargs
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts a kwargs argument.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
@@ -889,7 +917,7 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
         """
 
         # Knowledge of whether a row has been clipped is dropped
-        samples = super().get_sample(fit, num=num, rng=rng)
+        samples = super().get_sample(fit, num=num, rng=rng, **kwargs)
         clipped = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, clipped, numcores=numcores)
 
@@ -909,9 +937,13 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
                    factor: float = 4,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "none"
+                   clip: ClipValue = "none",
+                   **kwargs
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts a kwargs argument.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
@@ -956,7 +988,7 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
 
         """
         samples = super().get_sample(fit, factor=factor, num=num,
-                                     rng=rng)
+                                     rng=rng, **kwargs)
         clipped = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, clipped, numcores=numcores)
 
@@ -978,9 +1010,13 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
                    dof: int = 2,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "none"
+                   clip: ClipValue = "none",
+                   **kwargs
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts a kwargs argument.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
@@ -1023,7 +1059,8 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
            indicates whether any parameters were clipped.
 
         """
-        samples = super().get_sample(fit, dof=dof, num=num, rng=rng)
+        samples = super().get_sample(fit, dof=dof, num=num, rng=rng,
+                                     **kwargs)
         clipped = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, clipped, numcores=numcores)
 
