@@ -29,7 +29,7 @@ from sherpa.fit import Fit
 from sherpa.utils import NoNewAttributesAfterInit, random
 from sherpa.utils.err import EstErr
 from sherpa.utils.parallel import parallel_map
-from sherpa.utils.types import ArrayType
+from sherpa.utils.types import ArrayType, PrefsType
 
 warning = logging.getLogger("sherpa").warning
 
@@ -137,9 +137,13 @@ class ParameterScale(NoNewAttributesAfterInit):
 
     def get_scales(self,
                    fit: Fit,
-                   myscales: np.ndarray | None = None
+                   myscales: np.ndarray | None = None,
+                   est_method_args: PrefsType | None = None
                    ) -> np.ndarray:
         """Return the samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts the est_method_args parameter.
 
         Parameters
         ----------
@@ -150,6 +154,8 @@ class ParameterScale(NoNewAttributesAfterInit):
         myscales : numpy array or None, optional
             The scales to use. If None then they are
             calculated from the fit.
+        est_method_args
+            Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -168,9 +174,13 @@ class ParameterScaleVector(ParameterScale):
 
     def get_scales(self,
                    fit: Fit,
-                   myscales: np.ndarray | None = None
+                   myscales: np.ndarray | None = None,
+                   est_method_args: PrefsType | None = None
                    ) -> np.ndarray:
         """Return the samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts the est_method_args parameter.
 
         Parameters
         ----------
@@ -184,6 +194,8 @@ class ParameterScaleVector(ParameterScale):
             between the parameters). If None then they are calculated
             from the fit, using the object's sigma attribute to scale
             the results.
+        est_method_args
+            Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -206,6 +218,9 @@ class ParameterScaleVector(ParameterScale):
 
             covar = Covariance()
             covar.config['sigma'] = self.sigma
+            if est_method_args is not None:
+                covar.config.update(est_method_args)
+
             fit.estmethod = covar
 
             try:
@@ -223,6 +238,9 @@ class ParameterScaleVector(ParameterScale):
 
                     conf = Confidence()
                     conf.config['sigma'] = self.sigma
+                    if est_method_args is not None:
+                        conf.config.update(est_method_args)
+
                     fit.estmethod = conf
                     try:
                         t = fit.est_errors(parlist=(par,))
@@ -280,9 +298,13 @@ class ParameterScaleMatrix(ParameterScale):
 
     def get_scales(self,
                    fit: Fit,
-                   myscales: np.ndarray | None = None
+                   myscales: np.ndarray | None = None,
+                   est_method_args: PrefsType | None = None
                    ) -> np.ndarray:
         """Return the samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts the est_method_args parameter.
 
         Parameters
         ----------
@@ -295,6 +317,8 @@ class ParameterScaleMatrix(ParameterScale):
             for the parameters.  If None then they are calculated from
             the fit, using the object's sigma attribute to scale the
             results.
+        est_method_args
+            Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -311,6 +335,9 @@ class ParameterScaleMatrix(ParameterScale):
             oldestmethod = fit.estmethod
             covar = Covariance()
             covar.config['sigma'] = self.sigma
+            if est_method_args is not None:
+                covar.config.update(est_method_args)
+
             fit.estmethod = covar
 
             try:
@@ -326,7 +353,8 @@ class ParameterScaleMatrix(ParameterScale):
             # sigma value (which is expected to be 1, although it
             # can be changed).
             #
-            cov = self.sigma**2 * cov
+            sigma = covar.config['sigma']
+            cov = sigma**2 * cov
 
         else:
             # NOTE: the self.sigma value is not used when the scales

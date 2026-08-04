@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2018, 2020-2021, 2023-2025
+#  Copyright (C) 2011, 2016, 2018, 2020-2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -259,6 +259,23 @@ def test_parameter_scale_vector_sigma2(setup):
     assert out == pytest.approx(2.0 * EXPECTED_VECTOR_ERR)
 
 
+def test_parameter_scale_vector_sigma_overload(setup):
+    """Test est_method_args setting.
+
+    THe way the code is currently structured is that the
+    sigma attribute is applied *before* the est_method_args
+    values are applied, so we can over-ride the setting. This
+    is not the intended use case for est_method_args but is
+    technically valid.
+
+    """
+    ps = sim.ParameterScaleVector()
+    ps.sigma = 2
+    out = ps.get_scales(setup.fit, est_method_args={"sigma": 1.0})
+
+    assert out == pytest.approx(EXPECTED_VECTOR_ERR)
+
+
 def test_parameter_scale_matrix(setup):
     ps = sim.ParameterScaleMatrix()
     out = ps.get_scales(setup.fit)
@@ -275,6 +292,16 @@ def test_parameter_scale_matrix_sigma2(setup):
     # code has never been clear about sigma/variance.
     #
     assert out == pytest.approx(2 * 2 * EXPECTED_MATRIX_ERR)
+
+
+def test_parameter_scale_matrix_sigma_overload(setup):
+    """See test_parameter_scale_vector_sigma_overload."""
+
+    ps = sim.ParameterScaleMatrix()
+    ps.sigma = 2
+    out = ps.get_scales(setup.fit, est_method_args={"sigma": 1})
+
+    assert out == pytest.approx(EXPECTED_MATRIX_ERR)
 
 
 def test_parameter_sample_checks_clip_argument(setup):
