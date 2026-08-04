@@ -123,11 +123,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
     'matplotlib.sphinxext.plot_directive',
-    # Use napoleon over numpydoc for now since it stops a large number
-    # of warning messages (about missing links) that I don't have time
-    # to investigate.
-    'sphinx.ext.napoleon',
-    # 'numpydoc.numpydoc',
+    'numpydoc.numpydoc',
     'sphinx.ext.intersphinx',
     'sphinx_astropy.ext.intersphinx_toggle',
     'sphinx_astropy.ext.edit_on_github',
@@ -256,6 +252,7 @@ nbsphinx_prolog = r"""
 napoleon_google_docstring = False
 
 autosummary_generate = True
+numpydoc_class_members_toctree = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

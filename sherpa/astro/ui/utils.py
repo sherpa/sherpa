@@ -4269,11 +4269,6 @@ class Session(sherpa.ui.utils.Session):
         only the ratio of source and background BACKSCAL values is
         used. It can be a scalar or be an array.
 
-        References
-        ----------
-
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
-
         Examples
         --------
 
@@ -4418,12 +4413,6 @@ class Session(sherpa.ui.utils.Session):
         -----
         The fractional area scale is normally set to 1, with the ARF used
         to scale the model.
-
-        References
-        ----------
-
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
-
 
         Examples
         --------
@@ -8436,11 +8425,6 @@ class Session(sherpa.ui.utils.Session):
         The ``grouped`` field of a PHA data set is set to ``True`` when
         the data is grouped.
 
-        References
-        ----------
-
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
-
         Examples
         --------
 
@@ -8535,14 +8519,15 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `val` parameters,
         respectively.
 
-        The meaning of the grouping column is taken from the OGIP standard, which says
-        that +1 indicates the start of a bin, -1 if the channel is part
-        of group, and 0 if the data grouping is undefined for all channels.
+        The meaning of the grouping column is taken from the OGIP
+        standard [1]_, which says that +1 indicates the start of a
+        bin, -1 if the channel is part of group, and 0 if the data
+        grouping is undefined for all channels.
 
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -8614,14 +8599,15 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The meaning of the grouping column is taken from the OGIP standard which says
-        that +1 indicates the start of a bin, -1 if the channel is part
-        of group, and 0 if the data grouping is undefined for all channels.
+        The meaning of the grouping column is taken from the OGIP
+        standard [1]_, which says that +1 indicates the start of a
+        bin, -1 if the channel is part of group, and 0 if the data
+        grouping is undefined for all channels.
 
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -8686,16 +8672,16 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `val` parameters,
         respectively.
 
-        The meaning of the quality column is taken from the OGIP standard, which says
-        that 0 indicates a "good" channel, 1 and 2 are for channels that
-        are identified as "bad" or "dubious" (respectively) by software,
-        5 indicates a "bad" channel set by the user, and values of 3 or 4
-        are not used.
+        The meaning of the quality column is taken from the OGIP
+        standard [1]_, which says that 0 indicates a "good" channel, 1
+        and 2 are for channels that are identified as "bad" or
+        "dubious" (respectively) by software, 5 indicates a "bad"
+        channel set by the user, and values of 3 or 4 are not used.
 
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -8773,16 +8759,16 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The meaning of the quality column is taken from the OGIP standard, which says
-        that 0 indicates a "good" channel, 1 and 2 are for channels that
-        are identified as "bad" or "dubious" (respectively) by software,
-        5 indicates a "bad" channel set by the user, and values of 3 or 4
-        are not used.
+        The meaning of the quality column is taken from the OGIP
+        standard [1]_, which says that 0 indicates a "good" channel, 1
+        and 2 are for channels that are identified as "bad" or
+        "dubious" (respectively) by software, 5 indicates a "bad"
+        channel set by the user, and values of 3 or 4 are not used.
 
         References
         ----------
 
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [1] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -8864,11 +8850,6 @@ class Session(sherpa.ui.utils.Session):
         If subtracting the background estimate from a data set, the
         grouping applied to the source data set is used for both
         source and background data sets.
-
-        References
-        ----------
-
-        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -9738,18 +9719,20 @@ class Session(sherpa.ui.utils.Session):
 
         The equation for the subtraction is::
 
-           src_counts - bg_counts * (src_exposure * src_backscal)
-                                    -----------------------------
-                                     (bg_exposure * bg_backscal)
+           src_counts - bkg_counts * src_scale / bkg_scale
 
-        where src_exposure and bg_exposure are the source and
-        background exposure times, and src_backscal and bg_backscal
+           src_scale = src_exposure * src_backscal
+
+           bkg_scale = bkg_exposure * bkg_backscal
+
+        where src_exposure and bkg_exposure are the source and
+        background exposure times, and src_backscal and bkg_backscal
         are the source and background backscales.  The backscale, read
         from the ``BACKSCAL`` header keyword of the `PHA file
         <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node5.html>`_,
         is the ratio of data extraction area to total detector area.
 
-        The ``subtracted`` field of a dataset is set to ``True`` when
+        The ``subtracted`` field of a dataset is set to `True` when
         the background is subtracted.
 
         Examples
@@ -11014,8 +10997,8 @@ class Session(sherpa.ui.utils.Session):
                            etable=False) -> None:
         """Load a XSPEC table model.
 
-        Create an additive ('atable', [1]), multiplicative
-        ('mtable', [2]), or exponential ('etable', [3]) XSPEC
+        Create an additive ('atable', [1]_), multiplicative
+        ('mtable', [2]_), or exponential ('etable', [3]_) XSPEC
         table model component. These models may have multiple model
         parameters.
 
@@ -11034,7 +11017,7 @@ class Session(sherpa.ui.utils.Session):
            The identifier for this model component.
         filename : str
            The name of the FITS file containing the data, which should
-           match the XSPEC table model definition [4].
+           match the XSPEC table model definition [4]_.
         etable : bool, optional
            Set if this is an etable (as there's no way to determine this
            from the file itself). Defaults to False.
@@ -11068,13 +11051,13 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        1. https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+        .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
 
-        2. https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+        .. [2] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
 
-        3. https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelEtable.html
+        .. [3] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelEtable.html
 
-        4. `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        .. [4] `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -16894,7 +16877,7 @@ class Session(sherpa.ui.utils.Session):
                    bkg_id: IdType | None = None):
         """Calculate the K correction for a model.
 
-        The K correction ([1], [2], [3], [4]) is the numeric
+        The K correction ([1]_, [2]_, [3]_, [4]_) is the numeric
         factor applied to measured energy fluxes in an observed
         energy band to estimate the flux in a given rest-frame
         energy band. It accounts for the change in spectral energy
@@ -16958,16 +16941,16 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        1. `"The K correction", Hogg, D.W., et al. <https://arxiv.org/abs/astro-ph/0210394>`_
+        .. [1] `"The K correction", Hogg, D.W., et al. <https://arxiv.org/abs/astro-ph/0210394>`_
 
-        2. `Appendix B of Jones et al. 1998, ApJ, vol 495,
+        .. [2] `Appendix B of Jones et al. 1998, ApJ, vol 495,
            p. 100-114 <https://adsabs.harvard.edu/abs/1998ApJ...495..100J>`_
 
-        3. `"K and evolutionary corrections from UV to IR",
+        .. [3] `"K and evolutionary corrections from UV to IR",
            Poggianti, B.M., A&AS, 1997, vol 122, p. 399-407.
            <https://adsabs.harvard.edu/abs/1997A%26AS..122..399P>`_
 
-        4. `"Galactic evolution and cosmology - Probing the
+        .. [4] `"Galactic evolution and cosmology - Probing the
            cosmological deceleration parameter", Yoshii, Y. &
            Takahara, F., ApJ, 1988, vol 326, p. 1-18.
            <https://adsabs.harvard.edu/abs/1988ApJ...326....1Y>`_

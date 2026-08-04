@@ -1299,8 +1299,8 @@ def get_keyword_defaults(func: Callable,
 
     See Also
     --------
-    get_keyword_names, get_num_args,
-    `sherpa.plot.backend_utils.get_keyword_defaults`
+    get_keyword_names, get_num_args
+    sherpa.plot.backend_utils.get_keyword_defaults
 
     """
 
