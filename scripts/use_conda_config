@@ -1,0 +1,92 @@
+#!/bin/sh
+#
+# Update the Sherpa configuration file (setup.cfg) to use the
+# current conda installation:
+#
+#   - use fftw if installed
+#   - use xspec-modelsonly if installed
+#
+
+# Check we have a conda environment
+#
+if [ "x$CONDA_PREFIX" = "x" ]; then
+    echo "ERROR: has conda been initialized?"
+    exit 1;
+fi
+
+# What conda-like system are we using?
+#
+function find_conda_exe {
+    local name
+    local output
+    output=""
+    for name in conda mamba micromamba ; do
+	if command -v $name >/dev/null 2>&1; then
+	    output=$name
+	    break
+	fi
+    done
+    echo "$output"
+}
+
+EXE=$(find_conda_exe)
+if [ "$EXE" = "" ]; then
+    echo "ERROR: unable to find conda, mamba, or micromamba"
+    exit 1
+fi
+
+fftw_version=`$EXE list fftw --json | grep version | awk '{print $2;}' - | tr -d \"`
+if [ "x$fftw_version" != "x" ]; then
+    echo "Found FFTW version: $fftw_version";
+fi
+
+xspec_version=`$EXE list xspec-modelsonly --json | grep version | awk '{print $2;}' - | tr -d \"`
+if [ "x$xspec_version" != "x" ]; then
+    echo "Found XSPEC version: $xspec_version";
+fi
+
+if [ "x" = "x$fftw_version" ] && [ "x" = "x$xspec_version" ]; then
+    echo "Did not find FFTW or xspec-modelsonly; no change needed";
+    # Treat this as an error because we assume one of the packages has
+    # been installed, otherwise why call this script?
+    #
+    exit 1;
+fi
+
+# Are we in the right directory
+#
+cfg=setup.cfg
+if [ ! -f $cfg ]; then
+    echo "ERROR: Unable to find $cfg";
+    exit 1;
+fi
+
+# Check the file has not been changed (this could be relaxed but
+# try this approach first).
+#
+git diff --exit-code $cfg > /dev/null
+if [ $? -ne 0 ]; then
+    echo "ERROR: $cfg has already been changed."
+    exit 1;
+fi
+
+# Apply the changes line-by-line
+#
+echo "Updating $cfg"
+
+if [ "x$fftw_version" != "x" ]; then
+    sed -i="" "s|#fftw=local|fftw=local|" $cfg
+    sed -i="" "s|#fftw_include_dirs=build/include|fftw_include_dirs=${CONDA_PREFIX}/include|" $cfg
+    sed -i="" "s|#fftw_lib-dirs=build/lib|fftw_lib-dirs=${CONDA_PREFIX}/lib|" $cfg
+    sed -i="" "s|#fftw_libraries=fftw3|fftw_libraries=fftw3|" $cfg
+fi
+
+if [ "x$xspec_version" != "x" ]; then
+    sed -i="" "s|#with_xspec=True|with_xspec=True|" $cfg
+    sed -i="" "s|#xspec_include_dirs = None|xspec_include_dirs=${CONDA_PREFIX}/include|" $cfg
+    sed -i="" "s|#xspec_lib_dirs = None|xspec_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
+    sed -i="" "s|#xspec_version = .*|xspec_version = ${xspec_version}|" $cfg
+fi
+
+# Depending on the version of sed, there might be a temporary file. Remove it if it exists.
+rm -f setup.cfg=
