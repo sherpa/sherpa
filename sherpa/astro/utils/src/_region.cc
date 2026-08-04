@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2016, 2020-2022, 2025
+//  Copyright (C) 2009, 2016, 2020-2022, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -78,9 +78,10 @@ static regRegion* parse_string( std::string input, int fileflag ) {
 
 static PyObject* pyRegion_build(PyTypeObject *type, regRegion *reg) {
   PyRegion *ret = NULL;
-  ret = (PyRegion*)type->tp_alloc( type, 0 );
-  if( ret )
-  ret->region = reg;
+  ret = (PyRegion*) PyType_GenericAlloc(type, 0);
+  if( ret ) {
+    ret->region = reg;
+  }
 
   return (PyObject*)ret;
 }
@@ -205,55 +206,28 @@ static PyMethodDef pyRegion_methods[] = {
 };
 
 
-// Unfortunately we can not use C99-style designated initializers here
-// so we need to keep all the "null" values.
-//
-static PyTypeObject pyRegion_Type = {
-  // Note that there is no semicolon after the PyObject_HEAD_INIT macro;
-  // one is included in the macro definition.
-  PyVarObject_HEAD_INIT(NULL, 0)    // ob_size
-  (char*)"PyRegion",             // tp_name
-  sizeof(PyRegion),              // tp_basicsize
-  0, 		                 // tp_itemsize
-  (destructor)pyRegion_dealloc,  // tp_dealloc
-  0,                             // tp_print
-  0,                             // tp_getattr
-  0,                             // tp_setattr
-  0,                             // tp_compare
-  (reprfunc)pyRegion_str,        // tp_repr
-  0,                             // tp_as_number
-  0,                             // tp_as_sequence
-  0,                             // tp_as_mapping
-  0,                             // tp_hash
-  0,                             // tp_call
-  (reprfunc)pyRegion_str,        // tp_str
-  0,                             // tp_getattro
-  0,                             // tp_setattro
-  0,                             // tp_as_buffer
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, //tp_flags  DO NOT REMOVE
-  (char*)"PyRegion reg = Region(region, fileflag=False)",      // tp_doc, __doc__
-  0,		                 // tp_traverse
-  0,		                 // tp_clear
-  0,		                 // tp_richcompare
-  0,		                 // tp_weaklistoffset
-  0,		                 // tp_iter, __iter__
-  0,		                 // tp_iternext
-  pyRegion_methods,              // tp_methods
-  0,                             // tp_members
-  0,                             // tp_getset
-  0,                             // tp_base
-  0,                             // tp_dict, __dict__
-  0,                             // tp_descr_get
-  0,                             // tp_descr_set
-  0,                             // tp_dictoffset
-  0,                             // tp_init, __init__
-  0,                             // tp_alloc
-  pyRegion_new,                  // tp_new
+static PyType_Slot pyRegion_Slots[] =
+  {
+    {Py_tp_doc, (void *) "PyRegion reg = Region(region, fileflag=False)"},
+    {Py_tp_dealloc, (void *) pyRegion_dealloc},
+    {Py_tp_repr, (void *) pyRegion_str},
+    {Py_tp_str, (void *) pyRegion_str},
+    {Py_tp_methods, (void *) pyRegion_methods},
+    {Py_tp_new, (void *) pyRegion_new},
+    {0, 0}
+  };
+
+static PyType_Spec pyRegion_Spec = {
+  "_reg.PyRegion",
+  sizeof(PyRegion),
+  0,
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+  pyRegion_Slots
 };
 
+static PyTypeObject *pyRegion_Type = NULL;
 
-// Needs to be defined after pyRegion_type is defined.
-//
+
 // Take the union of the the argument with the object.
 //
 static PyObject* region_union( PyRegion* self, PyObject* args, PyObject *kwargs )
@@ -264,7 +238,8 @@ static PyObject* region_union( PyRegion* self, PyObject* args, PyObject *kwargs 
   static const char *kwlist[] = {"region", NULL};
   if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!",
                                      const_cast<char**>(kwlist),
-				     &pyRegion_Type, &reg_obj2))
+				     (PyObject *) pyRegion_Type,
+				     &reg_obj2))
     return NULL;
 
   PyRegion *reg2 = (PyRegion*)(reg_obj2);
@@ -285,7 +260,7 @@ static PyObject* region_union( PyRegion* self, PyObject* args, PyObject *kwargs 
   // increase the reference count (and if "O" is used it
   // leaks memory...)
   //
-  PyRegion *out = (PyRegion*) pyRegion_build( &pyRegion_Type, combined );
+  PyRegion *out = (PyRegion*) pyRegion_build( pyRegion_Type, combined );
   return Py_BuildValue((char*)"N", out);
 
 }
@@ -300,7 +275,8 @@ static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwar
   static const char *kwlist[] = {"region", NULL};
   if ( !PyArg_ParseTupleAndKeywords( args, kwargs, "O!",
                                      const_cast<char**>(kwlist),
-				     &pyRegion_Type, &reg_obj2))
+				     (PyObject *)pyRegion_Type,
+				     &reg_obj2))
     return NULL;
 
   PyRegion *reg2 = (PyRegion*)(reg_obj2);
@@ -323,7 +299,7 @@ static PyObject* region_subtract( PyRegion* self, PyObject* args, PyObject *kwar
   // increase the reference count (and if "O" is used it
   // leaks memory...)
   //
-  PyRegion *out = (PyRegion*) pyRegion_build( &pyRegion_Type, combined );
+  PyRegion *out = (PyRegion*) pyRegion_build( pyRegion_Type, combined );
   return Py_BuildValue((char*)"N", out);
 
 }
@@ -363,21 +339,16 @@ PyMODINIT_FUNC
 PyInit__region(void)
 {
 
-  PyObject *m;
-
-  if (PyType_Ready(&pyRegion_Type) < 0)
-    return NULL;
-
   import_array();
 
-  m = PyModule_Create(&module_region);
+  PyObject *m = PyModule_Create(&module_region);
   if (m == NULL)
     return NULL;
 
-  Py_INCREF(&pyRegion_Type);
-  if (PyModule_AddObject(m, (char*)"Region", (PyObject *)&pyRegion_Type) < 0) {
-    Py_DECREF(&pyRegion_Type);
+  pyRegion_Type = (PyTypeObject *) PyType_FromSpec(&pyRegion_Spec);
+  if (PyModule_AddObject(m, (char*)"Region", (PyObject*)pyRegion_Type) < 0) {
     Py_DECREF(m);
+    return NULL;
   }
 
   // Add a symbol to indicate whether the module was built with the

@@ -1,5 +1,6 @@
 //
-//  Copyright (C) 2007, 2020, 2021  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2020-2021, 2026
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -18,13 +19,15 @@
 //
 
 // This define is needed for "#i" argument to PyArg_ParseTuple in init_optfcn
-// and must be made before including Python.h
+// and must be made before including Python.h (at least while still supporting
+// Python 3.12 and earlier).
+//
 #define PY_SSIZE_T_CLEAN
-
-#include <Python.h>
 
 #include <sherpa/extension.hh>
 #include "tstoptfct.hh"
+
+#include <cstring>
 
 static PyObject *Ackley( PyObject *self, PyObject *args ) {
   DoubleArray xpar, fvec;
