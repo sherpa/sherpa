@@ -359,6 +359,46 @@ def test_uniform_sample2(setup):
     assert out == pytest.approx(EXPECTED_UNIFORM)
 
 
+def check_ratio(setup,
+                expected: np.ndarray,
+                got: np.ndarray,
+                scale: float
+                ) -> None:
+    """Check that the got value is scale * expected after parvals."""
+
+    # Calculate the offset from the expected value, dropping the
+    # statistic column (which is first, and the clipped column,
+    # which is last).
+    #
+    pvals = np.asarray(setup.results.parvals)
+    delta1 = expected[:, 1:-1] - pvals
+    delta2 = got[:, 1:-1] - pvals
+    ratio = delta2 / delta1
+
+    ncols = len(pvals)
+    expected = np.full((setup.num, pvals.size), scale)
+    assert ratio == pytest.approx(expected, rel=1e-4)
+
+
+def test_uniform_sample_factor(setup):
+    """Scale with the factor argument"""
+    scale = 2.0
+    out = sim.uniform_sample(setup.fit, num=setup.num, factor=scale * 4,
+                             rng=setup.rng)
+
+    check_ratio(setup, EXPECTED_UNIFORM, out, scale)
+
+
+def test_uniform_sample_via_est_methods(setup):
+    """Scale sigma via the est_method_args argument"""
+    scale = 2.0
+    out = sim.uniform_sample(setup.fit, num=setup.num,
+                             est_method_args={"sigma": scale},
+                             rng=setup.rng)
+
+    check_ratio(setup, EXPECTED_UNIFORM, out, scale)
+
+
 def test_normal_sample_vector(setup):
     ps = sim.NormalSampleFromScaleVector()
     out = ps.get_sample(setup.fit, num=setup.num, rng=setup.rng)
@@ -394,33 +434,27 @@ def test_normal_sample_sigma(setup):
     The sigma parameter has been renamed scale in 4.18.0.
     """
 
-    # Run with scale=1 and 2 and then check the output differs
-    # as expected. The return value is a 2D array where the first
-    # column is the statistic value and the remaining columns are
-    # the simulated parameter values. So the check is to compare
-    # the offset of the parameter values to the "truth", and
-    # see if it varies with scale.
-    #
-    # The scale=1 values have been tested in test_normal_sample,
-    # so there is no need to recalculate them here. Note they were
-    # calculated with the same RNG.
-    #
-    out1 = EXPECTED_NORMAL
-    out2 = sim.normal_sample(setup.fit, num=setup.num, scale=2,
-                             correlate=False, rng=setup.rng)
+    scale = 2.0
+    out = sim.normal_sample(setup.fit, num=setup.num, scale=scale,
+                            correlate=False, rng=setup.rng)
 
-    # Calculate the offset from the expected value, dropping the
-    # statistic column (which is first, and the clipped column,
-    # which is last).
-    #
-    pvals = np.asarray(setup.results.parvals)
-    delta1 = out1[:, 1:-1] - pvals
-    delta2 = out2[:, 1:-1] - pvals
-    ratio = delta2 / delta1
+    check_ratio(setup, EXPECTED_NORMAL, out, scale)
 
-    ncols = len(pvals)
-    expected = np.full((setup.num, ncols), 2.0)
-    assert ratio == pytest.approx(expected, rel=1e-4)
+
+def test_normal_sample_sigma_via_est_methods(setup):
+    """Test normal_sample with different sigma values.
+
+    The est_method_args allows various settings to be changed, but
+    the easiest test is to use it to replicate the sample setting.
+
+    """
+
+    scale = 2.0
+    out = sim.normal_sample(setup.fit, num=setup.num,
+                            est_method_args={"sigma": scale},
+                            correlate=False, rng=setup.rng)
+
+    check_ratio(setup, EXPECTED_NORMAL, out, scale)
 
 
 def test_normal_sample_correlated(setup):
@@ -437,39 +471,44 @@ def test_normal_sample_correlated_sigma(setup):
 
     """
 
-    # Run with scale=1 and 2 and then check the output differs
-    # as expected. The return value is a 2D array where the first
-    # column is the statistic value and the remaining columns are
-    # the simulated parameter values. So the check is to compare
-    # the offset of the parameter values to the "truth", and
-    # see if it varies with sigma.
-    #
-    # The scale=1 values have been tested in test_normal_sample_correlated,
-    # so there is no need to recalculate them here. Note they were
-    # calculated with the same RNG.
-    #
-    out1 = EXPECTED_NORMAL2
-    out2 = sim.normal_sample(setup.fit, num=setup.num, scale=2,
-                             correlate=True, rng=setup.rng)
+    scale = 2.0
+    out = sim.normal_sample(setup.fit, num=setup.num, scale=scale,
+                            correlate=True, rng=setup.rng)
 
-    # Calculate the offset from the expected value, dropping the
-    # statistic column (which is first, and the clipped column,
-    # which is last).
-    #
-    pvals = np.asarray(setup.results.parvals)
-    delta1 = out1[:, 1:-1] - pvals
-    delta2 = out2[:, 1:-1] - pvals
-    ratio = delta2 / delta1
+    check_ratio(setup, EXPECTED_NORMAL2, out, scale)
 
-    ncols = len(pvals)
-    expected = np.full((setup.num, ncols), 2.0)
-    assert ratio == pytest.approx(expected, rel=1e-4)
+
+def test_normal_sample_correlated_sigma_via_est_methods(setup):
+    """Test normal_sample with different sigma values + correlation.
+
+    The est_method_args allows various settings to be changed, but
+    the easiest test is to use it to replicate the sample setting.
+
+    """
+
+    scale = 2.0
+    out = sim.normal_sample(setup.fit, num=setup.num,
+                            est_method_args={"sigma": scale},
+                            correlate=True, rng=setup.rng)
+
+    check_ratio(setup, EXPECTED_NORMAL2, out, scale)
 
 
 def test_t_sample(setup):
     out = sim.t_sample(setup.fit, setup.num, setup.dof, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_T)
+
+
+def test_t_sample_sigma_via_est_methods(setup):
+    """Does changing the sigma change the result?"""
+
+    scale = 2.0
+    out = sim.t_sample(setup.fit, setup.num, setup.dof,
+                       est_method_args={"sigma": scale},
+                       rng=setup.rng)
+
+    check_ratio(setup, EXPECTED_T, out, scale)
 
 
 RATIOS_ONE = np.asarray([2.43733721, 3.52628288, 4.18396336, 1.73659659, 3.70862308, 2.19009678,
