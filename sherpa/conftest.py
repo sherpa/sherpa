@@ -758,8 +758,15 @@ class NumberChecker:
         lhs, value, rhs = self.split(got)
         assert lhs == self.lhs
         assert rhs == self.rhs
+
+        # See https://github.com/mesonbuild/meson-python/issues/646
+        # as the --import-mode=importlib approach does not seem to
+        # work for Sherpa.
+        #
+        emsg = f"assert {value} == {self.number} += {self.rtol} / {self.atol}"
         assert value == pytest.approx(self.number,
-                                      rel=self.rtol, abs=self.atol)
+                                      rel=self.rtol, abs=self.atol), \
+                                      emsg
 
 
 def check_str_fixture(out, expecteds):
@@ -776,6 +783,9 @@ def check_str_fixture(out, expecteds):
         "# doctest: +FLOAT_CMP"
 
     to the end of each line that needs it.
+
+    Using "# doctest: +ELLIPSIS" will stop the comparison at the
+    ellipsis, which must exist in the line.
 
     Parameters
     ----------
@@ -794,6 +804,7 @@ def check_str_fixture(out, expecteds):
         # expected is one of:
         #  - a pattern
         #  - a string ending in #doctest: +FLOAT_CMP
+        #  - a string ending in #doctest: +ELLIPSIS
         #  - a normal string
         #
         try:
@@ -805,7 +816,19 @@ def check_str_fixture(out, expecteds):
                 pat.check(tok)
                 continue
 
-            assert tok == expected
+            # See https://github.com/mesonbuild/meson-python/issues/646
+            # for the need to add a second argument to assert
+            #
+            idx = expected.find("# doctest: +ELLIPSIS")
+            if idx > -1:
+                idx = expected.find("...")
+                # If there is no ellipsis then the test is in error
+                assert idx > -1, expected
+
+                assert tok[:idx] == expected[:idx], f"assert '{tok[:idx]}' == '{expected[:idx]}'"
+                continue
+
+            assert tok == expected, f"assert '{tok}' == '{expected}'"
 
     assert len(toks) == len(expecteds)
 

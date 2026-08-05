@@ -1,2 +1,14 @@
-_version.py export-subst
-sherpa/_version.py export-subst
+# github CI
+.github/** export-ignore
+
+# Test data
+# (this does not seem to work, is it because this is a submodule directory?)
+sherpa-test-data/** export-ignore
+
+# conda
+conda_build_config.yaml export-ignore
+recipes/** export-ignore
+
+# Read The Docs
+readthedocs.yml export-ignore
+docs/environment.yml export-ignore

@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+#
+# What are the build options for Sherpa? At present the only option is whether
+# to turn on XSPEC support, which is triggered by
+#
+# - HEADAS environment variable is set
+#
+# The XSPEC library and include files are assumed to be in $CONDA_PREFIX.
+#
+
+import os
+
+
+def doit():
+    """Create the build arguments."""
+
+    # If CONDA_PREFIX is not set up then return nothing (this could
+    # error out but it doesn't seem to be worth it).
+    #
+    # If HEADAS is not set then there is nothing to do (this is just
+    # used as an indicator that XSPEC support is required, but not to
+    # say what the prefix should be).
+    #
+    try:
+        prefix = os.environ["CONDA_PREFIX"]
+        _ = os.environ["HEADAS"]
+    except KeyError:
+        return
+
+    print(f"-Csetup-args=-Dxspec-prefix={prefix}")
+
+
+if __name__ == "__main__":
+
+    # For now ignore any arguments
+    doit()
