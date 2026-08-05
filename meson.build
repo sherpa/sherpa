@@ -16,7 +16,7 @@ project(
   meson_version: '>= 1.6.0',
   default_options: [
     'c_std=c11',
-    'cpp_std=c++11'
+    'cpp_std=c++20'
   ]
 )
 

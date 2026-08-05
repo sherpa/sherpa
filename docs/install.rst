@@ -36,6 +36,8 @@ Sherpa has the following requirements:
 * Python 3.11 to 3.14 (there is no support for free-threaded Python)
 * NumPy
 * `FFTW <https://www.fftw.org/>`_
+* a C compiler supporting the C11 standard and a C++ compiler
+  supporting the C++20 standard
 * Linux or OS-X (patches to add Windows support are welcome)
 
 Sherpa can take advantage of the following Python packages
