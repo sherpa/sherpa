@@ -21,6 +21,12 @@ if [ "`uname -s`" == "Darwin" ] ; then
     fi
     tar -C ${GITHUB_WORKSPACE}/../11.0SDK -xf MacOSX11.0.sdk.tar.xz
 
+    # What SDK is in use?
+    #
+    echo "*** SDK path: `xcrun --show-sdk-path`"
+    ls -l `xcrun --show-sdk-path`
+    echo "*** SDK version: `xcrun --show-sdk-version`"
+
 else
     compilers="gcc_linux-64=14.2 gxx_linux-64=14.2 gfortran_linux-64"
 
@@ -54,6 +60,6 @@ echo "compilers:    ${compilers}"
 
 # Create and activate conda build environment
 # conda create --yes -n build python"=${PYTHONVER}.*=*cpython*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
-conda create --yes -n build python"=${PYTHONVER}.*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
+conda create --yes --quiet -n build python"=${PYTHONVER}.*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
 
 conda activate build

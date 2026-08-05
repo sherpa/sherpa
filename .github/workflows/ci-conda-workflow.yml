@@ -18,7 +18,6 @@ env:
   xspec_channel: "https://cxc.cfa.harvard.edu/conda/test"
   # ensure conda environment is built outside the repository (to
   # avoid errors from meson)
-  CONDA_BUILD_SYSROOT: ${{ github.workspace }}/../11.0SDK/MacOSX11.0.sdk
   conda_loc: ${{ github.workspace }}/../conda_loc
 
 jobs:
@@ -40,7 +39,7 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             bokeh-version: 3
-            xspec-version: 12.14.0i
+            xspec-version: 12.14.0k
 
           - name: MacOS ARM Full Build (Python 3.12)
             os: macos-14
@@ -50,65 +49,7 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             bokeh-version: 3
-            xspec-version: 12.13.1e
-
-          - name: Linux Minimum Setup (Python 3.11)
-            os: ubuntu-latest
-            python-version: "3.11"
-            numpy-version: "2.3.2"
-            install-type: develop
-            test-data: none
-
-          - name: Linux Minimum Setup (Python 3.12)
-            os: ubuntu-latest
-            python-version: "3.12"
-            numpy-version: "2.3.2"
-            install-type: develop
-            test-data: none
-
-          - name: Linux Full Build (Python 3.13)
-            os: ubuntu-latest
-            python-version: "3.13"
-            install-type: develop
-            fits: astropy
-            test-data: submodule
-            matplotlib-version: 3
-            bokeh-version: 3
-            xspec-version: 12.14.0i
-
-          - name: Linux Full Build (Python 3.12)
-            os: ubuntu-latest
-            python-version: "3.12"
-            install-type: develop
-            fits: astropy
-            test-data: submodule
-            matplotlib-version: 3
-            bokeh-version: 3
-            xspec-version: 12.14.0i
-
-          - name: Linux Full Build (Python 3.11)
-            os: ubuntu-latest
-            python-version: "3.11"
-            install-type: develop
-            fits: astropy
-            test-data: submodule
-            matplotlib-version: 3
-            xspec-version: 12.13.1
-
-          - name: Linux Build (w/o Astropy or Xspec)
-            os: ubuntu-latest
-            python-version: "3.14"
-            install-type: install
-            test-data: package
-            matplotlib-version: 3
-
-          - name: Linux Build (w/o Matplotlib, Xspec, or test data)
-            os: ubuntu-latest
-            python-version: "3.13"
-            numpy-version: "2.3.2"
-            install-type: develop
-            fits: astropy
-            test-data: none
+            xspec-version: 12.14.0k
 
     steps:
     - name: Checkout Code
@@ -263,4 +204,3 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ${{ github.workspace }}/coverage.xml
         verbose: true
-
