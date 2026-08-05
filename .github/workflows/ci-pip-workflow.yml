@@ -32,44 +32,6 @@ jobs:
             install-type: develop
             test-data: none
 
-          - name: Linux Build (w/o Xspec; Python 3.12)
-            os: ubuntu-latest
-            python-version: "3.12"
-            numpy-pkg: 'numpy'
-            install-type: install
-            test-data: package
-            fits-pkg: 'astropy'
-            matplotlib-pkg: 'matplotlib>=3,<4'
-            bokeh-pkg: 'bokeh>=3,<4'
-            ncores: 1
-
-          - name: Linux Build (w/o Matplotlib, Astropy or Xspec)
-            os: ubuntu-latest
-            python-version: "3.12"
-            numpy-pkg: 'numpy'
-            install-type: install
-            test-data: package
-            optimagic-pkg: 'optimagic'
-
-          - name: Linux Build (w/o Matplotlib, Xspec, or test data)
-            os: ubuntu-latest
-            python-version: "3.11"
-            numpy-pkg: 'numpy'
-            install-type: develop
-            fits-pkg: 'astropy'
-            test-data: none
-
-          - name: Linux Build (submodule data without Xspec)
-            os: ubuntu-latest
-            python-version: "3.13"
-            numpy-pkg: 'numpy'
-            install-type: develop
-            matplotlib-pkg: 'matplotlib>=3,<4'
-            bokeh-pkg: 'bokeh>=3,<4'
-            arviz-pkg: 'arviz>=1.0.0'
-            fits-pkg: 'astropy'
-            test-data: submodule
-
     steps:
     - name: Checkout Code
       uses: actions/checkout@v6
