@@ -11,7 +11,7 @@ if [ "`uname -s`" == "Darwin" ] ; then
     else
 	sys="arm64"
     fi
-    compilers="clang_osx-${sys} clangxx_osx-${sys} gfortran_osx-${sys}"
+    compilers="clang_osx-${sys} clangxx_osx-${sys}"
 
     #Download the macOS 11.0 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
     mkdir -p ${GITHUB_WORKSPACE}/../11.0SDK
@@ -22,7 +22,7 @@ if [ "`uname -s`" == "Darwin" ] ; then
     tar -C ${GITHUB_WORKSPACE}/../11.0SDK -xf MacOSX11.0.sdk.tar.xz
 
 else
-    compilers="gcc_linux-64=14.2 gxx_linux-64=14.2 gfortran_linux-64"
+    compilers="gcc_linux-64=14.2 gxx_linux-64=14.2"
 
     if [ -n "${MATPLOTLIBVER}" ]; then
         #Installed for qt-main deps which is needed for the QtAgg backend to work for matplotlib
@@ -44,16 +44,22 @@ fi
 if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
 if [ -n "${BOKEHVER}" ]; then BOKEH="bokeh=${BOKEHVER}"; fi
 if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
-# Xspec >=12.10.1n Conda package includes wcslib & CCfits and pulls in cfitsio & fftw
 if [ -n "${XSPECVER}" ];
  then export XSPEC="xspec-modelsonly=${XSPECVER}";
 fi
 
-echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD}"
+# Install FFTW rather than use the version bundled with Sherpa.  This
+# requires pkg-config as well, otherwise the build system can not find
+# it!
+#
+FFTW="fftw pkg-config"
+
+echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${FFTW}"
 echo "compilers:    ${compilers}"
 
 # Create and activate conda build environment
-# conda create --yes -n build python"=${PYTHONVER}.*=*cpython*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
-conda create --yes -n build python"=${PYTHONVER}.*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
+# - should this use python"=${PYTHONVER}.*=*cpython*" instead?
+#
+conda create --quiet --yes -n build python"=${PYTHONVER}.*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${FFTW} ${compilers}
 
 conda activate build
