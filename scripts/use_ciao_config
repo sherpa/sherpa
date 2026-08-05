@@ -94,8 +94,8 @@ sed -i="" "s|#fftw_lib_dirs=build/lib|fftw_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
 sed -i="" "s|#fftw_libraries=fftw3|fftw_libraries=fftw3|" $cfg
 
 sed -i="" "s|#with_xspec=True|with_xspec=True|" $cfg
-sed -i="" "s|#xspec_include_dirs = None|xspec_include_dirs=${CONDA_PREFIX}/include|" $cfg
-sed -i="" "s|#xspec_lib_dirs = None|xspec_lib_dirs=${CONDA_PREFIX}/lib|" $cfg
+sed -i="" "s|#xspec_include_dirs = .*|xspec_include_dirs = ${CONDA_PREFIX}/include|" $cfg
+sed -i="" "s|#xspec_lib_dirs = .*|xspec_lib_dirs = ${CONDA_PREFIX}/lib|" $cfg
 sed -i="" "s|#xspec_version = .*|xspec_version = ${xspec_version}|" $cfg
 
 # Depending on the version of sed, there might be a temporary file. Remove it if it exists.

@@ -37,6 +37,8 @@ The sherpa.astro.xspec module
       XSbexpcheb6
       XSbexrav
       XSbexriv
+      XSbfekblor
+      XSbfeklor
       XSbgadem
       XSbgnei
       XSbkn2pow
@@ -130,6 +132,7 @@ The sherpa.astro.xspec module
       XSexpdec
       XSexpfac
       XSezdiskbb
+      XSfekblor
       XSfeklor
       XSgabs
       XSgadem
@@ -207,6 +210,13 @@ The sherpa.astro.xspec module
       XSrgsext
       XSrgsxsrc
       XSrnei
+      XSrsapec
+      XSrsgaussian
+      XSrsrnei
+      XSrsvapec
+      XSrsvrnei
+      XSrsvvapec
+      XSrsvvrnei
       XSsedov
       XSsimpl
       XSsirf
@@ -281,11 +291,14 @@ The sherpa.astro.xspec module
       XSzashift
       XSzbabs
       XSzbbody
+      XSzbfekblor
+      XSzbfeklor
       XSzbknpower
       XSzbremss
       XSzcutoffpl
       XSzdust
       XSzedge
+      XSzfekblor
       XSzfeklor
       XSzgabs
       XSzgauss
@@ -321,7 +334,7 @@ The sherpa.astro.xspec module
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: XSagauss XSagnsed XSagnslim XSapec XSbapec XSbbody XSbbodyrad XSbcempow XSbcheb6 XSbcie XSbcoolflow XSbcph XSbequil XSbexpcheb6 XSbexrav XSbexriv XSbgadem XSbgnei XSbkn2pow XSbknpower XSbmc XSbnei XSbnpshock XSbpshock XSbremss XSbrnei XSbsedov XSbsnapec XSbtapec XSbvapec XSbvcempow XSbvcheb6 XSbvcie XSbvcoolflow XSbvcph XSbvequil XSbvexpcheb6 XSbvgadem XSbvgnei XSbvnei XSbvnpshock XSbvpshock XSbvrnei XSbvsedov XSbvtapec XSbvvapec XSbvvcie XSbvvgadem XSbvvgnei XSbvvnei XSbvvnpshock XSbvvpshock XSbvvrnei XSbvvsedov XSbvvtapec XSbvvwdem XSbvwdem XSbwcycl XSbwdem XSc6mekl XSc6pmekl XSc6pvmkl XSc6vmekl XScarbatm XScemekl XScempow XScevmkl XScflow XScheb6 XScie XScompLS XScompPS XScompST XScompTT XScompbb XScompmag XScomptb XScompth XScoolflow XScph XScplinear XScutoffpl XSdisk XSdiskbb XSdiskir XSdiskline XSdiskm XSdisko XSdiskpbb XSdiskpn XSeebremss XSeplogpar XSeqpair XSeqtherm XSequil XSexpcheb6 XSexpdec XSezdiskbb XSfeklor XSgadem XSgaussian XSgnei XSgrad XSgrbcomp XSgrbjet XSgrbm XShatm XSjet XSkerrbb XSkerrd XSkerrdisk XSkyrline XSlaor XSlaor2 XSlogpar XSlorentz XSmeka XSmekal XSmkcflow XSnei XSnlapec XSnpshock XSnsa XSnsagrav XSnsatmos XSnsmax XSnsmaxg XSnsx XSnteea XSnthComp XSoptxagn XSoptxagnf XSpegpwrlw XSpexmon XSpexrav XSpexriv XSplcabs XSposm XSpowerlaw XSpshock XSqsosed XSraymond XSredge XSrefsch XSrnei XSsedov XSsirf XSslimbh XSsnapec XSsrcut XSsresc XSssa XSsssed XSstep XStapec XSvagauss XSvapec XSvbremss XSvcempow XSvcheb6 XSvcie XSvcoolflow XSvcph XSvequil XSvexpcheb6 XSvgadem XSvgaussian XSvgnei XSvlorentz XSvmcflow XSvmeka XSvmekal XSvnei XSvnpshock XSvoigt XSvpshock XSvraymond XSvrnei XSvsedov XSvtapec XSvvapec XSvvcie XSvvgadem XSvvgnei XSvvnei XSvvnpshock XSvvoigt XSvvpshock XSvvrnei XSvvsedov XSvvtapec XSvvwdem XSvwdem XSwdem XSzagauss XSzbbody XSzbknpower XSzbremss XSzcutoffpl XSzfeklor XSzgauss XSzkerrbb XSzlogpar XSzlorentz XSzpowerlw XSzvagauss XSzvgaussian XSzvlorentz XSzvoigt XSzvvoigt
+.. inheritance-diagram:: XSagauss XSagnsed XSagnslim XSapec XSbapec XSbbody XSbbodyrad XSbcempow XSbcheb6 XSbcie XSbcoolflow XSbcph XSbequil XSbexpcheb6 XSbexrav XSbexriv XSbfekblor XSbfeklor XSbgadem XSbgnei XSbkn2pow XSbknpower XSbmc XSbnei XSbnpshock XSbpshock XSbremss XSbrnei XSbsedov XSbsnapec XSbtapec XSbvapec XSbvcempow XSbvcheb6 XSbvcie XSbvcoolflow XSbvcph XSbvequil XSbvexpcheb6 XSbvgadem XSbvgnei XSbvnei XSbvnpshock XSbvpshock XSbvrnei XSbvsedov XSbvtapec XSbvvapec XSbvvcie XSbvvgadem XSbvvgnei XSbvvnei XSbvvnpshock XSbvvpshock XSbvvrnei XSbvvsedov XSbvvtapec XSbvvwdem XSbvwdem XSbwcycl XSbwdem XSc6mekl XSc6pmekl XSc6pvmkl XSc6vmekl XScarbatm XScemekl XScempow XScevmkl XScflow XScheb6 XScie XScompLS XScompPS XScompST XScompTT XScompbb XScompmag XScomptb XScompth XScoolflow XScph XScplinear XScutoffpl XSdisk XSdiskbb XSdiskir XSdiskline XSdiskm XSdisko XSdiskpbb XSdiskpn XSeebremss XSeplogpar XSeqpair XSeqtherm XSequil XSexpcheb6 XSexpdec XSezdiskbb XSfekblor XSfeklor XSgadem XSgaussian XSgnei XSgrad XSgrbcomp XSgrbjet XSgrbm XShatm XSjet XSkerrbb XSkerrd XSkerrdisk XSkyrline XSlaor XSlaor2 XSlogpar XSlorentz XSmeka XSmekal XSmkcflow XSnei XSnlapec XSnpshock XSnsa XSnsagrav XSnsatmos XSnsmax XSnsmaxg XSnsx XSnteea XSnthComp XSoptxagn XSoptxagnf XSpegpwrlw XSpexmon XSpexrav XSpexriv XSplcabs XSposm XSpowerlaw XSpshock XSqsosed XSraymond XSredge XSrefsch XSrnei XSrsapec XSrsgaussian XSrsrnei XSrsvapec XSrsvrnei XSrsvvapec XSrsvvrnei XSsedov XSsirf XSslimbh XSsnapec XSsrcut XSsresc XSssa XSsssed XSstep XStapec XSvagauss XSvapec XSvbremss XSvcempow XSvcheb6 XSvcie XSvcoolflow XSvcph XSvequil XSvexpcheb6 XSvgadem XSvgaussian XSvgnei XSvlorentz XSvmcflow XSvmeka XSvmekal XSvnei XSvnpshock XSvoigt XSvpshock XSvraymond XSvrnei XSvsedov XSvtapec XSvvapec XSvvcie XSvvgadem XSvvgnei XSvvnei XSvvnpshock XSvvoigt XSvvpshock XSvvrnei XSvvsedov XSvvtapec XSvvwdem XSvwdem XSwdem XSzagauss XSzbbody XSzbfekblor XSzbfeklor XSzbknpower XSzbremss XSzcutoffpl XSzfekblor XSzfeklor XSzgauss XSzkerrbb XSzlogpar XSzlorentz XSzpowerlw XSzvagauss XSzvgaussian XSzvlorentz XSzvoigt XSzvvoigt
    :parts: 1
 
 .. inheritance-diagram:: XSSSS_ice XSTBabs XSTBfeo XSTBgas XSTBgrain XSTBpcf XSTBrel XSTBvarabs XSabsori XSacisabs XScabs XSconstant XScyclabs XSdust XSedge XSexpabs XSexpfac XSgabs XSheilin XShighecut XShrefl XSismabs XSismdust XSlog10con XSlogconst XSlorabs XSlyman XSnotch XSolivineabs XSpcfabs XSphabs XSplabs XSpwab XSredden XSsmedge XSspexpcut XSspline XSswind1 XSuvred XSvarabs XSvgabs XSvlorabs XSvoigtabs XSvphabs XSvvoigtabs XSwabs XSwndabs XSxion XSxscat XSzTBabs XSzbabs XSzdust XSzedge XSzgabs XSzhighect XSzigm XSzlorabs XSzpcfabs XSzphabs XSzredden XSzsmdust XSzvarabs XSzvfeabs XSzvgabs XSzvlorabs XSzvoigtabs XSzvphabs XSzvvoigtabs XSzwabs XSzwndabs XSzxipab XSzxipcf

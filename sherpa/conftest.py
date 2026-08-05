@@ -777,6 +777,9 @@ def check_str_fixture(out, expecteds):
 
     to the end of each line that needs it.
 
+    Using "# doctest: +ELLIPSIS" will stop the comparison at the
+    ellipsis, which must exist in the line.
+
     Parameters
     ----------
     out : str
@@ -794,6 +797,7 @@ def check_str_fixture(out, expecteds):
         # expected is one of:
         #  - a pattern
         #  - a string ending in #doctest: +FLOAT_CMP
+        #  - a string ending in #doctest: +ELLIPSIS
         #  - a normal string
         #
         try:
@@ -803,6 +807,15 @@ def check_str_fixture(out, expecteds):
             if idx > -1:
                 pat = NumberChecker(expected[:idx].rstrip())
                 pat.check(tok)
+                continue
+
+            idx = expected.find("# doctest: +ELLIPSIS")
+            if idx > -1:
+                idx = expected.find("...")
+                # If there is no ellipsis then the test is in error
+                assert idx > -1, expected
+
+                assert tok[:idx] == expected[:idx]
                 continue
 
             assert tok == expected
