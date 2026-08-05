@@ -6,10 +6,12 @@ channels:
   - nodefaults
 
 dependencies:
-  - gxx=14.2
+  - gxx
   - bison
+  - pkg-config
   - python=3.13
   - numpy
+  - fftw
   - pandoc
   - matplotlib
   - astropy
