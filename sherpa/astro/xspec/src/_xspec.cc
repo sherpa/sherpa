@@ -1,4 +1,4 @@
-//  Copyright (C) 2007, 2015 - 2025
+//  Copyright (C) 2007, 2015-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -39,16 +39,6 @@
 //
 #include <XSFunctions/funcWrappers.h>
 #include <XSFunctions/functionMap.h>
-
-// The XSPEC initialization used to be done lazily - that is, only
-// when the first routine from XSPEC was about to be called - but
-// the module is now set up so that we need to know the version
-// of XSPEC being used when the sherpa.astro.xspec module is
-// being created. As the version requires a run-time check (that
-// is, the get_version call is made) then we know that we need to
-// initialize the XSPEC code when the Python module is installed.
-// So we no-longer need to support the lazy loading.
-//
 
 static int _sherpa_init_xspec_library()
 {
@@ -996,19 +986,65 @@ static PyMethodDef XSpecMethods[] = {
 
 };
 
+// The XSPEC library has "state" outside of this extension (e.g.  the
+// selected abundance table). However, this state is not directly
+// stored in the Python code, so it should be okay to "re-load" this
+// module, although there is the possibility that the Python code
+// does not handle the "changed" state of the XSPEC model library.
+//
+
+#if defined(Py_GIL_DISABLED)
+static PyMutex exec_xspec_mutex = {0};
+
+#define EXEC_LOCK    PyMutex_Lock(&exec_xspec_mutex);
+#define EXEC_UNLOCK  PyMutex_Unlock(&exec_xspec_mutex);
+
+#else
+
+#define EXEC_LOCK
+#define EXEC_UNLOCK
+
+#endif
+
+static int
+exec_xspec(PyObject *Py_UNUSED(m)) {
+  if (PyArray_ImportNumPyAPI() < 0) { return -1; }
+
+  // Ensure the XSPEC library is initialized.
+  //
+  EXEC_LOCK
+
+  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() ) {
+    EXEC_UNLOCK
+    PyErr_SetString(PyExc_ImportError,
+		    "cannot load XSPEC module more than once per process");
+    return -1;
+  }
+
+  EXEC_UNLOCK
+  return 0;
+}
+
+static PyModuleDef_Slot slots_xspec[] = {
+  {Py_mod_exec, (void *) exec_xspec},
+#if defined(Py_GIL_DISABLED)
+  {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+  {0, NULL}
+};
+
 static struct PyModuleDef xspec_module = {
         PyModuleDef_HEAD_INIT,
         "_xspec",
         NULL,
-        -1,
+        0,
         XSpecMethods,
+        slots_xspec,
+        NULL,
+        NULL,
+        NULL
 };
 
 PyMODINIT_FUNC PyInit__xspec(void) {
-  // Ensure the XSPEC library is initialized.
-  if ( EXIT_SUCCESS != _sherpa_init_xspec_library() )
-    return NULL;
-
-  import_array();
-  return PyModule_Create(&xspec_module);
+  return PyModuleDef_Init(&xspec_module);
 }

@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2016, 2020, 2025
+//  Copyright (C) 2007, 2016, 2020, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -19,7 +19,8 @@
 //
 
 #define _INTEGRATIONMODULE
-#include <Python.h>
+
+#include "sherpa/python.hh"
 #include "sherpa/integration.hh"
 #include <iostream>
 #include <limits>
@@ -161,35 +162,48 @@ namespace sherpa { namespace integration {
 
 }  }  /* namespace integration, namespace sherpa */
 
-static struct PyModuleDef integration = {
-    PyModuleDef_HEAD_INIT,
-    "integration",
-    NULL,
-    -1,
-    NULL
-};
 
-PyMODINIT_FUNC PyInit_integration(void) {
-
+// This could over-write the _SHERPAMOD_EXEC macro from extension.hh
+// but that brings in NumPy which is not needed here, so create the
+// extension directly.
+//
+static int integrationExec(PyObject *m) {
   static void *Integration_API[3];
   Integration_API[0] = (void*)sherpa::integration::integrate_1d;
   Integration_API[1] = (void*)sherpa::integration::integrate_Nd;
   Integration_API[2] = (void*)sherpa::integration::py_integrate_1d;
 
-  PyObject *m;
-  PyObject *api_cobject;
+  PyObject *api_cobject = PyCapsule_New( (void*)Integration_API,
+					 INTEGRATION_CAPSULE_NAME,
+					 NULL );
+  if (PyModule_AddObject(m, (char *) "_C_API", api_cobject) < 0) {
+    Py_XDECREF(api_cobject);
+    return -1;
+  }
+  return 0;
+}
 
-  if ( NULL == ( m = PyModule_Create( &integration ) ) )
-    return NULL;
+static PyModuleDef_Slot integrationSlots[] = {
+  {Py_mod_exec, (void *) integrationExec},
+#if defined(Py_GIL_DISABLED)
+  {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+  {0, NULL}
+};
 
-  if ( NULL == ( api_cobject = PyCapsule_New( (void*)Integration_API,
-                              NULL,
-						      NULL) ) )
-    return NULL;
+static struct PyModuleDef integrationModuledef = {
+  PyModuleDef_HEAD_INIT,
+  "integration",
+  NULL,
+  0,
+  NULL,
+  integrationSlots,
+  NULL,
+  NULL,
+  NULL
+};
 
-  // Since the actual data is static, we can let PyModule_AddObject()
-  // steal the reference
-  PyModule_AddObject( m, (char*)"_C_API", api_cobject );
-
-  return m;
+PyMODINIT_FUNC PyInit_integration(void)
+{
+  return PyModuleDef_Init(&integrationModuledef);
 }

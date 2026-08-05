@@ -1,5 +1,5 @@
 // 
-//  Copyright (C) 2007, 2016, 2019, 2020, 2023
+//  Copyright (C) 2007, 2016, 2019-2020, 2023, 2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -182,10 +182,8 @@ namespace sherpa { namespace models {
     
     if( logger && err.str() != "" ) {
 
-      PyObject *rv = PyObject_CallFunction( logger, (char*)"s",
-					    err.str().c_str() );
-      (void)rv;
-
+      PyObject *Py_UNUSED(rv) = PyObject_CallFunction( logger, (char*)"s",
+						       err.str().c_str() );
     }
     
     return result.return_new_ref();
@@ -430,21 +428,20 @@ namespace sherpa { namespace models {
 
 }  }  /* namespace models, namespace sherpa */
 
-#define SHERPAMODELMOD(name, fctlist) \
-static struct PyModuleDef module##name = {\
-PyModuleDef_HEAD_INIT, \
-#name, \
-NULL, \
--1, \
-fctlist \
-}; \
-\
-PyMODINIT_FUNC PyInit_##name(void) { \
-  import_array(); \
-  if ( -1 == import_integration() ) \
-    return NULL; \
-  return PyModule_Create(&module##name); \
-}
+// See SHERPAMOD macro in extension.hh. The _SHERPAMOD_EXEC is
+// over-written as models need to import array and integration
+// code, but the rest remains as SHERPAMOD.
+//
+
+#undef _SHERPAMOD_EXEC
+#define _SHERPAMOD_EXEC(name) \
+  static int exec##name(PyObject *Py_UNUSED(m)) { \
+    if (PyArray_ImportNumPyAPI() < 0) { return -1; } \
+    if ( -1 == import_integration() ) { return -1; } \
+    return 0; \
+  }
+
+#define SHERPAMODELMOD(name, fctlist)  _SHERPAMOD(name, fctlist, NULL)
 
 // Allow this to be customized on a per-file basis
 
@@ -471,12 +468,5 @@ PyMODINIT_FUNC PyInit_##name(void) { \
   _MODELFCTSPEC_NOINT(name, modelfct1d, integrated_model1d, npars)
 #define MODELFCT2D_NOINT(name, npars) \
   _MODELFCTSPEC_NOINT(name, modelfct2d, integrated_model2d, npars)
-
-#define MODSPEC_INT(name, func, doc) \
-  { (char*)name, (PyCFunction)((PyCFunctionWithKeywords)func), METH_VARARGS|METH_KEYWORDS, \
-    (char*)doc }
-
-#define PY_MODELFCT1D_INT(name, doc) \
-  MODSPEC_INT(name, sherpa::models::py_modelfct1d_int<SherpaFloatArray>, doc)
 
 #endif /* __sherpa_model_extension_hh__ */

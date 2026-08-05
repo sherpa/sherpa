@@ -1,5 +1,5 @@
-// 
-//  Copyright (C) 2007, 2016, 2020  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2007, 2016, 2020, 2026  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -28,6 +28,8 @@ extern "C" {
 				  void* params );
   typedef int (*integrand_1d_vec)( double* x, int len, void* params );
 }
+
+#define INTEGRATION_CAPSULE_NAME "sherpa.utils.integration._C_API"
 
 
 #if defined(_INTEGRATIONMODULE) || !defined(Py_PYTHON_H)
@@ -87,35 +89,13 @@ static void **Integration_API;
 #define integrate_Nd ((_integrate_Nd)Integration_API[1])
 #define py_integrate_1d ((_py_integrate_1d)Integration_API[2])
 
-#define PTR( obj ) PyCapsule_GetPointer( obj, NULL )
 
 static int
 import_integration(void)
 {
 
-  PyObject *m = NULL;
-  PyObject *api_cobject = NULL;
-  int rv = -1;
-
-  if ( NULL == 
-       ( m = PyImport_ImportModule( (char*)"sherpa.utils.integration" ) ) )
-    goto error;
-
-  if ( NULL == ( api_cobject = PyObject_GetAttrString( m, (char*)"_C_API" ) ) )
-    goto error;
-
-  if ( NULL ==
-       ( Integration_API = (void**) PTR( api_cobject ) ) )
-    goto error;
-
-  rv = 0;
-
- error:
-  Py_XDECREF(m);
-  Py_XDECREF(api_cobject);
-
-  return rv;
-
+  Integration_API = (void **) PyCapsule_Import(INTEGRATION_CAPSULE_NAME, 0);
+  return (Integration_API != NULL) ? 0 : -1;
 }
 
 

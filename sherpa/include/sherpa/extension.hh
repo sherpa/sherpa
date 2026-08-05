@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2016-2017, 2020, 2022-2023, 2025
+//  Copyright (C) 2007, 2016-2017, 2020, 2022-2023, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -39,40 +39,77 @@ typedef int (*converter)( PyObject*, void* );
 
 #define CONVERTME(arg) ((converter) sherpa::convert_to_contig_array<arg>)
 
-// Create the initialization for the module called name, with the
-// list of functions in fctlist, and the module documentation set
-// to doc (which can be NULL).
+// Define the macros for the SHERPAMOD/SHERPAMODDOC macros, which are
+// used for extensions with no "state".
+//
+#define _SHERPAMOD_EXEC(name) \
+  static int exec##name(PyObject *Py_UNUSED(m)) { \
+    if (PyArray_ImportNumPyAPI() < 0) { return -1; } \
+    return 0; \
+  }
+
+// The assumption is that with no setup these models have no "state"
+// and so can be used with no GIL when building as a free-threaded
+// build, which - for Python 3.14 and earlier, means no limited-API.
+//
+#if defined(Py_GIL_DISABLED)
+#define _SHERPAMOD_SLOTS_GIL {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#else
+#define _SHERPAMOD_SLOTS_GIL
+#endif
+
+#define _SHERPAMOD_SLOTS(name) \
+  static PyModuleDef_Slot slots##name[] = { \
+    {Py_mod_exec, (void *) exec##name},    \
+    _SHERPAMOD_SLOTS_GIL \
+    {0, NULL} \
+  };
+
+#define _SHERPAMOD_DEF(name, fctlist, doc)  \
+  static struct PyModuleDef module##name = { \
+    PyModuleDef_HEAD_INIT, \
+    #name, \
+    doc, \
+    0, \
+    fctlist, \
+    slots##name, \
+    NULL, \
+    NULL, \
+    NULL \
+  };
+
+#define _SHERPAMOD_FUNC(name) \
+  PyMODINIT_FUNC PyInit_##name(void) { \
+    return PyModuleDef_Init(&module##name); \
+  }
+
+// Create the initialization for the module called name, with the list
+// of functions in fctlist, and the module documentation set to doc
+// (which can be NULL). This is for modules with no state.
 //
 // The SHERPAMOD and SHERPAMODDOC defines are expected to be used
 // rather than this one.
 //
-#define _SHERPAMOD(name, fctlist, doc)	   \
-static struct PyModuleDef module##name = { \
-PyModuleDef_HEAD_INIT, \
-#name, \
-doc, \
--1, \
-fctlist \
-}; \
-\
-PyMODINIT_FUNC PyInit_##name(void) { \
-  import_array(); \
-  return PyModule_Create(&module##name); \
-}
+#define _SHERPAMOD(name, fctlist, doc) \
+  _SHERPAMOD_EXEC(name) \
+  _SHERPAMOD_SLOTS(name) \
+  _SHERPAMOD_DEF(name, fctlist, doc) \
+  _SHERPAMOD_FUNC(name)
 
-// Create the initialization for the module called name, with the
-// list of functions in fctlist, and no module documentation.
+// Create the initialization for the module called name, with the list
+// of functions in fctlist, and no module documentation.
 //
-// fctlist should be an array of PyMethodDef elements, which can
-// be constructed with FCTSPEC, FCTSPECDOC, and KWSPEC, or
-// created directly.
+// fctlist should be an array of PyMethodDef elements, which can be
+// constructed with FCTSPEC, FCTSPECDOC, and KWSPEC, or created
+// directly.
 //
-#define SHERPAMOD(name, fctlist) _SHERPAMOD(name, fctlist, NULL)
+#define SHERPAMOD(name, fctlist) \
+  _SHERPAMOD(name, fctlist, NULL)
 
 // Similar to SHERMAMOD, but adds the ability to set the module
 // documentation (as a string).
 //
-#define SHERPAMODDOC(name, fctlist, doc)	\
+#define SHERPAMODDOC(name, fctlist, doc) \
   _SHERPAMOD(name, fctlist, PyDoc_STR(doc))
 
 // Create a function specification: name is the name for the
