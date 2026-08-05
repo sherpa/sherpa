@@ -90,11 +90,16 @@ jobs:
         ARVIZVER: ${{ matrix.arviz-pkg }}
         OPTIMAGICVER: ${{ matrix.optimagic-pkg }}
       run: |
+        # Install FFTW and ensure we have pkg-config set up.
+        #
+        sudo apt-get install -q -y libfftw3-double3 libfftw3-dev pkg-config
+        echo "** fftw3"
+        pkg-config fftw3 --cflags --libs
         # In case we forget to set matrix.numpy-pkg
         if [ ! -n "${NUMPYVER}" ] ; then
           NUMPYVER='numpy'
         fi
-        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} ${BOKEHVER} ${ARVIZVER}  ${OPTIMAGICVER}
+        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} ${BOKEHVER} ${ARVIZVER} ${OPTIMAGICVER}
         # These packages are not always needed, but the install should
         # be relatively quick.
         pip install pytest-xvfb pytest-cov
@@ -107,7 +112,8 @@ jobs:
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
       run: |
-        pip install -e . --verbose
+        pip install numpy ninja meson meson-python
+        pip install -e . --verbose --no-build-isolation
 
     # This isn't always going to be used, but it is easiest to
     # always create it.
