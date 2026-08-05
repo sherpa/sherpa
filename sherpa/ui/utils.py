@@ -960,15 +960,22 @@ class Session(NoNewAttributesAfterInit):
         self._stats: dict[str, Stat] = {}
         self._estmethods: dict[str, EstMethod] = {}
 
-        modules = (sherpa.optmethods, sherpa.stats, sherpa.estmethods)
-        basetypes = (OptMethod, Stat, EstMethod)
-        objdicts = (self._methods, self._stats, self._estmethods)
-
-        for mod, base, odict in zip(modules, basetypes, objdicts):
+        for mod, base, odict in [
+                (sherpa.optmethods, OptMethod, self._methods),
+                (sherpa.stats, Stat, self._stats),
+                (sherpa.estmethods, EstMethod, self._estmethods)
+                ]:
             for name in mod.__all__:
                 cls = getattr(mod, name)
                 if is_subclass(cls, base):
                     odict[name.lower()] = cls()
+
+        # Store estmethod changed values directly for the
+        # serialization code.
+        #
+        self._estmethods_changed: dict[str, dict[str, Any]] = {}
+        for name in self._estmethods:
+            self._estmethods_changed[name] = {}
 
         # Note: levmar does not support the rng option so this
         # can be done before set_rng is called.
@@ -978,6 +985,10 @@ class Session(NoNewAttributesAfterInit):
         self._current_stat = self._stats['chi2gehrels']
         # Add simplex as alias to neldermead
         self._methods['simplex'] = self._methods['neldermead']
+
+        # Store changes to options
+        self._current_method_changed: dict[str, Any] = {}
+        self._current_itermethod_changed: dict[str, Any] = {}
 
         reset_interpolators()
 
@@ -2650,6 +2661,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._check_method_opt(optname)
         self._current_method.config[optname] = val
+        self._current_method_changed[optname] = val
 
     def get_iter_method_name(self) -> str:
         """Return the name of the iterative fitting scheme.
@@ -2921,6 +2933,7 @@ class Session(NoNewAttributesAfterInit):
                 'badopt', optname, self._current_itermethod['name'])
 
         self._current_itermethod[optname] = val
+        self._current_itermethod_changed[optname] = val
 
     ###########################################################################
     # Statistics
@@ -10684,11 +10697,14 @@ class Session(NoNewAttributesAfterInit):
         return meth.config[optname]
 
     def _set_estmethod_opt(self, methodname, optname, val):
-        meth = self._estmethods.get(methodname.lower())
+        lname = methodname.lower()
+        meth = self._estmethods.get(lname)
         if meth is None:
             raise ArgumentErr('badconf', methodname)
         self._check_estmethod_opt(meth, optname)
         meth.config[optname] = val
+        # store the change for the serialization code
+        self._estmethods_changed[lname][optname] = val
 
     def get_covar_opt(self, name=None):
         """Return one or all of the options for the covariance
