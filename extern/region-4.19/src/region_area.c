@@ -1,5 +1,5 @@
 /*                                                                
-**  Copyright (C) 2015  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2015,2026  Smithsonian Astrophysical Observatory 
 */                                                                
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
@@ -259,6 +259,8 @@ void set_flags(long num_shapes,
 	          double *xpos, 
               double *ypos)
 {
+    (void)region; /* suppress 'warning: unused parameter' */
+  
     long shape_no = 0;    /* holds the current shape number */
     long prev_no = 0;     /* holds the secondary shape number */
     long offset = 0;      /* this is an array item number to begin coords from */
@@ -333,6 +335,9 @@ double sum_areas(long num_shapes,
                 double *fieldy, 
                 int *union_trim)
 {
+    (void)intersecting;  /* suppress 'warning: unused parameter' */
+    (void)union_trim;    /* suppress 'warning: unused parameter' */
+
     double *c_xpos = NULL;  /* array of component x positions,
 			                   lower left & upper right */
     double *c_ypos = NULL;  /* array of component y positions,

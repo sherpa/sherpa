@@ -1,5 +1,5 @@
 /*                                                                
-**  Copyright (C) 2015,2018,2020,2024  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 2015,2018,2020,2024,2026  Smithsonian Astrophysical Observatory 
 */                                                                
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
@@ -666,6 +666,8 @@ void reg_parse_line(char *buf, long *mode, char **stringptr, long *maxlen, long 
 void reg_areg_line(FILE * out, regShape * shape, char *shapeName, long nr, long nangles,
         char *text, int world)
 {
+    (void)world;  /* suppress 'warning: unused parameter' */
+
     long maxlen = 2048;
     char *buf;
     char *ptr;

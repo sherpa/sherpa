@@ -1,5 +1,5 @@
 /*                                                                
-**  Copyright (C) 1999-2001,2003-2008,2010,2013-2015  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 1999-2001,2003-2008,2010,2013-2015,2026  Smithsonian Astrophysical Observatory 
 */                                                                
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
@@ -38,6 +38,9 @@ regRegion* regCreateEmptyRegion( void )
 
 regRegion* regCreateRegion( void *xcol, void*ycol )
 {
+  (void)xcol;  /* suppress 'warning: unused parameter' */
+  (void)ycol;  /* suppress 'warning: unused parameter' */
+
   regRegion *region = ( regRegion *) calloc( 1, sizeof( regRegion ) );  
   return( region );  
 }

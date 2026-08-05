@@ -1,9 +1,8 @@
 
 %{
 /*                                                                
-**  Copyright (C) 2007,2022  Smithsonian Astrophysical Observatory 
+**  Copyright (C) 1999-2003,2005,2007,2009-2010,2015,2021-2022,2026  Smithsonian Astrophysical Observatory 
 */                                                                
-
 /*                                                                          */
 /*  This program is free software; you can redistribute it and/or modify    */
 /*  it under the terms of the GNU General Public License as published by    */
@@ -28,7 +27,7 @@
 extern char     *regParseStr;
 extern char     *regParseStrEnd;
 extern regRegion *my_Gregion;
-extern void      regYYrestart(FILE*);
+extern void regYYrestart(FILE * );
 static int world_coord;
 static int world_size;
 int test_link_jcm( void );
@@ -530,7 +529,9 @@ reg_shape:
      {
         double x[1]; double y[1]; double r1[2]; double r2[2];
         x[0]=$3; y[0]=$5; r1[0]=$7; r1[1]=$9; r2[0] = $11; r2[1] = $13;
- 	    
+
+	(void)x; (void)y; (void)r1; (void)r2;  // explicitly unused (placeholder for future elliptannulus support)
+	
         fprintf(stderr, "ERROR: Elliptannuli are not yet supported.\n");
         my_Gregion = NULL;
 	    YYERROR;
@@ -539,7 +540,9 @@ reg_shape:
      {
         double x[1]; double y[1]; double r1[2]; double r2[2];  double a[1];
         x[0]=$3; y[0]=$5; r1[0]=$7; r1[1]=$9; r2[0] = $11; r2[1] = $13; a[0]=$15;
- 	    
+
+	(void)x; (void)y; (void)r1; (void)r2; (void)a;   /* suppress 'warning: unused parameter' */
+	    
         fprintf(stderr, "ERROR: Elliptannuli are not yet supported.\n");
         my_Gregion = NULL;
 	    YYERROR;
@@ -548,7 +551,9 @@ reg_shape:
      {
         double x[1]; double y[1]; double r1[2]; double r2[2];
         x[0]=$4; y[0]=$6; r1[0]=$8; r1[1]=$10; r2[0] = $12; r2[1] = $14;
- 	    
+	
+ 	(void)x; (void)y; (void)r1; (void)r2;  // explicitly unused (placeholder for future elliptannulus support)
+	    
         fprintf(stderr, "ERROR: Elliptannuli are not yet supported.\n");
         my_Gregion = NULL;
 	    YYERROR;
@@ -557,7 +562,9 @@ reg_shape:
      {
         double x[1]; double y[1]; double r1[2]; double r2[2];  double a[1];
         x[0]=$4; y[0]=$6; r1[0]=$8; r1[1]=$10; r2[0] = $12; r2[1] = $14; a[0]=$16;
- 	    
+	
+ 	(void)x; (void)y; (void)r1; (void)r2; (void)a;  // explicitly unused (placeholder for future elliptannulus support)
+	     	    
         fprintf(stderr, "ERROR: Elliptannuli are not yet supported.\n");
         my_Gregion = NULL;
 	    YYERROR;
@@ -569,7 +576,9 @@ reg_shape:
      {
         double x[1]; double y[1]; double r[2]; 
         x[0]=$3; y[0]=$5; r[0]=$7; r[1]=$9; 
- 	    
+
+ 	(void)x; (void)y; (void)r;   /* suppress 'warning: unused parameter' */
+	    
         fprintf(stderr, "ERROR: Diamonds are not yet supported.\n");
         my_Gregion = NULL;
 	    YYERROR;
@@ -578,7 +587,9 @@ reg_shape:
      {
         double x[1]; double y[1]; double r[2]; 
         x[0]=$4; y[0]=$6; r[0]=$8; r[1]=$10; 
- 	    
+ 	
+ 	(void)x; (void)y; (void)r;   // explicitly unused (placeholder for future elliptannulus support)
+	    
         fprintf(stderr, "ERROR: Diamonds are not yet supported.\n");
         my_Gregion = NULL;
 	    YYERROR;
@@ -587,6 +598,8 @@ reg_shape:
      {
         double x[1]; double y[1]; double r[2]; double a[1];
         x[0]=$3; y[0]=$5; r[0]=$7; r[1]=$9; a[0] = $11;
+ 	
+ 	(void)x; (void)y; (void)r; (void)a;   // explicitly unused (placeholder for future elliptannulus support)	    
  	    
         fprintf(stderr, "ERROR: Diamonds are not yet supported.\n");
         my_Gregion = NULL;
@@ -596,7 +609,9 @@ reg_shape:
      {
         double x[1]; double y[1]; double r[2]; double a[1];
         x[0]=$4; y[0]=$6; r[0]=$8; r[1]=$10; a[0] = $12;
- 	    
+  	
+ 	(void)x; (void)y; (void)r; (void)a;   // explicitly unused (placeholder for future elliptannulus support)
+	    	    
         fprintf(stderr, "ERROR: Diamonds are not yet supported.\n");
         my_Gregion = NULL;
 	    YYERROR;
@@ -672,6 +687,8 @@ regRegion* regParse( char* buf )
 
 void regYYerror( const char* msg )
 {
+    (void)msg;   // explicitly unused (placeholder for future elliptannulus support)
+	    
     my_Gregion = NULL;
     return;
 }
