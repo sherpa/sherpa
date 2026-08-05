@@ -35,9 +35,11 @@ from sherpa.astro.models import JDPileup
 from sherpa.astro import ui
 from sherpa.astro.io.wcs import WCS
 
+from sherpa.data import Data1D
+
 from sherpa.models.basic import FixedTableModel
 
-from sherpa.utils.err import ArgumentErr, DataErr, \
+from sherpa.utils.err import DataErr, \
     IdentifierErr, IOErr, StatErr
 from sherpa.utils.testing import get_datadir, requires_data, \
     requires_xspec, has_package_from_list, requires_fits, \
@@ -782,8 +784,6 @@ group(1)
 
 ######### Data Spectral Responses
 
-load_arf(1, "@@/3c273.arf", resp_id=1)
-load_rmf(1, "@@/3c273.rmf", resp_id=1)
 
 ######### Load Background Data Sets
 
@@ -791,8 +791,6 @@ group(1, bkg_id=1)
 
 ######### Background Spectral Responses
 
-load_arf(1, "@@/3c273.arf", resp_id=1, bkg_id=1)
-load_rmf(1, "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
@@ -951,7 +949,7 @@ con.offset.frozen  = True
 
 ######### Set Source, Pileup and Background Models
 
-set_full_model(1, (apply_rmf(apply_arf((38564.6089269 * powlaw1d.pl))) + polynom1d.con))
+set_full_model(1, apply_rmf(apply_arf(38565.0 * powlaw1d.pl)) + polynom1d.con)
 
 """
 
@@ -1259,6 +1257,8 @@ set_method_opt("verbose", 0)
 load_psf("p0", "@@/psf_0.0_00_bin1.img")
 p0.size = (26, 26)
 p0.center = (13, 13)
+p0.radial = 0.0
+p0.norm = 1.0
 
 create_model_component("gauss2d", "g1")
 g1.integrate = True
@@ -1740,6 +1740,47 @@ set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)  # doctest: +FLOAT_CMP
+
+"""
+
+_canonical_load_arrays_pha_with_bkg = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_arrays(1,
+            [1, 2, 3, 4, 5],
+            [12, 2, 1, 0, 1],
+            DataPHA)
+set_exposure(1, 100)
+set_backscal(1, 0.002)
+set_areascal(1, 0.001)
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(1, quantity="channel", type="rate", factor=0)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.1920928955078125e-07)
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.1920928955078125e-07)
+set_method_opt("gtol", 1.1920928955078125e-07)
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.1920928955078125e-07)
 
 """
 
@@ -2530,6 +2571,49 @@ set_bkg_source("csc", powlaw1d.bpl, bkg_id=1)
 
 """
 
+_canonical_copy_data_pha_bkg_resp = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_pha(2, "@@/9774.pi")
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+
+######### Background Spectral Responses
+
+load_arf(2, "@@/3c273.arf", resp_id=1, bkg_id=1)
+load_rmf(2, "@@/3c273.rmf", resp_id=1, bkg_id=1)
+
+######### Set Energy or Wave Units
+
+set_analysis(2, quantity="energy", type="rate", factor=0)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.1920928955078125e-07)
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.1920928955078125e-07)
+set_method_opt("gtol", 1.1920928955078125e-07)
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.1920928955078125e-07)
+
+"""
+
 if has_xspec:
     from sherpa.astro import xspec
 
@@ -2821,6 +2905,28 @@ def test_canonical_empty_iterstat(check_str):
     compare(check_str, _canonical_empty_iterstat)
 
 
+@pytest.mark.xfail  # ISSUE: 2504
+def test_estmethod_opt(check_str):
+    """"Check other options for the estmethods
+
+    This does not check the actual output against a canonical
+    version, just whether we can restore the settings.
+    """
+
+    # Change proj, conf, and covar options. Use sigma as
+    # present in all methods.
+    #
+    ui.set_proj_opt('sigma', 1.8)
+    ui.set_conf_opt('sigma', 1.8)
+    ui.set_covar_opt('sigma', 1.8)
+
+    restore()
+
+    assert ui.get_proj_opt('sigma') == pytest.approx(1.8)
+    assert ui.get_conf_opt('sigma') == pytest.approx(1.8)
+    assert ui.get_covar_opt('sigma') == pytest.approx(1.8)
+
+
 @requires_data
 @requires_xspec
 @requires_fits
@@ -2855,7 +2961,6 @@ def test_restore_pha_basic(make_data_path):
 
 
 @requires_data
-@requires_xspec
 @requires_fits
 @requires_group
 def test_canonical_pha_load(make_data_path, check_str):
@@ -3299,6 +3404,188 @@ def test_restore_img_no_filter_model_psf(make_data_path, recwarn, check_str):
     recwarn.clear()
 
 
+@requires_fits
+def test_load_psf1d_from_file(check_str, tmp_path):
+    """Can we restore a 1D PSF read from a file?
+
+    See also test_load_psf1d_from_model.
+    """
+
+    psfpath = tmp_path / "psf.dat"
+    psfpath.write_text("1 5\n2 2\n3 1\n")
+
+    y = [12, 10, 6, 5, 0, 1, 0]
+    ui.load_arrays(1, [1, 2, 3, 4, 5, 6, 7], y)
+    g1 = ui.create_model_component("gauss1d", "g1")
+    g1.fwhm = 6
+    g1.pos.freeze()
+    g1.ampl = 10
+    ui.set_source(g1)
+
+    ui.load_psf("psf1", str(psfpath))
+    psf1 = ui.get_model_component("psf1")
+    ui.set_psf(psf1)
+    psf1.radial = 1
+
+    expected = np.asarray([6.76271251, 7.53260707, 5.32670844,
+                           3.25497179, 1.71855646, 0.78387108,
+                           1.45712215])
+    assert ui.get_model_plot().y == pytest.approx(expected)
+
+    restore()
+
+    assert ui.get_data().y == pytest.approx(y)
+
+    assert ui.list_psf_ids() == [1]
+    assert ui.list_model_components() == ["g1", "psf1"]
+    psf = ui.get_model_component("psf1")
+    assert psf.radial.val == pytest.approx(1)
+    assert ui.get_model_plot().y == pytest.approx(expected)
+
+    # As the tests above don't check the frozen state
+    g = ui.get_model_component("g1")
+    assert g.pos.frozen
+    assert g.pos.val == pytest.approx(0)
+
+
+def test_load_psf1d_from_model(check_str):
+    """Can we restore a 1D PSF read from a model?
+
+    See also test_load_psf1d_from_file.
+
+    This does not check the output text, just that the serialized
+    script can restore important values.
+
+    """
+
+    # Fake up a model expression to match that of the
+    # _from_file version.
+    #
+    # Apparently box1d is xlow <= x <= xhi.
+    b1 = ui.create_model_component("box1d", "b1")
+    b2 = ui.create_model_component("box1d", "b3")
+    b3 = ui.create_model_component("box1d", "b2")
+    mdl = b1 + b2 + b3
+    b1.ampl = 5
+    b2.xlow = 1.1
+    b2.xhi = 2
+    b3.xlow = 1.1
+    b3.xhi = 3
+    # Check evaluation just in case anything changes.
+    assert mdl([1, 2, 3, 4, 5]) == pytest.approx([5, 2, 1, 0, 0])
+
+    y = [12, 10, 6, 5, 0, 1, 0]
+    ui.load_arrays(1, [1, 2, 3, 4, 5, 6, 7], y)
+    g1 = ui.create_model_component("gauss1d", "g1")
+    g1.fwhm = 6
+    g1.pos.freeze()
+    g1.ampl = 10
+    ui.set_source(g1)
+
+    ui.load_psf("psf1", mdl)
+    psf1 = ui.get_model_component("psf1")
+    ui.set_psf(psf1)
+    # It looks like the radial setting isn't used in this case,
+    # unlike the _from_file version. So for now treat this as
+    # a regression test.
+    psf1.radial = 1
+
+    # This does not match the _from_file case, so treat this as
+    # a regression test for now.
+    #
+    # expected = np.asarray([6.76271251, 7.53260707, 5.32670844,
+    #                        3.25497179, 1.71855646, 0.78387108,
+    #                        1.45712215])
+    expected = np.asarray([5.92225346, 6.93631282, 6.11951151,
+                           3.99128568, 2.26543146, 1.11970565,
+                           0.48204892])
+    assert ui.get_model_plot().y == pytest.approx(expected)
+
+    restore()
+
+    assert ui.get_data().y == pytest.approx(y)
+
+    assert ui.list_psf_ids() == [1]
+    assert ui.list_model_components() == ["b1", "b2", "b3", "g1", "psf1"]
+    psf = ui.get_model_component("psf1")
+    assert psf.radial.val == pytest.approx(1)
+    assert ui.get_model_plot().y == pytest.approx(expected)
+
+    # As the tests above don't check the frozen state
+    g = ui.get_model_component("g1")
+    assert g.pos.frozen
+    assert g.pos.val == pytest.approx(0)
+
+    nmdl = sum(ui.get_model_component(n) for n in ['b1', 'b2', 'b3'])
+    assert nmdl([1, 2, 3, 4, 5]) == pytest.approx([5, 2, 1, 0, 0])
+
+
+@requires_fits
+def test_load_conv_from_file(tmp_path):
+    """Very basic check of load_conv.
+
+    At present all we check is that we can restore a load_conv
+    statement.
+
+    """
+
+    convpath = tmp_path / "conv.dat"
+    convpath.write_text("1 5\n2 2\n3 1\n")
+
+    ui.load_conv("c1", str(convpath))
+
+    def check():
+        mdls = ui.list_model_components()
+        assert len(mdls) == 1
+        assert mdls[0] == "c1"
+
+        x1 = ui.get_model_component("c1")
+        assert x1.name == "convolutionkernel.c1"
+        assert isinstance(x1.kernel, Data1D)
+        assert x1.kernel.x == pytest.approx([1, 2, 3])
+        assert x1.kernel.y == pytest.approx([5, 2, 1])
+
+    check()
+    restore()
+    check()
+
+
+def test_load_conv_from_model():
+    """Very basic check of load_conv.
+
+    At present all we check is that we can restore a load_conv
+    statement.
+
+    """
+
+    g1 = ui.create_model_component("gauss1d", "g1")
+    g1.fwhm = 5
+    g1.pos.freeze()
+
+    ui.load_conv("c1", g1)
+
+    def check():
+        mdls = ui.list_model_components()
+        assert len(mdls) == 2
+        assert mdls[0] == "c1"
+        assert mdls[1] == "g1"
+
+        x1 = ui.get_model_component("g1")
+        assert x1.name == "gauss1d.g1"
+        assert x1.fwhm.val == pytest.approx(5)
+        assert x1.pos.frozen
+
+        x2 = ui.get_model_component("c1")
+        assert x2.name == "convolutionkernel.c1"
+        assert x2.kernel == x1
+
+    buff = StringIO(); ui.save_all(buff)
+
+    check()
+    restore()
+    check()
+
+
 @requires_data
 @requires_fits
 def test_restore_table_model(make_data_path, check_str):
@@ -3506,6 +3793,50 @@ def test_restore_load_arrays_pha_response(check_str):
     # TODO: come up with tests once the state can be restored
 
 
+def test_restore_load_arrays_pha_with_bkg(check_str):
+    """Can we re-create a load_arrays/DataPHA with background?
+
+    This recreation is currently incomplete, so just test what is
+    expected (i.e. a regression test).
+
+    """
+
+    dset = ui.DataPHA("ex", [1, 2, 3, 4, 5], [12, 2, 1, 0, 1])
+    dset.exposure = 100
+    dset.backscal = 0.002
+    dset.areascal = 0.001
+
+    bset = ui.DataPHA("ex", [1, 2, 3, 4, 5], [4, 1, 0, 0, 1])
+    bset.exposure = 500
+    bset.backscal = 0.01
+    bset.areascal = 0.02
+
+    ui.set_data(dset)
+    ui.set_bkg(bset)
+
+    compare(check_str, _canonical_load_arrays_pha_with_bkg)
+
+    restore()
+
+    assert ui.list_data_ids() == [1]
+    # assert ui.list_bkg_ids(1) == [1]
+    assert ui.list_bkg_ids(1) == []  # TODO: this is wrong
+
+    pha = ui.get_data()
+    # bkg = ui.get_bkg()  # TODO: this currently fails
+
+    # for got_obj, exp_obj in [(pha, dset), (bkg, bset)]:
+    for got_obj, exp_obj in [(pha, dset)]:
+        assert isinstance(got_obj, ui.DataPHA)
+
+        for field in ["channel", "counts", "exposure",
+                      "backscal", "areascal"]:
+            got = getattr(got_obj, field)
+            expected = getattr(exp_obj, field)
+
+            assert got == pytest.approx(expected)
+
+
 def test_restore_load_arrays_data2d(check_str):
     """Can we re-create a load_arrays/Data2D case
 
@@ -3674,6 +4005,30 @@ def test_link_par(check_str):
     assert m2.c0.link.name == "m1.c0 + sep.c0"
 
 
+def test_multi_link_par(check_str):
+    """Check we can set up multiple parameter links.
+
+    Unlike test_link_par we do not check the serialization,
+    just that it works.
+
+    """
+
+    m1 = ui.create_model_component("const1d", "m1")
+    m2 = ui.create_model_component("const1d", "m2")
+    sep = ui.create_model_component("const1d", "sep")
+
+    m1.c0.freeze()
+    ui.link(m2.c0, m1.c0)
+    ui.link(sep.c0, m2.c0 + 5)
+
+    restore()
+
+    assert m1.c0.link is None
+    assert m2.c0.link.name == "c0"   # TODO: why not "m1.c0"
+    assert sep.c0.link.name == "m2.c0 + 5"
+    assert m1.c0.frozen
+
+
 @pytest.mark.xfail
 @requires_data
 @requires_fits
@@ -3684,6 +4039,11 @@ def test_pha_full_model(make_data_path, check_str):
     """
 
     ui.load_pha(make_data_path("3c273.pi"))
+
+    # Overwrite the exposure time to make the numeric checks below easier.
+    d = ui.get_data()
+    d.exposure = 38565
+
     ui.notice(1, 6)
 
     pl = ui.create_model_component("powlaw1d", "pl")
@@ -3702,14 +4062,15 @@ def test_pha_full_model(make_data_path, check_str):
     # Can not add lo/hi arguments as calc_model_sum fails.  This is a
     # regression test.
     #
-    expected = 1501.0484798733592
+    expected = 1501.053047504343
     assert ui.calc_model_sum() == pytest.approx(expected)
 
     with pytest.raises(IdentifierErr,
                        match=". You should use get_model instead.$"):
         ui.get_source()
 
-    assert ui.get_model().name == "apply_rmf(apply_arf(38564.6089269 * powlaw1d.pl)) + polynom1d.con"
+    expected_name = "apply_rmf(apply_arf(38565.0 * powlaw1d.pl)) + polynom1d.con"
+    assert ui.get_model().name == expected_name
 
     compare(check_str, add_datadir_path(_canonical_pha_full_model))
 
@@ -3937,12 +4298,7 @@ def test_restore_pha2(make_data_path, check_str):
 @requires_data
 @requires_fits
 def test_restore_pha2_delete(make_data_path, check_str):
-    """Can we restore a pha2 file after deleting files?
-
-    This is a regression test so we can see as soon as things have
-    changed, rather than marking it as xfail.
-
-    """
+    """Can we restore a pha2 file after deleting files?"""
 
     # Note: not including .gz for the file name
     ui.load_pha(make_data_path("3c120_pha2"))
@@ -4124,6 +4480,30 @@ def test_filter1d_excluded2():
 
     with pytest.raises(DataErr, match="^mask excludes all data$"):
         ui.get_dep(filter=True)
+
+
+@pytest.mark.xfail  # XFAIL: does not save the background
+def test_filter1d_pha_bkg_excluded():
+    """Check what happens if all data filtered out from PHA bkg."""
+
+    ui.load_arrays(1, [1, 2], [10, 20], ui.DataPHA)
+    bkg = ui.DataPHA("bkg", [1, 2], [2, 3])
+    ui.set_bkg(bkg)
+
+    ui.ignore(lo=2)
+    ui.ignore(bkg_id=1)
+
+    def check():
+        assert ui.get_data().mask == pytest.approx([True, False])
+        assert ui.get_bkg().mask is False
+        assert ui.get_data().get_filter() == "1"
+        assert ui.get_bkg().get_filter() == ""  # regression test
+        assert ui.get_data().get_filter_expr() == "1 Channel"
+        assert ui.get_bkg().get_filter_expr() == " Channel"  # regression test
+
+    check()
+    restore()
+    check()
 
 
 def test_filter2d_excluded1():
@@ -4315,7 +4695,129 @@ def test_copy_data_pha(make_data_path):
         assert ui.get_staterror(2) == pytest.approx(evals)
 
     check_data()
-
     restore()
+    check_data()
+
+
+@requires_data
+@requires_fits
+@requires_group
+def test_copy_data_pha_bkg_resp(make_data_path, check_str):
+    """Can we copy a PHA dataset and track it?
+
+    This adds backround responses to test_copy_data_pha.
+
+    """
+
+    # This auto-loads response and background
+    ui.load_pha(make_data_path("9774.pi"))
+
+    # load in responses for the background (these are not
+    # correct for this dataset but that is not important here).
+    #
+    ui.load_rmf(make_data_path("3c273.rmf"), bkg_id=1)
+    ui.load_arf(make_data_path("3c273.arf"), bkg_id=1)
+
+    ui.copy_data(1, 2)
+    ui.delete_data(1)
+
+    # Check the serialization as we want to check that the source
+    # responses are not included but the background ones are.
+    #
+    expected_output = add_datadir_path(_canonical_copy_data_pha_bkg_resp)
+    compare(check_str, expected_output)
+
+    def check_data():
+        assert ui.list_data_ids() == [2]
+        assert ui.list_bkg_ids(2) == [1]
+        assert ui.get_data(2).name.endswith("/9774.pi")
+        assert ui.get_arf(2).name.endswith("/9774.arf")
+        assert ui.get_rmf(2).name.endswith("/9774.rmf")
+
+        assert ui.get_arf(2, bkg_id=1).name.endswith("/3c273.arf")
+        assert ui.get_rmf(2, bkg_id=1).name.endswith("/3c273.rmf")
 
     check_data()
+    restore()
+    check_data()
+
+
+def test_copy_data_manual():
+    """What happens when we copy a manually-created dataset?"""
+
+    ui.load_arrays("y", [1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
+    ui.ignore_id("y", lo=3, hi=4)
+    ui.copy_data("y", "x")
+
+    # Check that the copied data has also been filtered.
+    yy = ui.get_dep("y", filter=True)
+    yx = ui.get_dep("x", filter=True)
+    assert len(yy) == 3
+
+    def check_data():
+        assert ui.list_data_ids() == ["x", "y"]
+
+        assert ui.get_dep("x", filter=True) == pytest.approx(yy)
+        assert ui.get_dep("y", filter=True) == pytest.approx(yy)
+
+    check_data()
+    restore()
+    check_data()
+
+
+@requires_fits
+@requires_data
+def test_load_ascii(make_data_path):
+    """Check we can restore a load-ascii call."""
+
+    ui.set_stat("chi2datavar")
+
+    infile = make_data_path("sim.poisson.1.dat")
+    ui.load_ascii(infile)
+
+    def check():
+        assert isinstance(ui.get_data(), ui.Data1D)
+
+        y = ui.get_dep()
+        assert len(y) == 50
+        assert y[0:5] == pytest.approx([27, 27, 20, 28, 27])
+
+        xs = ui.get_indep()
+        assert len(xs) == 1
+        assert xs[0][0:5] == pytest.approx([0.5, 1, 1.5, 2, 2.5])
+
+        dy = ui.get_staterror()
+        assert dy == pytest.approx(np.sqrt(y))
+
+    check()
+    restore()
+    check()
+
+
+@pytest.mark.xfail  # does not include colkeys when loading in the data
+@requires_fits
+@requires_data
+def test_load_table_fits(make_data_path):
+    """Check we can restore a load-table call."""
+
+    infile = make_data_path("1838_rprofile_rmid.fits")
+    ui.load_table(infile, colkeys=["RMID", "COUNTS", "ERR_COUNTS"])
+
+    def check():
+        assert isinstance(ui.get_data(), ui.Data1D)
+
+        y = ui.get_dep()
+        assert len(y) == 38
+        assert y[0:5] == pytest.approx([1529, 2014, 2385, 2158, 2013])
+
+        xs = ui.get_indep()
+        assert len(xs) == 1
+        assert xs[0][0:5] == pytest.approx([12.5, 17.5, 22.5, 27.5, 32.5])
+
+        dy = ui.get_staterror()
+        assert dy[0:3] == pytest.approx([39.1024295920, 44.8776113446,
+                                         48.8364617883])
+
+    check()
+    restore()
+    check()
