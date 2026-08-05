@@ -13,6 +13,12 @@ if [ "`uname -s`" == "Darwin" ] ; then
     fi
     compilers="clang_osx-${sys} clangxx_osx-${sys} gfortran_osx-${sys}"
 
+    # What SDK is in use?
+    #
+    echo "*** SDK path: `xcrun --show-sdk-path`"
+    ls -l `xcrun --show-sdk-path`
+    echo "*** SDK version: `xcrun --show-sdk-version`"
+
 else
     compilers="gcc_linux-64=14.2 gxx_linux-64=14.2 gfortran_linux-64"
 
