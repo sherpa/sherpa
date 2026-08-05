@@ -1,5 +1,6 @@
 //
-//  Copyright (C) 2007, 2020, 2021  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2020-2021, 2026
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -17,13 +18,8 @@
 //  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 
-// This define is needed for "#i" argument to PyArg_ParseTuple in init_optfcn
-// and must be made before including Python.h
-#define PY_SSIZE_T_CLEAN
-
-#include <Python.h>
-
 #include <sherpa/extension.hh>
+#include <cstring>
 #include "tstoptfct.hh"
 
 static PyObject *Ackley( PyObject *self, PyObject *args ) {

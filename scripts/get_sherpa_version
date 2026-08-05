@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+
+"""What is the Sherpa version?
+
+This is based on the gitversion.py scripts in the NumPy and SciPy
+repositories.
+
+The project.version field in pyptoject.toml is used as the base, and
+the git hash is added to it for development builds. This script is
+run twice:
+
+- report the version (meson.build)
+- create the version module (sherpa/meson.build, optional)
+
+When called with no argument it displays the version to stdout.
+If called with the "--module filename" argument then the version
+module is written to the given filename.
+
+"""
+
+import os
+from pathlib import Path
+import subprocess
+import textwrap
+
+
+def version_from_pyproject() -> str:
+
+    infile = Path(__file__).parent / '../pyproject.toml'
+    data = infile.read_text()
+
+    version_line = next(
+        line for line in data.split("\n") if line.startswith('version =')
+    )
+
+    version = version_line.strip().split(' = ')[1]
+    version = version.replace('"', '').replace("'", '')
+
+    return version
+
+
+def add_git_version(version: str) -> tuple[str, str, str]:
+    """Return the final version string, git identifier, and date"""
+
+    # For when the git repository and/or git is not present.
+    git_hash = ''
+    git_date = ''
+
+    args = ['git', '-c', 'log.showSignature=false', 'log', '-1',
+            '--format="%H %aI"']
+    try:
+        p = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=Path(".").parent,
+        )
+    except FileNotFoundError:
+        pass
+    else:
+        out, err = p.communicate()
+        if p.returncode == 0:
+            git_hash, git_date = (
+                out.decode('utf-8')
+                .strip()
+                .replace('"', '')
+                .split()
+            )
+
+            # Only attach git tag to development versions
+            if 'dev' in version:
+                git_date_partial = git_date.split('T')[0].replace('-', '')
+                version += f'+git{git_date_partial}.{git_hash[:7]}'
+
+    return version, git_hash, git_date
+
+
+def create_module(outfile: str,
+                  version: str,
+                  git_hash: str,
+                  git_date: str,
+                  meson: bool = False
+                  ) -> None:
+    """Create the version module.
+
+    For historical reasons the version module contains a get_versions
+    routine - as it was created by versioneer - to reduce changes in
+    downstream code, but this symbol is deprecated.
+
+    """
+
+    short_version = version.split("+")[0]
+    template = textwrap.dedent(f'''
+        """
+        Version information for `sherpa`
+        """
+
+        version: str = "{version}"
+        short_version: str = "{short_version}"
+        git_date: str = "{git_date}"
+        git_revision: str = "{git_hash}"
+
+        def get_versions() -> dict[str, str]:
+           """Return the module version information.
+
+           .. deprecated:: 4.19.0
+              The version information should be accessed from the module directly.
+           """
+
+           return {{
+              "version": version,
+              "short_version": short_version,
+              "date": git_date,
+              "full-revisionid": git_revision
+           }}
+    ''')
+
+    outpath = Path(outfile)
+    if meson:
+        meson_path = Path(os.environ.get("MESON_DIST_ROOT", ""))
+        outpath = meson_path / outpath
+
+    print(f'Saving version to {outpath}')
+    outpath.write_text(template)
+
+
+def doit(outfile: str,
+         meson: bool) -> None:
+    """Run the script.
+
+    If outfile is empty then report the version number,
+    otherwise create the version module.
+
+    """
+
+    base_version = version_from_pyproject()
+    version, git_hash, git_date = add_git_version(base_version)
+
+    if outfile:
+        create_module(outfile, version, git_hash, git_date, meson=meson)
+    else:
+        print(version)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--module', help="Write the version module to this file")
+    parser.add_argument('--meson-dist', action="store_true",
+                        help="Output path is relative to MESON_DIST_ROOT")
+
+    args = parser.parse_args()
+
+    doit(outfile=args.module, meson=args.meson_dist)
