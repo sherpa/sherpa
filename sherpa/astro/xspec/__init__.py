@@ -153,11 +153,7 @@ xsstate: dict[str, Any] = {
 # documentation run).
 #
 @overload
-def get_xsabund() -> str:
-    ...
-
-@overload
-def get_xsabund(element: None) -> str:
+def get_xsabund(element: None = None) -> str:
     ...
 
 @overload
@@ -782,11 +778,7 @@ def clear_xsxset() -> None:
 
 
 @overload
-def get_xsxset() -> dict[str, str]:
-    ...
-
-@overload
-def get_xsxset(name: None) -> dict[str, str]:
+def get_xsxset(name: None = None) -> dict[str, str]:
     ...
 
 @overload

@@ -1214,7 +1214,7 @@ class DataRMF(DataOgipResponse):
                         self.detchans, self.offset)
 
     @overload
-    def notice(self, noticed_chans: None) -> None:
+    def notice(self, noticed_chans: None = None) -> None:
         ...
 
     @overload
@@ -1222,7 +1222,9 @@ class DataRMF(DataOgipResponse):
         ...
 
     # Note that noticed_chans is not a mask, but the channel values.
-    def notice(self, noticed_chans=None):
+    def notice(self,
+               noticed_chans: np.ndarray | None = None
+               ) -> np.ndarray | None:
         """Filter the response to match the requested channels."""
 
         self._fch = self.f_chan
@@ -1839,7 +1841,7 @@ will be removed. The identifiers can be integers or strings.
                      attr: str,
                      val: ArrayType | None,
                      check_mask: bool = True,
-                     allow_scalar: object = Literal[False],
+                     allow_scalar: Literal[False] = False,
                      **kwargs
                      ) -> None:
         ...
@@ -1849,7 +1851,7 @@ will be removed. The identifiers can be integers or strings.
                      attr: str,
                      val: float,
                      check_mask: bool = True,
-                     allow_scalar: object = Literal[True],
+                     allow_scalar: Literal[True] = True,
                      **kwargs
                      ) -> None:
         ...
@@ -3208,7 +3210,10 @@ It is an integer or string.
                      groupfunc: Callable) -> np.ndarray:
         ...
 
-    def apply_filter(self, data, groupfunc=np.sum):
+    def apply_filter(self,
+                     data: ArrayType | None,
+                     groupfunc: Callable = np.sum
+                     ) -> np.ndarray | None:
         """Group and filter the supplied data to match the data set.
 
         Parameters
@@ -3365,7 +3370,10 @@ It is an integer or string.
                        groupfunc: Callable) -> np.ndarray:
         ...
 
-    def apply_grouping(self, data, groupfunc=np.sum):
+    def apply_grouping(self,
+                       data: ArrayType | None,
+                       groupfunc: Callable = np.sum
+                       ) -> np.ndarray | None:
         """Apply the grouping scheme of the data set to the supplied data.
 
         Parameters
