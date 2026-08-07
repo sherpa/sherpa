@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015-2016, 2019-2020, 2021, 2023, 2025
+#  Copyright (C) 2009, 2015-2016, 2019-2020, 2021, 2023, 2025-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,15 +34,18 @@ import numpy as np
 from sherpa.astro.utils import calc_energy_flux
 from sherpa.fit import Fit
 from sherpa.models.model import ArithmeticModel, SimulFitModel
-from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
+from sherpa.sim import (
+    NormalParameterSampleFromScaleMatrix,
     NormalParameterSampleFromScaleVector
+)
 from sherpa.sim.sample import ClipValue
 from sherpa.utils import parallel_map, random
 from sherpa.utils.err import ArgumentErr, FitErr, ModelErr
+from sherpa.utils.types import PrefsType
 
 info = logging.getLogger(__name__).info
 
-__all__ = ['calc_flux', 'sample_flux', 'calc_sample_flux']
+__all__ = ['calc_flux', 'calc_sample_flux', 'sample_flux']
 
 
 class CalcFluxWorker:
@@ -159,9 +162,13 @@ def _sample_flux_get_samples_with_scales(fit: Fit,
                                          scales: np.ndarray,
                                          num: int,
                                          clip: ClipValue = 'hard',
-                                         rng: random.RandomType | None = None
+                                         rng: random.RandomType | None = None,
+                                         est_method_args: PrefsType | None = None
                                          ) -> tuple[np.ndarray, np.ndarray]:
     """Return the parameter samples given the parameter scales.
+
+    .. versionchanged:: 4.19.0
+       The routine now accepts the est_method_args parameter.
 
     Parameters
     ----------
@@ -197,6 +204,8 @@ def _sample_flux_get_samples_with_scales(fit: Fit,
         Determines how random numbers are created. If set to None then
         the routines from `numpy.random` are used, and so can be
         controlled by calling `numpy.random.seed`.
+    est_method_args
+        Any extra configuration for the error estimation class.
 
     Returns
     -------
@@ -281,10 +290,12 @@ def _sample_flux_get_samples_with_scales(fit: Fit,
 
     if correlated:
         sampler = NormalParameterSampleFromScaleMatrix()
-        samples = sampler.get_sample(fit, mycov=scales, num=num, rng=rng)
+        samples = sampler.get_sample(fit, mycov=scales, num=num, rng=rng,
+                                     est_method_args=est_method_args)
     else:
         sampler = NormalParameterSampleFromScaleVector()
-        samples = sampler.get_sample(fit, myscales=scales, num=num, rng=rng)
+        samples = sampler.get_sample(fit, myscales=scales, num=num, rng=rng,
+                                     est_method_args=est_method_args)
 
     clipped = sampler.clip(fit, samples, clip=clip)
     return samples, clipped
@@ -295,12 +306,16 @@ def _sample_flux_get_samples(fit: Fit,
                              correlated: bool,
                              num: int,
                              clip: ClipValue = 'hard',
-                             rng: random.RandomType | None = None
+                             rng: random.RandomType | None = None,
+                             est_method_args: PrefsType | None = None
                              ) -> tuple[np.ndarray, np.ndarray]:
     """Return the parameter samples, using fit to define the scales.
 
     The covariance method is used to estimate the errors for the
     parameter sampling.
+
+    .. versionchanged:: 4.19.0
+       The routine now accepts the est_method_args parameter.
 
     Parameters
     ----------
@@ -329,6 +344,8 @@ def _sample_flux_get_samples(fit: Fit,
         Determines how random numbers are created. If set to None then
         the routines from `numpy.random` are used, and so can be
         controlled by calling `numpy.random.seed`.
+    est_method_args
+        Any extra configuration for the error estimation class.
 
     Returns
     -------
@@ -355,7 +372,8 @@ def _sample_flux_get_samples(fit: Fit,
     else:
         sampler = NormalParameterSampleFromScaleVector()
 
-    samples = sampler.get_sample(fit, num=num, rng=rng)
+    samples = sampler.get_sample(fit, num=num, rng=rng,
+                                 est_method_args=est_method_args)
     clipped = sampler.clip(fit, samples, clip=clip)
     return samples, clipped
 
@@ -381,7 +399,7 @@ def decompose(mdl):
     # return the individual components, including sub-expressions,
     # so we just drop the sub-expressions.
     #
-    out = set([])
+    out = set()
 
     if isinstance(mdl, SimulFitModel):
         # This is messier than I'd like
@@ -414,7 +432,8 @@ def sample_flux(fit: Fit,
                 numcores: int | None = None,
                 samples: np.ndarray | None = None,
                 clip: ClipValue = 'hard',
-                rng: random.RandomType | None = None
+                rng: random.RandomType | None = None,
+                est_method_args: PrefsType | None = None
                 ) -> np.ndarray:
     """Calculate model fluxes from a sample of parameter values.
 
@@ -422,6 +441,9 @@ def sample_flux(fit: Fit,
     the model flux for each set of parameter values. The values are
     drawn from normal distributions, and the distributions can either
     be independent or have correlations between the parameters.
+
+    .. versionchanged:: 4.19.0
+       The routine now accepts the est_method_args parameter.
 
     .. versionchanged:: 4.16.0
        The rng parameter was added.
@@ -483,6 +505,8 @@ def sample_flux(fit: Fit,
         Determines how random numbers are created. If set to None then
         the routines from `numpy.random` are used, and so can be
         controlled by calling `numpy.random.seed`.
+    est_method_args
+        Any extra configuration for the error estimation class.
 
     Returns
     -------
@@ -543,11 +567,13 @@ def sample_flux(fit: Fit,
     scales = samples
     if scales is None:
         samples, clipped = _sample_flux_get_samples(fit, src, correlated,
-                                                    num, clip=clip, rng=rng)
+                                                    num, clip=clip, rng=rng,
+                                                    est_method_args=est_method_args)
     else:
         samples, clipped = _sample_flux_get_samples_with_scales(fit, src, correlated,
                                                                 scales, num, clip=clip,
-                                                                rng=rng)
+                                                                rng=rng,
+                                                                est_method_args=est_method_args)
 
     # When a subset of the full model is used we need to know how
     # to select which rows in the samples array refer to the
@@ -586,8 +612,8 @@ def calc_sample_flux(lo: float | None,
                      data,
                      samples,
                      modelcomponent,
-                     confidence: float | None
-                     ):
+                     confidence: float
+                     ) -> list[np.ndarray]:
     """Given a set of parameter samples, estimate the flux distribution.
 
     This is similar to sample_flux but returns values for both the full
@@ -635,7 +661,7 @@ def calc_sample_flux(lo: float | None,
         that is used for calculating the "unabsorbed" flux. This is
         not a SimulFitModel instance. If None then we just reuse the
         input flux values (first column of samples).
-    confidence : number, optional
+    confidence : number
        The confidence level for the upper and lower values, as a
        percentage (0 to 100). A value of 68.3 will return the
        one-sigma range.
@@ -713,10 +739,10 @@ def calc_sample_flux(lo: float | None,
     # but it would complicate the code for essentially no time saving.
     #
     hwidth = confidence / 2
-    result = []
+    result: list[np.ndarray] = []
     for flx in [oflx, iflx]:
         result.append(np.percentile(flx[valid],
-                                       [50, 50 + hwidth, 50 - hwidth]))
+                                    [50, 50 + hwidth, 50 - hwidth]))
 
     for lbl, arg in zip(['original model', 'model component'], result):
         med, usig, lsig = arg

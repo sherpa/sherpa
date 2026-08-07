@@ -63,6 +63,7 @@ from sherpa.models.model import Model
 import sherpa.plot
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     ReSampleData
+from sherpa.sim.sample import ClipValue
 from sherpa.stats import Cash, CStat, WStat
 
 import sherpa.ui.utils
@@ -74,7 +75,7 @@ from sherpa.utils import bool_cast, get_error_estimates, is_subclass, \
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
-from sherpa.utils.types import IdType, IdTypes
+from sherpa.utils.types import IdType, IdTypes, PrefsType
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -12961,7 +12962,8 @@ class Session(sherpa.ui.utils.Session):
                                   bkg_id: IdType | None,
                                   scales=None, model=None,
                                   otherids: IdTypes = (),
-                                  clip='hard'):
+                                  clip: ClipValue = 'hard'
+                                  ):
         """Run sample_energy_flux and convert to a plot.
         """
         dist = self.sample_energy_flux(lo, hi, id=id, otherids=otherids,
@@ -12976,7 +12978,8 @@ class Session(sherpa.ui.utils.Session):
                                   bkg_id: IdType | None,
                                   scales=None, model=None,
                                   otherids: IdTypes=(),
-                                  clip='hard'):
+                                  clip: ClipValue = 'hard'
+                                  ):
         """Run sample_photon_flux and convert to a plot.
         """
         dist = self.sample_photon_flux(lo, hi, id=id, otherids=otherids,
@@ -12986,18 +12989,21 @@ class Session(sherpa.ui.utils.Session):
         plot.prepare(dist, bins)
         return plot
 
-    def get_energy_flux_hist(self, lo=None, hi=None,
+    def get_energy_flux_hist(self,
+                             lo: float | None = None,
+                             hi: float | None = None,
                              id: IdType | None = None,
-                             num=7500,
-                             bins=75,
-                             correlated=False,
-                             numcores=None,
+                             num: int = 7500,
+                             bins: int = 75,
+                             correlated: bool = False,
+                             numcores: int | None = None,
                              bkg_id: IdType | None = None,
-                             scales=None,
+                             scales: np.ndarray | None = None,
                              model=None,
                              otherids: IdTypes = (),
-                             recalc=True,
-                             clip='hard'):
+                             recalc: bool = True,
+                             clip: ClipValue = 'hard'
+                             ) -> sherpa.astro.plot.EnergyFluxHistogram:
         """Return the data displayed by plot_energy_flux.
 
         The get_energy_flux_hist() function calculates a histogram of
@@ -13129,18 +13135,21 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
-    def get_photon_flux_hist(self, lo=None, hi=None,
+    def get_photon_flux_hist(self,
+                             lo: float | None = None,
+                             hi: float | None = None,
                              id: IdType | None = None,
-                             num=7500,
-                             bins=75,
-                             correlated=False,
-                             numcores=None,
+                             num: int = 7500,
+                             bins: int = 75,
+                             correlated: bool = False,
+                             numcores: int | None = None,
                              bkg_id: IdType | None = None,
-                             scales=None,
+                             scales: np.ndarray | None = None,
                              model=None,
                              otherids: IdTypes = (),
                              recalc=True,
-                             clip='hard'):
+                             clip: ClipValue = 'hard'
+                             ) -> sherpa.astro.plot.PhotonFluxHistogram:
         """Return the data displayed by plot_photon_flux.
 
         The get_photon_flux_hist() function calculates a histogram of
@@ -14226,7 +14235,7 @@ class Session(sherpa.ui.utils.Session):
                          model=None,
                          otherids: IdTypes = (),
                          recalc: bool = True,
-                         clip='hard',
+                         clip: ClipValue = 'hard',
                          overplot: bool = False,
                          clearwindow: bool = True,
                          **kwargs) -> None:
@@ -14390,7 +14399,7 @@ class Session(sherpa.ui.utils.Session):
                          model=None,
                          otherids: IdTypes = (),
                          recalc: bool = True,
-                         clip='hard',
+                         clip: ClipValue = 'hard',
                          overplot: bool = False,
                          clearwindow: bool = True,
                          **kwargs) -> None:
@@ -14924,15 +14933,20 @@ class Session(sherpa.ui.utils.Session):
                             stat=stat, method=method,
                             rng=self.get_rng())
 
-    def sample_photon_flux(self, lo=None, hi=None,
+    def sample_photon_flux(self,
+                           lo: float | None = None,
+                           hi: float | None = None,
                            id: IdType | None = None,
-                           num=1,
-                           scales=None, correlated=False,
-                           numcores=None,
+                           num: int = 1,
+                           scales: np.ndarray | None = None,
+                           correlated: bool = False,
+                           numcores: int | None = None,
                            bkg_id: IdType | None = None,
                            model=None,
                            otherids: IdTypes = (),
-                           clip='hard'):
+                           clip: ClipValue = 'hard',
+                           est_method_args: PrefsType | None = None
+                           ) -> np.ndarray:
         """Return the photon flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -14940,6 +14954,9 @@ class Session(sherpa.ui.utils.Session):
         model over the given range (the flux). The return array
         contains the flux and parameter values for each iteration.
         The units for the flux are as returned by `calc_photon_flux`.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts the est_method_args parameter.
 
         .. versionchanged:: 4.16.0
            The random number generation is now controlled by the
@@ -15007,6 +15024,8 @@ class Session(sherpa.ui.utils.Session):
             clipping. The last column in the returned arrays indicates
             if the row had any clipped parameters (even when clip is
             set to 'none').
+        est_method_args
+           Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -15156,17 +15175,23 @@ class Session(sherpa.ui.utils.Session):
                                              num=num, lo=lo, hi=hi,
                                              numcores=numcores,
                                              samples=scales, clip=clip,
-                                             rng=self.get_rng())
+                                             rng=self.get_rng(),
+                                             est_method_args=est_method_args)
 
-    def sample_energy_flux(self, lo=None, hi=None,
+    def sample_energy_flux(self,
+                           lo: float | None = None,
+                           hi: float | None = None,
                            id: IdType | None = None,
-                           num=1,
-                           scales=None, correlated=False,
-                           numcores=None,
+                           num: int = 1,
+                           scales: np.ndarray | None = None,
+                           correlated: bool = False,
+                           numcores: int | None = None,
                            bkg_id: IdType | None = None,
                            model=None,
                            otherids: IdTypes = (),
-                           clip='hard'):
+                           clip: ClipValue = 'hard',
+                           est_method_args: PrefsType | None = None
+                           ) -> np.ndarray:
         """Return the energy flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -15174,6 +15199,9 @@ class Session(sherpa.ui.utils.Session):
         model over the given range (the flux). The return array
         contains the flux and parameter values for each iteration.
         The units for the flux are as returned by `calc_energy_flux`.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts the est_method_args parameter.
 
         .. versionchanged:: 4.16.0
            The random number generation is now controlled by the
@@ -15241,6 +15269,8 @@ class Session(sherpa.ui.utils.Session):
             clipping. The last column in the returned arrays indicates
             if the row had any clipped parameters (even when clip is
             set to 'none').
+        est_method_args
+           Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -15390,14 +15420,23 @@ class Session(sherpa.ui.utils.Session):
                                              num=num, lo=lo, hi=hi,
                                              numcores=numcores,
                                              samples=scales, clip=clip,
-                                             rng=self.get_rng())
+                                             rng=self.get_rng(),
+                                             est_method_args=est_method_args)
 
-    def sample_flux(self, modelcomponent=None, lo=None, hi=None,
+    def sample_flux(self,
+                    modelcomponent=None,
+                    lo: float | None = None,
+                    hi: float | None = None,
                     id: IdType | None = None,
-                    num=1, scales=None, correlated=False,
-                    numcores=None,
+                    num: int = 1,
+                    scales: np.ndarray | None = None,
+                    correlated: bool = False,
+                    numcores: int | None = None,
                     bkg_id: IdType | None = None,
-                    Xrays=True, confidence=68):
+                    Xrays: bool = True,
+                    confidence: float = 68,
+                    est_method_args: PrefsType | None = None
+                    ):
         """Return the flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -15406,6 +15445,9 @@ class Session(sherpa.ui.utils.Session):
         and sum the model over the given range (the flux). Return the
         parameter values used, together with the median, upper, and
         lower quantiles of the flux distribution.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts the est_method_args parameter.
 
         .. versionchanged:: 4.16.0
            The random number generation is now controlled by the
@@ -15468,6 +15510,8 @@ class Session(sherpa.ui.utils.Session):
            The confidence level for the upper and lower values, as a
            percentage (0 to 100). The default is 68, so as to return
            the one-sigma range.
+        est_method_args
+           Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -15610,7 +15654,8 @@ class Session(sherpa.ui.utils.Session):
                                               scales=scales, clip='soft',
                                               correlated=correlated,
                                               numcores=numcores,
-                                              bkg_id=bkg_id)
+                                              bkg_id=bkg_id,
+                                              est_method_args=est_method_args)
 
         return sherpa.astro.flux.calc_sample_flux(lo=lo, hi=hi,
                                                   fit=fit, data=data, samples=samples,
