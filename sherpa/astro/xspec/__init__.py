@@ -60,6 +60,14 @@ from the XSPEC model library are supported, except for the `polconst`,
 `pollin`, `polpow`, and `smaug` models [5]_, since they need
 information obtained from the XFLT keywords in the PHA file.
 
+Note that some, but not all, of the restrictions from XSPEC are
+enforced here when combining models:
+
+- additive models can not multiplied or divided together,
+
+- and multiplicative models can not be added or subtracted from each
+  other.
+
 XSPEC version
 -------------
 
@@ -1870,6 +1878,10 @@ class XSAdditiveModel(XSModel):
 
     The XSPEC additive models are listed at [1]_.
 
+    .. versionchanged:: 4.19.0
+       Additive models can no-longer be multiplied or divided by
+       another additive model.
+
     .. versionchanged:: 4.18.0
        The "norm" parameter is now handled in the `calc` method rather
        than in the compiled code.
@@ -1894,6 +1906,73 @@ class XSAdditiveModel(XSModel):
             pars = tuple(list(pars) + [self.norm])
 
         XSModel.__init__(self, name, pars)
+
+    # Invalidate multiplication and division. At present it is not
+    # worth handling the more esoteric options (e.g.  mod/pow).
+    #
+    def _validate_lop(self, opstr: str, rhs) -> None:
+        if isinstance(rhs, XSAdditiveModel):
+            raise TypeError("Invalid operation: "
+                            f"{self.__class__.__name__}"
+                            f" {opstr} "
+                            f"{rhs.__class__.__name__}")
+
+        try:
+            # If this is a component model, check the components for
+            # other XSPEC models.
+            for cpt in rhs.parts:
+                if isinstance(cpt, XSAdditiveModel):
+                    raise TypeError("Invalid operation: "
+                                    f"{self.__class__.__name__}"
+                                    f" {opstr} "
+                                    f"{cpt.__class__.__name__}")
+
+        except AttributeError:
+            pass
+
+    def _validate_rop(self, opstr: str, lhs) -> None:
+        if isinstance(lhs, XSAdditiveModel):
+            raise TypeError("Invalid operation: "
+                            f"{lhs.__class__.__name__}"
+                            f" {opstr} "
+                            f"{self.__class__.__name__}")
+
+        try:
+            # If this is a component model, check the components for
+            # other XSPEC models.
+            for cpt in lhs.parts:
+                if isinstance(cpt, XSAdditiveModel):
+                    raise TypeError("Invalid operation: "
+                                    f"{cpt.__class__.__name__}"
+                                    f" {opstr} "
+                                    f"{self.__class__.__name__}")
+
+        except AttributeError:
+            pass
+
+    def __mul__(self, rhs):
+        self._validate_lop("*", rhs)
+        return super().__mul__(rhs)
+
+    def __rmul__(self, lhs):
+        self._validate_rop("*", lhs)
+        return super().__rmul__(lhs)
+
+    def __truediv__(self, rhs):
+        self._validate_lop("/", rhs)
+        return super().__truediv__(rhs)
+
+    def __rtruediv__(self, lhs):
+        self._validate_rop("/", lhs)
+        return super().__rtruediv__(lhs)
+
+    def __floordiv__(self, rhs):
+        self._validate_lop("//", rhs)
+        return super().__floordiv__(rhs)
+
+    def __rfloordiv__(self, lhs):
+        self._validate_rop("//", lhs)
+        return super().__rfloordiv__(lhs)
 
     def guess(self, dep, *args, **kwargs):
         """Set an initial guess for the normalization.
@@ -1932,6 +2011,10 @@ class XSMultiplicativeModel(XSModel):
 
     The XSPEC multiplicative models are listed at [1]_.
 
+    .. versionchanged:: 4.19.0
+       Multiplicative models can no-longer be added or subtracted by
+       another mutiplicative model.
+
     References
     ----------
 
@@ -1939,7 +2022,64 @@ class XSMultiplicativeModel(XSModel):
 
     """
 
-    pass
+    # Invalidate addition and subtraction. At present it is not worth
+    # handling the more esoteric options (e.g.  mod/pow).
+    #
+    def _validate_lop(self, opstr: str, rhs) -> None:
+        if isinstance(rhs, XSMultiplicativeModel):
+            raise TypeError("Invalid operation: "
+                            f"{self.__class__.__name__}"
+                            f" {opstr} "
+                            f"{rhs.__class__.__name__}")
+
+        try:
+            # If this is a component model, check the components for
+            # other XSPEC models.
+            for cpt in rhs.parts:
+                if isinstance(cpt, XSMultiplicativeModel):
+                    raise TypeError("Invalid operation: "
+                                    f"{self.__class__.__name__}"
+                                    f" {opstr} "
+                                    f"{cpt.__class__.__name__}")
+
+        except AttributeError:
+            pass
+
+    def _validate_rop(self, opstr: str, lhs) -> None:
+        if isinstance(lhs, XSMultiplicativeModel):
+            raise TypeError("Invalid operation: "
+                            f"{lhs.__class__.__name__}"
+                            f" {opstr} "
+                            f"{self.__class__.__name__}")
+
+        try:
+            # If this is a component model, check the components for
+            # other XSPEC models.
+            for cpt in lhs.parts:
+                if isinstance(cpt, XSMultiplicativeModel):
+                    raise TypeError("Invalid operation: "
+                                    f"{cpt.__class__.__name__}"
+                                    f" {opstr} "
+                                    f"{self.__class__.__name__}")
+
+        except AttributeError:
+            pass
+
+    def __add__(self, rhs):
+        self._validate_lop("+", rhs)
+        return super().__add__(rhs)
+
+    def __radd__(self, lhs):
+        self._validate_rop("+", lhs)
+        return super().__radd__(lhs)
+
+    def __sub__(self, rhs):
+        self._validate_lop("-", rhs)
+        return super().__sub__(rhs)
+
+    def __rsub__(self, lhs):
+        self._validate_rop("-", lhs)
+        return super().__rsub__(lhs)
 
 
 class XSConvolutionKernel(XSModel):
