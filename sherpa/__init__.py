@@ -43,7 +43,7 @@ import sys
 from typing import Any
 
 from . import _version
-__version__ = _version.get_versions()['version']
+__version__ = _version.version
 
 
 __all__ = ('citation', 'get_config', 'get_include', 'smoke')

@@ -44,16 +44,22 @@ fi
 if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
 if [ -n "${BOKEHVER}" ]; then BOKEH="bokeh=${BOKEHVER}"; fi
 if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
-# Xspec >=12.10.1n Conda package includes wcslib & CCfits and pulls in cfitsio & fftw
 if [ -n "${XSPECVER}" ];
  then export XSPEC="xspec-modelsonly=${XSPECVER}";
 fi
 
-echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD}"
+# Install FFTW rather than use the version bundled with Sherpa.  This
+# requires pkg-config as well, otherwise the build system can not find
+# it!
+#
+FFTW="fftw pkg-config"
+
+echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${FFTW}"
 echo "compilers:    ${compilers}"
 
 # Create and activate conda build environment
-# conda create --yes -n build python"=${PYTHONVER}.*=*cpython*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
-conda create --yes -n build python"=${PYTHONVER}.*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
+# - should this use python"=${PYTHONVER}.*=*cpython*" instead?
+#
+conda create --quiet --yes -n build python"=${PYTHONVER}.*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${FFTW} ${compilers}
 
 conda activate build

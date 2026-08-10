@@ -1,0 +1,40 @@
+# Options for building Sherpa.
+
+option('build-group', type: 'boolean', value: true,
+       description: 'Is the group module built? CIAO users should ' +
+       'set this to false.')
+
+option('build-stk', type: 'boolean', value: true,
+       description: 'Is the stack module built? CIAO users should ' +
+       'set this to false.')
+
+option('build-region', type: 'boolean', value: true,
+       description: 'Is the region support code built? CIAO users ' +
+       'should set this to false and set the region-prefix option.')
+option('region-prefix', type: 'string', value: '',
+       description: 'Location of include/ and lib/ directories for ' +
+       'the region library. CIAO users should set this to ' +
+       '$ASCDS_INSTALL. Only used if build-region is false. ' +
+       'Leave as the empty string to build without region-library support.')
+option('region-use-cxc-parser', type: 'boolean', value: true,
+       description: 'Is the CXC Data Model parser used? Only used ' +
+       'if region-prefix is set and region-prefix is not empty.')
+
+option('build-wcssubs', type: 'boolean', value: true,
+       description: 'Is the wcssubs support module built? CIAO users ' +
+       'should set this to false and set the wcssubs-prefix option.')
+option('wcssubs-prefix', type: 'string', value: '',
+       description: 'Location of include/ and lib/ directories for ' +
+       'the wcssubs library. CIAO users should set this to ' +
+       '$ASCDS_INSTALL. Only used if build-wcssubs is false. ' +
+       'Leave as the empty string to build without wcssubs-library support.')
+
+option('xspec-prefix', type: 'string', value: '',
+       description: 'Location of include/ and lib/ directories for ' +
+       'the XSPEC model library. This is expected to be set to $HEADAS. ' +
+       'Leave as the empty string to build without XSPEC support.')
+option('xspec-libraries', type: 'array',
+       value: ['XSFunctions', 'XSUtil', 'XS'],
+       description: 'The XSPEC libraries that should be linked to. ' +
+       'The value depends on the version of the XSPEC library and ' +
+       'how it was built.')
