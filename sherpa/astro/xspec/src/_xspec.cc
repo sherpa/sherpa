@@ -41,17 +41,6 @@
 #include <XSFunctions/functionMap.h>
 
 
-// C++20 support is not guaranteed.
-//
-inline bool ends_with(const std::string &value,
-		      const std::string &suffix)
-{
-  return value.size() >= suffix.size() &&
-    std::equal(suffix.rbegin(),
-	       suffix.rend(),
-	       value.rbegin());
-}
-
 // Case-insensitive search.
 //
 static bool is_latest(const std::string &value)
@@ -157,7 +146,7 @@ static void validateVersions()
     const std::string suffix = "_VERSION:";
     std::string lKey, lVersion;
     while (versionFile >> lKey >> lVersion) {
-      if (ends_with(lKey, suffix)) {
+      if (lKey.ends_with(suffix)) {
 	const std::string lName = lKey.substr(0, lKey.size() - suffix.size());
 	versionMap[lName] = lVersion;
       }
