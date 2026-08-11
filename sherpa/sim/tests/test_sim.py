@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2018, 2020-2021, 2023-2025
+#  Copyright (C) 2011, 2016, 2018, 2020-2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,6 +20,7 @@
 
 from collections import namedtuple
 from io import StringIO
+import re
 
 import numpy as np
 
@@ -575,6 +576,49 @@ def test_mh(setup, caplog):
     assert params.mean(axis=1) == pytest.approx(means)
 
 
+def test_mh_debug(setup, caplog):
+    """This is with DEBUG output engaged.
+
+    The main behaviour is checked in test_mh. This is
+    a regression test to know when the output has changed.
+    """
+
+    setup.fit.method = NelderMead()
+    setup.fit.stat = Cash()
+
+    setup.fit.fit()
+
+    results = setup.fit.est_errors()
+    cov = results.extra_output
+    mcmc = sim.MCMC()
+    for par in setup.fit.model.pars:
+        mcmc.set_prior(par, sim.flat)
+
+    mcmc.set_sampler('MH')
+
+    opt = mcmc.get_sampler_opt('defaultprior')
+    mcmc.set_sampler_opt('defaultprior', opt)
+    # mcmc.set_sampler_opt('verbose', True)
+
+    with SherpaVerbosity("DEBUG"):
+        _ = mcmc.get_draws(setup.fit, cov, niter=1e2, rng=setup.rng)
+
+    assert len(caplog.records) == 8
+    for rec, (lvl, msg) in zip(caplog.records,
+                               [("INFO", "^Using Priors:$"),
+                                ("INFO", "^p1.gamma: <function flat at .*>$"),
+                                ("INFO", "^p1.ampl: <function flat at .*>$"),
+                                ("INFO", "^g1.fwhm: <function flat at .*>$"),
+                                ("INFO", "^g1.pos: <function flat at .*>$"),
+                                ("INFO", "^g1.ampl: <function flat at .*>$"),
+                                ("DEBUG",
+                                 r"^\[<function flat at .*>, <function flat at .*>, <function flat at .*>, <function flat at .*>, <function flat at .*>\]$"),
+                                ("DEBUG", "^Running Metropolis-Hastings$"),
+                                ]):
+        assert rec.levelname == lvl, rec
+        assert re.match(msg, rec.getMessage()) != None, (msg, rec)
+
+
 def test_metropolisMH(setup, caplog):
 
     setup.fit.method = NelderMead()
@@ -631,6 +675,46 @@ def test_metropolisMH(setup, caplog):
 
     means = np.asarray([1.06278784, 9.2152448, 2.573655956, 2.5853907, 47.27058904])
     assert params.mean(axis=1) == pytest.approx(means)
+
+
+def test_metropolisMH_debug(setup, caplog):
+    """This is with DEBUG output engaged.
+
+    The main behaviour is checked in test_metropolisMH. This is
+    a regression test to know when the output has changed.
+    """
+
+    setup.fit.method = NelderMead()
+    setup.fit.stat = CStat()
+
+    setup.fit.fit()
+    results = setup.fit.est_errors()
+    cov = results.extra_output
+
+    mcmc = sim.MCMC()
+    mcmc.set_sampler('MetropolisMH')
+    with SherpaVerbosity("DEBUG"):
+        _ = mcmc.get_draws(setup.fit, cov, niter=1e2, rng=setup.rng)
+
+    assert len(caplog.records) == 13
+    for rec, (lvl, msg) in zip(caplog.records,
+                               [("INFO", "^Using Priors:$"),
+                                ("INFO", "^p1.gamma: <function flat at .*>$"),
+                                ("INFO", "^p1.ampl: <function flat at .*>$"),
+                                ("INFO", "^g1.fwhm: <function flat at .*>$"),
+                                ("INFO", "^g1.pos: <function flat at .*>$"),
+                                ("INFO", "^g1.ampl: <function flat at .*>$"),
+                                ("DEBUG", "^Running Metropolis with Metropolis-Hastings$"),
+                                ("DEBUG", r"^X ~ uniform\(0,1\) <= 0.50 --> Metropolis$"),
+                                ("DEBUG", r"^X ~ uniform\(0,1\) >  0.50 --> Metropolis-Hastings$"),
+                                ("DEBUG",
+                                 r"^\[<function flat at .*>, <function flat at .*>, <function flat at .*>, <function flat at .*>, <function flat at .*>\]$"),
+                                ("DEBUG", "^Running Metropolis-Hastings$"),
+                                ("DEBUG", "^p_M: 0.5, Metropolis: 48%$"),
+                                ("DEBUG", "^p_M: 0.5, Metropolis-Hastings: 52%$")
+                                ]):
+        assert rec.levelname == lvl, rec
+        assert re.match(msg, rec.getMessage()) != None, (msg, rec)
 
 
 def setup_no_fit():
