@@ -13,8 +13,25 @@ py.install_sources(
 # extension: _xspec (optional)
 #
 if xspec_dep.found()
+  # Generate the model definitions as an include file
+  xincl = custom_target(
+      '_xspec.hh',
+      output: '_xspec.hh',
+      command: [
+        py,
+	'@SOURCE_ROOT@/scripts/make_xspec_model_include',
+	xspec_models,
+	'@OUTPUT@'
+      ],
+      depend_files: [
+        # The script depends on the xspec module
+        '../../../scripts/xspec.py'
+      ]
+  )
+
   xspec_sources = [
-    'src/_xspec.cc'
+    'src/_xspec.cc',
+    xincl
   ]
 
   xspec_include = [
