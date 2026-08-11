@@ -3,7 +3,7 @@
 sources = [
   '__init__.py',
   'smoke.py',
-  'xspec.py'
+  '../../../scripts/xspec.py'  # note: copied from scripts/
 ]
 
 py.install_sources(

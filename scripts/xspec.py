@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012-2016, 2020-2025
+#  Copyright (C) 2012-2016, 2020-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,6 +25,10 @@ can be useful to be able to read these files either to identify
 changes to the Sherpa code to support a new XSPEC release [3]_ or for
 writing a module for an XSPEC user model.
 
+.. versionchanged:: 4.19.0
+   Several symbols related to XSPEC versions have been added to this
+   module.
+
 References
 ----------
 
@@ -44,13 +48,74 @@ import string
 from typing import Callable
 
 
-__all__ = ("parse_xspec_model_description", "create_xspec_code")
+__all__ = ("SUPPORTED_VERSIONS", "MIN_VERSION", "MAX_VERSION",
+           "XSPECcode",
+           "parse_xspec_model_description",
+           "create_xspec_code", "get_version")
 
 
 warning = logging.getLogger(__name__).warning
 
 # Represent the XSPEC version (without a patch level).
 Version = tuple[int, int, int]
+
+# I am not sure what the naming of the XSPEC components are, but let's
+# stick with major, minor, and micro. We drop the patch level - e.g.
+# "c" in "12.12.0c" as that is not helpful to track here.
+#
+SUPPORTED_VERSIONS: list[Version] = [
+    (12, 13, 0), (12, 13, 1),
+    (12, 14, 0), (12, 14, 1),
+    (12, 15, 0), (12, 15, 1)
+]
+"""What versions of XSPEC are supported by Sherpa?
+
+Newer versions of XSPEC may be usable with Sherpa but there is no
+guarantee of support (e.g. some models may not be usable). It is
+unlikely that older versions will be usable.
+
+"""
+
+# We could use packaging.versions.Version here, but for our needs we
+# can get away with a tuple of integers. That is, we do not need the
+# full support for PEP-440.
+#
+MIN_VERSION = min(SUPPORTED_VERSIONS)
+"""The minimum supported XSPEC version."""
+
+MAX_VERSION = max(SUPPORTED_VERSIONS)
+"""The maximum supported XSPEC version."""
+
+
+def get_version(version: str) -> Version:
+    """Strip out any XSPEC patch level.
+
+    So '12.12.0c' gets converted to '12.12.0', and then to (12, 12,
+    0). This is helpful as then it makes version comparison easier, as
+    we can rely on the standard tuple ordering.
+
+    Parameters
+    ----------
+    version : str
+        The XSPEC version string, of the form "12.12.0c", so it can
+        include the XSPEC patch level.
+
+    Returns
+    -------
+    (major, minor, micro) : tuple of int
+        The XSPEC patchlevel is ignored.
+
+    """
+
+    # XSPEC versions do not match PEP 440, so strip out the trailing
+    # text (which indicates the XSPEC patch level).
+    #
+    matches = re.search(r'^(\d+)\.(\d+)\.(\d+)', version)
+    if matches is None:
+        raise ValueError(f"Invalid XSPEC version string: {version}")
+
+    return (int(matches[1]), int(matches[2]), int(matches[3]))
+
 
 @dataclass
 class XSPECcode:
@@ -1152,6 +1217,12 @@ def models_to_compiled(mdls: list[ModelDefinition],
     # What includes are needed?
     #
     out = marker("Includes")
+
+    # The Sherpa extension includes which will include Python.h
+    # so must be done before other includes, such as iostream.
+    #
+    out += '#include "sherpa/astro/xspec_extension.hh"\n\n'
+
     out += '#include <iostream>\n\n'
     out += '#include <xsTypes.h>\n'
     out += '#include <XSFunctions/Utilities/funcType.h>\n\n'
@@ -1165,26 +1236,14 @@ def models_to_compiled(mdls: list[ModelDefinition],
     #
     from sherpa.astro import xspec
     versionstr = xspec.get_xsversion()
-    match = re.search(r'^(\d+)\.(\d+)\.(\d+)', versionstr)
-    if match is None:
-        raise ValueError(f"Invalid XSPEC version string: {versionstr}")
+    xspec_version = get_version(versionstr)
 
-    # This needs to be kept in sync with helpers/xspec_config.py
-    #
-    SUPPORTED_VERSIONS = [(12, 13, 0), (12, 13, 1),
-                          (12, 14, 0), (12, 14, 1),
-                          (12, 15, 0), (12, 15, 1)]
-
-    xspec_version = (int(match[1]), int(match[2]), int(match[3]))
     for version in SUPPORTED_VERSIONS:
         if xspec_version >= version:
             major, minor, micro = version
             out += f'#define XSPEC_{major}_{minor}_{micro}\n'
 
-    # The Sherpa extension includes.
-    #
-    out += '\n#include "sherpa/astro/xspec_extension.hh"\n\n'
-
+    out += '\n'
     out += marker("Defines")
 
     # Do we need to define cppModelWrapper? For XSPEC 12.12.1/12.13.0

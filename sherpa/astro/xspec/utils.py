@@ -30,37 +30,9 @@ except ImportError as ie:
     #
     raise ImportError("XSPEC support is not enabled") from ie
 
+from sherpa.astro.utils.xspec import get_version
+
 __all__ = ['ModelMeta', 'include_if', 'version_at_least']
-
-
-def get_version(version):
-    """Strip out any XSPEC patch level.
-
-    So '12.12.0c' gets converted to '12.12.0', and then to (12, 12,
-    0). This is helpful as then it makes version comparison easier, as
-    we can rely on the standard tuple ordering.
-
-    Parameters
-    ----------
-    version : str
-        The XSPEC version string, of the form "12.12.0c", so it can
-        include the XSPEC patch level.
-
-    Returns
-    -------
-    (major, minor, micro) : tuple of int
-        The XSPEC patchlevel is ignored.
-
-    """
-
-    # XSPEC versions do not match PEP 440, so strip out the trailing
-    # text (which indicates the XSPEC patch level).
-    #
-    match = re.search(r'^(\d+)\.(\d+)\.(\d+)', version)
-    if match is None:
-        raise ValueError(f"Invalid XSPEC version string: {version}")
-
-    return (int(match[1]), int(match[2]), int(match[3]))
 
 
 XSPEC_VERSION = get_version(_xspec.get_xsversion())

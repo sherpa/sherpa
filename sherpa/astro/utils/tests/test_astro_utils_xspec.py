@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023-2025
+#  Copyright (C) 2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -352,6 +352,8 @@ def check_compiled(got, suffix):
 
     prefix = '''// Includes
 
+#include "sherpa/astro/xspec_extension.hh"
+
 #include <iostream>
 
 #include <xsTypes.h>
@@ -384,12 +386,6 @@ def check_compiled(got, suffix):
     # header (which could have been included here but the tests
     # read better with the text there rather than here).
     #
-    assert tok == ""
-
-    tok = toks.pop(0)
-    assert tok == '#include "sherpa/astro/xspec_extension.hh"'
-
-    tok = toks.pop(0)
     assert tok == ""
 
     # Reconstruct the text to make it easy to compare to the user input.

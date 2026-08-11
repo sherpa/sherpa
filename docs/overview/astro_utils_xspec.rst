@@ -11,5 +11,10 @@ The sherpa.astro.utils.xspec module
    .. autosummary::
       :toctree: api
 
+      SUPPORTED_VERSIONS
+      MAX_VERSION
+      MIN_VERSION
+      XSPECcode
       create_xspec_code
       parse_xspec_model_description
+      get_version
