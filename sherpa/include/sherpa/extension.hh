@@ -75,22 +75,26 @@ PyMODINIT_FUNC PyInit_##name(void) { \
 #define SHERPAMODDOC(name, fctlist, doc)	\
   _SHERPAMOD(name, fctlist, PyDoc_STR(doc))
 
+#define _FCTSPEC(name, func, doc) \
+ { (char*)#name, (PyCFunction)func, METH_VARARGS, doc }
+
 // Create a function specification: name is the name for the
 // function (accessible from Python) and func is the function
 // to be called. The function will have no documentation.
 //
-#define FCTSPEC(name, func) \
- { (char*)#name, (PyCFunction)func, METH_VARARGS, NULL }
+#define FCTSPEC(name, func) _FCTSPEC(name, func, NULL)
 
 // Add a docstring to FCTSPEC.
 //
-#define FCTSPECDOC(name, func, doc) \
-  { (char*)#name, (PyCFunction)func, METH_VARARGS, PyDoc_STR(doc) }
+#define FCTSPECDOC(name, func, doc) _FCTSPEC(name, func, PyDoc_STR(doc))
 
 // Similar to FCTSPEC but allows the function to have keywords.
 //
-#define KWSPEC(name, func) \
+#define _KWSPEC(name, func, doc) \
   { (char*)#name, (PyCFunction)((PyCFunctionWithKeywords)func), \
-      METH_VARARGS|METH_KEYWORDS, NULL }
+      METH_VARARGS|METH_KEYWORDS, doc }
+
+#define KWSPEC(name, func) _KWSPEC(name, func, NULL)
+#define KWSPECDOC(name, func, doc) _KWSPEC(name, func, PyDoc_STR(doc))
 
 #endif /* __sherpa_extension_hh__ */

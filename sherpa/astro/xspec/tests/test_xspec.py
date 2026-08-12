@@ -242,6 +242,11 @@ def test_check_default_name(modelcls):
 
     assert mdl.name in [expected, expected[2:]]
 
+    # Is the xspec_name field set up correctly?
+    #
+    ## assert mdl.name == mdl.xspec_name.lower() not true for most conv models
+    assert mdl.xspec_name == modelcls.__name__[2:]
+
 
 def test_norm_works():
     # Check that the norm parameter for additive models
@@ -456,7 +461,7 @@ def test_convolution_model_cflux():
     # Use the cflux convolution model, since this gives
     # an easily-checked result.
     #
-    func = xs._xspec.C_cflux
+    func = xs._xspec.cflux
 
     # The energy grid should extend beyond the energy grid
     # used to evaluate the model, to avoid any edge effects.
@@ -532,7 +537,7 @@ def test_convolution_model_cpflux_noncontiguous():
     y1 = numpy.zeros(elo.size)
 
     emsg = "XSPEC convolution model requires a contiguous grid"
-    func = xs._xspec.C_cpflux
+    func = xs._xspec.cpflux
 
     with pytest.raises(ValueError,
                        match=f"^{emsg}$"):
@@ -581,7 +586,6 @@ def test_additive_single_norm_model():
     from sherpa.astro.xspec import XSAdditiveModel
 
     class XSNotAClassName(XSAdditiveModel):
-        __function__ = "foo"
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
@@ -601,7 +605,6 @@ def test_nonexistent_model():
 
     @include_if(False)
     class XSbtapec(XSAdditiveModel):
-        __function__ = "foo"
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
@@ -622,9 +625,9 @@ def test_not_compiled_model():
     from sherpa.astro.xspec.utils import include_if, ModelMeta
     from sherpa.astro.xspec import XSAdditiveModel
 
+    # This assumes there is never going to be a model routine called foo.
     @include_if(True)
     class XSfoo(XSAdditiveModel):
-        __function__ = "C_foo"
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
@@ -638,13 +641,24 @@ def test_not_compiled_model():
 
 
 def test_old_style_xspec_class():
-    """
-    We changed the way xspec models are declared, but just in case let's make sure old-style declarations still work.
+    """We changed the way xspec models are declared, but just in case
+    let's make sure old-style declarations still work. With the changes
+    in 4.19.0 it's not obvious this test makes much sense.
+
     """
     from sherpa.astro.xspec import XSzbabs, XSMultiplicativeModel, _xspec
 
     class XSfoo(XSMultiplicativeModel):
-        _calc = _xspec.xszbabs
+
+        # Use the calc routine from XSzbabs. With the changes in 4.19.0
+        # this is easiest done by over-loading calc.
+        #
+        _module = None
+
+        def calc(self, p, *args, **kwargs):
+            # Go straight to the actual routine to make sure it works
+            # and to avoid having to label this as @modelCacher1d
+            return _xspec.zbabs(p, *args, **kwargs)
 
         def __init__(self, name='zbabs'):
             self.nH = Parameter(name, 'nH', 1.e-4, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')

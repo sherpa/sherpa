@@ -345,7 +345,12 @@ at `issue #52 <https://github.com/sherpa/sherpa/issues/52>`_).
    The interface to the XSPEC models has changed in 4.19.0, with the
    creation of the code needed to call the models now automatically
    generated, rather than requiring manually creating it with the
-   help of the ``scripts/update_xspec_functions.py`` script.
+   help of the ``scripts/update_xspec_functions.py`` script. The names
+   of the symbols used to call a model has been changed from the
+   function name to the model name (e.g. ``C_agauss`` to ``agauss``),
+   which has caused how the :py:class:`~sherpa.astro.xspec.XSModel`
+   class identifies the correct routine, via the use of the
+   :py:class:`~sherpa.astro.xspec.utils.ModelMeta` class.
 
 Checking against a previous XSPEC version
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -434,7 +439,7 @@ noted as not being supported::
   // Wrapper
 
   static PyMethodDef Wrappers[] = {
-    XSPECMODELFCT_C_NORM(C_wDem, 7),
+    XSPECMODELFCT_C(wdem, C_wDem, 7),
     { NULL, NULL, 0, NULL }
   };
 
@@ -483,8 +488,6 @@ noted as not being supported::
       .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
 
       """
-
-      __function__ = "C_wDem"
 
       def __init__(self, name='wdem'):
           self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
@@ -638,35 +641,30 @@ available.
         % ./scripts/make_xspec_model_include $CONDA_PREFIX/spectral/manager/model.dat temp
         % head -5 temp
         #ifndef _XSPEC_MODEL_DEFINES
-          XSPECMODELFCT_C(C_agauss, 2),                    // XSagauss
-          XSPECMODELFCT(agnsed, 15),                       // XSagnsed
-          XSPECMODELFCT(agnslim, 14),                      // XSagnslim
-          XSPECMODELFCT_C(C_apec, 3),                      // XSapec
+          XSPECMODELFCT_C(agauss, C_agauss, 2),            // XSagauss
+          XSPECMODELFCT(agnsed, agnsed, 15),               // XSagnsed
+          XSPECMODELFCT(agnslim, agnslim, 14),             // XSagnslim
+          XSPECMODELFCT_C(apec, C_apec, 3),                // XSapec
 
-      Note that the symbol name used here is **not** the XSPEC model
+      Note that the symbol name used here **is** the XSPEC model
       name (the first argument of the model definition from
-      ``model.dat``), but the function name (the fifth argument of the
-      model definition)::
+      ``model.dat``), and internally it calls the function name
+      (the fifth argument of the and the second argument to the
+      macro)::
 
         % grep C_wDem $HEADAS/../spectral/manager/model.dat
         wdem          7  0.         1.e20           C_wDem   add  0
 
-      The function name has been shown to change over time (e.g. before
-      XSPEC 12.10.0 nsmaxg routine was called ``nsmaxg`` but was then
-      changed to ``C_nsmaxg``) which is why the code is built to
-      match the installed XSPEC (it also allows for including new
-      models).
-
       The remaining pieces are the choice of macro
-      (e.g. ``XSPECMODELFCT`` or ``XSPECMODELFCT_C``) and
-      the value for the second argument.  The macro depends on the
-      model type and the name of the function (which defines the
-      interface that XSPEC provides for the model, such as single- or
-      double- precision, and Fortran- or C- style linking). Additive
-      models use the suffix ``_NORM`` and convolution models use the
-      suffix ``_CON``. Model functions which begin with ``C_`` use the
-      ``_C`` variant, while those which begin with ``c_`` currently
-      require treating them as if they have no prefix.
+      (e.g. ``XSPECMODELFCT`` or ``XSPECMODELFCT_C``) and the values
+      for the arguments.  The macro depends on the model type,
+      the name of the model, the name of the function (which defines
+      the interface that XSPEC provides for the model, such as single-
+      or double- precision, and Fortran- or C- style
+      linking). Convolution models use the suffix ``_CON``. Model
+      functions which begin with ``C_`` use the ``_C`` variant, while
+      those which begin with ``c_`` currently require treating them as
+      if they have no prefix.
 
       The numeric argument to the template defines the number of
       parameters supported by the model once in Sherpa, and should
@@ -674,6 +672,11 @@ available.
       models.
 
        .. note::
+
+          Prior to Sherpa 4.19.0 the models were stored using the
+          function name rather than the model name, which made it
+          complicated to handle new XSPEC versions where the function
+          name could change.
 
 	  Prior to Sherpa 4.18.0 the additive models needed to be sent
 	  an extra value to represent the normalization, and used a
@@ -687,9 +690,9 @@ available.
 
       are encoded as::
 
-        XSPECMODELFCT_C(C_apec, 3),                      // XSapec
-        XSPECMODELFCT(xsphab, 1),                        // XSphabs
-        XSPECMODELFCT_CON(C_gsmooth, 2),                 // XSgsmooth
+        XSPECMODELFCT_C(apec, C_apec, 3),                // XSapec
+        XSPECMODELFCT(phabs, xsphab, 1),                 // XSphabs
+        XSPECMODELFCT_CON(gsmooth, C_gsmooth, 2),        // XSgsmooth
 
       Those models that do not use the ``_C`` version of the macro (or,
       for convolution-style models, have to use
@@ -737,16 +740,21 @@ available.
 	a model name (e.g. ``Apec`` covers the ``vapec``, ``vvapec``,
 	``bapec``, ... variants)..
 
-      * Models that are not in older versions of XSPEC should be marked with
-	the ``version_at_least`` decorator (giving it the minimum supported
-	XSPEC version as a string), and the function (added to ``_xspec.cc``)
-	is specified as a string using the ``__function__`` attribute. The
-	:py:class:`sherpa.astro.xspec.utils.ModelMeta` metaclass performs
-	a runtime check to ensure that the model can be used.
+      * Models that are not in older versions of XSPEC should be
+	marked with the ``version_at_least`` decorator (giving it the
+	minimum supported XSPEC version as a string). The
+	:py:class:`~sherpa.astro.xspec.utils.ModelMeta` metaclass
+	performs a runtime check to ensure that the model can be used
+	by looking for the model name (using the ``xspec_name`` attribute
+	of the model class) from the extension module (the ``_module``
+	attribute).
 
-        For example (from when XSPEC 12.9.0 was still supported)::
+        .. note::
 
-            __function__ = "C_apec" if equal_or_greater_than("12.9.1") else "xsaped"
+           Prior to Sherpa 4.19.0 the mapping from model name to function
+           name needed to be added to the model classes via lines like::
+
+             __function__ = "C_apec" if equal_or_greater_than("12.9.1") else "xsaped"
 
    c. ``sherpa/astro/xspec/tests/test_xspec.py``
 

@@ -735,7 +735,30 @@ static PyMethodDef XSpecMethods[] = {
   // End model definitions
 
   // XSPEC table models
-  KWSPEC(tabint, sherpa::astro::xspec::xspectablemodel),
+  KWSPECDOC(tabint, sherpa::astro::xspec::xspectablemodel, \
+  "The XSPEC table model interface.\n\n" \
+  "Parameters\n" \
+  "----------\n" \
+  "pars : array-like\n" \
+  "   The model parameters (size depends on the table model).\n" \
+  "xlo, xhi : array-like\n" \
+  "   The energy bins (keV) if in ascending order, wavelength (Angstrom)\n" \
+  "   if in descending order. ehi can be None, otherwise it must have\n" \
+  "   the same size as xlo (which is 1D) and xhi[i] > xlo[i] even when\n" \
+  "   the units are in Angstroms.\n" \
+  "filename : str\n" \
+  "   The name of the XSPEC model file.\n" \
+  "tabtype : {'add', 'mul', 'exp'}\n" \
+  "   The table type (additive, multiplicative, exponential).\n" \
+  "\n" \
+  "Returns\n" \
+  "-------\n" \
+  "modelvals : np.ndarray\n" \
+  "   The model values. Matches the size of xlo but if xhi is None then\n" \
+  "   the last element is 0.0 (since the xlo values then define the bin\n" \
+  "   edges in this case).\n" \
+  "\n"
+),
 
   { NULL, NULL, 0, NULL }
 
@@ -744,7 +767,14 @@ static PyMethodDef XSpecMethods[] = {
 static struct PyModuleDef xspec_module = {
         PyModuleDef_HEAD_INIT,
         "_xspec",
-        NULL,
+        PyDoc_STR("Direct access to the XSPEC models and ancillary routines."
+                  "\n\n"
+                  ".. versionchanged:: 4.19.0\n"
+                  "   Models are now accessed using the user name (e.g. 'apec') rather\n"
+                  "   than the actual function name (e.g. 'C_apec') from the\n"
+                  "   $HEADAS/spectral/manager/model.dat file.\n"
+                  "\n"
+                  ),
         -1,
         XSpecMethods,
 };

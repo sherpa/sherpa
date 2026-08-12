@@ -26,8 +26,13 @@ changes to the Sherpa code to support a new XSPEC release [3]_ or for
 writing a module for an XSPEC user model.
 
 .. versionchanged:: 4.19.0
-   Several symbols related to XSPEC versions have been added to this
-   module.
+   The interface to a particular model is now named after the model
+   name rather than the actual function name (e.g. the apec model is
+   now called "apec" rather than something like "C_apec"). This makes
+   it easier to identify which routine to call. The docstring for the
+   model includes the name of the function and the number of
+   parameters it requires. Several symbols related to XSPEC versions
+   have been added to this module.
 
 References
 ----------
@@ -948,17 +953,9 @@ def simple_wrap(modelname: str,
 
     out += f'\n{t1}"""\n\n'
 
-    if mdl.language == 'C++ style':
-        funcname = f"C_{mdl.funcname}"
-    else:
-        funcname = mdl.funcname
-
     if internal is None:
-        out += f"{t1}_calc = _models.{funcname}\n"
-    else:
-        out += f'{t1}__function__ = "{funcname}"\n'
+        out += f"{t1}_module = _models\n\n"
 
-    out += "\n"
     out += f"{t1}def __init__(self, name='{mdl.name}'):\n"
     parnames = []
     for par in mdl.pars:
@@ -1076,6 +1073,12 @@ def model_to_python(mdl: ModelDefinition,
 def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
     """Return a string representing the C++ code needed to build the module.
 
+    .. versionchanged:: 4.19.0
+       The wrapcode has been updated to include the model name as well
+       as the function name and number of parameters, as the library
+       routines are now named to match the model name rather than the
+       function name.
+
     Parameters
     ----------
     mdl : ModelDefinition
@@ -1125,7 +1128,7 @@ def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
     if mdl.language == 'C++ style':
         funcname = f'C_{funcname}'
 
-    wrapcode += f'({funcname}, {len(mdl.pars)}),'
+    wrapcode += f'({mdl.name}, {funcname}, {len(mdl.pars)}),'
 
     # Do we need to define this model? Originally this was only
     # for FORTRAN routines but it may be worth just always
