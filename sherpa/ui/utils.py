@@ -12236,7 +12236,7 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def _get_plot_objects(self,
-                          ids: IdType | IdTypes,
+                          ids: IdType | IdTypes | None,
                           getfunc: Callable[..., Plot | HistogramPlot],
                           *,
                           recalc: bool = True,
