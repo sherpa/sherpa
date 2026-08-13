@@ -22,13 +22,16 @@ requirements:
   - numpy 1.24.* # [py<312]
   - numpy 1.26.* # [py==312]
   - numpy 2.*    # [py>312]
+  - meson
+  - meson-python
   - setuptools
+  - pkg-config
   - six
+  - fftw
 
  run:
   - python
   - {{ pin_compatible('numpy') }}
-  - setuptools
   - pytest
   - six
 
