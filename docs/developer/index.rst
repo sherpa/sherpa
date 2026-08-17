@@ -645,10 +645,10 @@ available.
         % head -6 temp
         #ifndef _XSPEC_MODEL_DEFINES
         #define _XSPEC_MODEL_DEFINES
-          XSPECMODELFCT_C(agauss, C_agauss, 2),            // XSagauss
-          XSPECMODELFCT(agnsed, agnsed, 15),               // XSagnsed
-          XSPECMODELFCT(agnslim, agnslim, 14),             // XSagnslim
-          XSPECMODELFCT_C(apec, C_apec, 3),                // XSapec
+          XSPECMODELFCT_C(agauss, C_agauss, 2, "LineE Sigma"), // XSagauss
+          XSPECMODELFCT(agnsed, agnsed, 15, "mass dist logmdot astar cosi kTe_hot kTe_warm Gamma_hot Gamma_warm R_hot R_warm logrout Htmax reprocess redshift"), // XSagnsed
+          XSPECMODELFCT(agnslim, agnslim, 14, "mass dist logmdot astar cosi kTe_hot kTe_warm Gamma_hot Gamma_warm R_hot R_warm logrout rin redshift"), // XSagnslim
+          XSPECMODELFCT_C(apec, C_apec, 3, "kT Abundanc Redshift"), // XSapec
 
       Note that the symbol name used here **is** the XSPEC model
       name (the first argument of the model definition from
@@ -672,8 +672,10 @@ available.
 
       The numeric argument to the template defines the number of
       parameters supported by the model once in Sherpa, and should
-      equal the value given in the ``model.dat`` file for all supported
-      models.
+      equal the value given in the ``model.dat`` file for all
+      supported models. The last argument is a string listing the
+      order of the parameter names and is used to create the docstring
+      for the symbol.
 
        .. note::
 
@@ -694,9 +696,9 @@ available.
 
       are encoded as::
 
-        XSPECMODELFCT_C(apec, C_apec, 3),                // XSapec
-        XSPECMODELFCT(phabs, xsphab, 1),                 // XSphabs
-        XSPECMODELFCT_CON(gsmooth, C_gsmooth, 2),        // XSgsmooth
+        XSPECMODELFCT_C(apec, C_apec, 3, "kT Abundanc Redshift"), // XSapec
+        XSPECMODELFCT(phabs, xsphab, 1, "nH"),           // XSphabs
+        XSPECMODELFCT_CON(gsmooth, C_gsmooth, 2, "Sig_6keV Index"), // XSgsmooth
 
       Those models that do not use the ``_C`` version of the macro (or,
       for convolution-style models, have to use

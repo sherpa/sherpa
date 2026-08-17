@@ -441,7 +441,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C(apec, C_apec, 1),
+  XSPECMODELFCT_C(apec, C_apec, 1, "kT"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -524,7 +524,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C(onlynorm, C_fred, 0),
+  XSPECMODELFCT_C(onlynorm, C_fred, 0, ""),
   { NULL, NULL, 0, NULL }
 };
 
@@ -590,7 +590,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT(abcd, foos, 1),
+  XSPECMODELFCT(abcd, foos, 1, "nH"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -665,7 +665,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT(abcd, foos, 1),
+  XSPECMODELFCT(abcd, foos, 1, "nH"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -734,7 +734,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_CON_F77(rgsxsrc, rgsxsrc, 1),
+  XSPECMODELFCT_CON_F77(rgsxsrc, rgsxsrc, 1, "order"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -812,7 +812,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_CON_F77(rgsxsrc, rgsxsrc, 1),
+  XSPECMODELFCT_CON_F77(rgsxsrc, rgsxsrc, 1, "order"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -884,7 +884,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C(abcd, foos, 1),
+  XSPECMODELFCT_C(abcd, foos, 1, "xs"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -966,7 +966,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C(abcd, C_foos, 1),
+  XSPECMODELFCT_C(abcd, C_foos, 1, "xs"),
   { NULL, NULL, 0, NULL }
 };
 
