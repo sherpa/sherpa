@@ -1033,20 +1033,21 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
 
 // The XSpec models are defined with
-//      model name, function name as a symbol, number of parameters.
+//      model name, function name as a symbol, number of parameters, names
 //
 // So the apec model would be
 //
-//    XSPECMODELFCT_C("apec", C_apec, 3).
+//    XSPECMODELFCT_C("apec", C_apec, 3, "kT Abundanc Redshift").
 //
 // The docstring of the model, which is the model name, includes the
-// name of the routine being called and the number of parameters it
-// accepts (there could be other ways to pass this information around
-// but for now just use the docstring).
+// name of the routine being called, the number of parameters it
+// accepts, and the parameter names (there could be other ways to pass
+// this information around but for now just use the docstring).
 //
 
-#define XDOC(header, npars) \
+#define XDOC(header, npars, parnames) \
   header "\n\n" \
+  "The parameter order is:\n" parnames "\n\n" \
   "Parameters\n" \
   "----------\n" \
   "pars : array-like\n" \
@@ -1067,8 +1068,9 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
   "   edges in this case).\n" \
   "\n"
 
-#define XCONVDOC(header, npars) \
+#define XCONVDOC(header, npars, parnames) \
   header "\n\n" \
+  "The parameter order is:\n" parnames "\n\n" \
   "Parameters\n" \
   "----------\n" \
   "pars : array-like\n" \
@@ -1091,36 +1093,36 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 
 // Fortran models
 //
-#define XSPECMODELFCT(username, funcname, npars) \
+#define XSPECMODELFCT(username, funcname, npars, parnames) \
   KWSPECDOC(username, \
     (sherpa::astro::xspec::xspecmodelfct< npars, funcname##_ >),        \
-    XDOC("The XSPEC " #username " model. Calls " #funcname " (FORTRAN) with " #npars " parameter(s).", npars) \
+    XDOC("The XSPEC " #username " model. Calls " #funcname " (FORTRAN) with " #npars " parameter(s).", npars, parnames) \
   )
 
-#define XSPECMODELFCT_CON_F77(username, funcname, npars) \
+#define XSPECMODELFCT_CON_F77(username, funcname, npars, parnames) \
   KWSPECDOC(username, \
     (sherpa::astro::xspec::xspecmodelfct_con_f77< npars, funcname##_ >), \
-    XCONVDOC("The XSPEC " #username " convolution model. Calls " #funcname " (FORTRAN) with " #npars " parameter(s).", npars) \
+    XCONVDOC("The XSPEC " #username " convolution model. Calls " #funcname " (FORTRAN) with " #npars " parameter(s).", npars, parnames) \
   )
 
 // C/C++ models
 //
-#define XSPECMODELFCT_DBL(username, funcname, npars) \
+#define XSPECMODELFCT_DBL(username, funcname, npars, parnames) \
   KWSPECDOC(username, \
     (sherpa::astro::xspec::xspecmodelfct_dbl< npars, funcname##_ >), \
-    XDOC("The XSPEC " #username " model. Calls " #funcname " (C, double) with " #npars " parameter(s).", npars) \
+    XDOC("The XSPEC " #username " model. Calls " #funcname " (C, double) with " #npars " parameter(s).", npars, parnames) \
   )
 
-#define XSPECMODELFCT_C(username, funcname, npars) \
+#define XSPECMODELFCT_C(username, funcname, npars, parnames) \
   KWSPECDOC(username, \
     (sherpa::astro::xspec::xspecmodelfct_C< npars, funcname >), \
-    XDOC("The XSPEC " #username " model. Calls " #funcname " (C) with " #npars " parameter(s).", npars) \
+    XDOC("The XSPEC " #username " model. Calls " #funcname " (C) with " #npars " parameter(s).", npars, parnames) \
   )
 
-#define XSPECMODELFCT_CON(username, funcname, npars) \
+#define XSPECMODELFCT_CON(username, funcname, npars, parnames) \
   KWSPECDOC(username, \
    (sherpa::astro::xspec::xspecmodelfct_con< npars, funcname >), \
-   XCONVDOC("The XSPEC " #username " convolution model. Calls " #funcname " (C) with " #npars " parameter(s).", npars) \
+   XCONVDOC("The XSPEC " #username " convolution model. Calls " #funcname " (C) with " #npars " parameter(s).", npars, parnames) \
   )
 
 #endif /* __sherpa_astro_xspec_extension_hh__ */

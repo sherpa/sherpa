@@ -1128,7 +1128,11 @@ def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
     if mdl.language == 'C++ style':
         funcname = f'C_{funcname}'
 
-    wrapcode += f'({mdl.name}, {funcname}, {len(mdl.pars)}),'
+    # Add in information about the parameters (the number and the
+    # names as a single string).
+    #
+    pnames = ' '.join([p.name for p in mdl.pars])
+    wrapcode += f'({mdl.name}, {funcname}, {len(mdl.pars)}, "{pnames}"),'
 
     # Do we need to define this model? Originally this was only
     # for FORTRAN routines but it may be worth just always
