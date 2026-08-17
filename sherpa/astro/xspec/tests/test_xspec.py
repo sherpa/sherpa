@@ -24,9 +24,19 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.models import Parameter
-from sherpa.utils.testing import requires_data, \
-    requires_fits, requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.utils.err import ParameterErr
+
+# All these tests requre XSPEC so do the check once rather than
+# requiring each test to be labelled with @requires_xspec. Do not use
+# the pytest.importorskip routine as it changed behaviour during the
+# pytest 8.2 to 9.1 period relating to how import errors are handled.
+#
+try:
+    import sherpa.astro.xspec as xs
+except ImportError:
+    pytest.skip("could not import 'sherpa.astro.xspec'",
+                allow_module_level=True)
 
 # How many models should there be?
 # This number includes all additive, multiplicative, and convolution models,
@@ -64,6 +74,24 @@ def remove_item(xs, x):
         pass
 
 
+def get_all_xspec_models() -> list:
+    """What XSPEC models can we find?"""
+
+    out = []
+    for clname in dir(xs):
+        if not clname.startswith('XS'):
+            continue
+
+        cls = getattr(xs, clname)
+        if is_proper_subclass(cls, (xs.XSAdditiveModel,
+                                    xs.XSMultiplicativeModel,
+                                    xs.XSConvolutionKernel)):
+
+            out.append(cls)
+
+    return out
+
+
 # There is an argument to be made that these tests only need
 # to exercise a small number of models (e.g. one each of the
 # different templates used in xspec_extension.hh - so single
@@ -78,38 +106,19 @@ def remove_item(xs, x):
 # explicit testing of these models is handled by
 # test_xspec_con.py.
 #
-def get_xspec_models():
-    """What are the XSpec model names to test.
+def get_xspec_models() -> list:
+    """What are the XSpec model names to test."""
 
-    """
-
-    try:
-        import sherpa.astro.xspec as xs
-    except ImportError:
-        return []
-
+    model_names = [cls.__name__ for cls in get_all_xspec_models()]
     version = xs.get_xsversion()
-
-    # The alternate approach is to use that taken by
-    # test_create_model_instances
-    #
-    model_names = [model_name for model_name in dir(xs)
-                   if model_name.startswith('XS')]
-
-    # Could just exclude any names that end in 'Model', but this
-    # could remove valid model names, so be explicit.
-    for n in ['XSModel', 'XSMultiplicativeModel', 'XSAdditiveModel',
-              'XSTableModel', 'XSConvolutionModel', 'XSConvolutionKernel',
-              'XSBaseParameter', 'XSParameter']:
-        remove_item(model_names, n)
 
     # the grbjet model with XSPEC 12.12.0 (and presumably 12.12.0.a) can
     # occasionally evaluate to all 0's. This has been reported, but for now
     # skip this model.
     #
-    remove_item(model_names, 'XSgrbjet')
+    # remove_item(model_names, 'XSgrbjet')  assume this has been fixed now
 
-    # The bsedov model causes a crashe with XSPEC 12.14.0 to 12.14.0e
+    # The bsedov model causes a crash with XSPEC 12.14.0 to 12.14.0e
     # (it should be fixed in 12.4.0f and later). The model is not
     # present before 12.14.0.
     #
@@ -131,10 +140,12 @@ def get_xspec_models():
     if version == "12.14.1":
         remove_item(model_names, 'XSismabs')
 
+    # Convert back to model classes.
     models = [getattr(xs, model_name) for model_name in model_names]
-    models = list(filter(lambda mod: mod.version_enabled, models))
 
-    return models
+    # Only bother with those models we can run with the XSPEC
+    # model library.
+    return list(filter(lambda mod: mod.version_enabled, models))
 
 
 def make_grid():
@@ -212,57 +223,31 @@ def assert_is_finite(vals, modelcls, label):
     assert (vals > 0.0).any(), emsg
 
 
-@requires_xspec
-def test_create_model_instances(clean_astro_ui):
-    import sherpa.astro.xspec as xs
-    count = 0
-
-    for cls in dir(xs):
-        if not cls.startswith('XS'):
-            continue
-
-        cls = getattr(xs, cls)
-
-        if is_proper_subclass(cls, (xs.XSAdditiveModel,
-                                    xs.XSMultiplicativeModel,
-                                    xs.XSConvolutionKernel)):
-            # Ensure that we can create an instance, but do
-            # nothing with it.
-            cls()
-            count += 1
-
+def test_create_model_instances():
+    """Do we know how many models we have?"""
+    count = len(get_all_xspec_models())
     assert count == XSPEC_MODELS_COUNT
 
 
-@requires_xspec
-def test_check_default_name():
-    import sherpa.astro.xspec as xs
+@pytest.mark.parametrize("modelcls", get_all_xspec_models())
+def test_check_default_name(modelcls):
+    """Check the names are correct"""
 
-    for clname in dir(xs):
-        if not clname.startswith('XS'):
-            continue
+    # At the moment we have some defaulting to xs... and some just ...
+    # (the former are convolution cases which should probably be
+    # switched to drop the leading xs).
+    #
+    expected = modelcls.__name__.lower()
+    mdl = modelcls()
 
-        cls = getattr(xs, clname)
-        if is_proper_subclass(cls, (xs.XSAdditiveModel,
-                                    xs.XSMultiplicativeModel,
-                                    xs.XSConvolutionKernel)):
-
-            # At the moment we have some defaulting to xs... and some just ...
-            # (the former are convolution cases which should probably be
-            # switched to drop the leading xs).
-            #
-            mdl = cls()
-            expected = clname.lower()
-            assert mdl.name in [expected, expected[2:]]
+    assert mdl.name in [expected, expected[2:]]
 
 
-@requires_xspec
 def test_norm_works():
     # Check that the norm parameter for additive models
     # works, as it is handled separately from the other
     # parameters.
-    import sherpa.astro.xspec as xs
-
+    #
     # need an additive model
     mdl = xs.XSpowerlaw()
     mdl.PhoIndex = 2
@@ -285,9 +270,7 @@ def test_norm_works():
     assert s2 == pytest.approx(mfactor * s1)
 
 
-@requires_xspec
 def test_evaluate_model():
-    import sherpa.astro.xspec as xs
     mdl = xs.XSbbody()
     out = mdl([1, 2, 3, 4], [2, 3, 4, 5])
 
@@ -310,7 +293,6 @@ BASIC_MODELS = ['powerlaw', 'gaussian',
                 'constant', 'wabs']
 
 
-@requires_xspec
 @pytest.mark.parametrize('model', BASIC_MODELS)
 def test_lowlevel(model, xsmodel):
     """The XSPEC class interface requires lo,hi but the low-level allows just x
@@ -334,6 +316,7 @@ def test_lowlevel(model, xsmodel):
     e1 = egrid[:-1]
     e2 = egrid[1:]
 
+    # Avoid warnings about mdl(egrid) being deprecated
     y1 = mdl._calc(pars, egrid)
     y2 = mdl._calc(pars, e1, e2)
 
@@ -344,50 +327,39 @@ def test_lowlevel(model, xsmodel):
     assert (y2 > 0).all()
 
 
-@requires_xspec
 @pytest.mark.parametrize('model', BASIC_MODELS)
-def test_lowlevel_checks_too_many_arguments(model):
+def test_lowlevel_checks_too_many_arguments(model, xsmodel):
     """Check we get a sensible error when called with no arguments.
 
     Note that this tests the interface to the actual XSPEC model
     not the Python class.
     """
 
-    import sherpa.astro.xspec as xs
+    mdl = xsmodel(model)
 
-    cls = getattr(xs, 'XS{}'.format(model))
-    mdl = cls()
-
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeError,
+                       match=r"^function missing required argument 'pars' \(pos 1\)$"):
         mdl._calc()
 
-    assert str(exc.value) == "function missing required argument 'pars' (pos 1)"
 
-
-@requires_xspec
 def test_checks_input_length():
-    import sherpa.astro.xspec as xs
     mdl = xs.XSpowerlaw()
 
     # Check when input array is too small (< 2 elements)
-    with pytest.raises(TypeError) as exc1:
+    with pytest.raises(TypeError,
+                       match="^input array must have at least 2 elements, found 1$"):
         mdl([0.1], [0.2])
 
-    assert str(exc1.value) == "input array must have at least 2 elements, found 1"
-
     # Check when input arrays are not the same size.
-    with pytest.raises(TypeError) as exc2:
+    with pytest.raises(TypeError,
+                       match="^input arrays are not the same size: 3 and 2$"):
         mdl([0.1, 0.2, 0.3], [0.2, 0.3])
 
-    assert str(exc2.value) == "input arrays are not the same size: 3 and 2"
-
-    with pytest.raises(TypeError) as exc3:
+    with pytest.raises(TypeError,
+                       match="^input arrays are not the same size: 2 and 3$"):
         mdl([0.1, 0.2], [0.2, 0.3, 0.4])
 
-    assert str(exc3.value) == "input arrays are not the same size: 2 and 3"
 
-
-@requires_xspec
 @requires_data
 @requires_fits
 def test_xstablemodel_checks_input_length(clean_astro_ui, make_data_path):
@@ -397,28 +369,21 @@ def test_xstablemodel_checks_input_length(clean_astro_ui, make_data_path):
     mdl = ui.get_model_component('mdl')
 
     # Check when input array is too small (< 2 elements)
-    with pytest.raises(TypeError) as exc1:
-        mdl([0.1], [0.2])
-
     emsg = "input array must have at least 2 elements, found 1"
-    assert str(exc1.value) == emsg
+    with pytest.raises(TypeError, match=f"^{emsg}$"):
+        mdl([0.1], [0.2])
 
     # Check when input arrays are not the same size (when the
     # low and high bin edges are given)
-    with pytest.raises(TypeError) as exc2:
+    emsg = "input arrays are not the same size: 3 and 2"
+    with pytest.raises(TypeError, match=f"^{emsg}$"):
         mdl([0.1, 0.2, 0.3], [0.2, 0.3])
 
-    emsg = "input arrays are not the same size: 3 and 2"
-    assert str(exc2.value) == emsg
-
-    with pytest.raises(TypeError) as exc3:
+    emsg = "input arrays are not the same size: 2 and 3"
+    with pytest.raises(TypeError, match=f"^{emsg}$"):
         mdl([0.1, 0.2], [0.2, 0.3, 0.4])
 
-    emsg = "input arrays are not the same size: 2 and 3"
-    assert str(exc3.value) == emsg
 
-
-@requires_xspec
 @requires_data
 @requires_fits
 def test_xspec_xstablemodel(clean_astro_ui, make_data_path):
@@ -448,7 +413,6 @@ def test_xspec_xstablemodel(clean_astro_ui, make_data_path):
     assert wvals == pytest.approx(evals)
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_xspec_xstablemodel_noncontiguous2(clean_astro_ui, make_data_path):
@@ -468,7 +432,6 @@ def test_xspec_xstablemodel_noncontiguous2(clean_astro_ui, make_data_path):
     assert (wvals > 0).all()
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_xpec_tablemodel_outofbound(clean_astro_ui, make_data_path):
@@ -487,17 +450,13 @@ def test_xpec_tablemodel_outofbound(clean_astro_ui, make_data_path):
     assert 'minimum' in str(e)
 
 
-@requires_xspec
 def test_convolution_model_cflux():
     """This tests the low-level interfce of the convolution model"""
 
     # Use the cflux convolution model, since this gives
     # an easily-checked result.
     #
-    import sherpa.astro.xspec as xs
-
-    if not hasattr(xs._xspec, 'C_cflux'):
-        pytest.skip('cflux convolution model is missing')
+    func = xs._xspec.C_cflux
 
     # The energy grid should extend beyond the energy grid
     # used to evaluate the model, to avoid any edge effects.
@@ -537,8 +496,8 @@ def test_convolution_model_cflux():
 
     y1_a = numpy.zeros(y1.size + 1)
     y1_a[:-1] = y1
-    y2_a = xs._xspec.C_cflux(pars, y1_a, egrid)
-    y2_b = xs._xspec.C_cflux(pars, y1, eg1, eg2)
+    y2_a = func(pars, y1_a, egrid)
+    y2_b = func(pars, y1, eg1, eg2)
 
     assert y2_a[:-1] == pytest.approx(y2_b)
     assert y2_a[-1] == 0.0
@@ -555,22 +514,16 @@ def test_convolution_model_cflux():
     assert y2_b == pytest.approx(expected)
 
     y1 = mdl1(elo, ehi)
-    y2 = xs._xspec.C_cflux(pars, y1, elo, ehi)
+    y2 = func(pars, y1, elo, ehi)
     assert y2 == pytest.approx(expected)
 
     y1 = mdl1(wlo, whi)
-    y2 = xs._xspec.C_cflux(pars, y1, wlo, whi)
+    y2 = func(pars, y1, wlo, whi)
     assert y2 == pytest.approx(expected)
 
 
-@requires_xspec
 def test_convolution_model_cpflux_noncontiguous():
     """convolution models require a contiguous grid"""
-
-    import sherpa.astro.xspec as xs
-
-    if not hasattr(xs._xspec, 'C_cpflux'):
-        pytest.skip('cpflux convolution model is missing')
 
     elo, ehi, wlo, whi = make_grid_noncontig2()
 
@@ -579,19 +532,17 @@ def test_convolution_model_cpflux_noncontiguous():
     y1 = numpy.zeros(elo.size)
 
     emsg = "XSPEC convolution model requires a contiguous grid"
+    func = xs._xspec.C_cpflux
 
-    with pytest.raises(ValueError) as exc1:
-        xs._xspec.C_cpflux(pars, y1, elo, ehi)
+    with pytest.raises(ValueError,
+                       match=f"^{emsg}$"):
+        func(pars, y1, elo, ehi)
 
-    assert str(exc1.value) == emsg
-
-    with pytest.raises(ValueError) as exc2:
-        xs._xspec.C_cpflux(pars, y1, wlo, whi)
-
-    assert str(exc2.value) == emsg
+    with pytest.raises(ValueError,
+                       match=f"^{emsg}$"):
+        func(pars, y1, wlo, whi)
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_set_analysis_wave_fabrizio(clean_astro_ui, make_data_path):
@@ -618,15 +569,12 @@ def test_set_analysis_wave_fabrizio(clean_astro_ui, make_data_path):
     assert y2_m == pytest.approx(y_m)
 
 
-@requires_xspec
 def test_xsxset_get(clean_astro_ui):
-    import sherpa.astro.xspec as xs
     # TEST CASE #1 Case insentitive keys
     xs.set_xsxset('fooBar', 'somevalue')
     assert xs.get_xsxset('Foobar') == 'somevalue'
 
 
-@requires_xspec
 def test_additive_single_norm_model():
     """Check that we can not sneak in a separate norm parameter"""
 
@@ -647,7 +595,6 @@ def test_additive_single_norm_model():
         XSNotAClassName()
 
 
-@requires_xspec
 def test_nonexistent_model():
     from sherpa.astro.xspec.utils import include_if
     from sherpa.astro.xspec import XSAdditiveModel
@@ -662,13 +609,11 @@ def test_nonexistent_model():
 
     m = XSbtapec()
 
-    with pytest.raises(AttributeError) as exc:
+    emsg = include_if.DISABLED_MODEL_MESSAGE.format("XSbtapec")
+    with pytest.raises(AttributeError, match=f"^{emsg}$"):
         m([], [])
 
-    assert include_if.DISABLED_MODEL_MESSAGE.format("XSbtapec") == str(exc.value)
 
-
-@requires_xspec
 def test_not_compiled_model():
     """
     Test the error handling case where a model is included according to the conditional decorator, but it wraps a
@@ -687,13 +632,11 @@ def test_not_compiled_model():
 
     m = XSfoo()
 
-    with pytest.raises(AttributeError) as exc:
+    emsg = ModelMeta.NOT_COMPILED_FUNCTION_MESSAGE
+    with pytest.raises(AttributeError, match=f"^{emsg}$"):
         m([], [])
 
-    assert ModelMeta.NOT_COMPILED_FUNCTION_MESSAGE == str(exc.value)
 
-
-@requires_xspec
 def test_old_style_xspec_class():
     """
     We changed the way xspec models are declared, but just in case let's make sure old-style declarations still work.
@@ -717,7 +660,6 @@ def test_old_style_xspec_class():
     assert actual == pytest.approx(expected)
 
 
-@requires_xspec
 @pytest.mark.parametrize("modelcls", get_xspec_models())
 def test_evaluate_xspec_model(modelcls):
     """Can we call a model with its default parameters?
@@ -784,7 +726,6 @@ def test_evaluate_xspec_model(modelcls):
     assert evals == pytest.approx(evals_no_wrapper)
 
 
-@requires_xspec
 @pytest.mark.parametrize("modelcls", get_xspec_models())
 def test_evaluate_xspec_model_noncontiguous2(modelcls):
     """Can we evaluate an XSPEC model with a non-contiguous grid?
@@ -826,11 +767,8 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     assert wvals2 == pytest.approx(evals2)
 
 
-@requires_xspec
 def test_apec_redshift_parameter_is_case_insensitive():
     """This should be a given, but just check."""
-
-    import sherpa.astro.xspec as xs
 
     mdl = xs.XSapec()
     assert mdl.redshift.val == 0
