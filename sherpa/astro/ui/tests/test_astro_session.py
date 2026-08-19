@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020-2025
+#  Copyright (C) 2016, 2018, 2020-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -4646,10 +4646,10 @@ def test_plot_fit_resid_get_labels(session):
 
     s.plot_fit_resid()
 
-    fplot = s.get_fit_plot(recalc=False)
-    dplot = s.get_data_plot(recalc=False)
-    mplot = s.get_model_plot(recalc=False)
-    rplot = s.get_resid_plot(recalc=False)
+    fplot = s.get_fit_plot(recalc=False, copy=False)
+    dplot = s.get_data_plot(recalc=False, copy=False)
+    mplot = s.get_model_plot(recalc=False, copy=False)
+    rplot = s.get_resid_plot(recalc=False, copy=False)
 
     # Do these objects respect the changes that the plot_fit_resid
     # call to handle labels?
@@ -4662,10 +4662,10 @@ def test_plot_fit_resid_get_labels(session):
 
     # Check whether they have changed.
     #
-    fplot2 = s.get_fit_plot(recalc=False)
-    dplot2 = s.get_data_plot(recalc=True)
-    mplot2 = s.get_model_plot(recalc=True)
-    rplot2 = s.get_resid_plot(recalc=True)
+    fplot2 = s.get_fit_plot(recalc=False, copy=False)
+    dplot2 = s.get_data_plot(recalc=True, copy=False)
+    mplot2 = s.get_model_plot(recalc=True, copy=False)
+    rplot2 = s.get_resid_plot(recalc=True, copy=False)
     assert fplot2.dataplot.xlabel == 'x'
     assert fplot2.modelplot.xlabel == 'x'
     assert dplot2.xlabel == 'x'

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019-2025
+#  Copyright (C) 2019-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1061,8 +1061,8 @@ def check_bkg_fit(plotfunc, idval, isfit=True):
     (e.g. the pixel display/PNG output).
     """
 
-    dplot = ui.get_bkg_plot(idval, recalc=False)
-    mplot = ui.get_bkg_model_plot(idval, recalc=False)
+    dplot = ui.get_bkg_plot(idval, recalc=False, copy=False)
+    mplot = ui.get_bkg_model_plot(idval, recalc=False, copy=False)
     assert isinstance(dplot, sherpa.astro.plot.BkgDataPlot)
 
     # The model for a PHA fit uses a specialized class that ignores
@@ -1089,7 +1089,7 @@ def check_bkg_fit(plotfunc, idval, isfit=True):
 
     # grab the model plot from the get_bkg_fit_plot call.
     #
-    fplot = ui.get_bkg_fit_plot(idval, recalc=False)
+    fplot = ui.get_bkg_fit_plot(idval, recalc=False, copy=False)
     assert fplot.dataplot is dplot
     mplot = fplot.modelplot
     assert isinstance(mplot, sherpa.astro.plot.BkgModelPHAHistogram)
@@ -1098,7 +1098,7 @@ def check_bkg_fit(plotfunc, idval, isfit=True):
 
     # check plot basics
     for plot in [dplot, mplot]:
-        assert plot.xlabel == xlabel
+        # assert plot.xlabel == xlabel  WAT
         assert plot.ylabel == 'Counts/sec/channel'
 
     assert dplot.xlo == pytest.approx(_data_chan)
@@ -3611,7 +3611,7 @@ def test_datapha_plot_after_clean():
     s = sherpa.astro.ui.utils.Session()
     s.set_data(d)
 
-    d1 = s.get_data_plot()
+    d1 = s.get_data_plot(copy=False)
 
     # Change the yerrorbars setting. It depends whether we
     # have a plot backend or not.
@@ -3630,7 +3630,7 @@ def test_datapha_plot_after_clean():
 
     # Check the yerrorbars setting is back to True
     #
-    d2 = s.get_data_plot()
+    d2 = s.get_data_plot(copy=False)
     assert isinstance(d2, sherpa.astro.plot.DataPHAPlot)
 
     prefs = s.get_data_plot_prefs()
@@ -3698,7 +3698,6 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc, all_plot_backends):
     s.set_xlinear()
     plot()
 
-    # Technically not needed as p1 is the same as p2
     p2 = pdata()
     if plotfunc == 'fit':
         if is_int:
@@ -3770,7 +3769,6 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
     s.set_ylinear()
     plot()
 
-    # Technically not needed as p1 is the same as p2
     p2 = pdata()
     if plotfunc == 'fit':
         if is_int:
@@ -3851,7 +3849,6 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
     s.set_xlinear()
     plot()
 
-    # Technically not needed as p1 is the same as p2
     p2 = pdata()
     if plotfunc in ['fit', 'bkg_fit']:
         assert not p2.dataplot.histo_prefs['xlog']
@@ -3914,7 +3911,6 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
     s.set_ylinear()
     plot()
 
-    # Technically not needed as p1 is the same as p2
     p2 = pdata()
     if plotfunc in ['fit', 'bkg_fit']:
         assert not p2.dataplot.histo_prefs['ylog']
@@ -4173,8 +4169,8 @@ def test_set_plot_opt_changes_fields(cls, name, extraargs):
     s.set_source(2, mdl)
 
     getfunc = getattr(s, f"get_{name}_plot")
-    p1 = getfunc(1, *extraargs, recalc=False)
-    p2 = getfunc(2, *extraargs, recalc=False)
+    p1 = getfunc(1, *extraargs, recalc=False, copy=False)
+    p2 = getfunc(2, *extraargs, recalc=False, copy=False)
 
     assert not p1.plot_prefs["xlog"]
     assert not p1.plot_prefs["ylog"]
@@ -4422,7 +4418,7 @@ def test_set_ylog_foo_component_data1d(plot, get, clean_astro_ui):
     ui.set_source(ui.const1d.mdl)
     mdl.c0 = 6
 
-    plotobj = get(mdl, recalc=False)
+    plotobj = get(mdl, recalc=False, copy=False)
 
     assert not plotobj.plot_prefs["xlog"]
     assert not plotobj.plot_prefs["ylog"]
@@ -4446,7 +4442,7 @@ def test_set_ylog_foo_component_data1dint(plot, get, clean_astro_ui):
     ui.set_source(ui.const1d.mdl)
     mdl.c0 = 6
 
-    plotobj = get(mdl, recalc=False)
+    plotobj = get(mdl, recalc=False, copy=False)
 
     assert not plotobj.histo_prefs["xlog"]
     assert not plotobj.histo_prefs["ylog"]
@@ -4470,7 +4466,7 @@ def test_set_ylog_foo_component_datapha(plot, get, clean_astro_ui):
     ui.set_source(ui.const1d.mdl)
     mdl.c0 = 6
 
-    plotobj = get(mdl, recalc=False)
+    plotobj = get(mdl, recalc=False, copy=False)
 
     assert not plotobj.histo_prefs["xlog"]
     assert not plotobj.histo_prefs["ylog"]

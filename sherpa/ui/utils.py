@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Sequence
 from configparser import ConfigParser
-import copy
+from copy import deepcopy
 import copyreg as copy_reg
 from dataclasses import dataclass
 import importlib
@@ -397,6 +397,12 @@ def calc_multiplot_size(rows, cols, nplots):
         nrows = get(ncols)
 
     return nrows, ncols
+
+
+def cpy(obj: T, copy: bool) -> T:
+    """Return the object or a copy of it."""
+
+    return deepcopy(obj) if copy else obj
 
 
 ###############################################################################
@@ -821,7 +827,8 @@ class FitStore:
 
 def get_components_helper(getfunc: Callable[..., Plot],
                           model: Model,
-                          idval: IdType) -> MultiPlot:
+                          idval: IdType
+                          ) -> MultiPlot:
     """Handle get_source/model_components_plot.
 
     Iterate through each term in the source model.
@@ -832,8 +839,8 @@ def get_components_helper(getfunc: Callable[..., Plot],
     for cpt in cpts:
         # Copy over the plot as otherwise they will all be set
         # to the last cpt.
-        plotobj = getfunc(id=idval, model=cpt, recalc=True)
-        out.add(copy.deepcopy(plotobj))
+        plotobj = getfunc(id=idval, model=cpt, recalc=True, copy=True)
+        out.add(plotobj)
 
     out.title = "Component plot"
     return out
@@ -4294,7 +4301,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         data = self.get_data(fromid)
-        data = copy.deepcopy(data)
+        data = deepcopy(data)
         self.set_data(toid, data)
 
     # DOC-TODO: this does not delete the source expression;
@@ -10011,17 +10018,22 @@ class Session(NoNewAttributesAfterInit):
         lrplot = self.get_pvalue_plot(null_model=null_model, alt_model=alt_model,
                                       conv_model=conv_model, id=id, otherids=otherids,
                                       num=num, bins=bins, numcores=numcores,
-                                      recalc=not replot)
+                                      recalc=not replot, copy=False)
         self._plot(lrplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
+    def get_pvalue_plot(self,
+                        null_model=None,
+                        alt_model=None,
+                        conv_model=None,
                         id: IdType = 1,
                         otherids: IdTypes = (),
                         num: int = 500,
                         bins: int = 25,
                         numcores: int | None = None,
-                        recalc: bool = False):
+                        recalc: bool = False,
+                        copy: bool = True
+                        ):
         """Return the data used by plot_pvalue.
 
         Access the data arrays and preferences defining the histogram plot
@@ -10030,6 +10042,10 @@ class Session(NoNewAttributesAfterInit):
         model using faked data with Poisson noise. Data returned includes the
         likelihood ratio computed using the observed data, and the p-value,
         used to reject or accept the null model.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         .. versionchanged:: 4.17.0
            The "wstat" statistic can now be used with this routine.
@@ -10059,6 +10075,10 @@ class Session(NoNewAttributesAfterInit):
            The default value (``False``) means that the results from the
            last call to `plot_pvalue` or `get_pvalue_plot` are
            returned. If ``True``, the values are re-calculated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -10092,7 +10112,7 @@ class Session(NoNewAttributesAfterInit):
 
         lrplot = self._lrplot
         if not recalc:
-            return lrplot
+            return cpy(lrplot, copy)
 
         if null_model is None:
             raise TypeError("null model cannot be None")
@@ -10116,7 +10136,7 @@ class Session(NoNewAttributesAfterInit):
 
         lrplot.prepare(ratios=results.ratios, bins=bins,
                        niter=num, lr=results.lr, ppp=results.ppp)
-        return lrplot
+        return cpy(lrplot, copy)
 
     #
     # Sampling functions
@@ -12286,11 +12306,9 @@ class Session(NoNewAttributesAfterInit):
         nids = len(idvals)
         plots = []
         for idx, idval in enumerate(reversed(idvals), 1):
-            plot = getfunc(id=idval, recalc=recalc, **kwargs)
-            if idx == nids:
-                plots.append(plot)
-            else:
-                plots.append(copy.deepcopy(plot))
+            copyarg = idx != nids
+            plot = getfunc(id=idval, recalc=recalc, copy=copyarg, **kwargs)
+            plots.append(plot)
 
         # Add the plots to the MultiPlot but fix the order.
         #
@@ -12325,8 +12343,14 @@ class Session(NoNewAttributesAfterInit):
 
     def get_data_plot(self,
                       id: IdType | None = None,
-                      recalc: bool = True):
+                      recalc: bool = True,
+                      copy: bool = True
+                      ):
         """Return the data used by plot_data.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12337,6 +12361,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_data` (or `get_data_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12374,7 +12402,7 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(data, self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     # DOC-TODO: discussion of preferences needs better handling
     # of how it interacts with the chosen plot backend.
@@ -12410,14 +12438,62 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The meaning of the fields depend on the chosen plot backend.
-        A value of ``None`` means to use the default value for that
-        attribute, or not to use that setting.
-
         The "fit" argument can not be used, even though there is a
         get_fit_plot call. Either use the "data" or "model" arguments
         to access the desired plot type, or use get_fit_plot() and
         access the dataplot and modelplot attributes directly.
+
+        The meaning of the fields depend on the chosen plot backend.
+        A value of ``None`` means to use the default value for that
+        attribute, or not to use that setting.
+
+        The following preferences are recognized by the matplotlib
+        backend:
+
+        ``alpha``
+           The transparency value used to draw the line or symbol,
+           where 0 is fully transparent and 1 is fully opaque.
+
+        ``barsabove``
+           The barsabove argument for the matplotlib errorbar function.
+
+        ``capsize``
+           The capsize argument for the matplotlib errorbar function.
+
+        ``color``
+           The color to use (will be over-ridden by more-specific
+           options below).
+
+        ``ecolor``
+           The color to draw error bars.
+
+        ``linestyle``
+           How should the line connecting the data points be drawn.
+
+        ``marker``
+           What style is used for the symbols.
+
+        ``markerfacecolor``
+           What color to draw the symbol representing the data points.
+
+        ``markersize``
+           What size is the symbol drawn.
+
+        ``xerrorbars``
+           Should error bars be drawn for the X axis.
+
+        ``xlog``
+           Should the X axis be drawn with a logarithmic scale? This
+           field can also be changed with the `set_xlog` and
+           `set_xlinear` functions.
+
+        ``yerrorbars``
+           Should error bars be drawn for the Y axis.
+
+        ``ylog``
+           Should the Y axis be drawn with a logarithmic scale? This
+           field can also be changed with the `set_ylog` and
+           `set_ylinear` functions.
 
         Examples
         --------
@@ -12448,15 +12524,17 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr(f"Use 'data' or 'model' instead of '{plottype}'")
 
         get = getattr(self, f"get_{ptype}_plot")
-        plotobj = get(id, recalc=False, **kwargs)
+        plotobj = get(id, recalc=False, copy=False, **kwargs)
         return get_plot_prefs(plotobj)
 
     def get_data_plot_prefs(self,
-                            id: IdType | None = None) -> PrefsType:
+                            id: IdType | None = None
+                            ) -> PrefsType:
         """Return the preferences for plot_data.
 
         The plot preferences may depend on the data set,
-        so it is now an optional argument.
+        so it is now an optional argument. The `get_plot_prefs`
+        routine should be used instead.
 
         .. versionchanged:: 4.12.2
            The id argument has been given.
@@ -12481,65 +12559,12 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The meaning of the fields depend on the chosen plot backend.
-        A value of ``None`` means to use the default value for that
-        attribute, unless indicated otherwise. These preferences
-        are used by the following commands: `plot_data`, `plot_bkg`,
-        `plot_ratio`, and the "fit" variants, such as `plot_fit`,
-        `plot_fit_resid`, and `plot_bkg_fit`.
+        These preferences are used by the following commands:
+        `plot_data`, `plot_bkg`, `plot_ratio`, and the "fit" variants,
+        such as `plot_fit`, `plot_fit_resid`, and `plot_bkg_fit`.
 
-        The following preferences are recognized by the matplotlib
-        backend:
-
-        ``alpha``
-           The transparency value used to draw the line or symbol,
-           where 0 is fully transparent and 1 is fully opaque.
-
-        ``barsabove``
-           The barsabove argument for the matplotlib errorbar function.
-
-        ``capsize``
-           The capsize argument for the matplotlib errorbar function.
-
-        ``color``
-           The color to use (will be over-ridden by more-specific
-           options below). The default is ``None``.
-
-        ``ecolor``
-           The color to draw error bars. The default is ``None``.
-
-        ``linestyle``
-           How should the line connecting the data points be drawn.
-           The default is 'None', which means no line is drawn.
-
-        ``marker``
-           What style is used for the symbols. The default is ``'.'``
-           which indicates a point.
-
-        ``markerfacecolor``
-           What color to draw the symbol representing the data points.
-           The default is ``None``.
-
-        ``markersize``
-           What size is the symbol drawn. The default is ``None``.
-
-        ``xerrorbars``
-           Should error bars be drawn for the X axis. The default is
-           ``False``.
-
-        ``xlog``
-           Should the X axis be drawn with a logarithmic scale? The
-           default is ``False``. This field can also be changed with the
-           `set_xlog` and `set_xlinear` functions.
-
-        ``yerrorbars``
-           Should error bars be drawn for the Y axis. The default is
-           ``True``.
-
-        ``ylog``
-           Should the Y axis be drawn with a logarithmic scale? The
-           default is ``False``. This field can also be changed with the
-           `set_ylog` and `set_ylinear` functions.
+        The preferences recognized by the matplotlib backend are the
+        same as for `get_plot_prefs`.
 
         Examples
         --------
@@ -12553,14 +12578,20 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_data_plot(id, recalc=False)
+        plotobj = self.get_data_plot(id, recalc=False, copy=False)
         return get_plot_prefs(plotobj)
 
     # also in sherpa.astro.utils (copies this docstring)
     def get_model_plot(self,
                        id: IdType | None = None,
-                       recalc: bool = True):
+                       recalc: bool = True,
+                       copy: bool = True
+                       ):
         """Return the data used to create the model plot.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12571,6 +12602,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_model` (or `get_model_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12602,13 +12637,19 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(data, self.get_model(id), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     # also in sherpa.astro.utils (does not copy this docstring)
     def get_source_plot(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True,
+                        copy: bool = True
+                        ):
         """Return the data used to create the source plot.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12619,6 +12660,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_source` (or `get_source_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12675,10 +12720,19 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(data, self.get_source(idval), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
-    def get_model_component_plot(self, id, model=None, recalc: bool = True):
+    def get_model_component_plot(self,
+                                 id,
+                                 model=None,
+                                 recalc: bool = True,
+                                 copy: bool = True
+                                 ):
         """Return the data used to create the model-component plot.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12691,6 +12745,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_model_component` (or `get_model_component_plot`)
            are returned, otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12748,10 +12806,10 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(data, model, self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_model_components_plot(self,
-                                  id: IdType | None = None
+                                  id: IdType | None = None,
                                   ) -> MultiPlot:
         """Return the data used by plot_model_components.
 
@@ -12797,8 +12855,17 @@ class Session(NoNewAttributesAfterInit):
                                      model=model, idval=idval)
 
     # sherpa.astro.utils version copies this docstring
-    def get_source_component_plot(self, id, model=None, recalc: bool = True):
+    def get_source_component_plot(self,
+                                  id,
+                                  model=None,
+                                  recalc: bool = True,
+                                  copy: bool = True
+                                  ):
         """Return the data used by plot_source_component.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12811,6 +12878,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_source_component` (or `get_source_component_plot`)
            are returned, otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12872,7 +12943,7 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(data, model, self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_source_components_plot(self,
                                    id: IdType | None = None
@@ -12920,11 +12991,14 @@ class Session(NoNewAttributesAfterInit):
         return get_components_helper(self.get_source_component_plot,
                                      model=model, idval=idval)
 
-    def get_model_plot_prefs(self, id: IdType | None = None) -> PrefsType:
+    def get_model_plot_prefs(self,
+                             id: IdType | None = None
+                             ) -> PrefsType:
         """Return the preferences for plot_model.
 
         The plot preferences may depend on the data set,
-        so it is now an optional argument.
+        so it is now an optional argument. The `get_plot_prefs`
+        routine should be used instead.
 
         .. versionchanged:: 4.12.2
            The id argument has been given.
@@ -12949,15 +13023,13 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The meaning of the fields depend on the chosen plot backend.
-        A value of ``None`` means to use the default value for that
-        attribute, unless indicated otherwise. These preferences are
-        used by the following commands: `plot_model`, `plot_ratio`,
-        `plot_bkg_model`, and the "fit" variants, such as `plot_fit`,
-        `plot_fit_resid`, and `plot_bkg_fit`.
+        These preferences are used by the following commands:
+        `plot_model`, `plot_ratio`, `plot_bkg_model`, and the "fit"
+        variants, such as `plot_fit`, `plot_fit_resid`, and
+        `plot_bkg_fit`.
 
         The preferences recognized by the matplotlib backend are the
-        same as for `get_data_plot_prefs`.
+        same as for `get_plot_prefs`.
 
         Examples
         --------
@@ -12970,12 +13042,14 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_model_plot(id, recalc=False)
+        plotobj = self.get_model_plot(id, recalc=False, copy=False)
         return get_plot_prefs(plotobj)
 
     def get_fit_plot(self,
                      id: IdType | None = None,
-                     recalc: bool = True):
+                     recalc: bool = True,
+                     copy: bool = True
+                     ):
         """Return the data used to create the fit plot.
 
         Parameters
@@ -12987,6 +13061,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_fit` (or `get_fit_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13036,16 +13114,22 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self._plot_types["fit"][0]
         if recalc:
-            dataobj = self.get_data_plot(id, recalc=recalc)
-            modelobj = self.get_model_plot(id, recalc=recalc)
+            dataobj = self.get_data_plot(id, recalc=recalc, copy=copy)
+            modelobj = self.get_model_plot(id, recalc=recalc, copy=copy)
             plotobj.prepare(dataobj, modelobj)
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_resid_plot(self,
                        id: IdType | None = None,
-                       recalc: bool = True):
+                       recalc: bool = True,
+                       copy: bool = True
+                       ):
         """Return the data used by plot_resid.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13056,6 +13140,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_resid` (or `get_resid_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13116,12 +13204,18 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(data, self.get_model(id), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_delchi_plot(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True,
+                        copy: bool = True
+                        ):
         """Return the data used by plot_delchi.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13132,6 +13226,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_delchi` (or `get_delchi_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13193,12 +13291,18 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(data, self.get_model(id), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_chisqr_plot(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True,
+                        copy: bool = True
+                        ):
         """Return the data used by plot_chisqr.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13270,12 +13374,18 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(data, self.get_model(id), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_ratio_plot(self,
                        id: IdType | None = None,
-                       recalc: bool = True):
+                       recalc: bool = True,
+                       copy: bool = True
+                       ):
         """Return the data used by plot_ratio.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13286,6 +13396,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_ratio` (or `get_ratio_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13347,12 +13461,18 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(data, self.get_model(id), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_data_contour(self,
                          id: IdType | None = None,
-                         recalc: bool = True):
+                         recalc: bool = True,
+                         copy: bool = True
+                         ):
         """Return the data used by contour_data.
+
+        .. versionchanged:: 4.19.0
+           The contour object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13363,6 +13483,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `contour_data` (or `get_data_contour`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the contour object copied before being returned? If so then
+           the contour attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13398,11 +13522,12 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_contour_prefs(self,
                           contourtype: str,
-                          id: IdType | None = None) -> PrefsType:
+                          id: IdType | None = None
+                          ) -> PrefsType:
         """Return the preferences for the given contour type.
 
         .. versionadded:: 4.16.0
@@ -13460,7 +13585,7 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentErr("Use 'data' or 'model' instead of 'fit'")
 
         get = getattr(self, f"get_{ctype}_contour")
-        return get(id, recalc=False).contour_prefs
+        return get(id, recalc=False, copy=False).contour_prefs
 
     def get_data_contour_prefs(self) -> PrefsType:
         """Return the preferences for contour_data.
@@ -13510,12 +13635,18 @@ class Session(NoNewAttributesAfterInit):
         >>> contour_data()
 
         """
-        return self.get_data_contour(recalc=False).contour_prefs
+        return self.get_data_contour(recalc=False, copy=False).contour_prefs
 
     def get_model_contour(self,
                           id: IdType | None = None,
-                          recalc: bool = True):
+                          recalc: bool = True,
+                          copy: bool = True
+                          ):
         """Return the data used by contour_model.
+
+        .. versionchanged:: 4.19.0
+           The contour object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13526,6 +13657,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `contour_model` (or `get_model_contour`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the contour object copied before being returned? If so then
+           the contour attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13561,12 +13696,18 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_source_contour(self,
                            id: IdType | None = None,
-                           recalc: bool = True):
+                           recalc: bool = True,
+                           copy: bool = True
+                           ):
         """Return the data used by contour_source.
+
+        .. versionchanged:: 4.19.0
+           The contour object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13577,6 +13718,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `contour_source` (or `get_source_contour`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the contour object copied before being returned? If so then
+           the contour attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13612,7 +13757,7 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_source(id), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_model_contour_prefs(self) -> PrefsType:
         """Return the preferences for contour_model.
@@ -13662,12 +13807,18 @@ class Session(NoNewAttributesAfterInit):
         >>> contour_model(overcontour=True)
 
         """
-        return self.get_model_contour(recalc=False).contour_prefs
+        return self.get_model_contour(recalc=False, copy=False).contour_prefs
 
     def get_fit_contour(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True,
+                        copy: bool = True
+                        ):
         """Return the data used by contour_fit.
+
+        .. versionchanged:: 4.19.0
+           The contour object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13678,6 +13829,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `contour_fit` (or `get_fit_contour`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the contour object copied before being returned? If so then
+           the contour attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13715,16 +13870,23 @@ class Session(NoNewAttributesAfterInit):
 
         plotobj = self._contour_types["fit"]
         if recalc:
-            dataobj = self.get_data_contour(id, recalc=recalc)
-            modelobj = self.get_model_contour(id, recalc=recalc)
+            kwargs = {"recalc": recalc, "copy": False}
+            dataobj = self.get_data_contour(id, **kwargs)
+            modelobj = self.get_model_contour(id, **kwargs)
             plotobj.prepare(dataobj, modelobj)
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_resid_contour(self,
                           id: IdType | None = None,
-                          recalc: bool = True):
+                          recalc: bool = True,
+                          copy: bool = True
+                          ):
         """Return the data used by contour_resid.
+
+        .. versionchanged:: 4.19.0
+           The contour object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13735,6 +13897,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `contour_resid` (or `get_resid_contour`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the contour object copied before being returned? If so then
+           the contour attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13771,12 +13937,18 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_ratio_contour(self,
                           id: IdType | None = None,
-                          recalc: bool = True):
+                          recalc: bool = True,
+                          copy: bool = True
+                          ):
         """Return the data used by contour_ratio.
+
+        .. versionchanged:: 4.19.0
+           The contour object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13787,6 +13959,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `contour_ratio` (or `get_ratio_contour`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the contour object copied before being returned? If so then
+           the contour attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13823,12 +13999,18 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_psf_contour(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True,
+                        copy: bool = True
+                        ):
         """Return the data used by contour_psf.
+
+        .. versionchanged:: 4.19.0
+           The contour object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13839,6 +14021,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `contour_psf` (or `get_psf_contour`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the contour object copied before being returned? If so then
+           the contour attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13870,12 +14056,18 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_kernel_contour(self,
                            id: IdType | None = None,
-                           recalc: bool = True):
+                           recalc: bool = True,
+                           copy: bool = True
+                           ):
         """Return the data used by contour_kernel.
+
+        .. versionchanged:: 4.19.0
+           The contour object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13886,6 +14078,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `contour_kernel` (or `get_kernel_contour`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the contour object copied before being returned? If so then
+           the contour attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13918,12 +14114,18 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_psf_plot(self,
                      id: IdType | None = None,
-                     recalc: bool = True):
+                     recalc: bool = True,
+                     copy: bool = True
+                     ):
         """Return the data used by plot_psf.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13934,6 +14136,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_psf` (or `get_psf_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13964,12 +14170,18 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_kernel_plot(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True,
+                        copy: bool = True
+                        ):
         """Return the data used by plot_kernel.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -13980,6 +14192,10 @@ class Session(NoNewAttributesAfterInit):
            If ``False`` then the results from the last call to
            `plot_kernel` (or `get_kernel_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -14010,7 +14226,7 @@ class Session(NoNewAttributesAfterInit):
         if recalc:
             plotobj.prepare(self.get_psf(id), self.get_data(id))
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     #
     # Line plots
@@ -14021,7 +14237,8 @@ class Session(NoNewAttributesAfterInit):
                     rows: int | None = None,
                     cols: int | None = None,
                     ids: IdType | IdTypes | None = None,
-                    **kwargs) -> None:
+                    **kwargs
+                    ) -> None:
         """Handle the plot() or contour() call.
 
         The arguments are split up into groups - a "command" followed
@@ -14116,6 +14333,9 @@ class Session(NoNewAttributesAfterInit):
         # Store the per plot-area positional arguments in plots and
         # the keyword arguments in stores.
         #
+        # The following could avoid the deepcopy calls once all plot
+        # and contour calls accept a copy argument.
+        #
         plots = []
         stores = []
         largs = list(args)
@@ -14199,15 +14419,17 @@ class Session(NoNewAttributesAfterInit):
                not isinstance(getargs[0], str) and \
                isinstance(getargs[0], Iterable):
 
-                def getid(id, recalc=True):
-                    return getfunc(id, *getargs[1:], recalc=True)
+                def getid(id, recalc=True, copy=True):
+                    # Ignore the copy argument
+                    return getfunc(id, *getargs[1:], recalc=True,
+                                   copy=True)
 
                 plotobj = self._get_plot_objects(getargs[0], getid,
                                                  recalc=True)
-                plots.append(copy.deepcopy(plotobj))
+                plots.append(plotobj)
 
             else:
-                plots.append(copy.deepcopy(getfunc(*getargs)))
+                plots.append(getfunc(*getargs, copy=True))
 
         nplots = len(plots)
 
@@ -14276,7 +14498,7 @@ class Session(NoNewAttributesAfterInit):
                 # Take the general options (general_store) and then
                 # apply the per-plot (local_store) arguments.
                 #
-                store = copy.deepcopy(general_store)
+                store = deepcopy(general_store)
                 store.update(local_store)
                 plotfunc(plot, **store)
 
@@ -15400,7 +15622,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        def get(id, recalc=False):
+        def get(id, recalc=False, copy=True):
             # Check there is a model for this dataset.
             mdl = self._models.get(id, None)
             if mdl is not None:
@@ -15408,7 +15630,7 @@ class Session(NoNewAttributesAfterInit):
                                     f" is set for dataset {id}. "
                                     "You should use plot_model instead.")
 
-            return self.get_source_plot(id, recalc=recalc)
+            return self.get_source_plot(id, recalc=recalc, copy=copy)
 
         plotobj = self._get_plot_objects(id, get, recalc=not replot)
         self._plot(plotobj, overplot=overplot,
@@ -16431,15 +16653,28 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_pdf_plot()
+        plotobj = self.get_pdf_plot(copy=False)
         if not replot:
             plotobj.prepare(points, bins, normed, xlabel, name)
 
         self._plot(plotobj, overplot=overplot,
                    clearwindow=clearwindow, **kwargs)
 
-    def get_pdf_plot(self):
+    def get_pdf_plot(self,
+                     copy: bool = True
+                     ):
         """Return the data used to plot the last PDF.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
+
+        Parameters
+        ----------
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -16453,7 +16688,7 @@ class Session(NoNewAttributesAfterInit):
         plot_pdf : Plot the probability density function of an array.
 
         """
-        return self._pdfplot
+        return cpy(self._pdfplot, copy)
 
     def plot_cdf(self,
                  points: ArrayType,
@@ -16867,7 +17102,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_data_contour(id, recalc=not replot)
+        plotobj = self.get_data_contour(id, recalc=not replot, copy=False)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_model(self,
@@ -16918,7 +17153,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_model_contour(id, recalc=not replot)
+        plotobj = self.get_model_contour(id, recalc=not replot, copy=False)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_source(self,
@@ -16968,7 +17203,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_source_contour(id, recalc=not replot)
+        plotobj = self.get_source_contour(id, recalc=not replot, copy=False)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_fit(self,
@@ -17017,7 +17252,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_fit_contour(id, recalc=not replot)
+        plotobj = self.get_fit_contour(id, recalc=not replot, copy=False)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_resid(self,
@@ -17065,7 +17300,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_resid_contour(id, recalc=not replot)
+        plotobj = self.get_resid_contour(id, recalc=not replot, copy=False)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_ratio(self,
@@ -17113,7 +17348,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_ratio_contour(id, recalc=not replot)
+        plotobj = self.get_ratio_contour(id, recalc=not replot, copy=False)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_psf(self,
@@ -17149,7 +17384,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_psf_contour(id, recalc=not replot)
+        plotobj = self.get_psf_contour(id, recalc=not replot, copy=False)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_kernel(self,
@@ -17185,7 +17420,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_kernel_contour(id, recalc=not replot)
+        plotobj = self.get_kernel_contour(id, recalc=not replot, copy=False)
         self._contour(plotobj, overcontour=overcontour, **kwargs)
 
     def contour_fit_resid(self,
@@ -17231,8 +17466,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         recalc = not replot
-        plot1obj = self.get_fit_contour(id, recalc=recalc)
-        plot2obj = self.get_resid_contour(id, recalc=recalc)
+        plot1obj = self.get_fit_contour(id, recalc=recalc, copy=False)
+        plot2obj = self.get_resid_contour(id, recalc=recalc, copy=False)
 
         # This does not use _jointplot because the X axis is not
         # obviously shared between the two plots.
@@ -17267,7 +17502,8 @@ class Session(NoNewAttributesAfterInit):
                      delv: float | None = None,
                      fac: float = 1,
                      log: bool = False,
-                     numcores: int | None = None):
+                     numcores: int | None = None
+                     ):
         """Return the interval-projection object.
 
         This returns (and optionally calculates) the data used to
@@ -17514,7 +17750,8 @@ class Session(NoNewAttributesAfterInit):
                      log=(False, False),
                      sigma=(1, 2, 3),
                      levels=None,
-                     numcores: int | None = None):
+                     numcores: int | None = None
+                     ):
         """Return the region-projection object.
 
         This returns (and optionally calculates) the data used to
@@ -17655,7 +17892,8 @@ class Session(NoNewAttributesAfterInit):
                     log=(False, False),
                     sigma=(1, 2, 3),
                     levels=None,
-                    numcores: int | None = None):
+                    numcores: int | None = None
+                    ):
         """Return the region-uncertainty object.
 
         This returns (and optionally calculates) the data used to

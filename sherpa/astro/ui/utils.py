@@ -66,7 +66,7 @@ from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
 from sherpa.stats import Cash, CStat, WStat
 
 import sherpa.ui.utils
-from sherpa.ui.utils import _check_type, _check_str_type, _is_str
+from sherpa.ui.utils import _check_type, _check_str_type, _is_str, cpy
 
 import sherpa.utils
 from sherpa.utils import bool_cast, get_error_estimates, is_subclass, \
@@ -11826,7 +11826,9 @@ class Session(sherpa.ui.utils.Session):
 
     def get_data_plot(self,
                       id: IdType | None = None,
-                      recalc: bool = True):
+                      recalc: bool = True,
+                      copy: bool = True
+                      ):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11837,16 +11839,18 @@ class Session(sherpa.ui.utils.Session):
             if recalc:
                 plotobj.prepare(data, self.get_stat())
 
-            return plotobj
+            return cpy(plotobj, copy)
 
-        return super().get_data_plot(id, recalc=recalc)
+        return super().get_data_plot(id, recalc=recalc, copy=copy)
 
     get_data_plot.__doc__ = sherpa.ui.utils.Session.get_data_plot.__doc__
     get_data_plot.__annotations__ = sherpa.ui.utils.Session.get_data_plot.__annotations__
 
     def get_model_plot(self,
                        id: IdType | None = None,
-                       recalc: bool = True):
+                       recalc: bool = True,
+                       copy: bool = True
+                       ):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11857,9 +11861,9 @@ class Session(sherpa.ui.utils.Session):
             if recalc:
                 plotobj.prepare(data, self.get_model(id), self.get_stat())
 
-            return plotobj
+            return cpy(plotobj, copy)
 
-        return super().get_model_plot(id, recalc=recalc)
+        return super().get_model_plot(id, recalc=recalc, copy=copy)
 
     get_model_plot.__doc__ = sherpa.ui.utils.Session.get_model_plot.__doc__
     get_model_plot.__annotations__ = sherpa.ui.utils.Session.get_model_plot.__annotations__
@@ -11869,8 +11873,14 @@ class Session(sherpa.ui.utils.Session):
                         id: IdType | None = None,
                         lo: float | None = None,
                         hi: float | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True,
+                        copy: bool = True
+                        ):
         """Return the data used by plot_source.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -11885,6 +11895,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_source` (or `get_source_plot`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -11954,17 +11968,19 @@ class Session(sherpa.ui.utils.Session):
             if recalc:
                 plotobj.prepare(data, self.get_source(id), lo=lo, hi=hi)
 
-            return plotobj
+            return cpy(plotobj, copy)
 
-        return super().get_source_plot(id, recalc=recalc)
+        return super().get_source_plot(id, recalc=recalc, copy=copy)
 
     def get_fit_plot(self,
                      id: IdType | None = None,
-                     recalc: bool = True):
+                     recalc: bool = True,
+                     copy: bool = True
+                     ):
 
         plotobj = self._plot_types["fit"][0]
         if not recalc:
-            return plotobj
+            return cpy(plotobj, copy)
 
         data = self.get_data(id)
         if isinstance(data, DataPHA):
@@ -11984,18 +12000,27 @@ class Session(sherpa.ui.utils.Session):
                              self.get_stat())
 
             plotobj.prepare(dataobj, modelobj)
-            return plotobj
+            return cpy(plotobj, copy)
 
-        return super().get_fit_plot(id, recalc=recalc)
+        return super().get_fit_plot(id, recalc=recalc, copy=copy)
 
     get_fit_plot.__doc__ = sherpa.ui.utils.Session.get_fit_plot.__doc__
     get_fit_plot.__annotations__ = sherpa.ui.utils.Session.get_fit_plot.__annotations__
 
-    def get_model_component_plot(self, id, model=None, recalc: bool = True):
+    def get_model_component_plot(self,
+                                 id,
+                                 model=None,
+                                 recalc: bool = True,
+                                 copy: bool = True
+                                 ):
         """Return the data used to create the model-component plot.
 
         For PHA data, the response model is automatically added by the
         routine unless the model contains a response.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12008,6 +12033,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_model_component` (or `get_model_component_plot`)
            are returned, otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12081,12 +12110,18 @@ class Session(sherpa.ui.utils.Session):
 
                 plotobj.prepare(data, model, self.get_stat())
 
-            return plotobj
+            return cpy(plotobj, copy)
 
-        return super().get_model_component_plot(id, model=model, recalc=recalc)
+        return super().get_model_component_plot(id, model=model,
+                                                recalc=recalc, copy=copy)
 
     # copy doc string from sherpa.utils
-    def get_source_component_plot(self, id, model=None, recalc: bool = True):
+    def get_source_component_plot(self,
+                                  id,
+                                  model=None,
+                                  recalc: bool = True,
+                                  copy: bool = True
+                                  ):
         if model is None:
             id, model = model, id
         model = self._check_model(model)
@@ -12101,16 +12136,19 @@ class Session(sherpa.ui.utils.Session):
             if recalc:
                 plotobj.prepare(data, model, self.get_stat())
 
-            return plotobj
+            return cpy(plotobj, copy)
 
-        return super().get_source_component_plot(id, model=model, recalc=recalc)
+        return super().get_source_component_plot(id, model=model,
+                                                 recalc=recalc, copy=copy)
 
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
     get_source_component_plot.__annotations__ = sherpa.ui.utils.Session.get_source_component_plot.__annotations__
 
     def get_ratio_plot(self,
                        id: IdType | None = None,
-                       recalc: bool = True):
+                       recalc: bool = True,
+                       copy: bool = True
+                       ):
         if recalc:
             data = self.get_data(id)
         else:
@@ -12121,16 +12159,18 @@ class Session(sherpa.ui.utils.Session):
             if recalc:
                 plotobj.prepare(data, self.get_model(id), self.get_stat())
 
-            return plotobj
+            return cpy(plotobj, copy)
 
-        return super().get_ratio_plot(id, recalc=recalc)
+        return super().get_ratio_plot(id, recalc=recalc, copy=copy)
 
     get_ratio_plot.__doc__ = sherpa.ui.utils.Session.get_ratio_plot.__doc__
     get_ratio_plot.__annotations__ = sherpa.ui.utils.Session.get_ratio_plot.__annotations__
 
     def get_resid_plot(self,
                        id: IdType | None = None,
-                       recalc: bool = True):
+                       recalc: bool = True,
+                       copy: bool = True
+                       ):
         if recalc:
             data = self.get_data(id)
         else:
@@ -12141,16 +12181,18 @@ class Session(sherpa.ui.utils.Session):
             if recalc:
                 plotobj.prepare(data, self.get_model(id), self.get_stat())
 
-            return plotobj
+            return cpy(plotobj, copy)
 
-        return super().get_resid_plot(id, recalc=recalc)
+        return super().get_resid_plot(id, recalc=recalc, copy=copy)
 
     get_resid_plot.__doc__ = sherpa.ui.utils.Session.get_resid_plot.__doc__
     get_resid_plot.__annotations__ = sherpa.ui.utils.Session.get_resid_plot.__annotations__
 
     def get_delchi_plot(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True,
+                        copy: bool = True
+                        ):
         if recalc:
             data = self.get_data(id)
         else:
@@ -12161,16 +12203,18 @@ class Session(sherpa.ui.utils.Session):
             if recalc:
                 plotobj.prepare(data, self.get_model(id), self.get_stat())
 
-            return plotobj
+            return cpy(plotobj, copy)
 
-        return super().get_delchi_plot(id, recalc=recalc)
+        return super().get_delchi_plot(id, recalc=recalc, copy=copy)
 
     get_delchi_plot.__doc__ = sherpa.ui.utils.Session.get_delchi_plot.__doc__
     get_delchi_plot.__annotations__ = sherpa.ui.utils.Session.get_delchi_plot.__annotations__
 
     def get_chisqr_plot(self,
                         id: IdType | None = None,
-                        recalc: bool = True):
+                        recalc: bool = True,
+                        copy: bool = True
+                        ):
         if recalc:
             data = self.get_data(id)
         else:
@@ -12181,9 +12225,9 @@ class Session(sherpa.ui.utils.Session):
             if recalc:
                 plotobj.prepare(data, self.get_model(id), self.get_stat())
 
-            return plotobj
+            return cpy(plotobj, copy)
 
-        return super().get_chisqr_plot(id, recalc=recalc)
+        return super().get_chisqr_plot(id, recalc=recalc, copy=copy)
 
     get_chisqr_plot.__doc__ = sherpa.ui.utils.Session.get_chisqr_plot.__doc__
     get_chisqr_plot.__annotations__ = sherpa.ui.utils.Session.get_chisqr_plot.__annotations__
@@ -12194,7 +12238,9 @@ class Session(sherpa.ui.utils.Session):
                         num: int = 500,
                         bins: int = 25,
                         numcores: int | None = None,
-                        recalc: bool = False):
+                        recalc: bool = False,
+                        copy: bool = True
+                        ):
 
         if recalc and conv_model is None and \
            isinstance(self.get_data(id), DataPHA):
@@ -12203,7 +12249,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_pvalue_plot(null_model=null_model, alt_model=alt_model,
                                        conv_model=conv_model, id=id, otherids=otherids,
                                        num=num, bins=bins, numcores=numcores,
-                                       recalc=recalc)
+                                       recalc=recalc, copy=copy)
 
     get_pvalue_plot.__doc__ = sherpa.ui.utils.Session.get_pvalue_plot.__doc__
     get_pvalue_plot.__annotations__ = sherpa.ui.utils.Session.get_pvalue_plot.__annotations__
@@ -12211,8 +12257,14 @@ class Session(sherpa.ui.utils.Session):
     def get_order_plot(self,
                        id: IdType | None = None,
                        orders=None,
-                       recalc: bool = True):
+                       recalc: bool = True,
+                       copy: bool = True
+                       ):
         """Return the data used by plot_order.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12227,6 +12279,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_order` (or `get_order_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12262,13 +12318,19 @@ class Session(sherpa.ui.utils.Session):
             plotobj.prepare(self._get_pha_data(id),
                             self.get_model(id), orders=orders)
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_arf_plot(self,
                      id: IdType | None = None,
                      resp_id: IdType | None = None,
-                     recalc: bool = True):
+                     recalc: bool = True,
+                     copy: bool = True
+                     ):
         """Return the data used by plot_arf.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12283,6 +12345,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_arf` (or `get_arf_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12317,7 +12383,7 @@ class Session(sherpa.ui.utils.Session):
 
         plotobj = self._plot_types["arf"][0]
         if not recalc:
-            return plotobj
+            return cpy(plotobj, copy)
 
         idval = self._fix_id(id)
         data = self._get_pha_data(idval)
@@ -12326,13 +12392,19 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('noarf', idval)
 
         plotobj.prepare(arf, data)
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_rmf_plot(self,
                      id: IdType | None = None,
                      resp_id: IdType | None = None,
-                     recalc: bool = True):
+                     recalc: bool = True,
+                     copy: bool = True
+                     ):
         """Return the data used by plot_rmf.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         .. versionadded:: 4.16.0
 
@@ -12349,6 +12421,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_rmf` (or `get_rmf_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12381,7 +12457,7 @@ class Session(sherpa.ui.utils.Session):
 
         plotobj = self._plot_types["rmf"][0]
         if not recalc:
-            return plotobj
+            return cpy(plotobj, copy)
 
         idval = self._fix_id(id)
         data = self._get_pha_data(idval)
@@ -12390,13 +12466,19 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('norsp', idval)
 
         plotobj.prepare(rmf, data)
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_bkg_fit_plot(self,
                          id: IdType | None = None,
                          bkg_id: IdType | None = None,
-                         recalc: bool = True):
+                         recalc: bool = True,
+                         copy: bool = True
+                         ):
         """Return the data used by plot_bkg_fit.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12410,6 +12492,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_bkg_fit` (or `get_bkg_fit_plot`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12470,26 +12556,32 @@ class Session(sherpa.ui.utils.Session):
 
         plotobj = self._plot_types["bkg_fit"][0]
         if not recalc:
-            return plotobj
+            return cpy(plotobj, copy)
 
-        dataobj = self.get_bkg_plot(id, bkg_id, recalc=recalc)
+        dataobj = self.get_bkg_plot(id, bkg_id, recalc=recalc, copy=copy)
 
         # We don't use get_bkg_model_plot as that uses the ungrouped data
         # modelobj = self.get_bkg_model_plot(id, bkg_id, recalc=recalc)
 
-        modelobj = self._bkgmodelplot
+        modelobj = cpy(self._bkgmodelplot, copy)
         modelobj.prepare(self.get_bkg(id, bkg_id),
                          self.get_bkg_model(id, bkg_id),
                          self.get_stat())
 
         plotobj.prepare(dataobj, modelobj)
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_bkg_model_plot(self,
                            id: IdType | None = None,
                            bkg_id: IdType | None = None,
-                           recalc: bool = True):
+                           recalc: bool = True,
+                           copy: bool = True
+                           ):
         """Return the data used by plot_bkg_model.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12503,6 +12595,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_bkg_model` (or `get_bkg_model_plot`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12543,13 +12639,19 @@ class Session(sherpa.ui.utils.Session):
                             self.get_bkg_model(id, bkg_id),
                             self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_bkg_plot(self,
                      id: IdType | None = None,
                      bkg_id: IdType | None = None,
-                     recalc: bool = True):
+                     recalc: bool = True,
+                     copy: bool = True
+                     ):
         """Return the data used by plot_bkg.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12563,6 +12665,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_bkg` (or `get_bkg_plot`) are returned, otherwise
            the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12611,15 +12717,21 @@ class Session(sherpa.ui.utils.Session):
             plotobj.prepare(self.get_bkg(id, bkg_id),
                             self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_bkg_source_plot(self,
                             id: IdType | None = None,
                             lo: float | None = None,
                             hi: float | None = None,
                             bkg_id: IdType | None = None,
-                            recalc: bool = True):
+                            recalc: bool = True,
+                            copy: bool = True
+                            ):
         """Return the data used by plot_bkg_source.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12637,6 +12749,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_bkg_source` (or `get_bkg_source_plot`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12708,13 +12824,19 @@ class Session(sherpa.ui.utils.Session):
                             self.get_bkg_source(id, bkg_id),
                             lo=lo, hi=hi)
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_bkg_resid_plot(self,
                            id: IdType | None = None,
                            bkg_id: IdType | None = None,
-                           recalc: bool = True):
+                           recalc: bool = True,
+                           copy: bool = True
+                           ):
         """Return the data used by plot_bkg_resid.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12728,6 +12850,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_bkg_resid` (or `get_bkg_resid_plot`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12769,13 +12895,19 @@ class Session(sherpa.ui.utils.Session):
                             self.get_bkg_model(id, bkg_id),
                             self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_bkg_ratio_plot(self,
                            id: IdType | None = None,
                            bkg_id: IdType | None = None,
-                           recalc: bool = True):
+                           recalc: bool = True,
+                           copy: bool = True
+                           ):
         """Return the data used by plot_bkg_ratio.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12789,6 +12921,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_bkg_ratio` (or `get_bkg_ratio_plot`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12830,13 +12966,19 @@ class Session(sherpa.ui.utils.Session):
                             self.get_bkg_model(id, bkg_id),
                             self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_bkg_delchi_plot(self,
                             id: IdType | None = None,
                             bkg_id: IdType | None = None,
-                            recalc: bool = True):
+                            recalc: bool = True,
+                            copy: bool = True
+                            ):
         """Return the data used by plot_bkg_delchi.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12850,6 +12992,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_bkg_delchi` (or `get_bkg_delchi_plot`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12892,13 +13038,19 @@ class Session(sherpa.ui.utils.Session):
                             self.get_bkg_model(id, bkg_id),
                             self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_bkg_chisqr_plot(self,
                             id: IdType | None = None,
                             bkg_id: IdType | None = None,
-                            recalc: bool = True):
+                            recalc: bool = True,
+                            copy: bool = True
+                            ):
         """Return the data used by plot_bkg_chisqr.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -12912,6 +13064,10 @@ class Session(sherpa.ui.utils.Session):
            If ``False`` then the results from the last call to
            `plot_bkg_chisqr` (or `get_bkg_chisqr_plot`) are returned,
            otherwise the data is re-generated.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -12954,14 +13110,23 @@ class Session(sherpa.ui.utils.Session):
                             self.get_bkg_model(id, bkg_id),
                             self.get_stat())
 
-        return plotobj
+        return cpy(plotobj, copy)
 
-    def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins,
-                                  correlated, numcores,
+    def _prepare_energy_flux_plot(self,
+                                  plot,
+                                  lo,
+                                  hi,
+                                  id,
+                                  num,
+                                  bins,
+                                  correlated,
+                                  numcores,
                                   bkg_id: IdType | None,
-                                  scales=None, model=None,
+                                  scales=None,
+                                  model=None,
                                   otherids: IdTypes = (),
-                                  clip='hard'):
+                                  clip='hard'
+                                  ):
         """Run sample_energy_flux and convert to a plot.
         """
         dist = self.sample_energy_flux(lo, hi, id=id, otherids=otherids,
@@ -12971,12 +13136,21 @@ class Session(sherpa.ui.utils.Session):
         plot.prepare(dist, bins)
         return plot
 
-    def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins,
-                                  correlated, numcores,
+    def _prepare_photon_flux_plot(self,
+                                  plot,
+                                  lo,
+                                  hi,
+                                  id,
+                                  num: int,
+                                  bins,
+                                  correlated: bool,
+                                  numcores: int | None,
                                   bkg_id: IdType | None,
-                                  scales=None, model=None,
+                                  scales=None,
+                                  model=None,
                                   otherids: IdTypes=(),
-                                  clip='hard'):
+                                  clip='hard'
+                                  ):
         """Run sample_photon_flux and convert to a plot.
         """
         dist = self.sample_photon_flux(lo, hi, id=id, otherids=otherids,
@@ -12986,24 +13160,32 @@ class Session(sherpa.ui.utils.Session):
         plot.prepare(dist, bins)
         return plot
 
-    def get_energy_flux_hist(self, lo=None, hi=None,
+    def get_energy_flux_hist(self,
+                             lo=None,
+                             hi=None,
                              id: IdType | None = None,
                              num=7500,
                              bins=75,
-                             correlated=False,
-                             numcores=None,
+                             correlated: bool = False,
+                             numcores: int | None = None,
                              bkg_id: IdType | None = None,
                              scales=None,
                              model=None,
                              otherids: IdTypes = (),
-                             recalc=True,
-                             clip='hard'):
+                             recalc: bool = True,
+                             clip='hard',
+                             copy: bool = True
+                             ):
         """Return the data displayed by plot_energy_flux.
 
         The get_energy_flux_hist() function calculates a histogram of
         simulated energy flux values representing the energy flux probability
         distribution for a model component, accounting for the errors on the
         model parameters.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         .. versionchanged:: 4.12.2
            The scales parameter is no longer ignored when set and the
@@ -13072,6 +13254,10 @@ class Session(sherpa.ui.utils.Session):
             hard limits if they exceed them. A value of 'soft' uses
             the soft limits instead, and 'none' applies no
             clipping.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13127,26 +13313,34 @@ class Session(sherpa.ui.utils.Session):
                                            otherids=otherids, clip=clip,
                                            numcores=numcores, bkg_id=bkg_id)
 
-        return plotobj
+        return cpy(plotobj, copy)
 
-    def get_photon_flux_hist(self, lo=None, hi=None,
+    def get_photon_flux_hist(self,
+                             lo=None,
+                             hi=None,
                              id: IdType | None = None,
                              num=7500,
                              bins=75,
-                             correlated=False,
-                             numcores=None,
+                             correlated: bool = False,
+                             numcores: int | None = None,
                              bkg_id: IdType | None = None,
                              scales=None,
                              model=None,
                              otherids: IdTypes = (),
-                             recalc=True,
-                             clip='hard'):
+                             recalc: bool = True,
+                             clip='hard',
+                             copy: bool = True
+                             ):
         """Return the data displayed by plot_photon_flux.
 
         The get_photon_flux_hist() function calculates a histogram of
         simulated photon flux values representing the photon flux probability
         distribution for a model component, accounting for the errors on the
         model parameters.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         .. versionchanged:: 4.12.2
            The scales parameter is no longer ignored when set and the
@@ -13214,6 +13408,10 @@ class Session(sherpa.ui.utils.Session):
             hard limits if they exceed them. A value of 'soft' uses
             the soft limits instead, and 'none' applies no
             clipping.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -13269,7 +13467,7 @@ class Session(sherpa.ui.utils.Session):
                                            otherids=otherids, clip=clip,
                                            numcores=numcores, bkg_id=bkg_id)
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     # TODO: should resp_id allow multiple values?
     #
@@ -13526,14 +13724,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        def get(id, recalc=False):
+        def get(id, recalc=False, copy=True):
             data = self.get_data(id)
             if isinstance(data, DataPHA):
                 kwargs = {"lo": lo, "hi": hi}
             else:
                 kwargs = {}
 
-            return self.get_source_plot(id, recalc=recalc,
+            return self.get_source_plot(id, recalc=recalc, copy=copy,
                                         **kwargs)
 
         plotobj = self._get_plot_objects(id, get, recalc=not replot)
@@ -14924,15 +15122,19 @@ class Session(sherpa.ui.utils.Session):
                             stat=stat, method=method,
                             rng=self.get_rng())
 
-    def sample_photon_flux(self, lo=None, hi=None,
+    def sample_photon_flux(self,
+                           lo=None,
+                           hi=None,
                            id: IdType | None = None,
                            num=1,
-                           scales=None, correlated=False,
-                           numcores=None,
+                           scales=None,
+                           correlated: bool = False,
+                           numcores: int | None = None,
                            bkg_id: IdType | None = None,
                            model=None,
                            otherids: IdTypes = (),
-                           clip='hard'):
+                           clip='hard'
+                           ):
         """Return the photon flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -15158,15 +15360,19 @@ class Session(sherpa.ui.utils.Session):
                                              samples=scales, clip=clip,
                                              rng=self.get_rng())
 
-    def sample_energy_flux(self, lo=None, hi=None,
+    def sample_energy_flux(self,
+                           lo=None,
+                           hi=None,
                            id: IdType | None = None,
                            num=1,
-                           scales=None, correlated=False,
+                           scales=None,
+                           correlated=False,
                            numcores=None,
                            bkg_id: IdType | None = None,
                            model=None,
                            otherids: IdTypes = (),
-                           clip='hard'):
+                           clip='hard'
+                           ):
         """Return the energy flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -15392,12 +15598,19 @@ class Session(sherpa.ui.utils.Session):
                                              samples=scales, clip=clip,
                                              rng=self.get_rng())
 
-    def sample_flux(self, modelcomponent=None, lo=None, hi=None,
+    def sample_flux(self,
+                    modelcomponent=None,
+                    lo=None,
+                    hi=None,
                     id: IdType | None = None,
-                    num=1, scales=None, correlated=False,
+                    num=1,
+                    scales=None,
+                    correlated=False,
                     numcores=None,
                     bkg_id: IdType | None = None,
-                    Xrays=True, confidence=68):
+                    Xrays=True,
+                    confidence=68
+                    ):
         """Return the flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -15617,15 +15830,19 @@ class Session(sherpa.ui.utils.Session):
                                                   modelcomponent=modelcomponent,
                                                   confidence=confidence)
 
-    def eqwidth(self, src, combo,
+    def eqwidth(self,
+                src,
+                combo,
                 id: IdType | None = None,
-                lo=None, hi=None,
+                lo=None,
+                hi=None,
                 bkg_id: IdType | None = None,
                 error: bool = False,
                 params: np.ndarray | None = None,
                 otherids: IdTypes = (),
                 niter: int = 1000,
-                covar_matrix: np.ndarray | None = None):
+                covar_matrix: np.ndarray | None = None
+                ):
         """Calculate the equivalent width of an emission or absorption line.
 
         The equivalent width (EW) is calculated following `George &
@@ -15842,10 +16059,13 @@ class Session(sherpa.ui.utils.Session):
         fit.model.thawedpars = orig_par_vals
         return median, lower, upper, params, eqw
 
-    def calc_photon_flux(self, lo=None, hi=None,
+    def calc_photon_flux(self,
+                         lo=None,
+                         hi=None,
                          id: IdType | None = None,
                          bkg_id: IdType | None = None,
-                         model=None):
+                         model=None
+                         ):
         """Integrate the unconvolved source model over a pass band.
 
         Calculate the integral of S(E) over a pass band, where S(E) is
@@ -15959,10 +16179,13 @@ class Session(sherpa.ui.utils.Session):
 
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
 
-    def calc_energy_flux(self, lo=None, hi=None,
+    def calc_energy_flux(self,
+                         lo=None,
+                         hi=None,
                          id: IdType | None = None,
                          bkg_id: IdType | None = None,
-                         model=None):
+                         model=None
+                         ):
         """Integrate the unconvolved source model over a pass band.
 
         Calculate the integral of E * S(E) over a pass band, where E
@@ -16075,9 +16298,12 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: how do lo/hi limits interact with bin edges;
     # is it all in or partially in or ...
-    def calc_data_sum(self, lo=None, hi=None,
+    def calc_data_sum(self,
+                      lo=None,
+                      hi=None,
                       id: IdType | None = None,
-                      bkg_id: IdType | None = None):
+                      bkg_id: IdType | None = None
+                      ):
         """Sum up the data values over a pass band.
 
         This function is for one-dimensional data sets: use
@@ -16418,9 +16644,12 @@ class Session(sherpa.ui.utils.Session):
     #           to show the difference between calc_model_sum and
     #           calc_source_sum
     #
-    def calc_model_sum(self, lo=None, hi=None,
+    def calc_model_sum(self,
+                       lo=None,
+                       hi=None,
                        id: IdType | None = None,
-                       bkg_id: IdType | None = None):
+                       bkg_id: IdType | None = None
+                       ):
         """Sum up the fitted model over a pass band.
 
         Sum up M(E) over a range of bins, where M(E) is the per-bin model
@@ -16525,7 +16754,8 @@ class Session(sherpa.ui.utils.Session):
 
     def calc_data_sum2d(self,
                         reg=None,
-                        id: IdType | None = None):
+                        id: IdType | None = None
+                        ):
         """Sum up the data values of a 2D data set.
 
         This function is for two-dimensional data sets: use
@@ -16602,8 +16832,10 @@ class Session(sherpa.ui.utils.Session):
     #           and change the model (to a non-flat distribution, otherwise
     #           the PSF doesn't really help)
     # DOC-TODO: this needs testing as doesn't seem to be working for me
-    def calc_model_sum2d(self, reg=None,
-                         id: IdType | None = None):
+    def calc_model_sum2d(self,
+                         reg=None,
+                         id: IdType | None = None
+                         ):
         """Sum up the convolved model for a 2D data set.
 
         This function is for two-dimensional data sets: use
@@ -16681,8 +16913,10 @@ class Session(sherpa.ui.utils.Session):
         model = self.get_model(id)
         return sherpa.astro.utils.calc_model_sum2d(data, model, reg)
 
-    def calc_source_sum2d(self, reg=None,
-                          id: IdType | None = None):
+    def calc_source_sum2d(self,
+                          reg=None,
+                          id: IdType | None = None
+                          ):
         """Sum up the unconvolved model for a 2D data set.
 
         This function is for two-dimensional data sets: use
@@ -16760,9 +16994,12 @@ class Session(sherpa.ui.utils.Session):
         src = self.get_source(id)
         return sherpa.astro.utils.calc_model_sum2d(data, src, reg)
 
-    def calc_source_sum(self, lo=None, hi=None,
+    def calc_source_sum(self,
+                        lo=None,
+                        hi=None,
                         id: IdType | None = None,
-                        bkg_id: IdType | None = None):
+                        bkg_id: IdType | None = None
+                        ):
         """Sum up the source model over a pass band.
 
         Sum up S(E) over a range of bins, where S(E) is the per-bin model
@@ -16872,9 +17109,15 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: no reason can't k-correct wavelength range,
     # but need to work out how to identify the units
-    def calc_kcorr(self, z, obslo, obshi, restlo=None, resthi=None,
+    def calc_kcorr(self,
+                   z,
+                   obslo,
+                   obshi,
+                   restlo=None,
+                   resthi=None,
                    id: IdType | None = None,
-                   bkg_id: IdType | None = None):
+                   bkg_id: IdType | None = None
+                   ):
         """Calculate the K correction for a model.
 
         The K correction ([1]_, [2]_, [3]_, [4]_) is the numeric
