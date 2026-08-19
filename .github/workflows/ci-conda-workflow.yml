@@ -142,7 +142,7 @@ jobs:
     # support.
     #
     # The DS9 tests are not run on macOS intel as that platform is
-    # slow and depracated. It is easiest to do this with an explicit
+    # slow and deprecated. It is easiest to do this with an explicit
     # check of a matrix field.
     #
     - name: Conda Setup (DS9)
