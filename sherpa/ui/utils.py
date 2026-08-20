@@ -17502,7 +17502,8 @@ class Session(NoNewAttributesAfterInit):
                      delv: float | None = None,
                      fac: float = 1,
                      log: bool = False,
-                     numcores: int | None = None
+                     numcores: int | None = None,
+                     copy: bool = True
                      ):
         """Return the interval-projection object.
 
@@ -17511,6 +17512,10 @@ class Session(NoNewAttributesAfterInit):
         parameter is `False` (the default value) then all other parameters
         are ignored and the results of the last `int_proj` call are
         returned.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         .. versionchanged:: 4.16.1
            The log parameter can now be set to `True`.
@@ -17559,6 +17564,10 @@ class Session(NoNewAttributesAfterInit):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -17612,7 +17621,7 @@ class Session(NoNewAttributesAfterInit):
                             fac=fac, log=log, numcores=numcores)
             plotobj.calc(fit, par, self._methods)
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     # DOC-NOTE: Check that this works (since get_int_proj may not) when
     # recalc=True
@@ -17627,7 +17636,9 @@ class Session(NoNewAttributesAfterInit):
                     delv: float | None = None,
                     fac: float = 1,
                     log: bool = False,
-                    numcores: int | None = None):
+                    numcores: int | None = None,
+                    copy: bool = True
+                    ):
         """Return the interval-uncertainty object.
 
         This returns (and optionally calculates) the data used to
@@ -17635,6 +17646,10 @@ class Session(NoNewAttributesAfterInit):
         parameter is `False` (the default value) then all other parameters
         are ignored and the results of the last `int_unc` call are
         returned.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         .. versionchanged:: 4.16.1
            The log parameter can now be set to `True`.
@@ -17679,6 +17694,10 @@ class Session(NoNewAttributesAfterInit):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -17733,7 +17752,7 @@ class Session(NoNewAttributesAfterInit):
                             numcores=numcores)
             plotobj.calc(fit, par)
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_reg_proj(self,
                      par0: str | Parameter | None = None,
@@ -17750,7 +17769,8 @@ class Session(NoNewAttributesAfterInit):
                      log=(False, False),
                      sigma=(1, 2, 3),
                      levels=None,
-                     numcores: int | None = None
+                     numcores: int | None = None,
+                     copy: bool = True
                      ):
         """Return the region-projection object.
 
@@ -17759,6 +17779,10 @@ class Session(NoNewAttributesAfterInit):
         parameter is `False` (the default value) then all other parameters
         are ignored and the results of the last `reg_proj` call are
         returned.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         .. versionchanged:: 4.16.1
            The log parameter can now be set to `True` for one or both
@@ -17816,6 +17840,10 @@ class Session(NoNewAttributesAfterInit):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -17876,7 +17904,7 @@ class Session(NoNewAttributesAfterInit):
                             numcores=numcores)
             plotobj.calc(fit, par0, par1, self._methods)
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     def get_reg_unc(self,
                     par0: str | Parameter | None = None,
@@ -17892,7 +17920,8 @@ class Session(NoNewAttributesAfterInit):
                     log=(False, False),
                     sigma=(1, 2, 3),
                     levels=None,
-                    numcores: int | None = None
+                    numcores: int | None = None,
+                    copy: bool = True
                     ):
         """Return the region-uncertainty object.
 
@@ -17901,6 +17930,10 @@ class Session(NoNewAttributesAfterInit):
         parameter is `False` (the default value) then all other parameters
         are ignored and the results of the last `reg_unc` call are
         returned.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         .. versionchanged:: 4.16.1
            The log parameter can now be set to `True` for one or both
@@ -17958,6 +17991,10 @@ class Session(NoNewAttributesAfterInit):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -18019,7 +18056,7 @@ class Session(NoNewAttributesAfterInit):
                             numcores=numcores)
             plotobj.calc(fit, par0, par1)
 
-        return plotobj
+        return cpy(plotobj, copy)
 
     # DOC-NOTE: I am not convinced I have fac described correctly
     # DOC-NOTE: same synopsis as int_unc
