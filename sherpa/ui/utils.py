@@ -18630,14 +18630,24 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def get_data_image(self,
-                       id: IdType | None = None):
+                       id: IdType | None = None,
+                       copy: bool = True
+                       ):
         """Return the data used by image_data.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
         id : int, str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -18671,21 +18681,31 @@ class Session(NoNewAttributesAfterInit):
         imageobj = self._image_types['data']
         data = self.get_data(id)
         imageobj.prepare_image(data)
-        return imageobj
+        return cpy(imageobj, copy)
 
     def get_model_image(self,
-                        id: IdType | None = None):
+                        id: IdType | None = None,
+                        copy: bool = True
+                        ):
         """Return the data used by image_model.
 
         Evaluate the source expression for the image pixels -
         including any PSF convolution defined by `set_psf` - and
         return the results.
 
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
+
         Parameters
         ----------
         id : int, str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -18721,23 +18741,32 @@ class Session(NoNewAttributesAfterInit):
         data = self.get_data(id)
         model = self.get_model(id)
         imageobj.prepare_image(data, model)
-        return imageobj
-
+        return cpy(imageobj, copy)
 
     # DOC-TODO: it looks like get_source_image doesn't raise DataErr with
     # a non-2D data set
     def get_source_image(self,
-                         id: IdType | None = None):
+                         id: IdType | None = None,
+                         copy: bool = True
+                         ):
         """Return the data used by image_source.
 
         Evaluate the source expression for the image pixels - without
         any PSF convolution - and return the results.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
         id : int, str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -18771,10 +18800,18 @@ class Session(NoNewAttributesAfterInit):
         data = self.get_data(id)
         source = self.get_source(id)
         imageobj.prepare_image(data, source)
-        return imageobj
+        return cpy(imageobj, copy)
 
-    def get_model_component_image(self, id, model=None):
+    def get_model_component_image(self,
+                                  id,
+                                  model=None,
+                                  copy: bool = True
+                                  ):
         """Return the data used by image_model_component.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -18783,6 +18820,10 @@ class Session(NoNewAttributesAfterInit):
            used, as returned by `get_default_id`.
         model : str or sherpa.models.model.Model instance
            The component to display (the name, if a string).
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -18836,10 +18877,18 @@ class Session(NoNewAttributesAfterInit):
         imageobj = self._image_types['model_component']
         data = self.get_data(id)
         imageobj.prepare_image(data, model)
-        return imageobj
+        return cpy(imageobj, copy)
 
-    def get_source_component_image(self, id, model=None):
+    def get_source_component_image(self,
+                                   id,
+                                   model=None,
+                                   copy: bool = True
+                                   ):
         """Return the data used by image_source_component.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
@@ -18848,6 +18897,10 @@ class Session(NoNewAttributesAfterInit):
            used, as returned by `get_default_id`.
         model : str or sherpa.models.model.Model instance
            The component to display (the name, if a string).
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -18896,17 +18949,27 @@ class Session(NoNewAttributesAfterInit):
         imageobj = self._image_types['source_component']
         data = self.get_data(id)
         imageobj.prepare_image(data, model)
-        return imageobj
+        return cpy(imageobj, copy)
 
     def get_ratio_image(self,
-                        id: IdType | None = None):
+                        id: IdType | None = None,
+                        copy: bool = True
+                        ):
         """Return the data used by image_ratio.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
         id : int, str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -18940,17 +19003,27 @@ class Session(NoNewAttributesAfterInit):
         data = self.get_data(id)
         model = self.get_model(id)
         imageobj.prepare_image(data, model)
-        return imageobj
+        return cpy(imageobj, copy)
 
     def get_resid_image(self,
-                        id: IdType | None = None):
+                        id: IdType | None = None,
+                        copy: bool = True
+                        ):
         """Return the data used by image_resid.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
         id : int, str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -18984,17 +19057,27 @@ class Session(NoNewAttributesAfterInit):
         data = self.get_data(id)
         model = self.get_model(id)
         imageobj.prepare_image(data, model)
-        return imageobj
+        return cpy(imageobj, copy)
 
     def get_psf_image(self,
-                      id: IdType | None = None):
+                      id: IdType | None = None,
+                      copy: bool = True
+                      ):
         """Return the data used by image_psf.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
         id : int, str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -19025,17 +19108,27 @@ class Session(NoNewAttributesAfterInit):
         psf = self.get_psf(id)
         data = self.get_data(id)
         imageobj.prepare_image(psf, data)
-        return imageobj
+        return cpy(imageobj, copy)
 
     def get_kernel_image(self,
-                         id: IdType | None = None):
+                         id: IdType | None = None,
+                         copy: bool = True
+                         ):
         """Return the data used by image_kernel.
+
+        .. versionchanged:: 4.19.0
+           The plot object is now copied by default. To get the previous
+           behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
         ----------
         id : int, str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
+        copy : bool, optional
+           Is the plot object copied before being returned? If so then
+           the plot attributes will not be changed by multiple calls
+           to this routine.
 
         Returns
         -------
@@ -19066,7 +19159,7 @@ class Session(NoNewAttributesAfterInit):
         psf = self.get_psf(id)
         data = self.get_data(id)
         imageobj.prepare_image(psf, data)
-        return imageobj
+        return cpy(imageobj, copy)
 
     #
     # Images
