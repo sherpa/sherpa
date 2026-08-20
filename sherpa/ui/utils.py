@@ -12257,7 +12257,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_plot_objects(self,
                           ids: IdType | IdTypes | None,
-                          getfunc: Callable[..., Plot | HistogramPlot],
+                          getfunc: Callable[..., Plot | HistogramPlot | sherpa.plot.Contour],
                           *,
                           recalc: bool = True,
                           **kwargs
@@ -13467,7 +13467,7 @@ class Session(NoNewAttributesAfterInit):
                          id: IdType | None = None,
                          recalc: bool = True,
                          copy: bool = True
-                         ):
+                         ) -> sherpa.plot.DataContour:
         """Return the data used by contour_data.
 
         .. versionchanged:: 4.19.0
@@ -13641,7 +13641,7 @@ class Session(NoNewAttributesAfterInit):
                           id: IdType | None = None,
                           recalc: bool = True,
                           copy: bool = True
-                          ):
+                          ) -> sherpa.plot.ModelContour:
         """Return the data used by contour_model.
 
         .. versionchanged:: 4.19.0
@@ -13702,7 +13702,7 @@ class Session(NoNewAttributesAfterInit):
                            id: IdType | None = None,
                            recalc: bool = True,
                            copy: bool = True
-                           ):
+                           ) -> sherpa.plot.SourceContour:
         """Return the data used by contour_source.
 
         .. versionchanged:: 4.19.0
@@ -13813,7 +13813,7 @@ class Session(NoNewAttributesAfterInit):
                         id: IdType | None = None,
                         recalc: bool = True,
                         copy: bool = True
-                        ):
+                        ) -> sherpa.plot.FitContour:
         """Return the data used by contour_fit.
 
         .. versionchanged:: 4.19.0
@@ -13881,7 +13881,7 @@ class Session(NoNewAttributesAfterInit):
                           id: IdType | None = None,
                           recalc: bool = True,
                           copy: bool = True
-                          ):
+                          ) -> sherpa.plot.ResidContour:
         """Return the data used by contour_resid.
 
         .. versionchanged:: 4.19.0
@@ -13943,7 +13943,7 @@ class Session(NoNewAttributesAfterInit):
                           id: IdType | None = None,
                           recalc: bool = True,
                           copy: bool = True
-                          ):
+                          ) -> sherpa.plot.RatioContour:
         """Return the data used by contour_ratio.
 
         .. versionchanged:: 4.19.0
@@ -14005,7 +14005,7 @@ class Session(NoNewAttributesAfterInit):
                         id: IdType | None = None,
                         recalc: bool = True,
                         copy: bool = True
-                        ):
+                        ) -> sherpa.plot.PSFContour:
         """Return the data used by contour_psf.
 
         .. versionchanged:: 4.19.0
@@ -14062,7 +14062,7 @@ class Session(NoNewAttributesAfterInit):
                            id: IdType | None = None,
                            recalc: bool = True,
                            copy: bool = True
-                           ):
+                           ) -> sherpa.plot.PSFKernelContour:
         """Return the data used by contour_kernel.
 
         .. versionchanged:: 4.19.0
@@ -14120,7 +14120,7 @@ class Session(NoNewAttributesAfterInit):
                      id: IdType | None = None,
                      recalc: bool = True,
                      copy: bool = True
-                     ):
+                     ) -> sherpa.plot.PSFContour:
         """Return the data used by plot_psf.
 
         .. versionchanged:: 4.19.0
@@ -14176,7 +14176,7 @@ class Session(NoNewAttributesAfterInit):
                         id: IdType | None = None,
                         recalc: bool = True,
                         copy: bool = True
-                        ):
+                        ) -> sherpa.plot.PSFKernelContour:
         """Return the data used by plot_kernel.
 
         .. versionchanged:: 4.19.0
@@ -18632,7 +18632,7 @@ class Session(NoNewAttributesAfterInit):
     def get_data_image(self,
                        id: IdType | None = None,
                        copy: bool = True
-                       ):
+                       ) -> sherpa.image.DataImage:
         """Return the data used by image_data.
 
         .. versionchanged:: 4.19.0
@@ -18686,7 +18686,7 @@ class Session(NoNewAttributesAfterInit):
     def get_model_image(self,
                         id: IdType | None = None,
                         copy: bool = True
-                        ):
+                        ) -> sherpa.image.ModelImage:
         """Return the data used by image_model.
 
         Evaluate the source expression for the image pixels -
@@ -18748,7 +18748,7 @@ class Session(NoNewAttributesAfterInit):
     def get_source_image(self,
                          id: IdType | None = None,
                          copy: bool = True
-                         ):
+                         ) -> sherpa.image.SourceImage:
         """Return the data used by image_source.
 
         Evaluate the source expression for the image pixels - without
@@ -18806,7 +18806,7 @@ class Session(NoNewAttributesAfterInit):
                                   id,
                                   model=None,
                                   copy: bool = True
-                                  ):
+                                  ) -> sherpa.image.ComponentModelImage:
         """Return the data used by image_model_component.
 
         .. versionchanged:: 4.19.0
@@ -18883,7 +18883,7 @@ class Session(NoNewAttributesAfterInit):
                                    id,
                                    model=None,
                                    copy: bool = True
-                                   ):
+                                   ) -> sherpa.image.ComponentSourceImage:
         """Return the data used by image_source_component.
 
         .. versionchanged:: 4.19.0
@@ -18954,7 +18954,7 @@ class Session(NoNewAttributesAfterInit):
     def get_ratio_image(self,
                         id: IdType | None = None,
                         copy: bool = True
-                        ):
+                        ) -> sherpa.image.RatioImage:
         """Return the data used by image_ratio.
 
         .. versionchanged:: 4.19.0
@@ -19008,7 +19008,7 @@ class Session(NoNewAttributesAfterInit):
     def get_resid_image(self,
                         id: IdType | None = None,
                         copy: bool = True
-                        ):
+                        ) -> sherpa.image.ResidImage:
         """Return the data used by image_resid.
 
         .. versionchanged:: 4.19.0
@@ -19062,7 +19062,7 @@ class Session(NoNewAttributesAfterInit):
     def get_psf_image(self,
                       id: IdType | None = None,
                       copy: bool = True
-                      ):
+                      ) -> sherpa.image.PSFImage:
         """Return the data used by image_psf.
 
         .. versionchanged:: 4.19.0
@@ -19113,7 +19113,7 @@ class Session(NoNewAttributesAfterInit):
     def get_kernel_image(self,
                          id: IdType | None = None,
                          copy: bool = True
-                         ):
+                         ) -> sherpa.image.PSFKernelImage:
         """Return the data used by image_kernel.
 
         .. versionchanged:: 4.19.0
