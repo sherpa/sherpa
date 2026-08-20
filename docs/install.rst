@@ -296,7 +296,7 @@ module, but a quick check of an installed version can be made with
 the following command::
 
     % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
-    12.15.0
+    12.15.1
 
 Installing all dependencies with conda
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
