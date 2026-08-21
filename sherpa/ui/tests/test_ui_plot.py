@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019-2025
+#  Copyright (C) 2019-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -221,7 +221,7 @@ def change_fit(idval):
 def check_example(idval, xlabel='x'):
     """Check that the data plot has not changed"""
 
-    dplot = ui.get_data_plot(id=idval, recalc=False)
+    dplot = ui.get_data_plot(id=idval, recalc=False, copy=False)
 
     assert dplot.xlabel == xlabel
     assert dplot.ylabel == 'y'
@@ -240,7 +240,7 @@ def check_example_changed(idval, xlabel='x'):
     Assumes change_example has been called
     """
 
-    dplot = ui.get_data_plot(id=idval, recalc=False)
+    dplot = ui.get_data_plot(id=idval, recalc=False, copy=False)
 
     assert dplot.xlabel == xlabel
     assert dplot.ylabel == 'y'
@@ -268,7 +268,7 @@ def check_model_plot(plot, title='Model', xlabel='x', modelval=35):
 def check_model(idval, xlabel='x'):
     """Check that the model plot has not changed"""
 
-    mplot = ui.get_model_plot(id=idval, recalc=False)
+    mplot = ui.get_model_plot(id=idval, recalc=False, copy=False)
     check_model_plot(mplot, title='Model', xlabel=xlabel)
 
 
@@ -278,14 +278,14 @@ def check_model_changed(idval, xlabel='x'):
     Assumes change_model has been called
     """
 
-    mplot = ui.get_model_plot(id=idval, recalc=False)
+    mplot = ui.get_model_plot(id=idval, recalc=False, copy=False)
     check_model_plot(mplot, title='Model', xlabel=xlabel, modelval=41)
 
 
 def check_source(idval):
     """Check that the source plot has not changed"""
 
-    splot = ui.get_source_plot(id=idval, recalc=False)
+    splot = ui.get_source_plot(id=idval, recalc=False, copy=False)
     check_model_plot(splot, title='Source')
 
 
@@ -295,14 +295,14 @@ def check_source_changed(idval):
     Assumes change_model has been called
     """
 
-    splot = ui.get_source_plot(id=idval, recalc=False)
+    splot = ui.get_source_plot(id=idval, recalc=False, copy=False)
     check_model_plot(splot, title='Source', modelval=41)
 
 
 def check_resid(idval, title='Residuals for example'):
     """Check that the resid plot has not changed"""
 
-    rplot = ui.get_resid_plot(id=idval, recalc=False)
+    rplot = ui.get_resid_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -318,7 +318,7 @@ def check_resid_changed(idval, title='Residuals for example'):
     Assumes that change_model has been called
     """
 
-    rplot = ui.get_resid_plot(id=idval, recalc=False)
+    rplot = ui.get_resid_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -334,7 +334,7 @@ def check_resid_changed2(idval, title='Residuals for example'):
     Assumes that change_example and change_model has been called
     """
 
-    rplot = ui.get_resid_plot(id=idval, recalc=False)
+    rplot = ui.get_resid_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data - Model'
     assert rplot.title == title
@@ -347,7 +347,7 @@ def check_resid_changed2(idval, title='Residuals for example'):
 def check_ratio(idval, title='Ratio of Data to Model for example'):
     """Check that the ratio plot has not changed"""
 
-    rplot = ui.get_ratio_plot(id=idval, recalc=False)
+    rplot = ui.get_ratio_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == title
@@ -364,7 +364,7 @@ def check_ratio_changed(idval):
     Assumes that change_example has been called
     """
 
-    rplot = ui.get_ratio_plot(id=idval, recalc=False)
+    rplot = ui.get_ratio_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == 'Ratio of Data to Model for example'
@@ -381,7 +381,7 @@ def check_ratio_changed2(idval, title='Ratio of Data to Model for example'):
     Assumes that change_example and change_model has been called
     """
 
-    rplot = ui.get_ratio_plot(id=idval, recalc=False)
+    rplot = ui.get_ratio_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Data / Model'
     assert rplot.title == title
@@ -395,7 +395,7 @@ def check_ratio_changed2(idval, title='Ratio of Data to Model for example'):
 def check_delchi(idval, title='Sigma Residuals for example'):
     """Check that the delchi plot has not changed"""
 
-    rplot = ui.get_delchi_plot(id=idval, recalc=False)
+    rplot = ui.get_delchi_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -414,7 +414,7 @@ def check_delchi_changed(idval, title='Sigma Residuals for example'):
     Assumes that change_example has been called
     """
 
-    rplot = ui.get_delchi_plot(id=idval, recalc=False)
+    rplot = ui.get_delchi_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -433,7 +433,7 @@ def check_delchi_changed2(idval, title='Sigma Residuals for example'):
     Assumes that change_example and change_model has been called
     """
 
-    rplot = ui.get_delchi_plot(id=idval, recalc=False)
+    rplot = ui.get_delchi_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == 'Sigma'
     assert rplot.title == title
@@ -449,7 +449,7 @@ def check_delchi_changed2(idval, title='Sigma Residuals for example'):
 def check_chisqr(idval):
     """Check that the chisqr plot has not changed"""
 
-    rplot = ui.get_chisqr_plot(id=idval, recalc=False)
+    rplot = ui.get_chisqr_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == '$\\chi^2$'
     assert rplot.title == '$\\chi^2$ for example'
@@ -468,7 +468,7 @@ def check_chisqr_changed(idval):
     Assumes that change_example has been called
     """
 
-    rplot = ui.get_chisqr_plot(id=idval, recalc=False)
+    rplot = ui.get_chisqr_plot(id=idval, recalc=False, copy=False)
     assert rplot.xlabel == 'x'
     assert rplot.ylabel == '$\\chi^2$'
     assert rplot.title == '$\\chi^2$ for example'
@@ -729,7 +729,7 @@ def test_prefs_change_session_objects(getprefs, getplot, plotfunc, clean_ui):
     # This used to access the plot object directly, but is now
     # using an accessor function.
     #
-    session = getplot(recalc=False)
+    session = getplot(recalc=False, copy=False)
 
     # All but the last assert are just to check things are behaving
     # as expected (and stuck into one routine rather than have a
@@ -766,7 +766,7 @@ def test_prefs_change_session_objects_fit(clean_ui):
     about what we expect/want to happen.
     """
 
-    plotobj = ui.get_fit_plot(recalc=False)
+    plotobj = ui.get_fit_plot(recalc=False, copy=False)
     assert plotobj.dataplot is None
     assert plotobj.modelplot is None
 
@@ -787,8 +787,9 @@ def test_prefs_change_session_objects_fit(clean_ui):
     # We have already checked this in previous tests, but
     # just in case
     #
-    assert ui.get_data_plot(id=12, recalc=False).plot_prefs['xlog']
-    assert ui.get_model_plot(id=12, recalc=False).plot_prefs['ylog']
+    kwargs = {"id": 12, "recalc": False, "copy": False}
+    assert ui.get_data_plot(**kwargs).plot_prefs['xlog']
+    assert ui.get_model_plot(**kwargs).plot_prefs['ylog']
 
     # Now check that the fit plot has picked up these changes;
     # the simplest way is to check that the data/model plots
@@ -798,8 +799,8 @@ def test_prefs_change_session_objects_fit(clean_ui):
     # which is less restrictive, but for now check the
     # equality
     #
-    assert plotobj.dataplot is ui.get_data_plot(id=12, recalc=False)
-    assert plotobj.modelplot is ui.get_model_plot(id=12, recalc=False)
+    assert plotobj.dataplot is ui.get_data_plot(**kwargs)
+    assert plotobj.modelplot is ui.get_model_plot(**kwargs)
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
@@ -1056,7 +1057,7 @@ def test_plot_resid_ignores_ylog(getplot, plotfunc, clean_ui):
     ylog (since the data should be positive in this case).
     """
 
-    prefs = getplot(recalc=False).plot_prefs
+    prefs = getplot(recalc=False, copy=False).plot_prefs
 
     setup_example(None)
 
@@ -1078,8 +1079,8 @@ def test_plot_resid_ignores_ylog(getplot, plotfunc, clean_ui):
 def test_plot_fit_resid_ignores_ylog(getplot, plotfunc, clean_ui):
     """Do the plot_resid-family of routines ignore the ylog setting?"""
 
-    rprefs = getplot(recalc=False).plot_prefs
-    dprefs = ui.get_data_plot(recalc=False).plot_prefs
+    rprefs = getplot(recalc=False, copy=False).plot_prefs
+    dprefs = ui.get_data_plot(recalc=False, copy=False).plot_prefs
 
     setup_example(None)
 
@@ -1410,13 +1411,20 @@ def test_get_xxx_contour_prefs_behavior(ctype, clean_ui):
     got = preffunc()
     assert got["alpha"] is None
 
-    assert getfunc(recalc=False).contour_prefs["alpha"] is None
+    # The default for copy is True.
+    copied = getfunc(recalc=False)
+
+    kwargs = {"recalc": False, "copy": False}
+    assert getfunc(**kwargs).contour_prefs["alpha"] is None
 
     got["alpha"] = 0.5
 
-    assert getfunc(recalc=False).contour_prefs["alpha"] == pytest.approx(0.5)
-    assert getfunc(2, recalc=False).contour_prefs["alpha"] == pytest.approx(0.5)
-    assert getfunc("foo", recalc=False).contour_prefs["alpha"] == pytest.approx(0.5)
+    assert getfunc(**kwargs).contour_prefs["alpha"] == pytest.approx(0.5)
+    assert getfunc(2, **kwargs).contour_prefs["alpha"] == pytest.approx(0.5)
+    assert getfunc("foo", **kwargs).contour_prefs["alpha"] == pytest.approx(0.5)
+
+    # The copied preferences is still None
+    assert copied.contour_prefs["alpha"] is None
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
