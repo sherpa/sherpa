@@ -1032,24 +1032,97 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 } } } /* namespace xspec, namespace astro, namespace sherpa */
 
 
+// The XSpec models are defined with
+//      model name, function name as a symbol, number of parameters, names
+//
+// So the apec model would be
+//
+//    XSPECMODELFCT_C("apec", C_apec, 3, "kT Abundanc Redshift").
+//
+// The docstring of the model, which is the model name, includes the
+// name of the routine being called, the number of parameters it
+// accepts, and the parameter names (there could be other ways to pass
+// this information around but for now just use the docstring).
+//
+
+#define XDOC(header, npars, parnames) \
+  header "\n\n" \
+  "The parameter order is:\n" parnames "\n\n" \
+  "Parameters\n" \
+  "----------\n" \
+  "pars : array-like\n" \
+  "   The model parameters (size = " #npars ").\n" \
+  "xlo, xhi : array-like\n" \
+  "   The energy bins (keV) if in ascending order, wavelength (Angstrom)\n" \
+  "   if in descending order. xhi can be None, otherwise it must have\n" \
+  "   the same size as xlo (which is 1D) and xhi[i] > xlo[i] even when\n" \
+  "   the units are in Angstroms.\n" \
+  "spectrumNumber : int, optional\n" \
+  "   The XSPEC spectrum number (currently unused).\n" \
+  "\n" \
+  "Returns\n" \
+  "-------\n" \
+  "modelvals : np.ndarray\n" \
+  "   The model values. Matches the size of xlo but if xhi is None then\n" \
+  "   the last element is 0.0 (since the elo values then define the bin\n" \
+  "   edges in this case).\n" \
+  "\n"
+
+#define XCONVDOC(header, npars, parnames) \
+  header "\n\n" \
+  "The parameter order is:\n" parnames "\n\n" \
+  "Parameters\n" \
+  "----------\n" \
+  "pars : array-like\n" \
+  "   The model parameters (size = " #npars ").\n" \
+  "fluxes : array-like\n" \
+  "   The fluxes for the grid defined by xlo, xhi.\n" \
+  "xlo, xhi : array-like\n" \
+  "   The energy bins (keV) if in ascending order, wavelength (Angstrom)\n" \
+  "   if in descending order. xhi can be None, otherwise it must have\n" \
+  "   the same size as xlo (which is 1D) and xhi[i] > xlo[i] even when\n" \
+  "   the units are in Angstroms.\n" \
+  "spectrumNumber : int, optional\n" \
+  "   The XSPEC spectrum number (currently unused).\n" \
+  "\n" \
+  "Returns\n" \
+  "-------\n" \
+  "modelvals : np.ndarray\n" \
+  "   The model values. Matches the size of fluxes.\n" \
+  "\n"
+
 // Fortran models
 //
-#define XSPECMODELFCT(name, npars) \
-   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, name##_ >))
+#define XSPECMODELFCT(username, funcname, npars, parnames) \
+  KWSPECDOC(username, \
+    (sherpa::astro::xspec::xspecmodelfct< npars, funcname##_ >),        \
+    XDOC("The XSPEC " #username " model. Calls " #funcname " (FORTRAN) with " #npars " parameter(s).", npars, parnames) \
+  )
 
-#define XSPECMODELFCT_CON_F77(name, npars) \
-   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con_f77< npars, name##_ >))
+#define XSPECMODELFCT_CON_F77(username, funcname, npars, parnames) \
+  KWSPECDOC(username, \
+    (sherpa::astro::xspec::xspecmodelfct_con_f77< npars, funcname##_ >), \
+    XCONVDOC("The XSPEC " #username " convolution model. Calls " #funcname " (FORTRAN) with " #npars " parameter(s).", npars, parnames) \
+  )
 
 // C/C++ models
 //
-#define XSPECMODELFCT_DBL(name, npars) \
-   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_dbl< npars, name##_ >))
+#define XSPECMODELFCT_DBL(username, funcname, npars, parnames) \
+  KWSPECDOC(username, \
+    (sherpa::astro::xspec::xspecmodelfct_dbl< npars, funcname##_ >), \
+    XDOC("The XSPEC " #username " model. Calls " #funcname " (C, double) with " #npars " parameter(s).", npars, parnames) \
+  )
 
-#define XSPECMODELFCT_C(name, npars) \
-   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, name >))
+#define XSPECMODELFCT_C(username, funcname, npars, parnames) \
+  KWSPECDOC(username, \
+    (sherpa::astro::xspec::xspecmodelfct_C< npars, funcname >), \
+    XDOC("The XSPEC " #username " model. Calls " #funcname " (C) with " #npars " parameter(s).", npars, parnames) \
+  )
 
-#define XSPECMODELFCT_CON(name, npars) \
-   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con< npars, name >))
-
+#define XSPECMODELFCT_CON(username, funcname, npars, parnames) \
+  KWSPECDOC(username, \
+   (sherpa::astro::xspec::xspecmodelfct_con< npars, funcname >), \
+   XCONVDOC("The XSPEC " #username " convolution model. Calls " #funcname " (C) with " #npars " parameter(s).", npars, parnames) \
+  )
 
 #endif /* __sherpa_astro_xspec_extension_hh__ */

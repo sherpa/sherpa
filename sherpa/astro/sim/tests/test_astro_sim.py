@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2018, 2020, 2021, 2023
+#  Copyright (C) 2011, 2015, 2018, 2020-2021, 2023, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -183,12 +183,19 @@ def test_pragbayes_pcaarf_limits(sampler, setup, caplog):
     class HackAbs(XSwabs):
         """Restrict hard limits"""
 
+        # Model calculation is done by the parent class
+        _module = None
+
         def __init__(self, name='wabs'):
             self.nH = Parameter(name, 'nH', 0.1, 0, 1, 0, 1, '10^22 atoms / cm^2')
             XSMultiplicativeModel.__init__(self, name, (self.nH, ))
 
     class HackPowerLaw(XSpowerlaw):
         """Restrict hard limits"""
+
+        # Model calculation is done by the parent class
+        _module = None
+
         def __init__(self, name='powerlaw'):
             self.PhoIndex = Parameter(name, 'PhoIndex', 1., 0.95, 1.05, 0.95, 1.05)
             self.norm = Parameter(name, 'norm', 9.2, 8.8, 9.7, 8.8, 9.7)

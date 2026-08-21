@@ -5,27 +5,52 @@
 #
 # - HEADAS environment variable is set
 #
-# The XSPEC library and include files are assumed to be in $CONDA_PREFIX.
+# The XSPEC library and include files are assumed to be in $CONDA_PREFIX,
+# either provided by the CXC xspec-modelsonly package or from a HEASARC
+# channel.
 #
 
 import os
+from pathlib import Path
 
 
-def doit():
-    """Create the build arguments."""
+def doit() -> None:
+    """Display the build arguments."""
 
-    # If CONDA_PREFIX is not set up then return nothing (this could
-    # error out but it doesn't seem to be worth it).
-    #
-    # If HEADAS is not set then there is nothing to do (this is just
-    # used as an indicator that XSPEC support is required, but not to
-    # say what the prefix should be).
+    # Require both CONDA_PREFIX and HEADAS to be set up (technically
+    # this does not need CONDA_PREFIX but leave in the check).
     #
     try:
-        prefix = os.environ["CONDA_PREFIX"]
-        _ = os.environ["HEADAS"]
+        conda = os.environ["CONDA_PREFIX"]
+        headas = os.environ["HEADAS"]
     except KeyError:
         return
+
+    # Find the location of the model.dat file as that is needed to
+    # build the XSPEC module and sets up the needed prefix.
+    #
+    parents = [headas]
+    if conda != headas:
+        parents.append(conda)
+
+    for parent in parents:
+        p = Path(parent)
+        if (p / "spectral" / "manager" / "model.dat").exists():
+            prefix = p
+            break
+
+        if (p / "manager" / "model.dat").exists():
+            prefix = p.parent
+            break
+
+    else:
+        # Unable to find the file, so treat as an error
+        raise OSError(f"Unable to find model.dat in {parents}")
+
+    # Check lib and include, just in case
+    for segment in ["lib", "include"]:
+        if not (prefix / segment).is_dir():
+            raise OSError(f"Unable to find {prefix}/{segment}")
 
     print(f"-Csetup-args=-Dxspec-prefix={prefix}")
 

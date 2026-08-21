@@ -1,0 +1,99 @@
+#!/usr/bin/env python
+
+#
+#  Copyright (C) 2024-2026
+#  Smithsonian Astrophysical Observatory
+#
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+"""Usage:
+
+  ./make_xspec_model_include infile outfile
+
+Aim:
+
+Given an XSPEC model.dat file produce the output needed to be included
+in sherpa/astro/xspec/src/_xspec.cc to fill up the XSpecMethods
+array. The output is to the file outfile (is is expected to be
+"_xspec.hh" but this is not a requiement).
+
+"""
+
+import sys
+
+# Local import (this is also copied to sherpa.astro.utils.xspec so it
+# can be used by Sherpa, but this code has to be usable without a
+# Sherpa installation).
+#
+import xspec
+
+
+# Should really provide better typing
+ModelName = str
+ModelDefinition = str
+
+
+def get_definition(mname: ModelName, mdef: ModelDefinition) -> str:
+    return f"  {mdef:48s} // {mname}"
+
+
+def report_model_definitions(models: list[xspec.ModelDefinition],
+                             outfile: str
+                             ) -> None:
+    """Write the model definitons to outfile."""
+
+    with open(outfile, "wt") as fh:
+        fh.write("#ifndef _XSPEC_MODEL_DEFINES\n")
+
+        for model in models:
+
+            # For the moment models that are calculated per-spectrum are unsupported.
+            try:
+                if model.flags[1] == 1:
+                    continue
+            except IndexError:
+                pass
+
+            try:
+                mdef = xspec.model_to_compiled(model)[0].lstrip()
+            except ValueError:
+                # model is not supported by Sherpa
+                continue
+
+
+            mname = f"XS{model.name}"
+            fh.write(get_definition(mname, mdef) + "\n")
+
+        fh.write("#endif // _XSPEC_MODEL_DEFINES\n")
+
+
+if __name__ == "__main__":
+
+    if len(sys.argv) != 3:
+        sys.stderr.write(f"Usage: {sys.argv[0]} infile outfile\n")
+        sys.exit(1)
+
+    infile = sys.argv[1]
+    outfile = sys.argv[2]
+
+    # This errors out in case of significant model-support issues
+    # (e.g. a periodic model parameter) but can also just be an
+    # issue with a poorly-specified interchange format (the model.dat
+    # file) which may just need changes to this routine.
+    #
+    mdefs = xspec.parse_xspec_model_description(infile)
+    report_model_definitions(mdefs, outfile)

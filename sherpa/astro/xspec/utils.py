@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2022
+#  Copyright (C) 2017, 2018, 2019, 2022, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,72 +30,46 @@ except ImportError as ie:
     #
     raise ImportError("XSPEC support is not enabled") from ie
 
+from sherpa.astro.utils.xspec import get_version
+
 __all__ = ['ModelMeta', 'include_if', 'version_at_least']
-
-
-def get_version(version):
-    """Strip out any XSPEC patch level.
-
-    So '12.12.0c' gets converted to '12.12.0', and then to (12, 12,
-    0). This is helpful as then it makes version comparison easier, as
-    we can rely on the standard tuple ordering.
-
-    Parameters
-    ----------
-    version : str
-        The XSPEC version string, of the form "12.12.0c", so it can
-        include the XSPEC patch level.
-
-    Returns
-    -------
-    (major, minor, micro) : tuple of int
-        The XSPEC patchlevel is ignored.
-
-    """
-
-    # XSPEC versions do not match PEP 440, so strip out the trailing
-    # text (which indicates the XSPEC patch level).
-    #
-    match = re.search(r'^(\d+)\.(\d+)\.(\d+)', version)
-    if match is None:
-        raise ValueError(f"Invalid XSPEC version string: {version}")
-
-    return (int(match[1]), int(match[2]), int(match[3]))
 
 
 XSPEC_VERSION = get_version(_xspec.get_xsversion())
 
 
 class ModelMeta(type):
-    """
-    Metaclass for xspec models. The __function__ member in xspec model classes is seamlessly
-    transformed from a string representing the low level function in the sherpa xspec extension
-    into a proper call, taking into account error cases (e.g. the function cannot be found in the
-    xspec extension at runtime).
+    """Metaclass for XSPEC models.
+
+    If the class has no _calc method then automatically select it from the
+    sherpa.astro.xspec._xspec module, selecting the symbol matching the
+    _xspec_name attribute.
+
+    .. versionchanged:: 4.19.0
+       The library routines are now named after the model name, not the
+       function name, which has simplified the logic for this metaclass.
+
     """
     NOT_COMPILED_FUNCTION_MESSAGE = "Calling an xspec function that was not compiled"
 
     def __init__(cls, *args, **kwargs):
-        if hasattr(cls, '__function__'):
-            try:
-                cls._calc = getattr(_xspec, cls.__function__)
-            except AttributeError:
-                # Error handling: the model meets the condition expressed in the decorator
-                # but the low level function is not included in the xspec extension
-                cls._calc = ModelMeta._not_compiled
 
-        # The `__function__` member signals that `cls` is a model that needs the `_calc` method
-        # to be generated.
-        # If the class does not have the `__function__` member, the we assume the class provides
-        # a `_calc` method itself, or it does not need it to begin with. This is the case for
-        # some classes extending `XSModel` but that are base classes themselves,
-        # like `XSAdditiveModel`, or they have a more complex `_calc` implementation, like `XSTableModel`.
-        # In principle there is room for mistakes, i.e. a proper model class might be defined without
-        # the `__function__` member. Tests should make sure this is not the case. `test_xspec_models`
-        # is indeed such a test, because it calls all models making sure they are usable. A model without
-        # the `_calc_ method or the `__function__` member would fail the test.
-        # The alternative would be to include more logic to handle the error cases, but that would require
-        # more tests, making this choice impractical.
+        # If the _module is set to None then the class is assumed
+        # to have its own calc/_calc behaviour.
+        #
+        if cls._module is not None:
+            # Since this is the class we can not use cls.xspec_name as
+            # it is a property.
+            funcname = cls._xspec_name
+
+            try:
+                cls._calc = getattr(cls._module, funcname)
+            except (AttributeError, TypeError):
+                # The assumption is that this model class is newer
+                # than the XSPEC library, or it is a class that the
+                # user is not expected to use (e.g. XSModel).
+                #
+                cls._calc = ModelMeta._not_compiled
 
         super(ModelMeta, cls).__init__(*args, **kwargs)
 
