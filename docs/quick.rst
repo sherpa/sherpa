@@ -1050,10 +1050,9 @@ and then displaying it:
 .. note::
 
    The :py:mod:`sherpa.image` model provides support for *interactive*
-   image visualization, but this only works if the
-   `DS9 <https://ds9.si.edu/site/Home.html>`_ image viewer is installed.
-   For the examples in this document, matplotlib plots will be
-   created to view the data directly.
+   image visualization, but this only works if the :term:`DS9` image
+   viewer is installed.  For the examples in this document, matplotlib
+   plots will be created to view the data directly.
 
 Simultaneous fits
 =================

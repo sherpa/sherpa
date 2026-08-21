@@ -65,8 +65,8 @@ functions from :term:`XSPEC`.
 
 Interactive display and manipulation of two-dimensional images
 is available if the :term:`DS9` image viewer and the :term:`XPA`
-commands are installed. It is expected that any recent version of
-DS9 can be used.
+commands are installed. The minimum suggested version of DS9 is
+8.7.
 
 Releases and version numbers
 ============================
