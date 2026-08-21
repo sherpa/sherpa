@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015-2016, 2019, 2021, 2023-2025
+#  Copyright (C) 2015-2016, 2019, 2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -23,26 +23,57 @@
 This module is used by ``sherpa.astro.ui.utils`` and is not
 intended for public use. The API and semantics of the
 routines in this module are subject to change.
+
+The aim is that each load_xxx call from the
+sherpa.astro.ui.utils.Session object will fill a "FileStore"
+dictionary which will indicate what the call was (so it can be
+re-created). The FileStore dataclass is a simple way to store this
+information.
+
+There are three issues that complicate this:
+
+1) For non-PHA datasets we can just index on the "idval" argument,
+   but PHA files also add in responses and backrounds (which also
+   use the IdType as an index). This means that there are some
+   cases where we have multiple levels of access.
+
+2) PHA responses can be automatically loaded (using the ANCRFILE,
+   BACKFILE, and RESPFILE keywords)
+
+   These are indicated by storing a None rather than a FileStore
+   object.
+
+3) PHA2 files can load in multiple datasets with a single call
+   (and the id argument may not match the values associated
+   with the dataset). So we need a way to associate those datasets
+   read in from a single call, as well as knowing when they have
+   been deleted.
+
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from contextlib import suppress
+import copy
+from dataclasses import KW_ONLY, dataclass
 import inspect
 import logging
-import os
+from pathlib import Path
 import sys
 import textwrap
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Mapping, TextIO, TypedDict
+from typing import TYPE_CHECKING, Any, TextIO, TypedDict
 
 import numpy
 
 from sherpa.astro.data import DataIMG, DataPHA, DataARF, DataRMF
-from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
 
 from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
-from sherpa.models.basic import UserModel
+from sherpa.instrument import ConvolutionKernel, PSFModel
+from sherpa.models import Model
+from sherpa.models.basic import TableModel, TableModelBase, UserModel
+from sherpa.models.parameter import Parameter
+from sherpa.utils import get_keyword_defaults
 from sherpa.utils.types import IdType
 
 if TYPE_CHECKING:
@@ -90,8 +121,772 @@ else:
 ParameterType = Any
 
 
-def _output(out: OutType, msg: str, indent: int = 0) -> None:
-    """Output the line"""
+def _id_to_str(id: IdType) -> str:
+    """Convert a data set identifier to a string value.
+
+    Parameters
+    ----------
+    id : int or str
+       The data set identifier.
+
+    Returns
+    -------
+    out : str
+       A string representation of the identifier for use
+       in the Python serialization.
+    """
+
+    if isinstance(id, string_types):
+        return f'"{id}"'
+
+    return str(id)
+
+
+def showval(v: Any) -> str:
+    """How to display a "value" for a function call."""
+
+    # Special case certain values.
+    # Is this check too generic?
+    #
+    try:
+        return v.__name__
+    except AttributeError:
+        pass
+
+    if isinstance(v, str):
+        return f'"{v}"'
+
+    # Should there be some attempt to replace 'np.int64(0)' by '0'?
+    return str(v)
+
+
+def remove_default_args(func: Callable,
+                        kwargs: Mapping[str, Any]
+                        ) -> dict[str, Any]:
+    """Remove elements from kwargs that match the defaults for func."""
+
+    out = {}
+    defaults = get_keyword_defaults(func)
+    for k, v in kwargs.items():
+        try:
+            if v == defaults[k]:
+                continue
+        except KeyError:
+            # The function may have **kwargs in its signature, so we
+            # want to just pass those on.
+            pass
+
+        out[k] = v
+
+    return out
+
+
+@dataclass
+class FileStore:
+    """Record how a dataset was read in.
+
+    All arguments are given via the kwargs field, with the file name
+    stored in the filekey element. Most stores will also have an
+    argument storing the dataset identifier (the idkey element).
+
+    """
+
+    loadfunc: Callable
+    """The function to load the data."""
+
+    _: KW_ONLY
+
+    # For now we only need to store keyword arguments (no need to
+    # store an args array). The kwargs field is copied in the
+    # __post_init__ call to make sure that changes to that version are
+    # not reflected in this object.
+    #
+    kwargs: Mapping[str, Any]
+    """Named arguments used to read in the file."""
+
+    idkey: str | None = "id"
+    """The key in kwargs that stores the identifier (if present)."""
+
+    filekey: str = "filename"
+    """The key in kwargs that stores the file path."""
+
+    autoloaded: bool = False
+    """Was the file auto-loaded?"""
+
+    def __post_init__(self) -> None:
+        """Validation and clean up."""
+
+        # TODO: So, we do not make use of "missing id" argument here yet
+        assert self.idkey is not None, self.loadfunc.__name__
+
+        # Copy the keyword arguments.
+        self.kwargs = copy.copy(self.kwargs)
+
+        # Ensure the filename is:
+        # - present (identified by the filekey argument)
+        # - is stored as a Path
+        #
+        try:
+            fileval = self.kwargs[self.filekey]
+        except KeyError:
+            raise KeyError(f"kwargs does not contain a '{self.filekey}' element") from None
+
+        self.kwargs[self.filekey] = Path(fileval)
+
+        # Ensure that the identifier is set (if required).
+        #
+        if self.idkey is None:
+            return
+
+        try:
+            _ = self.kwargs[self.idkey]
+        except KeyError:
+            raise KeyError(f"kwargs does not contain a '{self.idkey}' element") from None
+
+    def show(self,
+             absolute: bool = True) -> str:
+        """How to load the data, ignoring the autoloaded setting.
+
+        Parameters
+        ----------
+        absolute
+           If True (the default) then use the full path otherwise
+           use a path relative to the current working directory.
+        """
+
+        out = f'{self.loadfunc.__name__}('
+
+        # For now drop the argument names for the identifier and the
+        # filename.
+        #
+        if self.idkey is not None:
+            idstr = _id_to_str(self.kwargs[self.idkey])
+            out += f'{idstr}, '
+
+        # Can we clean up the filename?
+        filename = self.kwargs[self.filekey]
+        if absolute:
+            filename = filename.resolve()
+        else:
+            cwd = filename.cwd()
+            try:
+                filename = filename.resolve().relative_to(cwd)
+            except ValueError:
+                # If the file is not related to the working directory
+                # fall back to the full path.
+                pass
+
+        out += f'"{filename}"'
+
+        # Drop the default arguments as we can not track what
+        # arguments were actually used when the file was loaded.
+        # There is an argument to be said to always include them in
+        # case the defaults change.
+        #
+        kwargs = remove_default_args(self.loadfunc, self.kwargs)
+        for k, v in kwargs.items():
+            if k in [self.idkey, self.filekey]:
+                continue
+
+            out += f", {k}={showval(v)}"
+
+        return f"{out})"
+
+
+# FileStores are indexed by IdType, but it can be an id, resp_id, or
+# bkg_id.
+#
+FileDict = dict[IdType, FileStore]
+
+"""
+add_pha_response(astore | None, rstore | None,
+                 idval, resp_id, bkg_id=None)
+
+astore | None, rstore | None = get_pha_response(idval, resp_id, bkg_id=None)
+
+how about add_psf? In that case we may need an enumeration and can
+go back to add_extra? With add_extra can fit in bkg, but then need
+to carry around bkg_id for routines that don't need it. Cam use
+**kwargs and then the enumeration can "record" this.
+
+
+add_extra(store: T, idval, **kwargs) -> None
+get_extra(idval, **kwargs) -> T
+   T since may want tuple[FileStore | None, FileStore | None] ....
+
+"""
+
+class Storage:
+    """Store the mapping from dataset identifier to FileStore."""
+
+    # Alternative designs include:
+    #
+    # - have a seprate Storage instance just for backgrounds
+    #   (i.e. drop the "bkg" fields).
+    # - instead of separating out the different types (data, background,
+    #   responses), store information based on the dataset identifier.
+    #
+    def __init__(self) -> None:
+        self.data: FileDict = {}
+        """For load_data and related."""
+
+        self.arf: dict[IdType, FileDict] = {}
+        """For load_arf. Indexed by (id, resp_id)."""
+
+        self.rmf: dict[IdType, FileDict] = {}
+        """For load_rmf. Indexed by (id, resp_id)."""
+
+        self.bkg: dict[IdType, FileDict] = {}
+        """For the load_bkg call, indexed by (id, bkg_id)."""
+
+        self.bkg_arf: dict[IdType, dict[IdType, FileDict]] = {}
+        """For load_bkg_arf. Indexed by (id, bkg_id, resp_id)."""
+
+        self.bkg_rmf: dict[IdType, dict[IdType, FileDict]] = {}
+        """For load_bkg_arf. Indexed by (id, bkg_id, resp_id)."""
+
+    def clean(self, idval: IdType) -> None:
+        """Remove any information about the given identifier."""
+
+        for field in [self.data, self.arf, self.rmf, self.bkg,
+                      self.bkg_arf, self.bkg_rmf]:
+            with suppress(KeyError):
+                del field[idval]
+
+    def clean_bkg(self, idval: IdType) -> None:
+        """Remove any background information about the given identifier."""
+
+        for field in [self.bkg, self.bkg_arf, self.bkg_rmf]:
+            with suppress(KeyError):
+                del field[idval]
+
+    def reset_arf(self,
+                  idval: IdType,
+                  resp_id: IdType) -> None:
+        """Reset the ARF information for this resonse.
+
+        This removes any resp_id field but makes sure that the idval
+        field is set (even if empty). Is this worth keeping?
+
+        """
+
+        if idval in self.arf:
+            with suppress(KeyError):
+                del self.arf[idval][resp_id]
+        else:
+            self.arf[idval] = {}
+
+    def reset_rmf(self,
+                  idval: IdType,
+                  resp_id: IdType) -> None:
+        """Reset the RMF information for this resonse.
+
+        This removes any resp_id field but makes sure that the idval
+        field is set (even if empty). Is this worth keeping?
+
+        """
+
+        if idval in self.rmf:
+            with suppress(KeyError):
+                del self.rmf[idval][resp_id]
+        else:
+            self.rmf[idval] = {}
+
+    def reset_bkg_arf(self,
+                      idval: IdType,
+                      bkg_id: IdType,
+                      resp_id: IdType) -> None:
+        """Reset the background ARF information for this resonse.
+
+        This removes any resp_id field but makes sure that the bkg_id
+        field is set (even if empty). Is this worth keeping?
+
+        """
+
+        if idval in self.bkg_arf:
+            if bkg_id in self.bkg_arf[idval]:
+                with suppress(KeyError):
+                    del self.bkg_arf[idval][bkg_id][resp_id]
+            else:
+                self.bkg_arf[idval][bkg_id] = {}
+
+        else:
+            self.bkg_arf[idval] = {bkg_id: {}}
+
+    def reset_bkg_rmf(self,
+                      idval: IdType,
+                      bkg_id: IdType,
+                      resp_id: IdType) -> None:
+        """Reset the background RMF information for this resonse.
+
+        This removes any resp_id field but makes sure that the bkg_id
+        field is set (even if empty). Is this worth keeping?
+
+        """
+
+        if idval in self.bkg_rmf:
+            if bkg_id in self.bkg_rmf[idval]:
+                with suppress(KeyError):
+                    del self.bkg_rmf[idval][bkg_id][resp_id]
+            else:
+                self.bkg_rmf[idval][bkg_id] = {}
+
+        else:
+            self.bkg_rmf[idval] = {bkg_id: {}}
+
+    def reset_bkg(self,
+                  idval: IdType,
+                  bkg_id: IdType) -> None:
+        """Reset the background information for this resonse.
+
+        This removes any resp_id data but makes sure that the bkg_id
+        field is set (even if empty). Is this worth keeping?
+
+        """
+
+        for field in [self.bkg, self.bkg_arf, self.bkg_rmf]:
+            if idval in field:
+                with suppress(KeyError):
+                    del field[idval][bkg_id]
+            else:
+                field[idval] = {}
+
+    def copy(self, fromid: IdType, toid: IdType) -> None:
+        """Copy the store info about the given identifier."""
+
+        def copy_store(old: FileStore) -> FileStore:
+            # Update the id value. We assume that the idkey field
+            # is not None but do not enforce it.
+            store = copy.copy(old)
+            store.kwargs[store.idkey] = toid
+            return store
+
+        # Note that the base dataset may not have any storage data,
+        # but the ancillary products (such as ARF or background)
+        # could, so this can not exit early.
+        #
+        old = self.data.get(fromid)
+        if old is not None:
+            self.add(toid, copy_store(old))
+
+        # Copy over any filestores for PHA responses.
+        # This is a bit messy.
+        #
+        pair = self.arf.get(fromid, {})
+        for resp_id, old in pair.items():
+            self.add_arf(toid, resp_id, copy_store(old))
+
+        pair = self.rmf.get(fromid, {})
+        for resp_id, old in pair.items():
+            self.add_rmf(toid, resp_id, copy_store(old))
+
+        pair = self.bkg.get(fromid, {})
+        for bkg_id, old in pair.items():
+            self.add_bkg(toid, bkg_id, copy_store(old))
+
+        triple = self.bkg_arf.get(fromid, {})
+        for bkg_id, pair in triple.items():
+            for resp_id, old in pair.items():
+                self.add_bkg_arf(toid, bkg_id, resp_id, copy_store(old))
+
+        triple = self.bkg_rmf.get(fromid, {})
+        for bkg_id, pair in triple.items():
+            for resp_id, old in pair.items():
+                self.add_bkg_rmf(toid, bkg_id, resp_id, copy_store(old))
+
+    def add(self,
+            idval: IdType,
+            store: FileStore) -> None:
+        """Add the store to the data field.
+
+        This cleans out any existing data that may have been
+        related to this identifier.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        store
+           The information to store.
+
+        """
+
+        self.data[idval] = store
+
+        # An alternative would be to always set the field to the empty
+        # dictionary.
+        #
+        for elem in [self.arf, self.rmf, self.bkg,
+                     self.bkg_arf, self.bkg_rmf]:
+            with suppress(KeyError):
+                del elem[idval]
+
+    def _add_pair(self,
+                  output: dict[IdType, FileDict],
+                  key1: IdType,
+                  key2: IdType,
+                  store: FileStore) -> None:
+        """Add the data for (key1, key2) setting.
+
+        Parameters
+        ----------
+        output
+           The dictionary to change.
+        key1
+           The dataset identifier.
+        key2
+           The second identifier.
+        store
+           The information to store.
+
+        """
+
+        try:
+            output1 = output[key1]
+        except KeyError:
+            output1 = {}
+            output[key1] = output1
+
+        output1[key2] = store
+
+    def _add_triple(self,
+                    output: dict[IdType, dict[IdType, FileDict]],
+                    key1: IdType,
+                    key2: IdType,
+                    key3: IdType,
+                    store: FileStore) -> None:
+        """Add the data for (key1, key2, key3) setting.
+
+        Parameters
+        ----------
+        output
+           The dictionary to change.
+        key1
+           The dataset identifier.
+        key2
+           The bkg_id identifier.
+        key3
+           The resp_id identifier.
+        store
+           The information to store.
+
+        """
+
+        try:
+            output1 = output[key1]
+        except KeyError:
+            output1 = {}
+            output[key1] = output1
+
+        try:
+            output2 = output1[key2]
+        except KeyError:
+            output2 = {}
+            output1[key2] = output2
+
+        output2[key3] = store
+
+    def add_arf(self,
+                idval: IdType,
+                resp_id: IdType,
+                store: FileStore) -> None:
+        """Add the ARF call.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        resp_id
+           The response identifier.
+        store
+           The information to store.
+
+        """
+        self._add_pair(self.arf, idval, resp_id, store)
+
+    def add_rmf(self,
+                idval: IdType,
+                resp_id: IdType,
+                store: FileStore) -> None:
+        """Add the RMF call.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        resp_id
+           The response identifier.
+        store
+           The information to store.
+
+        """
+        self._add_pair(self.rmf, idval, resp_id, store)
+
+    def add_bkg(self,
+                idval: IdType,
+                bkg_id: IdType,
+                store: FileStore) -> None:
+        """Add the background call.
+
+        This will remove any associated background response
+        elements.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        bkg_id
+           The background identifier.
+        store
+           The information to store.
+
+        """
+        self._add_pair(self.bkg, idval, bkg_id, store)
+
+        # An alternative would be to always set the field to the empty
+        # dictionary.
+        #
+        for elem in [self.bkg_arf, self.bkg_rmf]:
+            with suppress(KeyError):
+                del elem[idval][bkg_id]
+
+    def add_bkg_arf(self,
+                    idval: IdType,
+                    bkg_id: IdType,
+                    resp_id: IdType,
+                    store: FileStore) -> None:
+        """Add the background ARF call.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        bkg_id
+           The background identifier.
+        resp_id
+           The response identifier.
+        store
+           The information to store.
+
+        """
+        self._add_triple(self.bkg_arf, idval, bkg_id, resp_id, store)
+
+    def add_bkg_rmf(self,
+                    idval: IdType,
+                    bkg_id: IdType,
+                    resp_id: IdType,
+                    store: FileStore) -> None:
+        """Add the background RMF call.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        bkg_id
+           The background identifier.
+        resp_id
+           The response identifier.
+        store
+           The information to store.
+
+        """
+        self._add_triple(self.bkg_rmf, idval, bkg_id, resp_id, store)
+
+    def get(self,
+            idval: IdType) -> FileStore | None:
+        """Return the information for the identifier.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+
+        Returns
+        -------
+        store
+           This will be None if there is no information for the
+           identifier.
+
+        """
+
+        return self.data.get(idval)
+
+    def _get_pair(self,
+                  stores: dict[IdType, FileDict],
+                  key1: IdType,
+                  key2: IdType) -> FileStore | None:
+        """Return the data for the (key1, key2) setting.
+
+        Parameters
+        ----------
+        outputs
+           The dictionary to read from.
+        key1
+           The dataset identifier.
+        key2
+           The second identifier.
+        store
+           The information to store.
+
+        """
+
+        stores1 = stores.get(key1)
+        if stores1 is None:
+            return None
+
+        return stores1.get(key2)
+
+    def _get_triple(self,
+                    stores: dict[IdType, dict[IdType, FileDict]],
+                    key1: IdType,
+                    key2: IdType,
+                    key3: IdType) -> FileStore | None:
+        """Return the data for the (key1, key2, key3) setting.
+
+        Parameters
+        ----------
+        outputs
+           The dictionary to read from.
+        key1
+           The dataset identifier.
+        key2
+           The second identifier.
+        store
+           The information to store.
+
+        """
+
+        stores1 = stores.get(key1)
+        if stores1 is None:
+            return None
+
+        stores2 = stores1.get(key2)
+        if stores2 is None:
+            return None
+
+        return stores2.get(key3)
+
+    def get_arf(self,
+                idval: IdType,
+                resp_id: IdType) -> FileStore | None:
+        """Return the ARF for the given identifiers.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        resp_id
+           The response identifier.
+
+        Returns
+        -------
+        store
+           This will be None if there is no information for the
+           identifier.
+
+        """
+
+        return self._get_pair(self.arf, idval, resp_id)
+
+    def get_rmf(self,
+                idval: IdType,
+                resp_id: IdType) -> FileStore | None:
+        """Return the RMF for the given identifiers.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        resp_id
+           The response identifier.
+
+        Returns
+        -------
+        store
+           This will be None if there is no information for the
+           identifier.
+
+        """
+
+        return self._get_pair(self.rmf, idval, resp_id)
+
+    def get_bkg(self,
+                idval: IdType,
+                bkg_id: IdType) -> FileStore | None:
+        """Return the background for the given identifiers.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        bkg_id
+           The background identifier.
+
+        Returns
+        -------
+        store
+           This will be None if there is no information for the
+           identifier.
+
+        """
+
+        return self._get_pair(self.bkg, idval, bkg_id)
+
+    def get_bkg_arf(self,
+                    idval: IdType,
+                    bkg_id: IdType,
+                    resp_id: IdType) -> FileStore | None:
+        """Return the background ARF for the given identifiers.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        bkg_id
+           The background identifier.
+        resp_id
+           The response identifier.
+
+        Returns
+        -------
+        store
+           This will be None if there is no information for the
+           identifier.
+
+        """
+        return self._get_triple(self.bkg_arf, idval, bkg_id, resp_id)
+
+    def get_bkg_rmf(self,
+                    idval: IdType,
+                    bkg_id: IdType,
+                    resp_id: IdType) -> FileStore | None:
+        """Return the background RMF for the given identifiers.
+
+        Parameters
+        ----------
+        idval
+           The dataset identifier.
+        bkg_id
+           The background identifier.
+        resp_id
+           The response identifier.
+
+        Returns
+        -------
+        store
+           This will be None if there is no information for the
+           identifier.
+
+        """
+        return self._get_triple(self.bkg_rmf, idval, bkg_id, resp_id)
+
+
+def _output(out: OutType,
+            msg: str,
+            indent: int = 0
+            ) -> None:
+    """Output the line (if it exists)."""
+
     space = ' ' * (indent * 4)
     out["main"].append(textwrap.indent(msg, space))
 
@@ -148,27 +943,6 @@ def _remove_banner(out: OutType, orig_pos: int) -> None:
     out["main"].pop()
 
 
-def _id_to_str(id: IdType) -> str:
-    """Convert a data set identifier to a string value.
-
-    Parameters
-    ----------
-    id : int or str
-       The data set identifier.
-
-    Returns
-    -------
-    out : str
-       A string representation of the identifier for use
-       in the Python serialization.
-    """
-
-    if isinstance(id, string_types):
-        return f'"{id}"'
-
-    return str(id)
-
-
 def _save_entries(out: OutType,
                   store: Mapping[str, Any],
                   tostatement: Callable[[str, Any], str]) -> None:
@@ -186,7 +960,7 @@ def _save_entries(out: OutType,
     store
        A container with keys. The elements of the container are
        passed to tostatement to create the string that is then
-       written to fh.
+       saved in out.
     tostatement : func
        A function which accepts two arguments, the key and value
        from store, and returns a string. The reason for the name
@@ -199,114 +973,6 @@ def _save_entries(out: OutType,
     for key in keys:
         cmd = tostatement(key, store[key])
         _output(out, cmd)
-
-
-def _save_response(out: OutType,
-                   label: str,
-                   respfile: str,
-                   id: IdType,
-                   rid: IdType,
-                   bid: MaybeIdType = None) -> None:
-    """Save the ARF or RMF
-
-    Parameters
-    ----------
-    out : dict
-       The output state
-    label : str
-       Either ``arf`` or ``rmf``.
-    respfile : str
-       The name of the ARF or RMF.
-    id : id or str
-       The Sherpa data set identifier.
-    rid
-       The Sherpa response identifier for the data set.
-    bid
-       If not ``None`` then this indicates that this is the ARF for
-       a background dataset, and which such data set to use.
-    """
-
-    id = _id_to_str(id)
-    rid = _id_to_str(rid)
-
-    cmd = f'load_{label}({id}, "{respfile}", resp_id={rid}'
-    if bid is not None:
-        cmd += f", bkg_id={_id_to_str(bid)}"
-
-    cmd += ")"
-    _output(out, cmd)
-
-
-def _save_arf_response(out: OutType,
-                       state: SessionType,  # currently unused
-                       pha: DataPHA,
-                       id: IdType,
-                       rid: IdType,
-                       bid: MaybeIdType = None) -> None:
-    """Save the ARF.
-
-    Parameters
-    ----------
-    out : dict
-       The output state
-    state
-    pha : DataPHA
-       The PHA object
-    id : id or str
-       The Sherpa data set identifier.
-    rid
-       The Sherpa response identifier for the data set.
-    bid
-       If not ``None`` then this indicates that this is the ARF for
-       a background dataset, and which such data set to use.
-    """
-
-    arf, _ = pha.get_response(rid)
-    if arf is None:
-        return
-
-    if TYPE_CHECKING:
-        # We currently do not do much with arf, but add the type
-        # anyway.
-        assert isinstance(arf, DataARF)
-
-    _save_response(out, 'arf', arf.name, id, rid, bid=bid)
-
-
-def _save_rmf_response(out: OutType,
-                       state: SessionType,  # currently unused
-                       pha: DataPHA,
-                       id: IdType,
-                       rid: IdType,
-                       bid: MaybeIdType = None) -> None:
-    """Save the RMF.
-
-    Parameters
-    ----------
-    out : dict
-       The output state
-    state : Session
-    pha : DataPHA
-       The PHA object
-    id : id or str
-       The Sherpa data set identifier.
-    rid
-       The Sherpa response identifier for the data set.
-    bid
-       If not ``None`` then this indicates that this is the RMF for
-       a background dataset, and which such data set to use.
-    """
-
-    _, rmf = pha.get_response(rid)
-    if rmf is None:
-        return
-
-    if TYPE_CHECKING:
-        # We currently do not do much with rmf, but add the type
-        # anyway.
-        assert isinstance(rmf, DataRMF)
-
-    _save_response(out, 'rmf', rmf.name, id, rid, bid=bid)
 
 
 def _save_pha_array(out: OutType,
@@ -374,9 +1040,6 @@ def _save_pha_grouping(out: OutType,
     bid
        If not ``None`` then this indicates that the background dataset
        is to be used.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     _save_pha_array(out, state, pha, "grouping", id, bid=bid)
@@ -515,16 +1178,68 @@ def _handle_filter(out: OutType,
     _remove_banner(out, orig_pos)
 
 
+def _load_from_store(out: OutType,
+                     store: FileStore,
+                     *,
+                     auto_load: bool,
+                     relative_path: bool
+                     ) -> None:
+    """Display the load call if wanted."""
+
+    if auto_load and store.autoloaded:
+        return
+
+    _output(out, store.show(absolute=not relative_path))
+
+
+def _load_bkg_manual(out: OutType,
+                     idval: IdType,
+                     bid: IdType,
+                     bpha: DataPHA) -> None:
+    """Manually create the background."""
+
+    idstr = _id_to_str(idval)
+    bkgidstr = _id_to_str(bid)
+    _save_dataset_bkg_manual(out, idstr, bkgidstr, bpha)
+
+
+def _load_arf_manual(out: OutType,
+                     arf: DataARF,
+                     idval: IdType,
+                     rid: IdType,
+                     bid: IdType | None = None
+                     ) -> None:
+    """Manually create the ARF."""
+
+    idstr = _id_to_str(idval)
+    ridstr = _id_to_str(rid)
+    bkgidstr = None if bid is None else _id_to_str(bid)
+    _save_dataset_arf_manual(out, idstr, arf, ridstr, bkgidstr=bkgidstr)
+
+
+def _load_rmf_manual(out: OutType,
+                     rmf: DataRMF,
+                     idval: IdType,
+                     rid: IdType,
+                     bid: IdType | None = None
+                     ) -> None:
+    """Manually create the RMF."""
+
+    idstr = _id_to_str(idval)
+    ridstr = _id_to_str(rid)
+    bkgidstr = None if bid is None else _id_to_str(bid)
+    _save_dataset_rmf_manual(out, idstr, rmf, ridstr, bkgidstr=bkgidstr)
+
+
 def _save_dataset_settings_pha(out: OutType,
                                state: SessionType,
-                               pha: DataType,
+                               pha: DataPHA,
                                idval: IdType,
-                               auto_load: bool
+                               *,
+                               auto_load: bool,
+                               relative_path: bool
                                ) -> None:
     """What settings need to be set for DataPHA"""
-
-    if not isinstance(pha, DataPHA):
-        return
 
     cmd_id = _id_to_str(idval)
 
@@ -538,69 +1253,40 @@ def _save_dataset_settings_pha(out: OutType,
     if pha.grouped:
         _output(out, f"group({cmd_id})")
 
-    # Check if this data set has associated data that is automatically
-    # loaded by Sherpa, so does not need to be included in the
-    # serialization.
-    #
-    try:
-        store = state._load_data_store[idval]
-    except KeyError:
-        store = None
-
-    if store is None:
-        store_arfs = {}
-        store_rmfs = {}
-    else:
-        store_arfs = store["arf_ids"]
-        store_rmfs = store["rmf_ids"]
-
-    if not auto_load:
-        store_arfs = {}
-        store_rmfs = {}
-
-    # Add responses and ARFs, if any.
+    # Do we need to load any responses (ARF, RMF, background)?  Note
+    # that this does not cover all cases; for instance if a PHA file
+    # was read in from a HDUList/crate then the responses may not have
+    # been marked as autoloaded (if there are any) and so will not be
+    # included below (with the default auto_load setting).
     #
     rids = pha.response_ids
     if len(rids) > 0:
         _output_banner(out, "Data Spectral Responses")
 
         for rid in rids:
-
             arf, rmf = pha.get_response(rid)
-
-            # Display the load command if:
-            #
-            # - the response exists
-            # - its name does not match the version that was
-            #   automatically loaded with the source dataset
-            #
-            want = False
             if arf is not None:
-                try:
-                    want = arf.name != store_arfs[rid]
-                except KeyError:
-                    want = True
+                astore = state._storage.get_arf(idval, rid)
+                if astore is not None:
+                    _load_from_store(out, astore, auto_load=auto_load,
+                                     relative_path=relative_path)
+                else:
+                    _load_arf_manual(out, arf, idval, rid)
 
-            if want:
-                _save_arf_response(out, state, pha, idval, rid)
-
-            want = False
             if rmf is not None:
-                try:
-                    want = rmf.name != store_rmfs[rid]
-                except KeyError:
-                    want = True
-
-            if want:
-                _save_rmf_response(out, state, pha, idval, rid)
+                rstore = state._storage.get_rmf(idval, rid)
+                if rstore is not None:
+                    _load_from_store(out, rstore, auto_load=auto_load,
+                                     relative_path=relative_path)
+                else:
+                    _load_rmf_manual(out, rmf, idval, rid)
 
     bids = pha.background_ids
     if len(bids) > 0:
 
-        # Only try to load the background if we have information in
-        # _load_bkg_store. Although there is support for PHA2
-        # background files, do not make use of this knowledge here as
-        # we do not have any such files to test on.
+        # Although there is support for PHA2 background files, do not
+        # make use of this knowledge here as we do not have any such
+        # files to test on.
         #
         _output_banner(out, "Load Background Data Sets")
         for bid in bids:
@@ -610,40 +1296,12 @@ def _save_dataset_settings_pha(out: OutType,
             if TYPE_CHECKING:
                 assert isinstance(bpha, DataPHA)
 
-            try:
-                bstore = state._load_bkg_store[idval][bid]
-            except KeyError:
-                bstore = None
-
-            # How are we checking for response files? It depends on
-            # whether the background was loaded with load_bkg,
-            # load_pha/data, or some other way?
-            #
+            bstore = state._storage.get_bkg(idval, bid)
             if bstore is not None:
-                store_arfs = bstore.get("arf_ids", {})
-                store_rmfs = bstore.get("rmf_ids", {})
-            elif store is not None and "bkg_arf_ids" in store:
-                store_arfs = store["bkg_arf_ids"][bid]
-                store_rmfs = store["bkg_rmf_ids"][bid]
+                _load_from_store(out, bstore, auto_load=auto_load,
+                                 relative_path=relative_path)
             else:
-                store_arfs = {}
-                store_rmfs = {}
-
-            if not auto_load:
-                store_arfs = {}
-                store_rmfs = {}
-
-            # Was this explicitly loaded?
-            #
-            bname = bpha.name
-            want = not auto_load or (bstore is not None and
-                                     bstore["filename"] == bname)
-            if want:
-                cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id}'
-                if bstore is not None and "use_errors" in bstore:
-                    cmd += f", use_errors={bstore['use_errors']}"
-                cmd += ')'
-                _output(out, cmd)
+                _load_bkg_manual(out, idval, bid, bpha)
 
             # Only store group flags and quality flags if they were
             # changed from flags in the file
@@ -663,41 +1321,25 @@ def _save_dataset_settings_pha(out: OutType,
                 # the response?
                 #
                 _output_banner(out, "Background Spectral Responses")
+
                 for rid in rids:
                     bkg_arf, bkg_rmf = bpha.get_response(rid)
 
-                    # Display the load command if:
-                    #
-                    # - the response exists
-                    # - its name does not match the version that was
-                    #   automatically loaded with the dataset
-                    #
-                    # The latter is hard to check because the
-                    # background could have been loaded implicitly (so
-                    # use store as the check) or explicitly (use
-                    # bstore).
-                    #
-                    want = False
                     if bkg_arf is not None:
-                        try:
-                            want = bkg_arf.name != store_arfs[rid]
-                        except KeyError:
-                            want = True
+                        astore = state._storage.get_bkg_arf(idval, bid, rid)
+                        if astore is not None:
+                            _load_from_store(out, astore, auto_load=auto_load,
+                                             relative_path=relative_path)
+                        else:
+                            _load_arf_manual(out, bkg_arf, idval, rid, bid=bid)
 
-                    if want:
-                        _save_arf_response(out, state, bpha, idval,
-                                           rid, bid=bid)
-
-                    want = False
                     if bkg_rmf is not None:
-                        try:
-                            want = bkg_rmf.name != store_rmfs[rid]
-                        except KeyError:
-                            want = True
-
-                    if want:
-                        _save_rmf_response(out, state, bpha, idval,
-                                           rid, bid=bid)
+                        rstore = state._storage.get_bkg_rmf(idval, bid, rid)
+                        if rstore is not None:
+                            _load_from_store(out, rstore, auto_load=auto_load,
+                                             relative_path=relative_path)
+                        else:
+                            _load_rmf_manual(out, bkg_rmf, idval, rid, bid=bid)
 
     # Set energy units if applicable
     #
@@ -713,12 +1355,9 @@ def _save_dataset_settings_pha(out: OutType,
 
 def _save_dataset_settings_2d(out: OutType,
                               state: SessionType,  # currently unused
-                              data: DataType,
+                              data: DataIMG,
                               id: IdType) -> None:
     """What settings need to be set for Data2D/IMG?"""
-
-    if not isinstance(data, DataIMG):
-        return
 
     _output_banner(out, "Set Image Coordinates")
     _output(out, f"set_coord({_id_to_str(id)}, '{data.coord}')")
@@ -726,7 +1365,9 @@ def _save_dataset_settings_2d(out: OutType,
 
 def _save_data(out: OutType,
                state: SessionType,
-               auto_load: bool
+               *,
+               auto_load: bool,
+               relative_path: bool
                ) -> None:
     """Save the data.
 
@@ -741,6 +1382,9 @@ def _save_data(out: OutType,
     auto_load : bool
        If ``False`` then the output will contain `load_arf`,
        `load_rmf`, and `load_bkg` calls for ancillary PHA files.
+    relative_path : bool
+       Should paths be recorded as relative to the current working
+       directory?
 
     Notes
     -----
@@ -753,40 +1397,42 @@ def _save_data(out: OutType,
     if len(ids) == 0:
         return
 
-    # Try to only output a banner if the section contains a
-    # command/setting.
-    #
     _output_banner(out, "Load Data Sets")
 
-    # Special case PHA2 files, as
-    # - they create multiple ids in one go
-    # - some of those ids may get deleted or over-written
-    # So process them first.
+    # There are two sets of data ids:
+    #   a) state.list_data_ids()
+    #   b) the keys of state._storage.data
     #
-    seen = set()
-    for idval, store in state._load_data_store.items():
-        if "idvals" not in store:
+    # Entries in b can be converted to a simple 'load_xxx' call [*]
+    # whereas those only in set a require manual recreation.
+    #
+    # [*] This **assumes** that the data values have not been modified
+    #     after being read in.
+    #
+    # PHA2 datasets also complicate this, as a single load call will
+    # create multiple datasets (with a potentially different id
+    # value), and then some of these may get deleted.  We process
+    # these first, using state._multi_data_store.
+    #
+    for store, mids in state._multi_data_store.values():
+
+        # Write out a banner line indicating all the ids
+        # (we only do this once, which also means we only get the
+        # load_pha/data call once).
+        #
+        msg = f"# Load PHA2 into: {mids}"
+        if msg in out["main"]:
             continue
 
-        # Only bother processing the first version of this PHA2
-        # dataset, although note that the idval may no-longer be
-        # present (e.g.  delete_data) or over-written with a different
-        # dataset. Fortunately we can use the idvals array to find out
-        # what datasets were originally created.
+        _output(out, msg)
+        _save_dataset_store(out, store, relative_path=relative_path)
+
+        # Do we need to delete any of the PHA2 datasets?
         #
-        if idval in seen:
-            continue
-
-        _save_dataset_pha2(out, store)
-        seen = seen.union(store["idvals"])
-
-        # Add any delete_data calls for this dataset.
-        #
-        for delid in store["idvals"]:
-            if delid in state._load_data_store:
-                continue
-
-            _output(out, f"delete_data({_id_to_str(delid)})")
+        for idval in mids:
+            if idval not in ids:
+                idstr = _id_to_str(idval)
+                _output(out, f"delete_data({idstr})")
 
     for idval in ids:
         data = state.get_data(idval)
@@ -794,15 +1440,20 @@ def _save_data(out: OutType,
             # Assert an actual type rather than the base type of Data
             assert isinstance(data, (Data1D, Data2D))
 
-        _save_dataset(out, state, data, idval)
-        _save_dataset_settings_pha(out, state, data, idval,
-                                   auto_load=auto_load)
-        _save_dataset_settings_2d(out, state, data, idval)
+        _save_dataset(out, state, data, idval, relative_path=relative_path)
+
+        if isinstance(data, DataPHA):
+            _save_dataset_settings_pha(out, state, data, idval,
+                                       auto_load=auto_load,
+                                       relative_path=relative_path)
+
+        elif isinstance(data, DataIMG):
+            _save_dataset_settings_2d(out, state, data, idval)
 
         _handle_filter(out, state, data, idval)
 
 
-def _print_par(par: ParameterType) -> tuple[str, str]:
+def _print_par(par: ParameterType) -> tuple[str, str | None]:
     """Convert a Sherpa parameter to a string.
 
     Note that we have to be careful with XSParameter parameters,
@@ -815,14 +1466,15 @@ def _print_par(par: ParameterType) -> tuple[str, str]:
 
     Returns
     -------
-    out_pars, out_link : (str, str)
+    out_pars, out_link : (str, str | None)
        A multi-line string serializing the contents of the
        parameter and then any link setting.
     """
 
-    linkstr = ""
     if par.link is not None:
-        linkstr = f"\nlink({par.fullname}, {par.link.fullname})\n"
+        linkstr = f"link({par.fullname}, {par.link.fullname})"
+    else:
+        linkstr = None
 
     unitstr = ""
     if isinstance(par.units, string_types):
@@ -832,17 +1484,13 @@ def _print_par(par: ParameterType) -> tuple[str, str]:
     # hard min/max ranges?
     #
     parstrs = []
-    try:
+    with suppress(AttributeError):
         if par.hard_min_changed():
             parstrs.append(f'{par.fullname}.hard_min    = {par.hard_min}')
-    except AttributeError:
-        pass
 
-    try:
+    with suppress(AttributeError):
         if par.hard_max_changed():
             parstrs.append(f'{par.fullname}.hard_max    = {par.hard_max}')
-    except AttributeError:
-        pass
 
     parstrs.extend([f'{par.fullname}.default_val = {par.default_val}',
                     f'{par.fullname}.default_min = {par.default_min}',
@@ -894,7 +1542,10 @@ def _save_fit_method(out: OutType, state: SessionType) -> None:
         # return 'set_method_opt("{}", {})'.format(key, val)
         return 'set_method_opt("%s", %s)' % (key, val)
 
-    _save_entries(out, state.get_method_opt(), tostatement)
+    _save_entries(out,
+                  # state.get_method_opt(),  # all values
+                  state._current_method_changed,  # changed values only
+                  tostatement)
     _output_nl(out)
 
 
@@ -924,8 +1575,42 @@ def _save_iter_method(out: OutType, state: SessionType) -> None:
         # so it makes no difference.
         return f'set_iter_method_opt("{key}", {val})'
 
-    _save_entries(out, state.get_iter_method_opt(), tostatement)
+    _save_entries(out,
+                  # state.get_iter_method_opt(),  # all values
+                  state._current_itermethod_changed,  # changed values only
+                  tostatement)
     _output_nl(out)
+
+
+def _save_estmethod_opts(out: OutType,
+                         state: SessionType
+                         ) -> None:
+    """Add any changed settingd for the estmethods."""
+
+    names = {"projection": "proj",
+             "confidence": "conf",
+             "covariance": "covar"}
+
+    # For now the state is queried for the changed values
+    # rather than to try and identify them directly.
+    #
+    for key, opts in state._estmethods_changed.items():
+        if not opts:
+            continue
+
+        _output_banner(out, f"Set {key} option")
+
+        try:
+            optkey = names[key]
+        except Exception:
+            # Just in case an option/name has been added or removed.
+            continue
+
+        def tostatement(key, val):
+            return 'set_%s_opt("%s", %s)' % (optkey, key, val)
+
+        _save_entries(out, opts, tostatement)
+        _output_nl(out)
 
 
 # for user models, try to access the function definition via
@@ -948,7 +1633,7 @@ def _handle_usermodel(out: OutType,
 
     try:
         pycode = inspect.getsource(mod.calc)
-    except IOError:
+    except OSError:
         pycode = None
 
     # in case getsource can return None, have check here
@@ -1001,6 +1686,125 @@ def _handle_usermodel(out: OutType,
     _output(out, f"{spaces})\n")
 
 
+def _get_cpt_name(mod: Model) -> str:
+    """Return the component name."""
+
+    # If we have a name "aa.bb" then return "bb" otherwise
+    # return the name unchanged.
+    #
+    name = mod.name
+    try:
+        return name.split(".")[1]
+    except IndexError:
+        return name
+
+
+def _handle_model(out: OutType,
+                  mod: Model
+                  ) -> bool:
+    """Dispatch on the model type.
+
+    Returns a value indicating whether this is an XSPEC model.
+
+    """
+
+    modelname = _get_cpt_name(mod)
+    found_xspec = False
+    if isinstance(mod, UserModel):
+        _handle_usermodel(out, mod, modelname)
+
+    elif isinstance(mod, PSFModel) and mod.kernel is not None:
+        cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
+        _output(out, cmd)
+
+    elif isinstance(mod, ConvolutionKernel) and mod.kernel is not None:
+        cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
+        _output(out, cmd)
+
+    elif isinstance(mod, (TableModel, TableModelBase)):
+        # Use of TableModel is deprecated.
+        cmd = f'load_table_model("{modelname}", "{mod.filename}")'
+        _output(out, cmd)
+
+    elif xspec is not None and isinstance(mod, xspec.XSTableModel):
+        cmd = f'load_xstable_model("{modelname}", "{mod.filename}"'
+        if mod.etable:
+            cmd += ', etable=True'
+
+        cmd += ')'
+        _output(out, cmd)
+        found_xspec = True
+
+    else:
+        # Normal case:  create an instance of the model.
+        cmd = f'create_model_component("{mod.type}", "{modelname}")'
+        _output(out, cmd)
+
+        # Is this an XSPEC model?
+        #
+        if xspec is not None:
+            found_xspec |= isinstance(mod, xspec.XSModel)
+
+    if hasattr(mod, "integrate"):
+        cmd = f"{modelname}.integrate = {mod.integrate}"
+        _output(out, cmd)
+        _output_nl(out)
+
+    return found_xspec
+
+
+def _handle_parameters(out: OutType,
+                       mod: Model
+                       ) -> list[str]:
+    """Display the model parameters.
+
+    Returns information on any parameter links.
+
+    """
+
+    # Write out the parameters in the order they are stored in
+    # the model.
+    #
+    links = []
+    for par in mod.pars:
+        par_attributes, par_linkstr = _print_par(par)
+        _output(out, par_attributes)
+        if par_linkstr is not None:
+            links.append(par_linkstr)
+
+    # If the model is a PSFModel then there are a number of
+    # attributes we want to set, but they are not stored in the
+    # .pars attribute. Not all are Parameter objects.
+    #
+    # Drop the "kernel" field as it should not be user settable.  Do
+    # not worry about other parameter attrbutes such as a frozen flag
+    # or limits.
+    #
+    # It is possible to loop over all attributes - e.g. drop ones
+    # beginning with "_", those that are callable, and those in
+    # the .pars attribute - rather than hard code the list, but as
+    # this is already special cased (the mod.type check) then it
+    # is not worth it at this time.
+    #
+    if mod.type == "psfmodel":
+        modelname = _get_cpt_name(mod)
+        spacer = False
+
+        for parname in ["size", "center", "radial", "norm"]:
+            parval = getattr(mod, parname, None)
+            if parval is None:
+                continue
+
+            val = parval.val if isinstance(parval, Parameter) else parval
+            _output(out, f"{modelname}.{parname} = {val}")
+            spacer = True
+
+        if spacer:
+            _output_nl(out)
+
+    return links
+
+
 def _save_model_components(out: OutType, state: SessionType) -> bool:
     """Save the model components.
 
@@ -1017,13 +1821,11 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
 
     """
 
-    found_xspec = False
-
     # Try to be careful about the ordering of the components here.
     #
     all_model_components = state.list_model_components()
     if len(all_model_components) == 0:
-        return found_xspec
+        return False
 
     all_model_components.reverse()
     _output_banner(out, "Set Model Components and Parameters")
@@ -1032,89 +1834,26 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
     # Then, *after* processing all models in the for loop below, send
     # link commands to outfile -- *all* models need to be created before
     # *any* links between parameters can be established.
-    linkstr = ""
+    links = []
+    found_xspec = False
     for modval in all_model_components:
 
-        # get actual model instance from the name we are given
-        # then get model type, and name of this instance.
         mod = eval(modval)
-        typename = mod.type
-        modelname = mod.name.split(".")[1]
+        found_xspec |= _handle_model(out, mod)
+        newlinks = _handle_parameters(out, mod)
+        links.extend(newlinks)
 
-        if typename == "usermodel":
-            _handle_usermodel(out, mod, modelname)
-
-        elif typename == "psfmodel":
-            cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
-            _output(out, cmd)
-
-        elif typename in ["fixedtablemodel", "interpolatedtablemodel1d"]:
-            cmd = f'load_table_model("{modelname}", "{mod.filename}")'
-            _output(out, cmd)
-
-        elif typename == "xstablemodel":
-            cmd = f'load_xstable_model("{modelname}", "{mod.filename}"'
-            if mod.etable:
-                cmd += ', etable=True'
-
-            cmd += ')'
-            _output(out, cmd)
-            found_xspec = True
-
-        else:
-            # Normal case:  create an instance of the model.
-            cmd = f'create_model_component("{typename}", "{modelname}")'
-            _output(out, cmd)
-
-            # Is this an XSPEC model? We only care if it's the first
-            # one we find.
-            #
-            if not found_xspec and xspec is not None:
-                found_xspec = isinstance(mod, xspec.XSModel)
-
-        # QUS: should this be included in the above checks?
-        #      @DougBurke doesn't think so, as the "normal
-        #      case" above should probably be run , but there's
-        #      no checks to verify this.
-        #
-        if typename == "convolutionkernel":
-            # Create general convolution kernel with load_conv
-            cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
-            _output(out, cmd)
-
-        if hasattr(mod, "integrate"):
-            cmd = f"{modelname}.integrate = {mod.integrate}"
-            _output(out, cmd)
-            _output_nl(out)
-
-        # Write out the parameters in the order they are stored in
-        # the model. The original version of the code iterated
-        # through mod.__dict__.values() and picked out Parameter
-        # values.
-        #
-        for par in mod.pars:
-            par_attributes, par_linkstr = _print_par(par)
-            _output(out, par_attributes)
-            linkstr = linkstr + par_linkstr
-
-        # If the model is a PSFModel, could have special
-        # attributes "size" and "center" -- if so, record them.
-        if typename == "psfmodel":
-            spacer = False
-            if hasattr(mod, "size") and mod.size is not None:
-                _output(out, f"{modelname}.size = {mod.size}")
-                spacer = True
-
-            if hasattr(mod, "center") and mod.center is not None:
-                _output(out, f"{modelname}.center = {mod.center}")
-                spacer = True
-
-            if spacer:
-                _output_nl(out)
+    _output_nl(out)
 
     # If there were any links made between parameters, send those
-    # link commands to outfile now; else, linkstr is just an empty string
-    _output(out, linkstr)
+    # link commands to outfile now, after all the model components
+    # have been created:
+    if links:
+        for linkstr in links:
+            _output(out, linkstr)
+
+        _output_nl(out)
+
     return found_xspec
 
 
@@ -1144,6 +1883,109 @@ def _save_psf_components(out: OutType, state: SessionType) -> None:
         _output(out, f"set_psf({cmd_id}, {psfmod._name})")
 
 
+def _save_source(out: OutType,
+                 state: SessionType,
+                 id: IdType
+                 ) -> None:
+    """Create the save_source/model/full_model line."""
+
+    cmd_id = _id_to_str(id)
+
+    # If a data set has a source model associated with it,
+    # set that here -- try to distinguish cases where
+    # source model is different from whole model.
+    # If not, do nothing.
+    #
+    with suppress(Exception):
+        try:
+            the_source = state.get_source(id)
+        except Exception:
+            the_source = None
+
+        try:
+            the_full_model = state.get_model(id)
+        except Exception:
+            the_full_model = None
+
+        have_source = the_source is not None
+        have_full_model = the_full_model is not None
+
+        if have_source:
+            if have_full_model:
+                # for now assume that set_full_model is only
+                # used by PHA data sets.
+                try:
+                    is_pha = isinstance(state.get_data(id), DataPHA)
+                except Exception:
+                    is_pha = False
+
+                if is_pha and repr(the_source) == repr(the_full_model):
+                    cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
+                else:
+                    cmd = f"set_source({cmd_id}, {the_source.name})"
+            else:
+                cmd = f"set_source({cmd_id}, {the_source.name})"
+
+        elif have_full_model:
+            cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
+
+        else:
+            return
+
+        _output(out, cmd)
+        _output_nl(out)
+
+
+def _save_bkg_source(out: OutType,
+                     state: SessionType,
+                     id: IdType
+                     ) -> None:
+    """Create the save_bkg_source/model/full_model line."""
+
+    # Set background models (if any) associated with backgrounds
+    # tied to this data set -- if none, then do nothing.  Again, try
+    # to distinguish cases where background "source" model is
+    # different from whole background model.
+    #
+    with suppress(Exception):
+        bids = state.list_bkg_ids(id)
+        cmd_id = _id_to_str(id)
+
+        for bid in bids:
+            cmd_bkg_id = _id_to_str(bid)
+
+            try:
+                the_bkg_source = state.get_bkg_source(id, bkg_id=bid)
+            except Exception:
+                the_bkg_source = None
+
+            try:
+                the_bkg_full_model = state.get_bkg_model(id, bkg_id=bid)
+            except Exception:
+                the_bkg_full_model = None
+
+            if the_bkg_source is not None:
+                # This does not check for the dataset being a DataPHA
+                # object, since (at present) it has to be, as it's the
+                # only one to support backgrounds
+                if the_bkg_full_model is not None:
+                    if repr(the_bkg_source) == repr(the_bkg_full_model):
+                        cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
+                    else:
+                        cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
+                else:
+                    cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
+
+            elif the_bkg_full_model is not None:  # have_full_model:
+                cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
+
+            else:
+                return
+
+            _output(out, cmd)
+            _output_nl(out)
+
+
 def _save_models(out: OutType, state: SessionType) -> None:
     """Save the source, pileup, and background models.
 
@@ -1162,105 +2004,15 @@ def _save_models(out: OutType, state: SessionType) -> None:
     orig_pos = _get_out_pos(out)
 
     for id in ids:
-        cmd_id = _id_to_str(id)
-
-        # If a data set has a source model associated with it,
-        # set that here -- try to distinguish cases where
-        # source model is different from whole model.
-        # If not, just pass
-        try:
-            try:
-                the_source = state.get_source(id)
-            except:
-                the_source = None
-
-            try:
-                the_full_model = state.get_model(id)
-            except:
-                the_full_model = None
-
-            have_source = the_source is not None
-            have_full_model = the_full_model is not None
-
-            if have_source:
-                if have_full_model:
-                    # for now assume that set_full_model is only
-                    # used by PHA data sets.
-                    try:
-                        is_pha = isinstance(state.get_data(id), DataPHA)
-                    except:
-                        is_pha = False
-
-                    if is_pha and repr(the_source) == repr(the_full_model):
-                        cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
-                    else:
-                        cmd = f"set_source({cmd_id}, {the_source.name})"
-                else:
-                    cmd = f"set_source({cmd_id}, {the_source.name})"
-
-            elif have_full_model:
-                cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
-
-            else:
-                continue
-
-            _output(out, cmd)
-            _output_nl(out)
-        except:
-            pass
-
-        # Set background models (if any) associated with backgrounds
-        # tied to this data set -- if none, then pass.  Again, try
-        # to distinguish cases where background "source" model is
-        # different from whole background model.
-        try:
-            bids = state.list_bkg_ids(id)
-            for bid in bids:
-                cmd_bkg_id = _id_to_str(bid)
-
-                try:
-                    the_bkg_source = state.get_bkg_source(id, bkg_id=bid)
-                except:
-                    the_bkg_source = None
-
-                try:
-                    the_bkg_full_model = state.get_bkg_model(id, bkg_id=bid)
-                except:
-                    the_bkg_full_model = None
-
-                have_source = the_bkg_source is not None
-                have_full_model = the_bkg_full_model is not None
-
-                if have_source:
-                    # This does not check for the dataset being a DataPHA
-                    # object, since (at present) it has to be, as it's the
-                    # only one to support backgrounds
-                    if have_full_model:
-                        if repr(the_bkg_source) == repr(the_bkg_full_model):
-                            cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
-                        else:
-                            cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
-                    else:
-                        cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
-
-                elif have_full_model:
-                    cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
-
-                else:
-                    continue
-
-                _output(out, cmd)
-                _output_nl(out)
-
-        except:
-            pass
+        _save_source(out, state, id)
+        _save_bkg_source(out, state, id)
 
     # separate out the pileup models from the source models
     #
     for id in ids:
         try:
             pname = state.get_pileup_model(id).name
-        except:
+        except Exception:
             continue
 
         cmd_id = _id_to_str(id)
@@ -1304,80 +2056,24 @@ def _save_xspec(out: OutType) -> None:
     _save_entries(out, xspec_state["modelstrings"], tostatement)
 
 
-def _save_dataset_file(out: OutType, idstr: str, dset: Data) -> None:
+def _save_dataset_store(out: OutType,
+                        store: FileStore,
+                        *,
+                        relative_path: bool
+                        ) -> None:
     """The data can be read in from a file."""
 
-    # TODO: this does not handle options like selecting the columns
-    #       from a file, or the number of columns.
-    #
-    ncols = None
-    if isinstance(dset, DataPHA):
-        # This path should no-longer be used, but leave in for now.
-        dtype = 'pha'
-    elif isinstance(dset, DataIMG):
-        dtype = 'image'
-    else:
-        dtype = 'data'
+    outstr = store.show(absolute=not relative_path)
+    if outstr in out["main"]:
+        # This indicates this is from a PHA2 file which has already
+        # been loaded.
+        return
 
-        # Can we estimate what ncols should be? This is a heuristic as
-        # it does not cover all cases.
-        #
-        if dset.staterror is not None:
-            # assume we read in independent axis/es, dependent axis,
-            # and then staterror.
-            ncols = len(dset.get_indep()) + 2
-
-    cmd = f'load_{dtype}({idstr}, "{dset.name}"'
-    if ncols is not None:
-        cmd += f", ncols={ncols}"
-
-    cmd += ")"
-    _output(out, cmd)
-
-
-def _save_dataset_pha(out: OutType, store: dict[str, Any]) -> None:
-    """The data can be read in from a PHA file."""
-
-    idval = store["id"]
-    filename = store["filename"]
-    idstr = _id_to_str(idval)
-
-    cmd = f'load_pha({idstr}, "{filename}"'
-    with suppress(KeyError):
-        cmd += f', use_errors={store["kwargs"]["use_errors"]}'
-
-    cmd += ")"
-    _output(out, cmd)
-
-
-def _save_dataset_pha2(out: OutType, store: dict[str, Any]) -> None:
-    """The data can be read in from a PHA2 file."""
-
-    idval = store["id"]
-    idvals = store["idvals"]
-    filename = store["filename"]
-    idstr = _id_to_str(idval)
-
-    _output(out, f"# Load PHA2 into: {idvals}")
-
-    cmd = f'load_pha({idstr}, "{filename}"'
-    with suppress(KeyError):
-        cmd += f', use_errors={store["kwargs"]["use_errors"]}'
-
-    cmd += ")"
-    _output(out, cmd)
+    _output(out, outstr)
 
 
 def _output_wcs_import(out: OutType) -> None:
-    """Import the WCS symbol if not done already.
-
-    Parameters
-    ----------
-    fh : None or a file handle
-       The file handle to write the message to. If fh is ``None``
-       then the standard output is used.
-
-    """
+    """Import the WCS symbol if not done already."""
 
     out["imports"].add("from sherpa.astro.io.wcs import WCS")
 
@@ -1434,93 +2130,137 @@ def _save_dataset_pha_manual(out: OutType, idstr: str, pha: DataPHA) -> None:
     # setarray("grouping")
 
 
-def _save_dataset(out: OutType,
-                  state: SessionType,
-                  data: Data,
-                  id: IdType) -> None:
-    """Given a dataset identifier, return the text needed to
-    re-create it.
+def _save_dataset_bkg_manual(out: OutType,
+                             idstr: str,
+                             bkgidstr: str,
+                             pha: DataPHA) -> None:
+    """Try to recreate the PHA"""
 
-    The data set design does not make it easy to tell:
+    # There's no easy way to create a background dataset.
+    #
+    spacer = "              "
+    _output(out, f'bkg = DataPHA("{pha.name}",')
+    _output(out, f"{spacer}{pha.channel.tolist()},")
+    _output(out, f"{spacer}{pha.counts.tolist()})")
+    _output(out, f"set_bkg({idstr}, bkg, bkg_id={bkgidstr})")
 
-    - if the data was read in from a file, or by load_arrays
-      (and the name field set by the user)
+    def setval(key):
+        val = getattr(pha, key)
+        if val is None:
+            return
 
-    - if the data has been modified - e.g. by a call to set_counts -
-      after it was loaded.
+        _output(out, f"set_{key}({idstr}, {val}, bkg_id={bkgidstr})")
 
-    - if in the correct directory (so paths may be wrong)
+    def setarray(key):
+        val = getattr(pha, key)
+        if val is None:
+            return
 
-    The state._load_data_store dictionary is used to indicate PHA2
-    files.
+        _output(out, f"set_{key}({idstr}, {val.tolist()}, bkg_id={bkgidstr})")
+
+    setval("exposure")
+    setval("backscal")
+    setval("areascal")
+
+    setarray("staterror")
+    setarray("syserror")
+
+    # Unlike the PHA case, we set these here.
+    setarray("quality")
+    setarray("grouping")
+
+
+def _save_dataset_arf_manual(out: OutType,
+                             idstr: str,
+                             arf: DataARF,
+                             ridstr: str,
+                             bkgidstr: str | None = None
+                             ) -> None:
+    """Try to recreate the ARF.
+
+    This does not save any metadata.
+    """
+
+    # This is not likely to be useful.
+    #
+    spacer = "              "
+    _output(out, f'arf = DataARF("{arf.name}",')
+    _output(out, f"{spacer}numpy.array({arf.energ_lo.tolist()}),")
+    _output(out, f"{spacer}numpy.array({arf.energ_hi.tolist()}),")
+    _output(out, f"{spacer}{arf.specresp.tolist()})")
+    cmd = f"set_arf({idstr}, arf, resp_id={ridstr}"
+    if bkgidstr is not None:
+        cmd += ", bkg_id={bkgidstr}"
+
+    cmd += ")"
+    _output(out, cmd)
+
+
+def _save_dataset_rmf_manual(out: OutType,
+                             idstr: str,
+                             rmf: DataRMF,
+                             ridstr: str,
+                             bkgidstr: str | None = None
+                             ) -> None:
+    """Try to recreate the RMF.
+
+    This does not save any metadata. It also does not handle
+    sub-classes of DataRMF.
 
     """
 
-    # Do we have direct information on how this dataset was loaded?
-    # Note that identifiers associated with a PHA2 dataset have
-    # already been loaded.
+    # This is not likely to be useful.
     #
-    try:
-        store = state._load_data_store[id]
+    spacer = "              "
+    _output(out, f'rmf = DataRMF("{rmf.name}", {rmf.detchans},')
+    _output(out, f"{spacer}numpy.array({rmf.energ_lo.tolist()}),")
+    _output(out, f"{spacer}numpy.array({rmf.energ_hi.tolist()}),")
+    _output(out, f"{spacer}offset={rmf.offset},")
+    _output(out, f"{spacer}n_grp=numpy.array({rmf.n_grp.tolist()}),")
+    _output(out, f"{spacer}f_chan=numpy.array({rmf.f_chan.tolist()}),")
+    _output(out, f"{spacer}n_chan=numpy.array({rmf.n_chan.tolist()}),")
 
-        # Is this a PHA2 dataset?
-        #
-        if "idvals" in store:
-            return
+    lastchar = "" if rmf.e_min is None else ","
+    _output(out, f"{spacer}matrix=numpy.array({rmf.n_grp.tolist()}){lastchar}")
 
-        _save_dataset_pha(out, store)
+    if rmf.e_min is not None:
+        _output(out, f"{spacer}e_min=numpy.array({rmf.e_min.tolist()}),")
+        _output(out, f"{spacer}e_max=numpy.array({rmf.e_max.tolist()})")
+
+    _output(out, f"{spacer})")
+
+    cmd = f"set_rmf({idstr}, rmf, resp_id={ridstr}"
+    if bkgidstr is not None:
+        cmd += ", bkg_id={bkgidstr}"
+
+    cmd += ")"
+    _output(out, cmd)
+
+
+def _save_dataset(out: OutType,
+                  state: SessionType,
+                  data: Data,
+                  id: IdType,
+                  *,
+                  relative_path: bool
+                  ) -> None:
+    """Given a dataset identifier, return the text needed to
+    re-create it.
+
+    The state._storage.data dictionary is intended to record how a
+    file was loaded, but there is no tracking of the data values
+    (e.g. the independent and dependent axes) to know if they have
+    been changed after loading. If there is no information in this
+    dictionary then the dataset is assumed to be manually created.
+
+    """
+
+    store = state._storage.get(id)
+    if store is not None:
+        _save_dataset_store(out, store, relative_path=relative_path)
         return
 
-    except KeyError:
-        idval = id
-
-    idstr = _id_to_str(idval)
-
-    # If the name of the object is a file then we assume that the data
-    # was read in from that location, otherwise we recreate the data
-    # (i.e. do not read it in).  This will fail if the data was read
-    # in with a relative path name and the directory has since been
-    # changed, or the on-disk file has been removed.
-    #
-    # This logic should be moved into the DataXXX objects, since
-    # this is more extensible, and also the data object can
-    # retain knowledge of where the data came from.
-    #
-    # Checking for a valid file name is complicated:
-    #
-    # - crates
-    #
-    #   The backend can add in "VFS" syntax, such as "[opt
-    #   colnames=none]" to a file name. Hence the different code paths
-    #   below depending on the backend. The code could try to manually
-    #   remove any VFS syntax, but it's simpler to just try and read
-    #   in the file using crates (this automatically checks for .gz
-    #   versions of the file).
-    #
-    # - pyfits
-    #
-    #   The backend will read in gzip-enabled files so we need to
-    #   check for .gz as well as the file name when calling isfile.
-    #
-    infile = data.name
-    if TYPE_CHECKING:
-        assert io.backend is not None
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
-        import pycrates  # type: ignore
-        try:
-            pycrates.read_file(infile)
-            exists = True
-        except OSError:
-            exists = False
-
-    else:
-        exists = os.path.isfile(infile)
-        if not exists and not infile.endswith(".gz"):
-            exists = os.path.isfile(f"{infile}.gz")
-
-    if exists:
-        _save_dataset_file(out, idstr, data)
-        return
+    idstr = _id_to_str(id)
 
     # We could use dataspace1d/2d but easiest to just use load_arrays.
     # The isinstance checks have to pick the more-specific classes
@@ -1586,7 +2326,7 @@ def _save_dataset(out: OutType,
             _output_add_wcs(out, idstr, "eqpos", data.eqpos)
 
     elif isinstance(data, Data2DInt):
-        msg = f"Unable to re-create Data2DInt data set '{idval}'"
+        msg = f"Unable to re-create Data2DInt data set '{idstr}'"
         warning(msg)
         _output(out, f'print("{msg}")')
 
@@ -1601,7 +2341,7 @@ def _save_dataset(out: OutType,
         _output(out, f"{spacer}Data2D)")
 
     else:
-        msg = f"Unable to re-create {data.__class__} data set '{idval}'"
+        msg = f"Unable to re-create {data.__class__} data set '{idstr}'"
         warning(msg)
         _output(out, f'print("{msg}")')
         return
@@ -1631,7 +2371,8 @@ def _save_id(out: OutType, state: SessionType) -> None:
 def save_all(state: SessionType,
              fh: TextIO | None = None,
              *,
-             auto_load: bool = True
+             auto_load: bool = True,
+             relative_path: bool = False
              ) -> None:
     """Save the information about the current session to a file handle.
 
@@ -1640,9 +2381,16 @@ def save_all(state: SessionType,
 
      1. numeric values may not be recorded to their full precision
 
-     2. data sets are not included in the file
+     2. data sets are not included in the file itself, so the data
+        files need to be available,
 
-     3. some settings and values may not be recorded.
+     3. and some settings and values may not be recorded (such as
+        header information).
+
+     .. versionchanged:: 4.19.0
+        Improved support for reporting optional arguments used when
+        loading a file. File paths are now always normalized. Added
+        the relative_path argument.
 
      .. versionchanged:: 4.18.0
         Handling of PHA data has been improved, and the output now
@@ -1660,6 +2408,9 @@ def save_all(state: SessionType,
     auto_load : bool, optional
        If ``False`` then the output will contain `load_arf`,
        `load_rmf`, and `load_bkg` calls for ancillary PHA files.
+    relative_path : bool, optional
+       Should paths be recorded as relative to the current working
+       directory?
 
     See Also
     --------
@@ -1675,13 +2426,14 @@ def save_all(state: SessionType,
     include:
 
     - data sets changed from the version on disk - e.g. by calls to
-      `sherpa.astro.ui.set_counts`
+      `sherpa.astro.ui.set_counts`,
 
-    - any optional keywords to commands such as `load_data`
+    - user models may not be restored correctly,
 
-    - user models may not be restored correctly
+    - and only a subset of Sherpa commands are saved.
 
-    - only a subset of Sherpa commands are saved.
+    The file names used to originally load the data are used in the
+    file, with no attempt to handle changes in the working directory.
 
     Examples
     --------
@@ -1705,11 +2457,12 @@ def save_all(state: SessionType,
             "main": []
            }
 
-    _save_data(out, state, auto_load=auto_load)
+    _save_data(out, state, auto_load=auto_load, relative_path=relative_path)
     _output_nl(out)
     _save_statistic(out, state)
     _save_fit_method(out, state)
     _save_iter_method(out, state)
+    _save_estmethod_opts(out, state)
     req_xspec = _save_model_components(out, state)
     _save_psf_components(out, state)
     _save_models(out, state)
@@ -1718,10 +2471,10 @@ def save_all(state: SessionType,
 
     _save_id(out, state)
 
-    if fh is None:
-        fh = sys.stdout
+    outfh = sys.stdout if fh is None else fh
 
-    write = lambda msg: fh.write(f"{msg}\n")
+    def write(msg: str) -> None:
+        outfh.write(f"{msg}\n")
 
     # Hard code the required imports.
     #
