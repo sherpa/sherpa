@@ -20,8 +20,8 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.15.1, 12.15.0, 12.14.1, 12.14.0, 12.13.1, and
-12.13.0 of XSPEC [1]_, and can be built against the model library or
+Sherpa supports versions 13.0.0, 12.15.1, 12.15.0, 12.14.1, 12.14.0, 12.13.1,
+and 12.13.0 of XSPEC [1]_, and can be built against the model library or
 the full application.  There is no guarantee of support for older or
 newer versions of XSPEC.
 
@@ -1904,11 +1904,36 @@ def mkabund(name: str,
                        hard_min=minval, hard_max=maxval, frozen=True)
 
 
-def mkRScolumn(name) -> XSParameter:
+def mkElem(name: str,
+           elem: str) -> XSParameter:
+    """Make an elenbance abundance parameter."""
+
+    return XSParameter(name, elem, 1.0, 0.0, 5.0,
+                       hard_min=0.0, hard_max=1e38, frozen=True)
+
+
+def mkRScolumn(name: str) -> XSParameter:
     """Make a RScolumn parameter."""
 
     return XSParameter(name, 'RScolumn', 0.0, min=0.0, max=10000.0,
-                       hard_min=0.0, hard_max=10000.0, frozen=True, units='10^22')
+                       hard_min=0.0, hard_max=10000.0, frozen=True,
+                       units='10^22')
+
+
+def mkLineE(name: str) -> XSParameter:
+    """Make a LineE parameter."""
+
+    return XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
+                       hard_min=0.0, hard_max=1e6, units='keV')
+
+
+def mkVelWidth(name: str,
+               parname: str
+               ) -> XSParameter:
+    """Make a velocity-width parameter."""
+
+    return XSParameter(name, parname, 100.0, min=0.0, max=3e5,
+                       hard_min=0.0, hard_max=3e5, units='km/s')
 
 
 class XSAdditiveModel(XSModel):
@@ -12934,7 +12959,7 @@ class XSvlorentz(XSAdditiveModel):
 
     def __init__(self, name='vlorentz'):
         self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1000000.0, hard_min=0.0, hard_max=1000000.0, units='keV')
-        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Width = mkVelWidth(name, 'Width')
 
         # norm parameter is automatically added by XSAdditiveModel
         pars = (self.LineE, self.Width)
@@ -14167,8 +14192,8 @@ class XSvvoigt(XSAdditiveModel):
 
     def __init__(self, name='vvoigt'):
         self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1000000.0, hard_min=0.0, hard_max=1000000.0, units='keV')
-        self.Sigma = XSParameter(name, 'Sigma', 10.0, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='km/s')
-        self.Gamma = XSParameter(name, 'Gamma', 10.0, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Sigma = mkVelWidth(name, 'Sigma')
+        self.Gamma = mkVelWidth(name, 'Gamma')
 
         # norm parameter is automatically added by XSAdditiveModel
         pars = (self.LineE, self.Sigma, self.Gamma)
@@ -15469,8 +15494,7 @@ class XSzvlorentz(XSAdditiveModel):
     def __init__(self, name='zvlorentz'):
         self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1e6,
                                  hard_min=0.0, hard_max=1e6, units='keV')
-        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0,
-                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Width = mkVelWidth(name, 'Width')
         self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
                                     hard_min=-0.999, hard_max=10.0, frozen=True)
 
@@ -15568,10 +15592,8 @@ class XSzvvoigt(XSAdditiveModel):
     def __init__(self, name='zvvoigt'):
         self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0, max=1e6,
                                  hard_min=0.0, hard_max=1e6, units='keV')
-        self.Sigma = XSParameter(name, 'Sigma', 10.0, min=0.0, max=10.0,
-                                 hard_min=0.0, hard_max=20.0, units='km/s')
-        self.Gamma = XSParameter(name, 'Gamma', 10.0, min=0.0, max=10.0,
-                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.Sigma = mkVelWidth(name, 'Sigma')
+        self.Gamma = mkVelWidth(name, 'Gamma')
         self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
                                     hard_min=-0.999, hard_max=10.0, frozen=True)
 
@@ -16302,8 +16324,7 @@ class XSlorabs(XSMultiplicativeModel):
     _xspec_name = 'lorabs'
 
     def __init__(self, name='lorabs'):
-        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
-                                 hard_min=0.0, hard_max=1e6, units='keV')
+        self.LineE = mkLineE(name)
         self.Width = XSParameter(name, 'Width', 0.01, min=0.0, max=10.0,
                                  hard_min=0.0, hard_max=20.0, units='keV')
         self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0,
@@ -16973,23 +16994,23 @@ class XSTBvarabs(XSMultiplicativeModel):
 
     def __init__(self, name='tbvarabs'):
         self.nH = XSParameter(name, 'nH', 1., 0., 1E5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        self.He = XSParameter(name, 'He', 1., 0., 1., 0.0, 1, frozen=True)
-        self.C = XSParameter(name, 'C', 1., 0., 1., 0.0, 1, frozen=True)
-        self.N = XSParameter(name, 'N', 1., 0., 1., 0.0, 1, frozen=True)
-        self.O = XSParameter(name, 'O', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Ne = XSParameter(name, 'Ne', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Na = XSParameter(name, 'Na', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Mg = XSParameter(name, 'Mg', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Al = XSParameter(name, 'Al', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Si = XSParameter(name, 'Si', 1., 0., 1., 0.0, 1, frozen=True)
-        self.S = XSParameter(name, 'S', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Cl = XSParameter(name, 'Cl', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Ar = XSParameter(name, 'Ar', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Ca = XSParameter(name, 'Ca', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Cr = XSParameter(name, 'Cr', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Fe = XSParameter(name, 'Fe', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Co = XSParameter(name, 'Co', 1., 0., 1., 0.0, 1, frozen=True)
-        self.Ni = XSParameter(name, 'Ni', 1., 0., 1., 0.0, 1, frozen=True)
+        self.He = mkElem(name, 'He')
+        self.C = mkElem(name, 'C')
+        self.N = mkElem(name, 'N')
+        self.O = mkElem(name, 'O')
+        self.Ne = mkElem(name, 'Ne')
+        self.Na = mkElem(name, 'Na')
+        self.Mg = mkElem(name, 'Mg')
+        self.Al = mkElem(name, 'Al')
+        self.Si = mkElem(name, 'Si')
+        self.S = mkElem(name, 'S')
+        self.Cl = mkElem(name, 'Cl')
+        self.Ar = mkElem(name, 'Ar')
+        self.Ca = mkElem(name, 'Ca')
+        self.Cr = mkElem(name, 'Cr')
+        self.Fe = mkElem(name, 'Fe')
+        self.Co = mkElem(name, 'Co')
+        self.Ni = mkElem(name, 'Ni')
         self.H2 = XSParameter(name, 'H2', 0.2, 0., 1., 0.0, 1, frozen=True)
         self.rho = XSParameter(name, 'rho', 1., 0., 5., 0.0, 5, units='g/cm^3', frozen=True)
         self.amin = XSParameter(name, 'amin', 0.025, 0., 0.25, 0.0, 0.25, units='mum', frozen=True)
@@ -17355,8 +17376,8 @@ class XSvlorabs(XSMultiplicativeModel):
     _xspec_name = 'vlorabs'
 
     def __init__(self, name='vlorabs'):
-        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6, hard_min=0.0, hard_max=1e6, units='km/s')
-        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='km/s')
+        self.LineE = mkLineE(name)
+        self.Width = mkVelWidth(name, 'Width')
         self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6, hard_min=0.0, hard_max=1e6, units='keV')
 
         pars = (self.LineE, self.Width, self.Strength)
@@ -17397,8 +17418,7 @@ class XSvoigtabs(XSMultiplicativeModel):
     _xspec_name = 'voigtabs'
 
     def __init__(self, name='voigtabs'):
-        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
-                                 hard_min=0.0, hard_max=1e6, units='km/s')
+        self.LineE = mkLineE(name)
         self.Sigma = XSParameter(name, 'Sigma', 0.01, min=0.0, max=10.0,
                                  hard_min=0.0, hard_max=20.0, units='keV')
         self.Width = XSParameter(name, 'Width', 0.01, min=0.0, max=10.0,
@@ -17497,12 +17517,9 @@ class XSvvoigtabs(XSMultiplicativeModel):
     _xspec_name = 'vvoigtabs'
 
     def __init__(self, name='vvoigtabs'):
-        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
-                                 hard_min=0.0, hard_max=1e6, units='km/s')
-        self.Sigma = XSParameter(name, 'Sigma', 10.0, min=0.0, max=10.0,
-                                 hard_min=0.0, hard_max=20.0, units='km/s')
-        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0,
-                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.LineE = mkLineE(name)
+        self.Sigma = mkVelWidth(name, 'Sigma')
+        self.Width = mkVelWidth(name, 'Width')
         self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6,
                                     hard_min=0.0, hard_max=1e6, units='keV')
 
@@ -18005,7 +18022,7 @@ class XSzlorabs(XSMultiplicativeModel):
     _xspec_name = 'zlorabs'
 
     def __init__(self, name='zlorabs'):
-        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6, hard_min=0.0, hard_max=1e6, units='km/s')
+        self.LineE = mkLineE(name)
         self.Width = XSParameter(name, 'Width', 0.01, min=0.0, max=10.0, hard_min=0.0, hard_max=20.0, units='keV')
         self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6, hard_min=0.0, hard_max=1e6, units='keV')
         self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
@@ -18123,10 +18140,8 @@ class XSzvlorabs(XSMultiplicativeModel):
     _xspec_name = 'zvlorabs'
 
     def __init__(self, name='zvlorabs'):
-        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
-                                 hard_min=0.0, hard_max=1e6, units='km/s')
-        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0,
-                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.LineE = mkLineE(name)
+        self.Width = mkVelWidth(name, 'Width')
         self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6,
                                     hard_min=0.0, hard_max=1e6, units='keV')
         self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
@@ -18172,8 +18187,7 @@ class XSzvoigtabs(XSMultiplicativeModel):
     _xspec_name = 'zvoigtabs'
 
     def __init__(self, name='zvoigtabs'):
-        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
-                                 hard_min=0.0, hard_max=1e6, units='km/s')
+        self.LineE = mkLineE(name)
         self.Sigma = XSParameter(name, 'Sigma', 0.01, min=0.0, max=10.0,
                                  hard_min=0.0, hard_max=20.0, units='keV')
         self.Width = XSParameter(name, 'Width', 0.01, min=0.0, max=10.0,
@@ -18223,12 +18237,9 @@ class XSzvvoigtabs(XSMultiplicativeModel):
     _xspec_name = 'zvvoigtabs'
 
     def __init__(self, name='zvvoigtabs'):
-        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0, max=1e6,
-                                 hard_min=0.0, hard_max=1e6, units='km/s')
-        self.Sigma = XSParameter(name, 'Sigma', 10.0, min=0.0, max=10.0,
-                                 hard_min=0.0, hard_max=20.0, units='km/s')
-        self.Width = XSParameter(name, 'Width', 10.0, min=0.0, max=10.0,
-                                 hard_min=0.0, hard_max=20.0, units='km/s')
+        self.LineE = mkLineE(name)
+        self.Sigma = mkVelWidth(name, 'Sigma')
+        self.Width = mkVelWidth(name, 'Width')
         self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0, max=1e6,
                                     hard_min=0.0, hard_max=1e6, units='keV')
         self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
