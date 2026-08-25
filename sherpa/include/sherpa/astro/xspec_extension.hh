@@ -54,6 +54,11 @@
 
 #include "sherpa/fcmp.hh"
 
+// XSPEC 13.0.0 defines a field called K in xsTypes.h which conflicts
+// with the macro created by constants.hh.
+//
+#undef K
+
 #include <XSFunctions/Utilities/funcType.h>
 #include <XSFunctions/Utilities/xsFortran.h>
 

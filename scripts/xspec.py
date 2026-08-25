@@ -35,7 +35,8 @@ writing a module for an XSPEC user model.
 
 .. versionchanged:: 4.19.0
    Several symbols related to XSPEC versions have been added to this
-   module.
+   module. There is now support for handling model definitions
+   including the grad=xxx argument added in XSPEC 13.0.0.
 
 References
 ----------

@@ -340,7 +340,7 @@ in the parent directory of the ``HEADAS`` environment variable -
 defines the interface for the models. It is used to automatically
 generate the code needed to interface to the models that is used by
 the extension module ``sherpa.astro.xspec._xspec``. It is not used to
-generate the ``sherpa.astro.xspec`` Python module (see the discussion
+generate the `sherpa.astro.xspec` Python module (see the discussion
 at `issue #52 <https://github.com/sherpa/sherpa/issues/52>`_).
 
 .. note::
@@ -600,7 +600,7 @@ available.
    which give the XSPEC model name (first parameter), number of
    parameters (second parameter), two numbers which we ignore, the
    name of the function that evaluates the model, the type
-   (e.g. ``add``), and then 1 or more values which we ignore. Then
+   (e.g. ``add``), and a number of optional arguments. Then
    there are lines which define the model parameters (the number match
    the second argument of the first line), and then one or more blank
    lines. In the output above we see that the XSPEC ``agauss`` model

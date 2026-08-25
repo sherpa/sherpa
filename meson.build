@@ -160,7 +160,10 @@ if xspec_prefix != ''
 
   xspec_models = xspec_prefix / 'spectral' / 'manager' / 'model.dat'
   if not fs.exists(xspec_models)
-    error('Unable to find XSPEC model dat file within:', xspec_prefix)
+    xspec_models = xspec_prefix / '..' / 'spectral' / 'manager' / 'model.dat'
+    if not fs.exists(xspec_models)
+      error('Unable to find XSPEC model dat file within:', xspec_prefix)
+    endif
   endif
   message('XSPEC model file:', xspec_models)
 
