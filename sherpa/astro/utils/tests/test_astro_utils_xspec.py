@@ -412,6 +412,8 @@ class XSapec(XSAdditiveModel):
 
     _module = _models
 
+    _xspec_name = 'apec'
+
     def __init__(self, name='apec'):
         self.kT = XSParameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')
 
@@ -496,6 +498,8 @@ class XSonlynorm(XSAdditiveModel):
 
     """
 
+    _xspec_name = 'onlynorm'
+
     def __init__(self, name='onlynorm'):
 
         # norm parameter is automatically added by XSAdditiveModel
@@ -570,6 +574,8 @@ class XSabcd(XSMultiplicativeModel):
     """
 
     _module = _models
+
+    _xspec_name = 'abcd'
 
     def __init__(self, name='abcd'):
         self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
@@ -646,6 +652,8 @@ class XSabcd(XSMultiplicativeModel):
 
     """
 
+    _xspec_name = 'abcd'
+
     def __init__(self, name='abcd'):
         self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
 
@@ -714,6 +722,8 @@ class XSrgsxsrc(XSConvolutionKernel):
     """
 
     _module = _models
+
+    _xspec_name = 'rgsxsrc'
 
     def __init__(self, name='rgsxsrc'):
         self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)
@@ -793,6 +803,8 @@ class XSrgsxsrc(XSConvolutionKernel):
 
     """
 
+    _xspec_name = 'rgsxsrc'
+
     def __init__(self, name='rgsxsrc'):
         self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)
 
@@ -860,6 +872,8 @@ class XSabcd(XSAdditiveModel):
     """
 
     _module = _models
+
+    _xspec_name = 'abcd'
 
     def __init__(self, name='abcd'):
         self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)
@@ -935,6 +949,8 @@ class XSabcd(XSAdditiveModel):
     """
 
     _module = _models
+
+    _xspec_name = 'abcd'
 
     def __init__(self, name='abcd'):
         self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)

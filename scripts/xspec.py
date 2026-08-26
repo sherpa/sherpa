@@ -1015,6 +1015,8 @@ def simple_wrap(modelname: str,
     if internal is None:
         out += f"{t1}_module = _models\n\n"
 
+    out += f"{t1}_xspec_name = '{mdl.name}'\n\n"
+
     out += f"{t1}def __init__(self, name='{mdl.name}'):\n"
     parnames = []
     for par in mdl.pars:

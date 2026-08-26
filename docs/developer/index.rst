@@ -492,6 +492,8 @@ noted as not being supported::
 
       """
 
+      _xspec_name = 'wdem'
+
       def __init__(self, name='wdem'):
           self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
           self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
