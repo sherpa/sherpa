@@ -250,7 +250,14 @@ def test_check_default_name(modelcls):
 
     # Is the xspec_name field set up correctly?
     #
-    ## assert mdl.name == mdl.xspec_name.lower() not true for most conv models
+    lname = mdl.xspec_name.lower()
+    if is_proper_subclass(modelcls, xs.XSConvolutionKernel):
+        # The convolution name is somewhat historical, so leave
+        # as is.
+        assert mdl.name in [lname, f"xs{lname}"]
+    else:
+        assert mdl.name == lname
+
     assert mdl.xspec_name == modelcls.__name__[2:]
 
 
