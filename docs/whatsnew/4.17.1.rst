@@ -1,0 +1,16 @@
+.. _whatsnew_4171:
+
+*********************
+What's New in 4.17.1?
+*********************
+
+.. todo::
+   How best to build up this information? For now treat as a changelog.
+
+Overview
+========
+
+Sherpa 4.17.1 is the mid-cycle release of Sherpa.
+
+Changes
+=======
