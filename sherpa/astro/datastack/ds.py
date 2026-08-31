@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2015, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016, 2019-2021, 2025
+# Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -173,7 +174,10 @@ class DataStack():
                           summary=f'datastack with {data.shape[0]} datasets')
         return html_from_sections(self, htab)
 
-    def show_stack(self, outfile=None, clobber=False):
+    def show_stack(self,
+                   outfile=None,
+                   clobber: bool = False
+                   ):
         """Display basic information about the contents of the data stack.
 
         A brief summary of each data set in the stack is printed to the
@@ -251,7 +255,11 @@ class DataStack():
             self._add_dataset(dataid)
 
     # DOC-TODO This docstring can probably be expanded
-    def load_pha(self, id, arg=None, use_errors=False):
+    def load_pha(self,
+                 id,
+                 arg=None,
+                 use_errors: bool = False
+                 ):
         """Load multiple data arrays.
 
         This extends ``sherpa.astro.ui.load_arrays`` to load multiple

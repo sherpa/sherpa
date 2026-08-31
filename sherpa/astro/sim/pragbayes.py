@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2017, 2019, 2020, 2021, 2023
+#  Copyright (C) 2011, 2016-2017, 2019-2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -315,9 +315,19 @@ class PragBayes(MetropolisMH):
 
         self.simarf = None
 
-    def init(self, log=False, inv=False, defaultprior=True, priorshape=False,
-             priors=(), originalscale=True, scale=1, sigma_m=False, p_M=.5,
-             simarf=None, nsubiters=10):
+    def init(self,
+             log: bool = False,
+             inv: bool = False,
+             defaultprior: bool = True,
+             priorshape: bool = False,
+             priors=(),
+             originalscale: bool = True,
+             scale=1,
+             sigma_m: bool = False,
+             p_M=.5,
+             simarf=None,
+             nsubiters=10
+             ):
 
         # Note that nsubiters is used as a dummy parameter to indicate the
         # default value.  See the function WalkWithSubIters.__call__()

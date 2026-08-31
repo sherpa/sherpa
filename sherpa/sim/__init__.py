@@ -644,7 +644,13 @@ class MCMC(NoNewAttributesAfterInit):
         """
         self._set_sampler_opt(opt, value)
 
-    def get_draws(self, fit, sigma, niter=1000, cache=True, rng=None):
+    def get_draws(self,
+                  fit,
+                  sigma,
+                  niter=1000,
+                  cache: bool = True,
+                  rng=None
+                  ):
         """Run the pyBLoCXS MCMC algorithm.
 
         The function runs a Markov Chain Monte Carlo (MCMC) algorithm

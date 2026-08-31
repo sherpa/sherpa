@@ -425,7 +425,9 @@ class Plot(NoNewAttributesAfterInit):
     @staticmethod
     def vline(x, ymin=0, ymax=1,
               linecolor=None, linestyle=None, linewidth=None,
-              overplot=False, clearwindow=True):
+              overplot: bool = False,
+              clearwindow: bool = True
+              ):
         "Draw a line at constant x, extending over the plot."
         backend.vline(x, ymin=ymin, ymax=ymax, linecolor=linecolor,
                       linestyle=linestyle, linewidth=linewidth,
@@ -434,7 +436,9 @@ class Plot(NoNewAttributesAfterInit):
     @staticmethod
     def hline(y, xmin=0, xmax=1,
               linecolor=None, linestyle=None, linewidth=None,
-              overplot=False, clearwindow=True):
+              overplot: bool = False,
+              clearwindow: bool = True
+              ):
         "Draw a line at constant y, extending over the plot."
         backend.hline(y, xmin=xmin, xmax=xmax, linecolor=linecolor,
                       linestyle=linestyle, linewidth=linewidth,
@@ -445,7 +449,9 @@ class Plot(NoNewAttributesAfterInit):
         return {**self.plot_prefs, **kwargs}
 
     def plot(self, x, y, yerr=None, xerr=None, title=None, xlabel=None,
-             ylabel=None, overplot=False, clearwindow=True,
+             ylabel=None,
+             overplot: bool = False,
+             clearwindow: bool = True,
              **kwargs):
         """Plot the data.
 
@@ -522,7 +528,9 @@ class Contour(NoNewAttributesAfterInit):
         return {**self.contour_prefs, **kwargs}
 
     def contour(self, x0, x1, y, title=None, xlabel=None,
-                ylabel=None, overcontour=False, clearwindow=True,
+                ylabel=None,
+                overcontour: bool = False,
+                clearwindow: bool = True,
                 **kwargs):
         opts = self._merge_settings(kwargs)
         backend.contour(x0, x1, y, title=title,
@@ -558,7 +566,10 @@ class Point(NoNewAttributesAfterInit):
         """Return the plot preferences merged with user settings."""
         return {**self.point_prefs, **kwargs}
 
-    def point(self, x, y, overplot=True, clearwindow=False, **kwargs):
+    def point(self, x, y,
+              overplot: bool = True,
+              clearwindow: bool = False,
+              **kwargs):
         """Draw a point at the given location.
 
         Parameters
@@ -609,7 +620,10 @@ class Image(NoNewAttributesAfterInit):
         """Return the plot preferences merged with user settings."""
         return {**self.image_prefs, **kwargs}
 
-    def plot(self, x0, x1, y, overplot=True, clearwindow=False, **kwargs):
+    def plot(self, x0, x1, y,
+             overplot: bool = True,
+             clearwindow: bool = False,
+             **kwargs):
         """Draw a point at the given location.
 
         Parameters
@@ -659,7 +673,10 @@ class Histogram(NoNewAttributesAfterInit):
         return {**self.histo_prefs, **kwargs}
 
     def plot(self, xlo, xhi, y, yerr=None, title=None, xlabel=None,
-             ylabel=None, overplot=False, clearwindow=True, **kwargs):
+             ylabel=None,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         """Plot the data.
 
         Parameters
@@ -745,7 +762,10 @@ class HistogramPlot(Histogram):
         xhi = np.asarray(self.xhi)
         return (xlo + xhi) / 2
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         """Plot the data.
 
         This will plot the data sent to the prepare method.
@@ -777,7 +797,9 @@ class HistogramPlot(Histogram):
     @staticmethod
     def vline(x, ymin=0, ymax=1,
               linecolor=None, linestyle=None, linewidth=None,
-              overplot=False, clearwindow=True):
+              overplot: bool = False,
+              clearwindow: bool = True
+              ):
         "Draw a line at constant x, extending over the plot."
         backend.vline(x, ymin=ymin, ymax=ymax, linecolor=linecolor,
                       linestyle=linestyle, linewidth=linewidth,
@@ -786,7 +808,9 @@ class HistogramPlot(Histogram):
     @staticmethod
     def hline(y, xmin=0, xmax=1,
               linecolor=None, linestyle=None, linewidth=None,
-              overplot=False, clearwindow=True):
+              overplot: bool = False,
+              clearwindow: bool = True
+              ):
         "Draw a line at constant y, extending over the plot."
         backend.hline(y, xmin=xmin, xmax=xmax, linecolor=linecolor,
                       linestyle=linestyle, linewidth=linewidth,
@@ -880,7 +904,10 @@ class DataHistogramPlot(HistogramPlot):
     # so the superclass is over-ridden here to basically call
     # the base class.
     #
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         """Plot the data.
 
         This will plot the data sent to the prepare method.
@@ -971,7 +998,9 @@ class PDFPlot(HistogramPlot):
         """Return a HTML (string) representation of the PDF plot."""
         return backend.as_html_pdf(self)
 
-    def prepare(self, points, bins=12, normed=True, xlabel="x", name="x"):
+    def prepare(self, points, bins=12,
+                normed: bool = True,
+                xlabel="x", name="x"):
         """Create the data to plot.
 
         Parameters
@@ -1098,7 +1127,10 @@ class CDFPlot(Plot):
         self.ylabel = f"p(<={xlabel})"
         self.title = f"CDF: {name}"
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         """Plot the data.
 
         This will plot the data sent to the prepare method.
@@ -1173,7 +1205,10 @@ class LRHistogram(HistogramPlot):
         self.xlabel = "Likelihood Ratio"
         self.ylabel = "Frequency"
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         """Plot the data.
 
         This will plot the data sent to the prepare method.
@@ -1352,7 +1387,9 @@ class JointPlot(SplitPlot):
     # is likely that the former classes are only being used in tests,
     # so this support could be removed, but leave for now.
     #
-    def plottop(self, plot, *args, overplot=False, clearwindow=True,
+    def plottop(self, plot, *args,
+                overplot: bool = False,
+                clearwindow: bool = True,
                 **kwargs):
         """Display the top (fit-style) plot"""
 
@@ -1392,7 +1429,9 @@ class JointPlot(SplitPlot):
         kwargs['clearwindow'] = False
         plot.plot(*args, overplot=overplot, **kwargs)
 
-    def plotbot(self, plot, *args, overplot=False, **kwargs):
+    def plotbot(self, plot, *args,
+                overplot: bool = False,
+                **kwargs):
         """Display the bottom (residual-style) plot"""
 
         backend.set_jointplot(1, 0, self.rows, self.cols,
@@ -1504,7 +1543,10 @@ class DataPlot(Plot):
 
         self.title = data.name
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         """Plot the data.
 
         This will plot the data sent to the prepare method.
@@ -1665,7 +1707,10 @@ class DataContour(Contour):
          self.ylabel) = data.to_contour()
         self.title = data.name
 
-    def contour(self, overcontour=False, clearwindow=True, **kwargs):
+    def contour(self,
+                overcontour: bool = False,
+                clearwindow: bool = True,
+                **kwargs):
         super().contour(self.x0, self.x1, self.y, levels=self.levels,
                         title=self.title, xlabel=self.xlabel,
                         ylabel=self.ylabel, overcontour=overcontour,
@@ -1780,7 +1825,10 @@ class ModelPlot(Plot):
          self.xlabel, self.ylabel) = data.to_plot(yfunc=model)
         self.y = self.y[1]
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         """Plot the data.
 
         This will plot the data sent to the prepare method.
@@ -2001,7 +2049,10 @@ class ModelContour(Contour):
          self.ylabel) = data.to_contour(yfunc=model)
         self.y = self.y[1]
 
-    def contour(self, overcontour=False, clearwindow=True, **kwargs):
+    def contour(self,
+                overcontour: bool = False,
+                clearwindow: bool = True,
+                **kwargs):
         super().contour(self.x0, self.x1, self.y, levels=self.levels,
                         title=self.title, xlabel=self.xlabel,
                         ylabel=self.ylabel, overcontour=overcontour,
@@ -2115,7 +2166,10 @@ modelplot  = {model_title}
         self.dataplot = dataplot
         self.modelplot = modelplot
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         """Plot the data.
 
         This will plot the data sent to the prepare method.
@@ -2184,7 +2238,10 @@ modelcontour = {model_title}
         self.datacontour = datacontour
         self.modelcontour = modelcontour
 
-    def contour(self, overcontour=False, clearwindow=True, **kwargs):
+    def contour(self,
+                overcontour: bool = False,
+                clearwindow: bool = True,
+                **kwargs):
         # Note: the user arguments are applied to both plots
         self.datacontour.contour(overcontour=overcontour,
                                  clearwindow=clearwindow, **kwargs)
@@ -2912,7 +2969,9 @@ class Confidence1D(DataPlot):
         return backend.as_html_contour1d(self)
 
     def prepare(self, min=None, max=None, nloop=20,
-                delv=None, fac=1, log=False, numcores=None):
+                delv=None, fac=1,
+                log: bool = False,
+                numcores=None):
         """Set the data to plot.
 
         This defines the range over which the statistic will be
@@ -3076,7 +3135,10 @@ class Confidence1D(DataPlot):
         self.xerr = None
         self.yerr = None
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs):
         if self.log:
             self.plot_prefs['xlog'] = True
 
@@ -3416,7 +3478,10 @@ class Confidence2D(DataContour, Point):
                 raise ConfidenceErr('thawed', par.fullname, fit.model.name)
 
     # TODO: should this be overcontour rather than overplot?
-    def contour(self, overplot=False, clearwindow=True, **kwargs):
+    def contour(self,
+                overplot: bool = False,
+                clearwindow: bool = True,
+                **kwargs):
 
         if self.log[0]:
             self.contour_prefs['xlog'] = True
@@ -3502,12 +3567,24 @@ class IntervalProjection(Confidence1D):
         self.fast = True
         super().__init__()
 
-    def prepare(self, fast=True, min=None, max=None, nloop=20,
-                delv=None, fac=1, log=False, numcores=None):
+    def prepare(self,
+                fast: bool = True,
+                min=None,
+                max=None,
+                nloop=20,
+                delv=None,
+                fac=1,
+                log: bool = False,
+                numcores=None):
         self.fast = fast
         super().prepare(min, max, nloop, delv, fac, log, numcores)
 
-    def calc(self, fit, par, methoddict=None, cache=True):
+    def calc(self,
+             fit,
+             par,
+             methoddict=None,
+             cache: bool = True
+             ):
         self.title = 'Interval-Projection'
         super().calc(fit=fit, par=par)
 
@@ -3612,7 +3689,12 @@ class IntervalUncertainty(Confidence1D):
 
     conf_type = "uncertainty"
 
-    def calc(self, fit, par, methoddict=None, cache=True):
+    def calc(self,
+             fit,
+             par,
+             methoddict=None,
+             cache: bool = True
+             ):
         self.title = 'Interval-Uncertainty'
         super().calc(fit=fit, par=par)
 
@@ -3698,14 +3780,29 @@ class RegionProjection(Confidence2D):
         self.fast = True
         super().__init__()
 
-    def prepare(self, fast=True, min=None, max=None, nloop=(10, 10),
-                delv=None, fac=4, log=(False, False),
-                sigma=(1, 2, 3), levels=None, numcores=None):
+    def prepare(self,
+                fast: bool = True,
+                min=None,
+                max=None,
+                nloop=(10, 10),
+                delv=None,
+                fac=4,
+                log=(False, False),
+                sigma=(1, 2, 3),
+                levels=None,
+                numcores=None
+                ):
         self.fast = fast
         super().prepare(min, max, nloop, delv, fac, log, sigma,
                         levels=levels, numcores=numcores)
 
-    def calc(self, fit, par0, par1, methoddict=None, cache=True):
+    def calc(self,
+             fit,
+             par0,
+             par1,
+             methoddict=None,
+             cache: bool = True
+             ):
         self.title = 'Region-Projection'
         super().calc(fit=fit, par0=par0, par1=par1)
 
@@ -3811,7 +3908,13 @@ class RegionUncertainty(Confidence2D):
 
     conf_type = "uncertainty"
 
-    def calc(self, fit, par0, par1, methoddict=None, cache=True):
+    def calc(self,
+             fit,
+             par0,
+             par1,
+             methoddict=None,
+             cache: bool = True
+             ):
         self.title = 'Region-Uncertainty'
         super().calc(fit=fit, par0=par0, par1=par1)
 

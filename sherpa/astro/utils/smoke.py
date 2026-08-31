@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2016, 2018, 2020-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -37,7 +37,12 @@ logger = logging.getLogger("sherpa")
 # without requiring external packages.
 
 
-def run(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
+def run(verbosity=0,
+        require_failure: bool = False,
+        fits=None,
+        xspec: bool = False,
+        ds9: bool = False
+        ) -> None:
     """
     Run the smoke tests.
 

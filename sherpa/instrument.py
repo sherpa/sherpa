@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2008, 2016, 2018-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -95,9 +95,18 @@ class Kernel(NoNewAttributesAfterInit):
 
     """
 
-    def __init__(self, dshape, kshape, norm=False, frozen=True,
-                 center=None, args=[], kwargs={},
-                 do_pad=False, pad_mask=None, origin=None):
+    def __init__(self,
+                 dshape,
+                 kshape,
+                 norm: bool = False,
+                 frozen: bool = True,
+                 center=None,
+                 args=[],
+                 kwargs={},
+                 do_pad: bool = False,
+                 pad_mask=None,
+                 origin=None
+                 ):
 
         # As these are low-level routines use Python exceptions
         # rather than the Sherpa-specific ones.
@@ -292,10 +301,23 @@ class ConvolutionKernel(Model):
 class PSFKernel(Kernel):
     "class for PSF convolution kernels"
 
-    def __init__(self, dshape, kshape, is_model=False, norm=True, frozen=True,
-                 center=None, size=None, lo=None, hi=None, width=None,
-                 args=[], kwargs={},
-                 pad_mask=None, do_pad=False, origin=None):
+    def __init__(self,
+                 dshape,
+                 kshape,
+                 is_model: bool = False,
+                 norm: bool = True,
+                 frozen: bool = True,
+                 center=None,
+                 size=None,
+                 lo=None,
+                 hi=None,
+                 width=None,
+                 args=[],
+                 kwargs={},
+                 pad_mask=None,
+                 do_pad: bool = False,
+                 origin=None
+                 ):
 
         self.is_model = is_model
         self.size = size
@@ -386,11 +408,23 @@ class PSFKernel(Kernel):
 class RadialProfileKernel(PSFKernel):
     "class for 1D radial profile PSF convolution kernels"
 
-    def __init__(self, dshape, kshape, is_model=False,
-                 norm=True, frozen=True,
-                 center=None, size=None, lo=None, hi=None, width=None,
-                 args=[], kwargs={},
-                 pad_mask=None, do_pad=False, origin=None):
+    def __init__(self,
+                 dshape,
+                 kshape,
+                 is_model: bool = False,
+                 norm: bool = True,
+                 frozen: bool = True,
+                 center=None,
+                 size=None,
+                 lo=None,
+                 hi=None,
+                 width=None,
+                 args=[],
+                 kwargs={},
+                 pad_mask=None,
+                 do_pad: bool = False,
+                 origin=None
+                 ):
 
         self.radialsize = None
         super().__init__(dshape, kshape, is_model, norm,
@@ -884,7 +918,10 @@ they do not match.
 
         self._set_model(PSFKernel(dshape, kshape, **kwargs))
 
-    def _get_kernel_data(self, data, subkernel=True):
+    def _get_kernel_data(self,
+                         data,
+                         subkernel: bool = True
+                         ):
         if self.kernel is None:
             raise PSFErr('notset')
 
@@ -939,7 +976,10 @@ they do not match.
 
         return (indep, dep, kshape, lo, hi)
 
-    def get_kernel(self, data, subkernel=True):
+    def get_kernel(self,
+                   data,
+                   subkernel: bool = True
+                   ):
         """Return a data object representing the kernel.
 
         Parameters

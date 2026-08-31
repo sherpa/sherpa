@@ -463,7 +463,10 @@ class Session(sherpa.ui.utils.Session):
     # Add ability to save attributes specific to the astro package.
     # Save XSPEC module settings that need to be restored.
     #
-    def save(self, filename='sherpa.save', clobber=False) -> None:
+    def save(self,
+             filename='sherpa.save',
+             clobber: bool = False
+             ) -> None:
         """Save the current Sherpa session to a file.
 
         Parameters
@@ -2367,7 +2370,10 @@ class Session(sherpa.ui.utils.Session):
         self.set_data(id, self.unpack_image(arg, coord, dstype))
 
     # DOC-TODO: what does this return when given a PHA2 file?
-    def unpack_pha(self, arg, use_errors=False):
+    def unpack_pha(self,
+                   arg,
+                   use_errors: bool = False
+                   ):
         """Create a PHA data structure.
 
         Any instrument or background data sets referenced in the
@@ -2419,7 +2425,10 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_pha(arg, use_errors=use_errors)
 
     # DOC-TODO: what does this return when given a PHA2 file?
-    def unpack_bkg(self, arg, use_errors: bool = False):
+    def unpack_bkg(self,
+                   arg,
+                   use_errors: bool = False
+                   ):
         """Create a PHA data structure for a background data set.
 
         Any instrument information referenced in the header of the PHA
@@ -2737,7 +2746,8 @@ class Session(sherpa.ui.utils.Session):
     #
     def load_filter(self, id, filename=None,
                     bkg_id: IdType | None = None,
-                    ignore=False, ncols=2,
+                    ignore: bool = False,
+                    ncols=2,
                     *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Load the filter array from a file and add to a data set.
@@ -2989,7 +2999,7 @@ class Session(sherpa.ui.utils.Session):
 
     def set_filter(self, id, val=None,
                    bkg_id: IdType | None = None,
-                   ignore=False
+                   ignore: bool = False
                    ) -> None:
         """Set the filter array of a data set.
 
@@ -3276,7 +3286,10 @@ class Session(sherpa.ui.utils.Session):
     set_counts = set_dep
 
     # DOC-NOTE: also in sherpa.utils
-    def set_staterror(self, id, val=None, fractional= False,
+    def set_staterror(self,
+                      id,
+                      val=None,
+                      fractional: bool = False,
                       bkg_id: IdType | None = None
                       ) -> None:
         """Set the statistical errors on the dependent axis of a data set.
@@ -3340,7 +3353,10 @@ class Session(sherpa.ui.utils.Session):
         sherpa.ui.utils.set_error(d, "staterror", val, fractional=fractional)
 
     # DOC-NOTE: also in sherpa.utils
-    def set_syserror(self, id, val=None, fractional=False,
+    def set_syserror(self,
+                     id,
+                     val=None,
+                     fractional: bool = False,
                      bkg_id: IdType | None = None
                      ) -> None:
         """Set the systematic errors on the dependent axis of a data set.
@@ -3571,7 +3587,7 @@ class Session(sherpa.ui.utils.Session):
     #
     def get_staterror(self,
                       id: IdType | None = None,
-                      filter=False,
+                      filter: bool = False,
                       bkg_id: IdType | None = None
                       ):
         """Return the statistical error on the dependent axis of a data set.
@@ -3662,7 +3678,7 @@ class Session(sherpa.ui.utils.Session):
     #
     def get_syserror(self,
                      id: IdType | None = None,
-                     filter=False,
+                     filter: bool = False,
                      bkg_id: IdType | None = None
                      ):
         """Return the systematic error on the dependent axis of a data set.
@@ -3742,7 +3758,7 @@ class Session(sherpa.ui.utils.Session):
     #
     def get_error(self,
                   id: IdType | None = None,
-                  filter=False,
+                  filter: bool = False,
                   bkg_id: IdType | None = None
                   ):
         """Return the errors on the dependent axis of a data set.
@@ -3822,7 +3838,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     def get_indep(self,
                   id: IdType | None = None,
-                  filter=False,
+                  filter: bool = False,
                   bkg_id: IdType | None = None):
         """Return the independent axes of a data set.
 
@@ -3934,7 +3950,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     def get_dep(self,
                 id: IdType | None = None,
-                filter=False,
+                filter: bool = False,
                 bkg_id: IdType | None = None):
         """Return the dependent axis of a data set.
 
@@ -4034,7 +4050,7 @@ class Session(sherpa.ui.utils.Session):
 
     def get_rate(self,
                  id: IdType | None = None,
-                 filter=False,
+                 filter: bool = False,
                  bkg_id: IdType | None = None):
         """Return the count rate of a PHA data set.
 
@@ -4137,7 +4153,7 @@ class Session(sherpa.ui.utils.Session):
     # i.e. what are the X values for these points
     def get_specresp(self,
                      id: IdType | None = None,
-                     filter=False,
+                     filter: bool = False,
                      bkg_id: IdType | None = None):
         """Return the effective area values for a PHA data set.
 
@@ -4285,7 +4301,10 @@ class Session(sherpa.ui.utils.Session):
     def get_bkg_scale(self,
                       id: IdType | None = None,
                       bkg_id: IdType = 1,
-                      units='counts', group=True, filter=False):
+                      units='counts',
+                      group: bool = True,
+                      filter: bool = False
+                      ):
         """Return the background scaling factor for a background data set.
 
         Return the factor applied to the background component to scale
@@ -4526,8 +4545,13 @@ class Session(sherpa.ui.utils.Session):
 #
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_arrays(self, filename, args, fields=None, ascii=True,
-                    clobber=False) -> None:
+    def save_arrays(self,
+                    filename,
+                    args,
+                    fields=None,
+                    ascii: bool = True,
+                    clobber: bool = False
+                    ) -> None:
         """Write a list of arrays to a file.
 
         Parameters
@@ -4581,9 +4605,12 @@ class Session(sherpa.ui.utils.Session):
                                      ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    def save_source(self, id, filename=None,
+    def save_source(self,
+                    id,
+                    filename=None,
                     bkg_id: IdType | None = None,
-                    ascii=False, clobber=False
+                    ascii: bool = False,
+                    clobber: bool = False
                     ) -> None:
         """Save the model values to a file.
 
@@ -4667,9 +4694,12 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    def save_model(self, id, filename=None,
+    def save_model(self,
+                   id,
+                   filename=None,
                    bkg_id: IdType | None = None,
-                   ascii=False, clobber=False
+                   ascii: bool = False,
+                   clobber: bool = False
                    ) -> None:
         """Save the model values to a file.
 
@@ -4752,9 +4782,12 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    def save_resid(self, id, filename=None,
+    def save_resid(self,
+                   id,
+                   filename=None,
                    bkg_id: IdType | None = None,
-                   ascii=False, clobber=False
+                   ascii: bool = False,
+                   clobber: bool = False
                    ) -> None:
         """Save the residuals (data-model) to a file.
 
@@ -4826,9 +4859,12 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    def save_delchi(self, id, filename=None,
+    def save_delchi(self,
+                    id,
+                    filename=None,
                     bkg_id: IdType | None = None,
-                    ascii=True, clobber=False
+                    ascii: bool = True,
+                    clobber: bool = False
                     ) -> None:
         """Save the ratio of residuals (data-model) to error to a file.
 
@@ -4900,9 +4936,12 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_filter(self, id, filename=None,
+    def save_filter(self,
+                    id,
+                    filename=None,
                     bkg_id: IdType | None = None,
-                    ascii=True, clobber=False
+                    ascii: bool = True,
+                    clobber: bool = False
                     ) -> None:
         """Save the filter array to a file.
 
@@ -4995,9 +5034,12 @@ class Session(sherpa.ui.utils.Session):
                          ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_staterror(self, id, filename=None,
+    def save_staterror(self,
+                       id,
+                       filename=None,
                        bkg_id: IdType | None = None,
-                       ascii=True, clobber=False
+                       ascii: bool = True,
+                       clobber: bool = False
                        ) -> None:
         """Save the statistical errors to a file.
 
@@ -5074,9 +5116,12 @@ class Session(sherpa.ui.utils.Session):
                        self.get_staterror, 'STAT_ERR')
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_syserror(self, id, filename=None,
+    def save_syserror(self,
+                      id,
+                      filename=None,
                       bkg_id: IdType | None = None,
-                      ascii=True, clobber=False
+                      ascii: bool = True,
+                      clobber: bool = False
                       ) -> None:
         """Save the systematic errors to a file.
 
@@ -5151,9 +5196,12 @@ class Session(sherpa.ui.utils.Session):
                        self.get_syserror, 'SYS_ERR')
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_error(self, id, filename=None,
+    def save_error(self,
+                   id,
+                   filename=None,
                    bkg_id: IdType | None = None,
-                   ascii=True, clobber=False
+                   ascii: bool = True,
+                   clobber: bool = False
                    ) -> None:
         """Save the errors to a file.
 
@@ -5234,9 +5282,12 @@ class Session(sherpa.ui.utils.Session):
         _save_errorcol(self, id, filename, bkg_id, clobber, ascii,
                        self.get_error, 'ERR')
 
-    def save_pha(self, id, filename=None,
+    def save_pha(self,
+                 id,
+                 filename=None,
                  bkg_id: IdType | None = None,
-                 ascii=False, clobber=False
+                 ascii: bool = False,
+                 clobber: bool = False
                  ) -> None:
         """Save a PHA data set to a file.
 
@@ -5317,10 +5368,13 @@ class Session(sherpa.ui.utils.Session):
     # but the existing logic used to create the ui module does not
     # handle KEYWORD_ONLY so for now do not do this. See #1901.
     #
-    def save_arf(self, id, filename=None,
+    def save_arf(self,
+                 id,
+                 filename=None,
                  resp_id=None,
                  bkg_id: IdType | None = None,
-                 ascii=False, clobber=False
+                 ascii: bool = False,
+                 clobber: bool = False
                  ) -> None:
         """Save an ARF data set to a file.
 
@@ -5417,10 +5471,12 @@ class Session(sherpa.ui.utils.Session):
     # but the existing logic used to create the ui module does not
     # handle KEYWORD_ONLY so for now do not do this. See #1901.
     #
-    def save_rmf(self, id, filename=None,
+    def save_rmf(self,
+                 id,
+                 filename=None,
                  resp_id=None,
                  bkg_id: IdType | None = None,
-                 clobber=False
+                 clobber: bool = False
                  ) -> None:
         """Save an RMF data set to a file.
 
@@ -5501,9 +5557,12 @@ class Session(sherpa.ui.utils.Session):
 
         sherpa.astro.io.write_rmf(filename, rmf, clobber=clobber)
 
-    def save_grouping(self, id, filename=None,
+    def save_grouping(self,
+                      id,
+                      filename=None,
                       bkg_id: IdType | None = None,
-                      ascii=True, clobber=False
+                      ascii: bool = True,
+                      clobber: bool = False
                       ) -> None:
         """Save the grouping scheme to a file.
 
@@ -5586,9 +5645,12 @@ class Session(sherpa.ui.utils.Session):
                                      fields=['CHANNEL', 'GROUPS'], ascii=ascii,
                                      clobber=clobber)
 
-    def save_quality(self, id, filename=None,
+    def save_quality(self,
+                     id,
+                     filename=None,
                      bkg_id: IdType | None = None,
-                     ascii=True, clobber=False
+                     ascii: bool = True,
+                     clobber: bool = False
                      ) -> None:
         """Save the quality array to a file.
 
@@ -5672,8 +5734,12 @@ class Session(sherpa.ui.utils.Session):
                                      clobber=clobber)
 
     # DOC-TODO: setting ascii=True is not supported for crates
-    def save_image(self, id, filename=None, ascii=False,
-                   clobber=False) -> None:
+    def save_image(self,
+                   id,
+                   filename=None,
+                   ascii: bool = False,
+                   clobber: bool = False
+                   ) -> None:
         """Save the pixel values of a 2D data set to a file.
 
         Parameters
@@ -5741,8 +5807,12 @@ class Session(sherpa.ui.utils.Session):
                                     ascii=ascii, clobber=clobber)
 
     # DOC-TODO: the output for an image is "excessive"
-    def save_table(self, id, filename=None, ascii=False,
-                   clobber=False) -> None:
+    def save_table(self,
+                   id,
+                   filename=None,
+                   ascii: bool = False,
+                   clobber: bool = False
+                   ) -> None:
         """Save a data set to a file as a table.
 
         Parameters
@@ -5811,9 +5881,12 @@ class Session(sherpa.ui.utils.Session):
                                     ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils
-    def save_data(self, id, filename=None,
+    def save_data(self,
+                  id,
+                  filename=None,
                   bkg_id: IdType | None = None,
-                  ascii=True, clobber=False
+                  ascii: bool = True,
+                  clobber: bool = False
                   ) -> None:
         """Save the data to a file.
 
@@ -9814,10 +9887,19 @@ class Session(sherpa.ui.utils.Session):
         if d.subtracted:
             d.unsubtract()
 
-    def fake_pha(self, id, arf=None, rmf=None, exposure=None,
-                 backscal=None, areascal=None, grouping=None,
-                 grouped=False, quality=None, bkg=None,
-                 method=None) -> None:
+    def fake_pha(self,
+                 id,
+                 arf=None,
+                 rmf=None,
+                 exposure=None,
+                 backscal=None,
+                 areascal=None,
+                 grouping=None,
+                 grouped: bool = False,
+                 quality=None,
+                 bkg=None,
+                 method=None
+                 ) -> None:
         """Simulate a PHA data set from a model.
 
         The function creates a simulated PHA data set based on a source
@@ -10993,8 +11075,11 @@ class Session(sherpa.ui.utils.Session):
                 pass
         raise IOErr(f"No column data found in {filename} with supported file formats")
 
-    def load_xstable_model(self, modelname, filename,
-                           etable=False) -> None:
+    def load_xstable_model(self,
+                           modelname,
+                           filename,
+                           etable: bool = False
+                           ) -> None:
         """Load a XSPEC table model.
 
         Create an additive ('atable', [1]_), multiplicative
@@ -15366,7 +15451,7 @@ class Session(sherpa.ui.utils.Session):
                            id: IdType | None = None,
                            num=1,
                            scales=None,
-                           correlated=False,
+                           correlated: bool = False,
                            numcores=None,
                            bkg_id: IdType | None = None,
                            model=None,
@@ -15605,10 +15690,10 @@ class Session(sherpa.ui.utils.Session):
                     id: IdType | None = None,
                     num=1,
                     scales=None,
-                    correlated=False,
-                    numcores=None,
+                    correlated: bool = False,
+                    numcores: int | None = None,
                     bkg_id: IdType | None = None,
-                    Xrays=True,
+                    Xrays: bool = True,
                     confidence=68
                     ):
         """Return the flux distribution of a model.

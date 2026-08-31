@@ -68,8 +68,8 @@ from sherpa.sim.sample import ClipValue
 import sherpa.stats
 from sherpa.stats import Stat, UserStat
 import sherpa.utils
-from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
-    export_method, send_to_pager
+from sherpa.utils import NoNewAttributesAfterInit, bool_cast, \
+    is_subclass, export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
@@ -732,7 +732,11 @@ def set_dep(data, val) -> None:
     data.dep = dep
 
 
-def set_error(data, field, val, fractional=False) -> None:
+def set_error(data,
+              field,
+              val,
+              fractional: bool = False
+              ) -> None:
     """Set the error field.
 
     Parameters
@@ -760,7 +764,7 @@ def set_error(data, field, val, fractional=False) -> None:
 
     else:
         val = SherpaFloat(val)
-        if sherpa.utils.bool_cast(fractional):
+        if bool_cast(fractional):
             err = val * data.get_dep()
         else:
             err = np.array([val] * data.size)
@@ -768,7 +772,10 @@ def set_error(data, field, val, fractional=False) -> None:
     setattr(data, field, err)
 
 
-def set_filter(data, val, ignore=False) -> None:
+def set_filter(data,
+               val,
+               ignore: bool = False
+               ) -> None:
     """Set the filter field.
 
     Parameters
@@ -1206,7 +1213,10 @@ class Session(NoNewAttributesAfterInit):
         self._set_plot_types()
         self._set_contour_types()
 
-    def save(self, filename='sherpa.save', clobber=False) -> None:
+    def save(self,
+             filename='sherpa.save',
+             clobber: bool = False
+             ) -> None:
         """Save the current Sherpa session to a file.
 
         Parameters
@@ -1253,7 +1263,7 @@ class Session(NoNewAttributesAfterInit):
         """
 
         _check_str_type(filename, "filename")
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
 
         if os.path.isfile(filename) and not clobber:
             raise IOErr("filefound", filename)
@@ -1477,7 +1487,10 @@ class Session(NoNewAttributesAfterInit):
         covar_str += self.get_covar_results().format() + '\n\n'
         return covar_str
 
-    def show_stat(self, outfile=None, clobber=False) -> None:
+    def show_stat(self,
+                  outfile=None,
+                  clobber: bool = False
+                  ) -> None:
         """Display the current fit statistic.
 
         Parameters
@@ -1516,7 +1529,10 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_stat()
         send_to_pager(txt, outfile, clobber)
 
-    def show_method(self, outfile=None, clobber=False) -> None:
+    def show_method(self,
+                    outfile=None,
+                    clobber: bool = False
+                    ) -> None:
         """Display the current optimization method and options.
 
         Parameters
@@ -1561,7 +1577,10 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_method()
         send_to_pager(txt, outfile, clobber)
 
-    def show_fit(self, outfile=None, clobber=False) -> None:
+    def show_fit(self,
+                 outfile=None,
+                 clobber: bool = False
+                 ) -> None:
         """Summarize the fit results.
 
         Display the results of the last call to `fit`, including:
@@ -1600,7 +1619,9 @@ class Session(NoNewAttributesAfterInit):
 
     def show_data(self,
                   id: IdType | None = None,
-                  outfile=None, clobber=False) -> None:
+                  outfile=None,
+                  clobber: bool = False
+                  ) -> None:
         """Summarize the available data sets.
 
         Display information on the data sets that have been
@@ -1638,7 +1659,9 @@ class Session(NoNewAttributesAfterInit):
 
     def show_filter(self,
                     id: IdType | None = None,
-                    outfile=None, clobber=False) -> None:
+                    outfile=None,
+                    clobber: bool = False
+                    ) -> None:
         """Show any filters applied to a data set.
 
         Display any filters that have been applied to the independent
@@ -1679,7 +1702,9 @@ class Session(NoNewAttributesAfterInit):
 
     def show_model(self,
                    id: IdType | None = None,
-                   outfile=None, clobber=False) -> None:
+                   outfile=None,
+                   clobber: bool = False
+                   ) -> None:
         """Display the model expression used to fit a data set.
 
         This displays the model used to fit the data set, that is,
@@ -1723,7 +1748,9 @@ class Session(NoNewAttributesAfterInit):
 
     def show_source(self,
                     id: IdType | None = None,
-                    outfile=None, clobber=False) -> None:
+                    outfile=None,
+                    clobber: bool = False
+                    ) -> None:
         """Display the source model expression for a data set.
 
         This displays the source model for a data set, that is, the
@@ -1767,7 +1794,9 @@ class Session(NoNewAttributesAfterInit):
     # as the Notes section below is inadequate
     def show_kernel(self,
                     id: IdType | None = None,
-                    outfile=None, clobber=False) -> None:
+                    outfile=None,
+                    clobber: bool = False
+                    ) -> None:
         """Display any kernel applied to a data set.
 
         The kernel represents the subset of the PSF model that is used
@@ -1824,7 +1853,9 @@ class Session(NoNewAttributesAfterInit):
     # as the Notes section below is inadequate
     def show_psf(self,
                  id: IdType | None = None,
-                 outfile=None, clobber=False) -> None:
+                 outfile=None,
+                 clobber: bool = False
+                 ) -> None:
         """Display any PSF model applied to a data set.
 
         The PSF model represents the full model or data set that is
@@ -1877,7 +1908,10 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_psf(id)
         send_to_pager(txt, outfile, clobber)
 
-    def show_conf(self, outfile=None, clobber=False) -> None:
+    def show_conf(self,
+                  outfile=None,
+                  clobber: bool = False
+                  ) -> None:
         """Display the results of the last conf evaluation.
 
         The output includes the best-fit model parameter values,
@@ -1910,7 +1944,10 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_conf()
         send_to_pager(txt, outfile, clobber)
 
-    def show_proj(self, outfile=None, clobber=False) -> None:
+    def show_proj(self,
+                  outfile=None,
+                  clobber: bool = False
+                  ) -> None:
         """Display the results of the last proj evaluation.
 
         The output includes the best-fit model parameter values,
@@ -1943,7 +1980,10 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_proj()
         send_to_pager(txt, outfile, clobber)
 
-    def show_covar(self, outfile=None, clobber=False) -> None:
+    def show_covar(self,
+                   outfile=None,
+                   clobber: bool = False
+                   ) -> None:
         """Display the results of the last covar evaluation.
 
         The output includes the best-fit model parameter values,
@@ -1978,7 +2018,9 @@ class Session(NoNewAttributesAfterInit):
 
     def show_all(self,
                  id: IdType | None = None,
-                 outfile=None, clobber=False) -> None:
+                 outfile=None,
+                 clobber: bool = False
+                 ) -> None:
         """Report the current state of the Sherpa session.
 
         Display information about one or all of the data sets that
@@ -2055,7 +2097,10 @@ class Session(NoNewAttributesAfterInit):
                 funcs.append(func)
         return funcs
 
-    def list_functions(self, outfile=None, clobber=False) -> None:
+    def list_functions(self,
+                       outfile=None,
+                       clobber: bool = False
+                       ) -> None:
         """Display the functions provided by Sherpa.
 
         Unlike the other ``list_xxx`` commands, this does not
@@ -3473,7 +3518,11 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
-    def load_filter(self, id, filename=None, ignore=False, ncols=2,
+    def load_filter(self,
+                    id,
+                    filename=None,
+                    ignore: bool = False,
+                    ncols=2,
                     *args, **kwargs) -> None:
         """Load the filter array from an ASCII file and add to a data set.
 
@@ -3539,7 +3588,11 @@ class Session(NoNewAttributesAfterInit):
                             filename, ncols=ncols, *args, **kwargs),
                         ignore=ignore)
 
-    def set_filter(self, id, val=None, ignore=False) -> None:
+    def set_filter(self,
+                   id,
+                   val=None,
+                   ignore: bool = False
+                   ) -> None:
         """Set the filter array of a data set.
 
         Parameters
@@ -3636,7 +3689,11 @@ class Session(NoNewAttributesAfterInit):
         set_dep(d, val)
 
     # DOC-NOTE: also in sherpa.utils
-    def set_staterror(self, id, val=None, fractional=False) -> None:
+    def set_staterror(self,
+                      id,
+                      val=None,
+                      fractional: bool = False
+                      ) -> None:
         """Set the statistical errors on the dependent axis of a data set.
 
         These values override the errors calculated by any statistic,
@@ -3694,7 +3751,11 @@ class Session(NoNewAttributesAfterInit):
         set_error(d, "staterror", val, fractional=fractional)
 
     # DOC-NOTE: also in sherpa.astro.utils
-    def set_syserror(self, id, val=None, fractional=False) -> None:
+    def set_syserror(self,
+                     id,
+                     val=None,
+                     fractional: bool = False
+                     ) -> None:
         """Set the systematic errors on the dependent axis of a data set.
 
         Parameters
@@ -3751,7 +3812,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def get_staterror(self,
                       id: IdType | None = None,
-                      filter=False):
+                      filter: bool = False
+                      ):
         """Return the statistical error on the dependent axis of a data set.
 
         The function returns the statistical errors on the values
@@ -3832,7 +3894,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def get_syserror(self,
                      id: IdType | None = None,
-                     filter=False):
+                     filter: bool = False
+                     ):
         """Return the systematic error on the dependent axis of a data set.
 
         The function returns the systematic errors on the values
@@ -3905,7 +3968,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def get_error(self,
                   id: IdType | None = None,
-                  filter=False):
+                  filter: bool = False
+                  ):
         """Return the errors on the dependent axis of a data set.
 
         The function returns the total errors (a quadrature addition
@@ -4029,7 +4093,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def get_dep(self,
                 id: IdType | None = None,
-                filter=False):
+                filter: bool = False
+                ):
         """Return the dependent axis of a data set.
 
         This function returns the data values (the dependent axis)
@@ -4091,7 +4156,8 @@ class Session(NoNewAttributesAfterInit):
 
     def get_dims(self,
                  id: IdType | None = None,
-                 filter=False):
+                 filter: bool = False
+                 ):
         """Return the dimensions of the data set.
 
         Parameters
@@ -4633,7 +4699,8 @@ class Session(NoNewAttributesAfterInit):
 
     def unpack_data(self, filename, ncols=2, colkeys=None,
                     dstype=sherpa.data.Data1D, sep=' ', comment='#',
-                    require_floats=True):
+                    require_floats: bool = True
+                    ):
         """Create a sherpa data object from an ASCII file.
 
         This function is used to read in columns from an ASCII
@@ -4741,7 +4808,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def load_data(self, id, filename=None, ncols=2, colkeys=None,
                   dstype=sherpa.data.Data1D, sep=' ', comment='#',
-                  require_floats=True) -> None:
+                  require_floats: bool = True
+                  ) -> None:
         """Load a data set from an ASCII file.
 
         Parameters
@@ -4924,7 +4992,9 @@ class Session(NoNewAttributesAfterInit):
         sherpa.io.write_arrays(filename, args, fields, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    def save_arrays(self, filename, args, fields=None, clobber=False, sep=' ',
+    def save_arrays(self, filename, args, fields=None,
+                    clobber: bool = False,
+                    sep=' ',
                     comment='#', linebreak='\n', format='%g'
                     ) -> None:
         """Write a list of arrays to an ASCII file.
@@ -4977,13 +5047,15 @@ class Session(NoNewAttributesAfterInit):
         ...             clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         _check_str_type(filename, "filename")
         sherpa.io.write_arrays(filename, args, fields, sep, comment, clobber,
                                linebreak, format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_source(self, id, filename=None, clobber=False, sep=' ',
+    def save_source(self, id, filename=None,
+                    clobber: bool = False,
+                    sep=' ',
                     comment='#', linebreak='\n', format='%g'
                     ) -> None:
         """Save the model values to a file.
@@ -5054,12 +5126,14 @@ class Session(NoNewAttributesAfterInit):
         >>> save_source('jet', "jet.mdl", clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         self._save_type('source', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_model(self, id, filename=None, clobber=False, sep=' ',
+    def save_model(self, id, filename=None,
+                   clobber: bool = False,
+                   sep=' ',
                    comment='#', linebreak='\n', format='%g'
                    ) -> None:
         """Save the model values to a file.
@@ -5131,12 +5205,14 @@ class Session(NoNewAttributesAfterInit):
         >>> save_model('jet', "jet.mdl", clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         self._save_type('model', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_resid(self, id, filename=None, clobber=False, sep=' ',
+    def save_resid(self, id, filename=None,
+                   clobber: bool = False,
+                   sep=' ',
                    comment='#', linebreak='\n', format='%g'
                    ) -> None:
         """Save the residuals (data-model) to a file.
@@ -5202,12 +5278,14 @@ class Session(NoNewAttributesAfterInit):
         >>> save_resid('jet', "resid.dat", clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         self._save_type('resid', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_delchi(self, id, filename=None, clobber=False, sep=' ',
+    def save_delchi(self, id, filename=None,
+                    clobber: bool = False,
+                    sep=' ',
                     comment='#', linebreak='\n', format='%g'
                     ) -> None:
         """Save the ratio of residuals (data-model) to error to a file.
@@ -5273,13 +5351,14 @@ class Session(NoNewAttributesAfterInit):
         >>> save_resid('jet', "delchi.dat", clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         self._save_type('delchi', id, filename, clobber=clobber, sep=sep,
                         comment=comment, linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils
     def save_data(self, id, filename=None, fields=None, sep=' ', comment='#',
-                  clobber=False, linebreak='\n', format='%g'
+                  clobber: bool = False,
+                  linebreak='\n', format='%g'
                   ) -> None:
         """Save the data to a file.
 
@@ -5352,7 +5431,7 @@ class Session(NoNewAttributesAfterInit):
         ...           fields=['x', 'y', 'staterror'])
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
 
@@ -5361,7 +5440,9 @@ class Session(NoNewAttributesAfterInit):
                              comment, clobber, linebreak, format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    def save_filter(self, id, filename=None, clobber=False, sep=' ',
+    def save_filter(self, id, filename=None,
+                    clobber: bool = False,
+                    sep=' ',
                     comment='#', linebreak='\n', format='%g'
                     ) -> None:
         """Save the filter array to a file.
@@ -5421,7 +5502,7 @@ class Session(NoNewAttributesAfterInit):
         >>> save_filter('filt.dat')
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
 
@@ -5441,7 +5522,9 @@ class Session(NoNewAttributesAfterInit):
                          linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    def save_staterror(self, id, filename=None, clobber=False, sep=' ',
+    def save_staterror(self, id, filename=None,
+                       clobber: bool = False,
+                       sep=' ',
                        comment='#', linebreak='\n', format='%g'
                        ) -> None:
         """Save the statistical errors to a file.
@@ -5510,7 +5593,7 @@ class Session(NoNewAttributesAfterInit):
         >>> save_staterror('jet', 'err.out', clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
 
@@ -5522,7 +5605,9 @@ class Session(NoNewAttributesAfterInit):
                          linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    def save_syserror(self, id, filename=None, clobber=False, sep=' ',
+    def save_syserror(self, id, filename=None,
+                      clobber: bool = False,
+                      sep=' ',
                       comment='#', linebreak='\n', format='%g'
                       ) -> None:
         """Save the statistical errors to a file.
@@ -5589,7 +5674,7 @@ class Session(NoNewAttributesAfterInit):
         >>> save_syserror('jet', 'err.out', clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
 
@@ -5601,7 +5686,9 @@ class Session(NoNewAttributesAfterInit):
                          linebreak=linebreak, format=format)
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
-    def save_error(self, id, filename=None, clobber=False, sep=' ',
+    def save_error(self, id, filename=None,
+                   clobber: bool = False,
+                   sep=' ',
                    comment='#', linebreak='\n', format='%g'
                    ) -> None:
         """Save the errors to a file.
@@ -5675,7 +5762,7 @@ class Session(NoNewAttributesAfterInit):
         >>> save_error('jet', 'err.out', clobber=True)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
+        clobber = bool_cast(clobber)
         if filename is None:
             id, filename = filename, id
 
@@ -6157,7 +6244,7 @@ class Session(NoNewAttributesAfterInit):
     # Models
     ###########################################################################
 
-    def paramprompt(self, val=False) -> None:
+    def paramprompt(self, val: bool = False) -> None:
         """Should the user be asked for the parameter values when creating a model?
 
         When `val` is ``True``, calls to `set_model` will cause the user
@@ -6217,7 +6304,7 @@ class Session(NoNewAttributesAfterInit):
         gline.ampl parameter value [1] 1.0e-3,1.0e-7,1
 
         """
-        self._paramprompt = sherpa.utils.bool_cast(val)
+        self._paramprompt = bool_cast(val)
 
     def _add_model_types(self, module,
                          baselist=(sherpa.models.ArithmeticModel,)
@@ -6548,7 +6635,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         cmpt = self._model_components.get(name)
-        require = sherpa.utils.bool_cast(require)
+        require = bool_cast(require)
         if require and (cmpt is None):
             raise IdentifierErr('nomodelcmpt', name)
         return cmpt
@@ -9406,7 +9493,12 @@ class Session(NoNewAttributesAfterInit):
 
         return self._fit_results
 
-    def guess(self, id=None, model=None, limits=True, values=True):
+    def guess(self,
+              id=None,
+              model=None,
+              limits: bool = True,
+              values: bool = True
+              ):
         """Estimate the parameter values and ranges given the loaded data.
 
         The guess function can change the parameter values and
@@ -16929,7 +17021,10 @@ class Session(NoNewAttributesAfterInit):
     # Contours
     #
 
-    def _contour(self, plotobj, overcontour=False, **kwargs) -> None:
+    def _contour(self,
+                 plotobj,
+                 overcontour: bool = False,
+                 **kwargs) -> None:
         """Display a plot object
 
         Parameters
@@ -17748,7 +17843,7 @@ class Session(NoNewAttributesAfterInit):
                 otherids = ()
             ids, fit = self._get_fit(id, otherids)
             plotobj.prepare(min=min, max=max, nloop=nloop, delv=delv,
-                            fac=fac, log=sherpa.utils.bool_cast(log),
+                            fac=fac, log=bool_cast(log),
                             numcores=numcores)
             plotobj.calc(fit, par)
 
@@ -19581,10 +19676,10 @@ class Session(NoNewAttributesAfterInit):
         data = self.get_data_image(id)
         model = self.get_model_image(id)
         resid = self.get_resid_image(id)
-        deleteframes = sherpa.utils.bool_cast(deleteframes)
-        if deleteframes is True:
+        if bool_cast(deleteframes):
             sherpa.image.Image.open()
             sherpa.image.Image.delete_frames()
+
         data.image(None, False, tile)
         model.image(None, newframe, tile)
         resid.image(None, newframe, tile)

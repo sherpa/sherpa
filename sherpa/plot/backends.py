@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2020 - 2024
+#  Copyright (C) 2007, 2015, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -275,7 +275,12 @@ class BaseBackend(metaclass=MetaBaseBackend):
         clist = clist * (n // len(clist) + 1)
         return clist[:n]
 
-    def set_subplot(self, row, col, nrows, ncols, clearaxes=True,
+    def set_subplot(self,
+                    row,
+                    col,
+                    nrows,
+                    ncols,
+                    clearaxes: bool = True,
                     **kwargs):
         """Select a plot space in a grid of plots or create new grid
 
@@ -304,8 +309,14 @@ class BaseBackend(metaclass=MetaBaseBackend):
         """
         pass
 
-    def set_jointplot(self, row, col, nrows, ncols, create=True,
-                      top=0, ratio=2):
+    def set_jointplot(self,
+                      row,
+                      col,
+                      nrows,
+                      ncols,
+                      create: bool = True,
+                      top=0,
+                      ratio=2):
         """Move to the plot, creating them if necessary.
 
         .. warning::
@@ -391,11 +402,13 @@ class BaseBackend(metaclass=MetaBaseBackend):
     def plot(self, x, y, *,
              xerr=None, yerr=None,
              title=None, xlabel=None, ylabel=None,
-             xlog=False, ylog=False,
-             overplot=False, clearwindow=True,
+             xlog: bool = False,
+             ylog: bool = False,
+             overplot: bool = False,
+             clearwindow: bool = True,
              label=None,
-             xerrorbars=False,
-             yerrorbars=False,
+             xerrorbars: bool = False,
+             yerrorbars: bool = False,
              color=None,
              linestyle='solid',
              linewidth=None,
@@ -442,11 +455,13 @@ class BaseBackend(metaclass=MetaBaseBackend):
     def histo(self, xlo, xhi, y, *,
               yerr=None,
               title=None, xlabel=None, ylabel=None,
-              overplot=False, clearwindow=True,
-              xlog=False, ylog=False,
+              overplot: bool = False,
+              clearwindow: bool = True,
+              xlog: bool = False,
+              ylog: bool = False,
               label=None,
-              xerrorbars=False,
-              yerrorbars=False,
+              xerrorbars: bool = False,
+              yerrorbars: bool = False,
               color=None,
               linestyle='solid',
               linewidth=None,
@@ -489,8 +504,10 @@ class BaseBackend(metaclass=MetaBaseBackend):
     def contour(self, x0, x1, y, *,
                 levels=None,
                 title=None, xlabel=None, ylabel=None,
-                overcontour=False, clearwindow=True,
-                xlog=False, ylog=False,
+                overcontour: bool = False,
+                clearwindow: bool = True,
+                xlog: bool = False,
+                ylog: bool = False,
                 label=None,
                 colors=None,
                 linestyles='solid',
@@ -521,7 +538,7 @@ class BaseBackend(metaclass=MetaBaseBackend):
     def image(self, x0, x1, y, *,
                aspect=1,
                title=None, xlabel=None, ylabel=None,
-               clearwindow=True,
+               clearwindow: bool = True,
                **kwargs):
         """Draw 2D image data.
 
@@ -548,7 +565,8 @@ class BaseBackend(metaclass=MetaBaseBackend):
     def vline(self, x, *,
               ymin=0, ymax=1,
               title=None, xlabel=None, ylabel=None,
-              overplot=False, clearwindow=True,
+              overplot: bool = False,
+              clearwindow: bool = True,
               linecolor=None,
               linestyle=None,
               linewidth=None,
@@ -572,7 +590,8 @@ class BaseBackend(metaclass=MetaBaseBackend):
     def hline(self, y, *,
               xmin=0, xmax=1,
               title=None, xlabel=None, ylabel=None,
-              overplot=False, clearwindow=True,
+              overplot: bool = False,
+              clearwindow: bool = True,
               linecolor=None,
               linestyle=None,
               linewidth=None,
@@ -866,11 +885,13 @@ class BasicBackend(BaseBackend):
     def plot(self, x, y, *,
              xerr=None, yerr=None,
              title=None, xlabel=None, ylabel=None,
-             xlog=False, ylog=False,
-             overplot=False, clearwindow=True,
+             xlog: bool = False,
+             ylog: bool = False,
+             overplot: bool = False,
+             clearwindow: bool = True,
              label=None,
-             xerrorbars=False,
-             yerrorbars=False,
+             xerrorbars: bool = False,
+             yerrorbars: bool = False,
              color=None,
              linestyle='solid',
              linewidth=None,
@@ -900,11 +921,13 @@ class BasicBackend(BaseBackend):
     def histo(self, xlo, xhi, y, *,
               yerr=None,
               title=None, xlabel=None, ylabel=None,
-              overplot=False, clearwindow=True,
-              xlog=False, ylog=False,
+              overplot: bool = False,
+              clearwindow: bool = True,
+              xlog: bool = False,
+              ylog: bool = False,
               label=None,
-              xerrorbars=False,
-              yerrorbars=False,
+              xerrorbars: bool = False,
+              yerrorbars: bool = False,
               color=None,
               linestyle='solid',
               linewidth=None,
@@ -929,8 +952,10 @@ class BasicBackend(BaseBackend):
     def contour(self, x0, x1, y, *,
                 levels=None,
                 title=None, xlabel=None, ylabel=None,
-                overcontour=False, clearwindow=True,
-                xlog=False, ylog=False,
+                overcontour: bool = False,
+                clearwindow: bool = True,
+                xlog: bool = False,
+                ylog: bool = False,
                 label=None,
                 colors=None,
                 linestyles='solid',
@@ -951,7 +976,8 @@ class BasicBackend(BaseBackend):
     def vline(self, x, *,
               ymin=0, ymax=1,
               title=None, xlabel=None, ylabel=None,
-              overplot=False, clearwindow=True,
+              overplot: bool = False,
+              clearwindow: bool = True,
               linecolor=None,
               linestyle=None,
               linewidth=None,
@@ -976,7 +1002,8 @@ class BasicBackend(BaseBackend):
     def hline(self, y, *,
               xmin=0, xmax=1,
               title=None, xlabel=None, ylabel=None,
-              overplot=False, clearwindow=True,
+              overplot: bool = False,
+              clearwindow: bool = True,
               linecolor=None,
               linestyle=None,
               linewidth=None,
