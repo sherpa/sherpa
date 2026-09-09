@@ -837,3 +837,55 @@ def test_image_setregion_file(session, coord, tmp_path):
     s.image_setregion(str(regfile), coord)
     outreg = s.image_getregion()
     assert outreg == f"{inreg};"
+
+
+@requires_ds9
+@pytest.mark.parametrize("session",
+                         [pytest.param(BaseSession, marks=pytest.mark.session),
+                          AstroSession])
+def test_change_ds9_template(session):
+    """Can we talk to multiple DS9 instances in the same session?"""
+
+    from sherpa.image import backend
+
+    s = session()
+    d = example_data()
+    m = example_model()
+    s.set_data(d)
+    s.set_source(m)
+
+    orig_template = backend.get_template()
+    assert orig_template == "sherpa"  # chcek no other tests have changed it
+
+    new_template = f"{orig_template}-copy"
+
+    try:
+        # Display the image data in the default instance and the model
+        # in the second DS9.
+        #
+        s.image_data()
+        old_cmap = backend.xpaget("cmap")
+
+        # Set notes to be able to distinguish (although the data check
+        # also should verify this).1
+        #
+        backend.xpaset("notes {Hello World}")
+        check_xpa(backend, "notes", "Hello World\n\n")
+
+        backend.set_template(new_template)
+        s.image_model()
+        check_xpa_model(backend)
+        check_xpa(backend, "notes", "\n")
+
+        backend.xpaset("quit")  # clean up the copy
+    finally:
+        backend.set_template(orig_template)
+
+    # Should be back to the original DS9 instance.
+    check_xpa_data(backend)
+    check_xpa(backend, "notes", "Hello World\n\n")
+
+    backend.xpaset("quit")  # clean up the original
+
+    # The finally call should guarantee this.
+    assert backend.get_template() == orig_template

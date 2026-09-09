@@ -23,6 +23,10 @@
 At present the only supported application is DS9 [1]_, which is
 connected to via XPA [2]_.
 
+Communication is with a single DS9 instance. If multiple instances
+are needed then the ``set_template`` routine can be used to select
+a new template name for the next image call.
+
 References
 ----------
 
@@ -33,6 +37,7 @@ References
 """
 
 import logging
+import string
 
 import numpy as np
 
@@ -40,6 +45,8 @@ from sherpa.astro.io.wcs import WCS
 from sherpa.data import Data2D
 from sherpa.models.model import Model
 from sherpa.utils import NoNewAttributesAfterInit, bool_cast, display_fields
+from sherpa.utils.err import ArgumentTypeErr
+
 
 warning = logging.getLogger(__name__).warning
 
@@ -58,6 +65,53 @@ except Exception as e:
 __all__ = ('Image', 'DataImage', 'ModelImage', 'RatioImage',
            'ResidImage', 'PSFImage', 'PSFKernelImage', 'SourceImage',
            'ComponentModelImage', 'ComponentSourceImage')
+
+
+def get_template() -> str:
+    """Return the template name used to talk to DS9.
+
+    Returns
+    ----------
+    template : str
+        The name used with for the DS9 instance.
+
+    See Also
+    --------
+    set_template
+
+    """
+
+    return backend.get_template()
+
+
+def set_template(template: str) -> None:
+    """Change the template name used by DS9.
+
+    Calling this will cause a new DS9 instance to be created
+    the next time an image is displayed.
+
+    Parameters
+    ----------
+    template : str
+       The name used with the DS9 instance. It must not contain
+       whitespace or be empty.
+
+    See Also
+    --------
+    get_template
+
+    """
+
+    if not isinstance(template, str):
+        raise ArgumentTypeErr("badarg", "template", "a string")
+
+    if template == "":
+        raise ArgumentTypeErr("badarg", "template", "not empty")
+
+    if any(c in template for c in string.whitespace):
+        raise ArgumentTypeErr("badarg", "template", "a string without whitespace")
+
+    backend.set_template(template)
 
 
 # As with the Plot and Contour classes, the base Image class works
