@@ -400,6 +400,14 @@ For the special class of `~sherpa.astro.data.DataPHA` described in
 function has to include the response of the instrument. See the
 `sherpa.astro.data.DataPHA.to_plot` documentation for an example.
 
+Image display
+=============
+
+.. toctree::
+   :maxdepth: 2
+
+   image_backends
+
 Reference/API
 =============
 
@@ -414,5 +422,7 @@ Reference/API
    pylab_backend
    pylab_area_backend
    bokeh_backend
+   ds9_backend
+   dummy_backend
    utils
    testing
