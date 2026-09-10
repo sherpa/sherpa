@@ -38,6 +38,7 @@ from . import DS9
 
 
 imager = DS9.DS9Win(template=DS9._DefTemplate, doOpen=False)
+"""The DS9 window, or None"""
 
 
 # The except blocks would ideally catch explicit errors; the present
