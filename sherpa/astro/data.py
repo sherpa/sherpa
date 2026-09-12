@@ -1623,6 +1623,8 @@ class DataPHA(Data1D):
 
         self.bin_lo = None
         self.bin_hi = None
+
+        self.quality_filter = None
         self.quality = _check(quality)
         self.grouping = _check(grouping)
         self.exposure = exposure
@@ -1661,7 +1663,6 @@ class DataPHA(Data1D):
         self._rate = True
         self._plot_fac = 0
         self.units = "channel"
-        self.quality_filter = None
         super().__init__(name, channel, counts, staterror, syserror)
 
         # special-case the labels
@@ -1856,8 +1857,13 @@ will be removed. The identifiers can be integers or strings.
                      ) -> None:
         ...
 
-    def _set_related(self, attr, val, check_mask=True,
-                     allow_scalar=False, **kwargs):
+    def _set_related(self,
+                     attr: str,
+                     val: float | ArrayType | None,
+                     check_mask: bool = True,
+                     allow_scalar: bool = False,
+                     **kwargs
+                     ) -> None:
         """Set a field that must match the independent axes size.
 
         The value can be None, a scalar (if allow_scalar is set), or
@@ -2090,6 +2096,11 @@ will be removed. The identifiers can be integers or strings.
         # quality_filter?
         #
         self._set_related("quality", val)
+        if self.quality_filter is not None:
+            # This needs re-wording
+            warning("The ignore_bad() call has been removed as quality has changed")
+
+        self.quality_filter = None
 
     # It is unclear exactly what the quality_filter is meant to
     # represent, so as part of improving support for ignore_bad, add
@@ -6409,4 +6420,3 @@ class DataIMGInt(DataIMG):
         x0hi, x1hi = convert(x0hi, x1hi)
 
         return (x0lo, x1lo, x0hi, x1hi)
-
