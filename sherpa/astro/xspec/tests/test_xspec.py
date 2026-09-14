@@ -92,6 +92,9 @@ def get_all_xspec_models() -> list:
     return out
 
 
+ALL_MODELS_CLS = get_all_xspec_models()
+
+
 # There is an argument to be made that these tests only need
 # to exercise a small number of models (e.g. one each of the
 # different templates used in xspec_extension.hh - so single
@@ -109,7 +112,7 @@ def get_all_xspec_models() -> list:
 def get_xspec_models() -> list:
     """What are the XSpec model names to test."""
 
-    model_names = [cls.__name__ for cls in get_all_xspec_models()]
+    model_names = [cls.__name__ for cls in ALL_MODELS_CLS]
     version = xs.get_xsversion()
 
     # the grbjet model with XSPEC 12.12.0 (and presumably 12.12.0.a) can
@@ -146,6 +149,9 @@ def get_xspec_models() -> list:
     # Only bother with those models we can run with the XSPEC
     # model library.
     return list(filter(lambda mod: mod.version_enabled, models))
+
+
+RUNNABLE_MODELS_CLS = get_xspec_models()
 
 
 def make_grid():
@@ -225,11 +231,11 @@ def assert_is_finite(vals, modelcls, label):
 
 def test_create_model_instances():
     """Do we know how many models we have?"""
-    count = len(get_all_xspec_models())
+    count = len(ALL_MODELS_CLS)
     assert count == XSPEC_MODELS_COUNT
 
 
-@pytest.mark.parametrize("modelcls", get_all_xspec_models())
+@pytest.mark.parametrize("modelcls", ALL_MODELS_CLS)
 def test_check_default_name(modelcls):
     """Check the names are correct"""
 
@@ -660,7 +666,7 @@ def test_old_style_xspec_class():
     assert actual == pytest.approx(expected)
 
 
-@pytest.mark.parametrize("modelcls", get_xspec_models())
+@pytest.mark.parametrize("modelcls", RUNNABLE_MODELS_CLS)
 def test_evaluate_xspec_model(modelcls):
     """Can we call a model with its default parameters?
 
@@ -726,7 +732,7 @@ def test_evaluate_xspec_model(modelcls):
     assert evals == pytest.approx(evals_no_wrapper)
 
 
-@pytest.mark.parametrize("modelcls", get_xspec_models())
+@pytest.mark.parametrize("modelcls", RUNNABLE_MODELS_CLS)
 def test_evaluate_xspec_model_noncontiguous2(modelcls):
     """Can we evaluate an XSPEC model with a non-contiguous grid?
 
