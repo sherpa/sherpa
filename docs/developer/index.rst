@@ -56,7 +56,7 @@ With the ``meson-python`` backend, importing a module containing a
 compiled extension will cause the extension to automatically be
 rebuilt if the source code has been changed. If there is a compiler
 error then the error message is likely to hide any information and
-in this case the suggestion is to re-run the ``pip instal`` line.
+in this case the suggestion is to re-run the ``pip install`` line.
 
 After the installation ``pytest`` can run all the tests. In the sherpa
 root directory call::
