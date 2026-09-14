@@ -189,8 +189,24 @@ if xspec_prefix != ''
 
   message('XSPEC macros:', xspec_macros)
 
-  # Find the libraries
+  # Find the libraries. This depends on the XSPEC version:
+  # - prior to 13.0.0 the default is
+  #   ['XSFunctions', 'XSUtil', 'XS']
+  # - for 13.0.0 and later it is assumed to be
+  #   ['XSFunctions', 'XSUtil']
+  # The xspec-libraries option lets a user over-ride these
+  # choices (the empty list means use the defaults).
+  #
   xspec_libs = get_option('xspec-libraries')
+  if xspec_libs.length() == 0
+    # Use the defaults (fortunately can use a simple string match).
+    if xspec_version.startswith('12')
+      xspec_libs = ['XSFunctions', 'XSUtil', 'XS']
+    else
+      xspec_libs = ['XSFunctions', 'XSUtil']
+    endif
+  endif
+
   xspec_lib_deps = []
   foreach xlib : xspec_libs
     xlib_dep = cc.find_library(
