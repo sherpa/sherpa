@@ -186,27 +186,13 @@ def xpaset(cmd: str,
 
 
 # What data types need to be converted before sending to DS9?
-# DS9 8.7 supports
-#
-#     Integer types     Floating-point types
-#     -------------     --------------------
-#     unsigned 8-bit          32 bit
-#              16-bit         64-bit
-#     unsigned 16-bit
-#              32-bit
-#              64-bit
-#
-# There is no attempt to make this conversion match the capabilities
-# of the DS9 being used.
 #
 _CnvDict = {
     np.int8: np.int16,
     np.uint16: np.int32,
     np.uint32: np.int64,
+    np.uint64: np.float64
 }
-
-if hasattr(np, "uint64"):
-    _CnvDict[np.uint64] = np.float64
 
 _FloatTypes = (np.float32, np.float64)
 
@@ -322,7 +308,7 @@ class DS9Win:
 
         Notes
         -----
-        Complex data types cause an invalid. Other data types may be
+        Complex data types cause an exception. Other data types may be
         modified before sending to DS9.
 
         """
