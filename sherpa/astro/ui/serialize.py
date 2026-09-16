@@ -46,6 +46,7 @@ from sherpa.instrument import ConvolutionKernel, PSFModel
 from sherpa.models import Model
 from sherpa.models.basic import TableModel, TableModelBase, UserModel
 from sherpa.models.parameter import Parameter
+from sherpa.utils.err import ArgumentErr, IdentifierErr
 from sherpa.utils.types import IdType
 
 if TYPE_CHECKING:
@@ -1237,48 +1238,50 @@ def _save_bkg_source(out: OutType,
                      ) -> None:
     """Create the save_bkg_source/model/full_model line."""
 
-    # Set background models (if any) associated with backgrounds
-    # tied to this data set -- if none, then do nothing.  Again, try
-    # to distinguish cases where background "source" model is
-    # different from whole background model.
+    # Set background models (if any) associated with backgrounds tied
+    # to this data set -- if none, then do nothing.  Try to
+    # distinguish cases where background "source" model is different
+    # from whole background model.
     #
-    with suppress(Exception):
+    try:
         bids = state.list_bkg_ids(id)
-        cmd_id = _id_to_str(id)
+    except (ArgumentErr, IdentifierErr):
+        return
 
-        for bid in bids:
-            cmd_bkg_id = _id_to_str(bid)
+    cmd_id = _id_to_str(id)
+    for bid in bids:
+        cmd_bkg_id = _id_to_str(bid)
 
-            try:
-                the_bkg_source = state.get_bkg_source(id, bkg_id=bid)
-            except Exception:
-                the_bkg_source = None
+        try:
+            the_bkg_source = state.get_bkg_source(id, bkg_id=bid)
+        except Exception:
+            the_bkg_source = None
 
-            try:
-                the_bkg_full_model = state.get_bkg_model(id, bkg_id=bid)
-            except Exception:
-                the_bkg_full_model = None
+        try:
+            the_bkg_full_model = state.get_bkg_model(id, bkg_id=bid)
+        except Exception:
+            the_bkg_full_model = None
 
-            if the_bkg_source is not None:
-                # This does not check for the dataset being a DataPHA
-                # object, since (at present) it has to be, as it's the
-                # only one to support backgrounds
-                if the_bkg_full_model is not None:
-                    if repr(the_bkg_source) == repr(the_bkg_full_model):
-                        cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
-                    else:
-                        cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
+        if the_bkg_source is None and the_bkg_full_model is None:
+            continue
+
+        if the_bkg_source is not None:
+            # This does not check for the dataset being a DataPHA
+            # object, since (at present) it has to be, as it's the
+            # only one to support backgrounds
+            if the_bkg_full_model is not None:
+                if repr(the_bkg_source) == repr(the_bkg_full_model):
+                    cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
                 else:
                     cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
-
-            elif the_bkg_full_model is not None:  # have_full_model:
-                cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
-
             else:
-                return
+                cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
 
-            _output(out, cmd)
-            _output_nl(out)
+        else:
+            cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
+
+        _output(out, cmd)
+        _output_nl(out)
 
 
 def _save_models(out: OutType, state: SessionType) -> None:
