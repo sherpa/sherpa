@@ -49,14 +49,14 @@ Before you issue a pull request, we ask to run the test suite locally.
 Assuming everything is set up to install Sherpa from source, it can be
 installed in development mode with ``pip``::
 
-  pip install numpy ninga meson-python
-  pip install -e .[test] --no-build-idolation
+  pip install numpy ninja meson-python
+  pip install -e .[test] --no-build-isolation
 
 With the ``meson-python`` backend, importing a module containing a
 compiled extension will cause the extension to automatically be
 rebuilt if the source code has been changed. If there is a compiler
 error then the error message is likely to hide any information and
-in this case the suggestion is to re-run the ``pip instal`` line.
+in this case the suggestion is to re-run the ``pip install`` line.
 
 After the installation ``pytest`` can run all the tests. In the sherpa
 root directory call::
@@ -177,7 +177,7 @@ Conda can be used to install all the dependencies for Sherpa, including
 ::
 
     conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge ds9 ciao
-    conda install -n sherpaciao --only-deps -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge sherpa
+    conda install -n sherpaciao --only-deps -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge sherpa ninja meson meson-python
     conda activate sherpaciao
     pip install astropy
 
@@ -224,18 +224,31 @@ Unfortunately each option has to be supplied separately using the
 syntax ``-Csetup-args=-D<value>``, which leads to a final installation
 line of::
 
-    pip install . -Csetup-args=build-group=false \
-      -Csetup-args=build-stk=false \
-      -Csetup-args=build-region=false \
-      -Csetup-args=build-wcssubs=false \
-      -Csetup-args=region-prefix=$CONDA_PREFIX \
-      -Csetup-args=wcssubs-prefix=$CONDA_PREFIX \
-      -Csetup-args=xspec-prefix=$CONDA_PREFIX
+    pip install . -Csetup-args=-Dbuild-group=false \
+      -Csetup-args=-Dbuild-stk=false \
+      -Csetup-args=-Dbuild-region=false \
+      -Csetup-args=-Dbuild-wcssubs=false \
+      -Csetup-args=-Dregion-prefix=$CONDA_PREFIX \
+      -Csetup-args=-Dwcssubs-prefix=$CONDA_PREFIX \
+      -Csetup-args=-Dxspec-prefix=$CONDA_PREFIX
 
 The ``scripts/make_build_args_ciao`` script can simplify this:
 
-    args=`scripts/make_build_args_ciao`
-    pip install . $args
+    pip install . $(scripts/make_build_args_ciao)
+
+However, as a developer (after all, this is the "Contributing to Sherpa development"
+section) you probably want to install in editable mode.
+Without editable mode, you might run into `ImportError while loading conftest`
+because `conftest.py` will exist twice - in the source tree and in the installed code.
+The meson build system will automatically re-build the extension modules when they
+are imported. That means two things:
+
+1. You can edit the source code and then re-run the tests without having to re-install Sherpa manually.
+2. By default `pip` creates an isolated build environment and installs any missing dependencies
+   (e.g. `ninja` which is used my meson) there. When re-building it will look for a
+   temporary directory that no longer exists. Instead, install mason/ninja in the conda environment and then use the `--no-build-isolation` option to `pip`:
+
+    pip install -e . --no-build-isolation $(scripts/make_build_args_ciao)
 
 .. warning::
 
