@@ -18636,7 +18636,7 @@ class Session(NoNewAttributesAfterInit):
         """Return the data used by image_data.
 
         .. versionchanged:: 4.19.0
-           The plot object is now copied by default. To get the previous
+           The image object is now copied by default. To get the previous
            behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
@@ -18694,7 +18694,7 @@ class Session(NoNewAttributesAfterInit):
         return the results.
 
         .. versionchanged:: 4.19.0
-           The plot object is now copied by default. To get the previous
+           The image object is now copied by default. To get the previous
            behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
@@ -18755,7 +18755,7 @@ class Session(NoNewAttributesAfterInit):
         any PSF convolution - and return the results.
 
         .. versionchanged:: 4.19.0
-           The plot object is now copied by default. To get the previous
+           The image object is now copied by default. To get the previous
            behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
@@ -18810,7 +18810,7 @@ class Session(NoNewAttributesAfterInit):
         """Return the data used by image_model_component.
 
         .. versionchanged:: 4.19.0
-           The plot object is now copied by default. To get the previous
+           The image object is now copied by default. To get the previous
            behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
@@ -18887,7 +18887,7 @@ class Session(NoNewAttributesAfterInit):
         """Return the data used by image_source_component.
 
         .. versionchanged:: 4.19.0
-           The plot object is now copied by default. To get the previous
+           The image object is now copied by default. To get the previous
            behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
@@ -18958,7 +18958,7 @@ class Session(NoNewAttributesAfterInit):
         """Return the data used by image_ratio.
 
         .. versionchanged:: 4.19.0
-           The plot object is now copied by default. To get the previous
+           The image object is now copied by default. To get the previous
            behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
@@ -19012,7 +19012,7 @@ class Session(NoNewAttributesAfterInit):
         """Return the data used by image_resid.
 
         .. versionchanged:: 4.19.0
-           The plot object is now copied by default. To get the previous
+           The image object is now copied by default. To get the previous
            behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
@@ -19066,7 +19066,7 @@ class Session(NoNewAttributesAfterInit):
         """Return the data used by image_psf.
 
         .. versionchanged:: 4.19.0
-           The plot object is now copied by default. To get the previous
+           The image object is now copied by default. To get the previous
            behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
@@ -19117,7 +19117,7 @@ class Session(NoNewAttributesAfterInit):
         """Return the data used by image_kernel.
 
         .. versionchanged:: 4.19.0
-           The plot object is now copied by default. To get the previous
+           The image object is now copied by default. To get the previous
            behaviour set the ``copy`` attribute to ``False``.
 
         Parameters
@@ -19223,7 +19223,7 @@ class Session(NoNewAttributesAfterInit):
         >>> image_data('i2', newframe=True, tile=True)
 
         """
-        imageobj = self.get_data_image(id)
+        imageobj = self.get_data_image(id, copy=False)
         imageobj.image(newframe=newframe, tile=tile)
 
     def image_model(self,
@@ -19293,7 +19293,7 @@ class Session(NoNewAttributesAfterInit):
         >>> image_model('i2', newframe=True, tile=True)
 
         """
-        imageobj = self.get_model_image(id)
+        imageobj = self.get_model_image(id, copy=False)
         imageobj.image(newframe=newframe, tile=tile)
 
     def image_source_component(self, id, model=None,
@@ -19367,7 +19367,7 @@ class Session(NoNewAttributesAfterInit):
         ...                        tile=True)
 
         """
-        imageobj = self.get_source_component_image(id, model)
+        imageobj = self.get_source_component_image(id, model, copy=False)
         imageobj.image(newframe=newframe, tile=tile)
 
     def image_model_component(self, id, model=None,
@@ -19442,7 +19442,7 @@ class Session(NoNewAttributesAfterInit):
         ...                       tile=True)
 
         """
-        imageobj = self.get_model_component_image(id, model)
+        imageobj = self.get_model_component_image(id, model, copy=False)
         imageobj.image(newframe=newframe, tile=tile)
 
     def image_source(self,
@@ -19511,7 +19511,7 @@ class Session(NoNewAttributesAfterInit):
         >>> image_source('i2', newframe=True, tile=True)
 
         """
-        imageobj = self.get_source_image(id)
+        imageobj = self.get_source_image(id, copy=False)
         imageobj.image(newframe=newframe, tile=tile)
 
     # DOC-TODO: does newframe make sense here?
@@ -19578,9 +19578,9 @@ class Session(NoNewAttributesAfterInit):
         >>> image_xpaset('frame 2')
 
         """
-        data = self.get_data_image(id)
-        model = self.get_model_image(id)
-        resid = self.get_resid_image(id)
+        data = self.get_data_image(id, copy=False)
+        model = self.get_model_image(id, copy=False)
+        resid = self.get_resid_image(id, copy=False)
         deleteframes = sherpa.utils.bool_cast(deleteframes)
         if deleteframes is True:
             sherpa.image.Image.open()
@@ -19656,7 +19656,7 @@ class Session(NoNewAttributesAfterInit):
         >>> image_resid('i2', newframe=True, tile=True)
 
         """
-        imageobj = self.get_resid_image(id)
+        imageobj = self.get_resid_image(id, copy=False)
         imageobj.image(newframe=newframe, tile=tile)
 
     def image_ratio(self,
@@ -19713,7 +19713,7 @@ class Session(NoNewAttributesAfterInit):
         >>> image_ratio()
 
         """
-        imageobj = self.get_ratio_image(id)
+        imageobj = self.get_ratio_image(id, copy=False)
         imageobj.image(newframe=newframe, tile=tile)
 
     # DOC-TODO: what gets displayed when there is no PSF?
@@ -19767,7 +19767,7 @@ class Session(NoNewAttributesAfterInit):
         >>> image_psf(2)
 
         """
-        imageobj = self.get_psf_image(id)
+        imageobj = self.get_psf_image(id, copy=False)
         imageobj.image(newframe=newframe, tile=tile)
 
     # DOC-TODO: what gets displayed when there is no PSF?
@@ -19823,7 +19823,7 @@ class Session(NoNewAttributesAfterInit):
         >>> image_kernel(2)
 
         """
-        imageobj = self.get_kernel_image(id)
+        imageobj = self.get_kernel_image(id, copy=False)
         imageobj.image(newframe=newframe, tile=tile)
 
     # Manage these functions (open, close, delete frames, regions, XPA)
