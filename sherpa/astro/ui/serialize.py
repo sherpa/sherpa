@@ -998,19 +998,6 @@ def _handle_usermodel(out: OutType,
     _output(out, f"{spaces})\n")
 
 
-def _get_cpt_name(mod: Model) -> str:
-    """Return the component name."""
-
-    # If we have a name "aa.bb" then return "bb" otherwise
-    # return the name unchanged.
-    #
-    name = mod.name
-    try:
-        return name.split(".")[1]
-    except IndexError:
-        return name
-
-
 def _handle_model(out: OutType,
                   mod: Model
                   ) -> bool:
@@ -1020,7 +1007,7 @@ def _handle_model(out: OutType,
 
     """
 
-    modelname = _get_cpt_name(mod)
+    modelname = mod.name.split(".")[-1]
     found_xspec = False
     if isinstance(mod, UserModel):
         _handle_usermodel(out, mod, modelname)
@@ -1089,7 +1076,7 @@ def _handle_parameters(out: OutType,
     # .pars attribute. Not all are Parameter objects.
     #
     # Drop the "kernel" field as it should not be user settable.  Do
-    # not worry about other parameter attrbutes such as a frozen flag
+    # not worry about other parameter attributes such as a frozen flag
     # or limits.
     #
     # It is possible to loop over all attributes - e.g. drop ones
@@ -1099,7 +1086,7 @@ def _handle_parameters(out: OutType,
     # is not worth it at this time.
     #
     if mod.type == "psfmodel":
-        modelname = _get_cpt_name(mod)
+        modelname = mod.name.split(".")[-1]
         spacer = False
 
         for parname in ["size", "center", "radial", "norm"]:
