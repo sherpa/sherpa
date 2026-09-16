@@ -105,16 +105,6 @@ files and shows exactly which lines were executed while running the tests.
 Run doctests locally
 --------------------
 
-.. note::
-   The documentation tests are known to fail if NumPy 2.0 is installed
-   because the representation of NumPy types such as ``np.float64``
-   have changed, leading to errors like::
-
-       Expected:
-           2.5264364698914e-06
-       Got:
-           np.float64(2.5264364698914e-06)
-
 If `doctestplus <https://pypi.org/project/pytest-doctestplus/>` is installed
 (and it probably is because it's part of
 `sphinx-astropy <https://pypi.org/project/sphinx-astropy/>`,
@@ -122,7 +112,7 @@ which is required to build the documentation locally),
 examples in the documentation are run automatically.
 This serves two purposes:
 
-  - it ensure that the examples we give are actually correct and match the code,
+  - it ensures that the examples we give are actually correct and match the code,
   - and it acts as additional tests of the Sherpa code base.
 
 The `doctest_norecursedirs` setting in the `pytests.ini` file is used to exclude files which can not be
