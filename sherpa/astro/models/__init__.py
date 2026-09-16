@@ -108,7 +108,7 @@ class Atten(RegriddableModel1D):
 
 
 class BBody(RegriddableModel1D):
-    """A one-dimensional Blackbody model.
+    r"""A one-dimensional Blackbody model.
 
     A model representing the ideal blackbody function. It can be
     used when the independent axis is in energy or wavelength space.
@@ -124,7 +124,7 @@ class BBody(RegriddableModel1D):
     kT
         The temperature if the blackbody, in keV.
     ampl
-        The amplitude of the blackbody component.
+        The amplitude A of the blackbody component.
 
     See Also
     --------
@@ -133,16 +133,20 @@ class BBody(RegriddableModel1D):
     Notes
     -----
     The blackbody emission is calculated as a function of energy using
-    the expression::
+    the expression:
 
-        f(E) = ampl * E^2 / (exp(E / kT) - 1)
+    .. math::
+
+        f(E) = A * \frac{E^2}{e^{E / kT} - 1}
 
     where E is the photon energy, and kT is the blackbody temperature
-    (both in keV). The amplitude, ampl, is related to the ratio of
-    source radius to distance by::
+    (both in keV). The amplitude A is related to the ratio of
+    source radius to distance by:
 
-        ampl = (2 * pi / (c^2 * h^3)) (R / d)^2
-             = 9.884 x 10^31 (R / d)^2
+    .. math::
+
+
+        A = \frac{2 * \pi}{c^2 * h^3} (R / d)^2 = 9.884 \times 10^{31} (R / d)^2
 
     with Planck's constant (h) specified in keV-s and the speed of
     light (c) specified in cm/s, and with R and d representing the
@@ -150,9 +154,9 @@ class BBody(RegriddableModel1D):
 
     There are two conditions when the above equation is not used:
 
-    - if E/kt < 10^-4 then f(E) = ampl * E * kT
+    - if :math:`E/kt < 10^{-4}`, then f(E) = A * E * kT
 
-    - if E/kT > 60, f(E) = 0.
+    - if :math:`E/kT > 60`, f(E) = 0.
 
     """
 
@@ -189,7 +193,7 @@ class BBody(RegriddableModel1D):
 
 
 class BBodyFreq(RegriddableModel1D):
-    """A one-dimensional Blackbody model (frequency).
+    r"""A one-dimensional Blackbody model (frequency).
 
     This model can be used when the independent axis is in frequency
     space.
@@ -199,7 +203,7 @@ class BBodyFreq(RegriddableModel1D):
     T
         The temperature if the blackbody, in Kelvin.
     ampl
-        The amplitude of the blackbody component.
+        The amplitude A of the blackbody component.
 
     See Also
     --------
@@ -210,8 +214,9 @@ class BBodyFreq(RegriddableModel1D):
     The blackbody emission is calculated as a function of frequency
     (v) using Wien's law (hv >> kT):
 
+    .. math::
 
-        f(v) = ampl * 2 * h * v^3 * exp(-h * v / (k * T)) / c^2
+        f(v) = A * \frac{2 * h * v^3}{c^2} * e^{-\frac{hv}{kT}}
 
     where T is the blackbody temperature in Kelvin, h is Planck's
     constant, k is Boltzmann's constant, and c the speed of light.
@@ -247,7 +252,7 @@ class BBodyFreq(RegriddableModel1D):
 
 
 class Beta1D(RegriddableModel1D):
-    """One-dimensional beta model function.
+    r"""One-dimensional beta model function.
 
     The beta model is a Lorentz model with a varying power law.
 
@@ -261,7 +266,7 @@ class Beta1D(RegriddableModel1D):
     xpos
         The reference point of the profile. This is frozen by default.
     ampl
-        The amplitude refers to the maximum value of the model, at
+        The amplitude A of the model. This refers to the maximum value of the model, at
         x = xpos.
 
     See Also
@@ -270,9 +275,10 @@ class Beta1D(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * (1 + ((x - xpos) / r0)^2)^(0.5 - 3 * beta)
+    .. math::
+        f(x) = A * (1 + (\frac{x - xpos}{r_0})^2)^{0.5 - 3 * \beta}
 
     The grid version is evaluated by numerically intgerating the
     function over each bin using a non-adaptive Gauss-Kronrod scheme
@@ -317,7 +323,7 @@ class Beta1D(RegriddableModel1D):
 
 
 class BPL1D(RegriddableModel1D):
-    """One-dimensional broken power-law function.
+    r"""One-dimensional broken power-law function.
 
     Attributes
     ----------
@@ -330,7 +336,7 @@ class BPL1D(RegriddableModel1D):
     ref
        The reference position for the amplitude.
     ampl
-       The amplitude, defined with respect to the reference position.
+       The amplitude A, defined with respect to the reference position.
 
     See Also
     --------
@@ -338,13 +344,15 @@ class BPL1D(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * (x / ref)^(-gamma1)   x <= eb
+    .. math::
 
-             = ampl' * (x / ref)^(-gamma2)  otherwise
+        f(x) = A * (\frac{x}{ref})^{-\gamma_1}   \,\mathrm{ for} \, x <= eb
 
-       ampl' = ampl (eb / ref)^(gamma2 - gamma1)
+             = A' * (\frac{x}{ref})^{-\gamma_2}  \,\mathrm{ otherwise }
+
+        \mathrm{with}\ A' = A (\frac{eb}{ref})^{\gamma_2 - \gamma_1}
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -380,7 +388,7 @@ class BPL1D(RegriddableModel1D):
 # TODO: what are the units of the independent axis: Angstrom?
 
 class Dered(RegriddableModel1D):
-    """A de-reddening model.
+    r"""A de-reddening model.
 
     De-reddening model applied multiplicatively to a spectrum.
     The integrate flag of this model should be set to False when
@@ -396,27 +404,32 @@ class Dered(RegriddableModel1D):
     Notes
     -----
     This dereddening model uses the analytic formula for the mean
-    extension law described in [1]_::
+    extension law described in [1]_:
 
-        A(lambda) = E(B-V) * (a * rv + b)
-                  = 1.086 tau(lambda)
+    .. math::
+        A(\lambda) = E(B-V) * (a * R_V + b) = 1.086 \tau(\lambda)
 
-    where tau(lambda) is the wavelength-dependent optical depth::
+    where :math:`\tau(\lambda)` is the wavelength-dependent optical depth:
 
-        I(lambda) = I(0) * exp(-tau(lambda))
+    .. math::
+        I(\lambda) = I(0) * e^{-\tau(\lambda)}
 
     and a and b are computed using wavelength-dependent formulae,
     which are not reproduced here, for the wavelength range 1000
     Angstroms to 3.3 microns. The relationship between the color
-    excess and the column density (nhgal) is [2]_::
+    excess and the column density (nhgal) is [2]_:
 
-        E(B-V) = nhgal / 58.0
+    .. math::
 
-    where the units of nhgal is 10^20 cm^-2. The value of the ratio
-    of total to selective extinction, rv, is initially set to 3.1, the
-    standard value for the diffuse ISM. The final model form is::
+        E(B-V) = nh_\mathrm{gal} / 58.0
 
-        I(lambda) = I(0) exp(-nhgal * (a * ev + b) / (58.0 * 1.086)
+    where the units of nhgal is :math:`10^{20} \mathrm{cm}^{-2}`. The value of the ratio
+    of total to selective extinction, :math:`R_V`, is initially set to 3.1, the
+    standard value for the diffuse ISM. The final model form is:
+
+    .. math::`
+
+        I(\lambda) = I(0) e^{-\frac{nh_\mathrm{gal} * (a * R_V + b)}{58.0 * 1.086}}
 
     This model provided courtesy of Karl Forster.
 
@@ -444,7 +457,7 @@ class Dered(RegriddableModel1D):
 
 
 class Edge(RegriddableModel1D):
-    """Photoabsorption edge model.
+    r"""Photoabsorption edge model.
 
     This model can be used when the independent axis is in energy
     or wavelength space.
@@ -466,17 +479,21 @@ class Edge(RegriddableModel1D):
     Notes
     -----
     A phenomenological photoabsorption edge model as a function of
-    energy::
+    energy:
 
-        f(x) = exp(-abs * (x / thresh)^-3)   if x >= thresh
+    .. math::
 
-             = 1.0                           otherwise
+        f(x) &=& e^{- abs (\frac{x}{thresh})^{-3}}   & \,\mathrm{if}\, x >= thresh
 
-    or, as a function of wavelength::
+             &=& 1.0                       & \,\mathrm{otherwise}
 
-        f(x) = exp(-abs * (x / thresh)^3)    if x <= thresh
+    or, as a function of wavelength:
 
-             = 1.0                           otherwise
+    .. math::
+
+        f(x) &=& e^{- abs (\frac{x}{thresh})^{3}}    & \,\mathrm{if}\, x <= thresh
+
+             &=& 1.0                      & \,\mathrm{otherwise}
 
     """
 
@@ -504,12 +521,12 @@ class Edge(RegriddableModel1D):
 #
 
 class LineBroad(RegriddableModel1D):
-    """A one-dimensional line-broadening profile.
+    r"""A one-dimensional line-broadening profile.
 
     Attributes
     ----------
     ampl
-        The amplitude of the line.
+        The amplitude A of the line.
     rest
         The rest wavelength.
     vsini
@@ -517,11 +534,13 @@ class LineBroad(RegriddableModel1D):
 
     Notes
     -----
-    The model is::
+    The model is:
 
-        f(lambda) = 2 * ampl * c * sqrt(x) / (pi * rest * vsini)
+    .. math::
 
-                x = 1 - ((lambda - rest) * c / (rest * vsini))^2
+        f(\lambda) = 2 A c \frac{\sqrt{x}}{\pi * rest * v \sin i}
+
+        \mathrm{with}\, x = 1 - (\frac{c (\lambda - rest)}{rest * v \sin i})^2
 
     """
 
@@ -573,7 +592,7 @@ class Lorentz1D(RegriddableModel1D):
     pos
         The center of the line.
     ampl
-        The amplitude refers to the integral of the model.
+        The amplitude A refers to the integral of the model.
 
     See Also
     --------
@@ -585,7 +604,7 @@ class Lorentz1D(RegriddableModel1D):
 
     .. math::
 
-       f(x) = \frac{ampl * fwhm}{2 * \pi * (0.25 * fwhm^2 + (x - pos)^2)}
+       f(x) = \frac{A * fwhm}{2 * \pi * (0.25 * fwhm^2 + (x - pos)^2)}
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -629,7 +648,7 @@ class Lorentz1D(RegriddableModel1D):
 
 
 class Voigt1D(RegriddableModel1D):
-    """One dimensional Voigt profile.
+    r"""One dimensional Voigt profile.
 
     The Voigt profile is a convolution between a Gaussian distribution
     a Cauchy-Lorentz distribution [1]_, [2]_. It is often used in
@@ -646,7 +665,7 @@ class Voigt1D(RegriddableModel1D):
     pos
         The center of the profile.
     ampl
-        The amplitude of the profile.
+        The amplitude A of the profile.
 
     See Also
     --------
@@ -654,28 +673,38 @@ class Voigt1D(RegriddableModel1D):
 
     Notes
     -----
-    Following [2]_, the Voigt profile can be written as::
+    Following [2]_, the Voigt profile can be written as:
 
-        f(x) = ampl * Re[w(z)] / (sqrt(2 * PI) * sigma)
+    .. math::
+
+        f(x) = A * \frac{Re[w(z)]}{\sqrt{2 \pi} * \sigma}
 
     where Re[w(z)] is the real part of the Faddeeva function [3]_
     and sigma and gamma are parameters of the Gaussian and
-    Lorentzian model respectively::
+    Lorentzian model respectively:
 
-        z = (x - pos + i * gamma) / (sqrt(2) * sigma)
-        sigma = fhwm_g / sqrt(8 * log(2))
-        gamma = fwhm_l / 2
+    .. math::
+
+        z = \frac{x - pos + i * \gamma}{\sqrt{2} * \sigma}
+
+        \sigma = \frac{fwhm_g}{\sqrt{8 * \log 2}}
+
+        \gamma = \frac{fwhm_l}{2}
 
     One common simplification is to tie the sigma and gamma
     parameters together, which can be achieved by linking the
-    fwhm_l parameter to fwhm_g with the following equation::
+    fwhm_l parameter to fwhm_g with the following equation:
 
-        fwhm_l = fwhm_g / sqrt(2 * log(2))
+    .. math::
+
+        fwhm_l = fwhm_g / \sqrt{2 * \log 2}
 
     An approximation for the FWHM of the profile, taken from [2]_,
     is
 
-        0.5346 fwhm_l + sqrt(0.2166 fwhm_l^2 + fwhm_g^2)
+    .. math::
+
+        0.5346 fwhm_l + \sqrt{0.2166 fwhm_l^2 + fwhm_g^2}
 
     References
     ----------
@@ -745,7 +774,7 @@ class Voigt1D(RegriddableModel1D):
 
 
 class PseudoVoigt1D(RegriddableModel1D):
-    """A weighted sum of a Gaussian and Lorentzian distribution.
+    r"""A weighted sum of a Gaussian and Lorentzian distribution.
 
     Unlike the Voigt1D model, which is a convolution between a
     Gaussian and Lorentz distribution, this approximates the
@@ -772,7 +801,9 @@ class PseudoVoigt1D(RegriddableModel1D):
 
     Notes
     -----
-    The model can be written as::
+    The model can be written as:
+
+    .. math::
 
        f(x) = frac * g(x) + (1 - frac) * l(x)
 
@@ -836,7 +867,7 @@ class PseudoVoigt1D(RegriddableModel1D):
 
 
 class NormBeta1D(RegriddableModel1D):
-    """One-dimensional normalized beta model function.
+    r"""One-dimensional normalized beta model function.
 
     This is the same model as the `Beta1D` model but with a
     different slope parameter and normalisation.
@@ -850,7 +881,7 @@ class NormBeta1D(RegriddableModel1D):
     alpha
         The slope of the profile at large radii.
     ampl
-        The amplitude refers to the integral of the model.
+        The amplitude A refers to the integral of the model.
 
     See Also
     --------
@@ -858,11 +889,12 @@ class NormBeta1D(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = A * (1 + ((x - pos) / w)^2)^(-alpha)
+    .. math::
 
-           A = ampl / integral f(x) dx
+        f(x) = \frac{A}{\int f(x)\, dx} * (1 + (\frac{x - pos}{w})^2)^{-\alpha} \\
+
 
     The grid version is evaluated by numerically intgerating the
     function over each bin using a non-adaptive Gauss-Kronrod scheme
@@ -909,7 +941,7 @@ class NormBeta1D(RegriddableModel1D):
 
 
 class Schechter(RegriddableModel1D):
-    """One-dimensional Schechter model function.
+    r"""One-dimensional Schechter model function.
 
     This model is for integrated data grids only.
 
@@ -925,13 +957,15 @@ class Schechter(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for grids is::
+    The functional form of the model for grids is:
 
-        f(xlo,xhi) = norm * (xlo / ref)^alpha
-                          * exp(-xlo / ref)
-                          * (xhi - xlo) / ref
+    .. math::
 
-    and for points the model is::
+        f(xlo,xhi) = norm * (xlo / ref)^\alpha * e^{-xlo / ref} * \frac{xhi - xlo}{ref}
+
+    and for points the model is:
+
+    .. math::
 
         f(x) = 0
 
@@ -970,12 +1004,12 @@ class Beta2D(RegriddableModel2D):
     ypos
         X1 axis coordinate of the model center (position of the peak).
     ellip
-        The ellipticity of the model.
+        The ellipticity :math:`\epsilon` of the model.
     theta
         The angle of the major axis. It is in radians, measured
         counter-clockwise from the X0 axis (i.e. the line X1=0).
     ampl
-        The model value at the peak position (xpos, ypos).
+        The model value A at the peak position (xpos, ypos).
     alpha
         The power-law slope of the profile at large radii.
 
@@ -989,9 +1023,9 @@ class Beta2D(RegriddableModel2D):
 
     .. math::
 
-        f(x_0,x_1) &= ampl * (1 + r(x_0,x_1)^2)^{-\alpha}
+        f(x_0,x_1) &= A * (1 + r(x_0,x_1)^2)^{-\alpha}
 
-        r(x_0,x_1)^2 &= \frac{xoff(x_0,x_1)^2 * (1-ellip)^2 + yoff(x_0,x_1)^2}{r_0^2 * (1-ellip)^2}
+        r(x_0,x_1)^2 &= \frac{xoff(x_0,x_1)^2 * (1-\epsilon)^2 + yoff(x_0,x_1)^2}{r_0^2 * (1-\epsilon)^2}
 
         xoff(x_0,x_1) &= (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
 
@@ -1144,12 +1178,12 @@ class HubbleReynolds(RegriddableModel2D):
     ypos
         The center of the model on the x1 axis.
     ellip
-        The ellipticity of the model.
+        The ellipticity :math:`\epsilon` of the model.
     theta
         The angle of the major axis. It is in radians, measured
         counter-clockwise from the X0 axis (i.e. the line X1=0).
     ampl
-        The amplitude refers to the maximum peak of the model.
+        The amplitude A refers to the maximum peak of the model.
 
     See Also
     --------
@@ -1157,17 +1191,17 @@ class HubbleReynolds(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
     .. math::
 
-       f(x0,x1) = ampl / (1 + r(x0,x1))^2
+       f(x_0,x_1) &= A / (1 + r(x_0,x_1))^2
 
-       r(x0,x1)^2 = \frac{xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2}{r0^2 * (1-ellip)^2}
+       r(x_0,x_1)^2 &= \frac{xoff(x_0,x_1)^2 * (1-\epsilon)^2 + yoff(x_0,x_1)^2}{r_0^2 * (1-\epsilon)^2}
 
-       xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+       xoff(x_0,x_1) &= (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
 
-        yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+       yoff(x_0,x_1) &= (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
@@ -1231,12 +1265,12 @@ class Lorentz2D(RegriddableModel2D):
     ypos
         The center of the model on the x1 axis.
     ellip
-        The ellipticity of the model.
+        The ellipticity :math:`\epsilon` of the model.
     theta
         The angle of the major axis. It is in radians, measured
         counter-clockwise from the X0 axis (i.e. the line X1=0).
     ampl
-        The amplitude refers to the maximum peak of the model.
+        The amplitude A refers to the maximum peak of the model.
 
     See Also
     --------
@@ -1248,13 +1282,13 @@ class Lorentz2D(RegriddableModel2D):
 
     .. math::
 
-       f(x0,x1) = ampl / (1 + 4 * r(x0,x1)^2)
+       f(x_0,x_1) = \frac{A}{1 + 4 * r(x_0,x_1)^2}
 
-       r(x0,x1)^2 = \frac{xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2}{fwhm^2 * (1-ellip)^2}
+       r(x_0,x_1)^2 = \frac{xoff(x_0,x_1)^2 * (1-\epsilon)^2 + yoff(x_0,x_1)^2}{fwhm^2 * (1-\epsilon)^2}
 
-       xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+       xoff(x_0,x_1) = (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
 
-        yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+        yoff(x_0,x_1) = (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -1422,12 +1456,12 @@ class Sersic2D(RegriddableModel2D):
     ypos
         The center of the model on the x1 axis.
     ellip
-        The ellipticity of the model.
+        The ellipticity :math:`\epsilon` of the model.
     theta
         The angle of the major axis. It is in radians, measured
         counter-clockwise from the X0 axis (i.e. the line X1=0).
     ampl
-        The amplitude refers to the maximum peak of the model.
+        The amplitude A refers to the maximum peak of the model.
     n
         The Sersic index (n=4 replicates the `DeVaucouleurs2D`
         model).
@@ -1441,17 +1475,17 @@ class Sersic2D(RegriddableModel2D):
     The functional form of the model for points is can be
     expressed as the following:
 
-    ..math::
+    .. math::
 
-        f(x0,x1) = ampl * exp(-b(n) * (r(x0,x1)^(1/n) - 1))
+        f(x_0,x_1) &=& A * e^{-b(n) * (r(x_0,x_1)^{1/n} - 1)}
 
-        b(n) = 2 * n - 1 / 3 + 4 / (405 * n) + 46 / (25515 * n^2)
+        b(n) &=& 2 * n - \frac{1}{3} + \frac{4}{405 * n} + \frac{46}{25515 * n^2}
 
-        r(x0,x1)^2 = \frac{xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2}{r0^2 * (1-ellip)^2}
+        r(x_0,x_1)^2 &=& \frac{xoff(x_0,x_1)^2 * (1-\epsilon)^2 + yoff(x_0,x_1)^2}{r_0^2 * (1-\epsilon)^2}
 
-         xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+         xoff(x_0,x_1) &=& (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
 
-         yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+         yoff(x_0,x_1) &=& (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
@@ -1517,7 +1551,7 @@ class Sersic2D(RegriddableModel2D):
 # ## Added to CIAO 4.6 for Dec. 2013 release SMD
 
 class Disk2D(RegriddableModel2D):
-    """Two-dimensional uniform disk model.
+    r"""Two-dimensional uniform disk model.
 
     Two-dimensional step function model consisting of a uniform
     intensity disk.
@@ -1529,7 +1563,7 @@ class Disk2D(RegriddableModel2D):
     ypos
         The center of the disk on the x1 axis.
     ampl
-        The amplitude of the signal within the disk.
+        The amplitude A of the signal within the disk.
     r0
         The radius of the disk.
 
@@ -1539,13 +1573,15 @@ class Disk2D(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x0,x1) = ampl  if (x0 - xpos)^2 + (x1 - ypos)^2 <= r0^2
+    .. math::
 
-                 = 0     otherwise
+        f(x_0,x_1) &= A  \quad\mathrm{if}\, (x_0 - xpos)^2 + (x_1 - ypos)^2 <= r_0^2
 
-    For grids, the x0lo,x1lo values are used in the above equation.
+                   &= 0  \quad \mathrm{otherwise}
+
+    For grids, the x0lo, x1lo values are used in the above equation.
 
     This model was provided by Christoph Deil.
     """
@@ -1579,7 +1615,7 @@ class Shell2D(RegriddableModel2D):
     ypos
         The center of the shell on the x1 axis.
     ampl
-        The amplitude.
+        The amplitude A.
     r0
         The line-of-sight distance.
     width
@@ -1593,7 +1629,7 @@ class Shell2D(RegriddableModel2D):
     -----
     The functional form of the model for points is::
 
-        f(x0,x1) = ampl * r(x0,x1)
+        f(x0,x1) = A * r(x0,x1)
 
                  = 0     otherwise
 
