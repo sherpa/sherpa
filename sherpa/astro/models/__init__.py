@@ -1019,17 +1019,17 @@ class Beta2D(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is:
+    The functional form of the model for points (x0, x1) is:
 
     .. math::
 
-        f(x_0,x_1) &= A * (1 + r(x_0,x_1)^2)^{-\alpha}
+        f(x_0,x_1) =& A * (1 + r(x_0,x_1)^2)^{-\alpha}
 
-        r(x_0,x_1)^2 &= \frac{xoff(x_0,x_1)^2 * (1-\epsilon)^2 + yoff(x_0,x_1)^2}{r_0^2 * (1-\epsilon)^2}
+        r(x_0,x_1)^2 =& \frac{\Delta x^2 * (1-\epsilon)^2 + \Delta y^2}{r_0^2 * (1-\epsilon)^2}
 
-        xoff(x_0,x_1) &= (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
+        \Delta x =& (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
 
-        yoff(x_0,x_1) &= (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
+        \Delta y =& (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
@@ -1105,7 +1105,7 @@ class DeVaucouleurs2D(RegriddableModel2D):
         The angle of the major axis. It is in radians, measured
         counter-clockwise from the X0 axis (i.e. the line X1=0).
     ampl
-        The amplitude refers to the maximum peak of the model.
+        The amplitude :math:`A` refers to the maximum peak of the model.
 
     See Also
     --------
@@ -1191,17 +1191,17 @@ class HubbleReynolds(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is:
+    The functional form of the model for points (x0, x1) is:
 
     .. math::
 
        f(x_0,x_1) &= A / (1 + r(x_0,x_1))^2
 
-       r(x_0,x_1)^2 &= \frac{xoff(x_0,x_1)^2 * (1-\epsilon)^2 + yoff(x_0,x_1)^2}{r_0^2 * (1-\epsilon)^2}
+       r(x_0,x_1)^2 &= \frac{\Delta x^2 * (1-\epsilon)^2 + \Delta y^2}{r_0^2 * (1-\epsilon)^2}
 
-       xoff(x_0,x_1) &= (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
+       \Delta x &= (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
 
-       yoff(x_0,x_1) &= (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
+       \Delta y &= (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
@@ -1278,17 +1278,17 @@ class Lorentz2D(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is:
+    The functional form of the model for points (x0, x1) is:
 
     .. math::
 
        f(x_0,x_1) = \frac{A}{1 + 4 * r(x_0,x_1)^2}
 
-       r(x_0,x_1)^2 = \frac{xoff(x_0,x_1)^2 * (1-\epsilon)^2 + yoff(x_0,x_1)^2}{fwhm^2 * (1-\epsilon)^2}
+       r(x_0,x_1)^2 = \frac{\Delta x^2 * (1-\epsilon)^2 + \Delta y^2}{fwhm^2 * (1-\epsilon)^2}
 
-       xoff(x_0,x_1) = (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
+       \Delta x = (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
 
-        yoff(x_0,x_1) = (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
+        \Delta y = (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -1472,7 +1472,7 @@ class Sersic2D(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is can be
+    The functional form of the model for points (x0, x1) can be
     expressed as the following:
 
     .. math::
@@ -1481,11 +1481,11 @@ class Sersic2D(RegriddableModel2D):
 
         b(n) &=& 2 * n - \frac{1}{3} + \frac{4}{405 * n} + \frac{46}{25515 * n^2}
 
-        r(x_0,x_1)^2 &=& \frac{xoff(x_0,x_1)^2 * (1-\epsilon)^2 + yoff(x_0,x_1)^2}{r_0^2 * (1-\epsilon)^2}
+        r(x_0,x_1)^2 &=& \frac{\Delta x^2 * (1-\epsilon)^2 + \Delta y^2}{r_0^2 * (1-\epsilon)^2}
 
-         xoff(x_0,x_1) &=& (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
+         \Delta x &=& (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
 
-         yoff(x_0,x_1) &=& (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
+         \Delta y &=& (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
@@ -1573,7 +1573,7 @@ class Disk2D(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is:
+    The functional form of the model for points (x0, x1) is:
 
     .. math::
 

@@ -230,16 +230,16 @@ class Const1D(RegriddableModel1D, Const):
 
 
 class Cos(RegriddableModel1D):
-    """One-dimensional cosine function.
+    r"""One-dimensional cosine function.
 
     Attributes
     ----------
     period
-        The period of the cosine, in units of the independent axis.
+        The period :math:`P` of the cosine, in units of the independent axis.
     offset
         The offset (related to the phase) of the cosine.
     ampl
-        The amplitude of the cosine.
+        The amplitude :math:`A` of the cosine.
 
     See Also
     --------
@@ -247,9 +247,11 @@ class Cos(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * cos (2 * pi * (x - offset) / period)
+    .. math::
+
+        f(x) = A * \cos (\frac{2\pi * (x - offset)}{P})
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -330,14 +332,14 @@ class Delta1D(RegriddableModel1D):
 
 
 class Erf(RegriddableModel1D):
-    """One-dimensional error function.
+    r"""One-dimensional error function.
 
     The function is described at [1]_.
 
     Attributes
     ----------
     ampl
-        The amplitude of the model.
+        The amplitude :math:`A` of the model.
     offset
         The offset of the model.
     sigma
@@ -349,11 +351,13 @@ class Erf(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * erf((x - offset) / sigma)
+    .. math::
 
-        erf(y) = (2 / sqrt(pi)) Int_0^y exp(-t^2) dt
+        f(x) = A * erf(\frac{x - offset}{\sigma})
+
+        erf(y) = \frac{2}{\sqrt{\pi}} \int_0^y e^{-t^2} dt
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -383,14 +387,14 @@ class Erf(RegriddableModel1D):
 
 
 class Erfc(RegriddableModel1D):
-    """One-dimensional complementary error function.
+    r"""One-dimensional complementary error function.
 
     The function is described at [1]_.
 
     Attributes
     ----------
     ampl
-        The amplitude of the model.
+        The amplitude :math:`A` of the model.
     offset
         The offset of the model.
     sigma
@@ -402,11 +406,13 @@ class Erfc(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * erfc((x - offset) / sigma)
+    .. math::
 
-        erfc(y) = (2 / sqrt(pi)) Int_y^infinity exp(-t^2) dt
+        f(x) = A * erfc(\frac{x - offset}{\sigma})
+
+        erfc(y) = \frac{2}{\sqrt{\pi}} \int_y^\infty e^{-t^2} dt
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -436,7 +442,7 @@ class Erfc(RegriddableModel1D):
 
 
 class Exp(RegriddableModel1D):
-    """One-dimensional exponential function.
+    r"""One-dimensional exponential function.
 
     Attributes
     ----------
@@ -445,7 +451,7 @@ class Exp(RegriddableModel1D):
     coeff
         The scaling factor.
     ampl
-        The amplitude of the model.
+        The amplitude :math:`A` of the model.
 
     See Also
     --------
@@ -453,9 +459,11 @@ class Exp(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * exp(coeff * (x - offset))
+    .. math::
+
+        f(x) = A * e^{coeff * (x - offset)}
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -475,7 +483,7 @@ class Exp(RegriddableModel1D):
 
 
 class Exp10(RegriddableModel1D):
-    """One-dimensional exponential function, base 10.
+    r"""One-dimensional exponential function, base 10.
 
     Attributes
     ----------
@@ -484,7 +492,7 @@ class Exp10(RegriddableModel1D):
     coeff
         The scaling factor.
     ampl
-        The amplitude of the model.
+        The amplitude :math:`A` of the model.
 
     See Also
     --------
@@ -492,9 +500,11 @@ class Exp10(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * 10^(coeff * (x - offset))
+    .. math::
+
+        f(x) = A * 10^{coeff * (x - offset)}
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -514,17 +524,17 @@ class Exp10(RegriddableModel1D):
 
 
 class Gauss1D(RegriddableModel1D):
-    """One-dimensional gaussian function.
+    r"""One-dimensional gaussian function.
 
     Attributes
     ----------
     fwhm
         The Full-Width Half Maximum of the gaussian. It is related to
-        the sigma value by: FWHM = sqrt(8 * log(2)) * sigma.
+        the sigma value by: :math:`FWHM = \sqrt{8 \log 2} * \sigma`.
     pos
         The center of the gaussian.
     ampl
-        The amplitude refers to the maximum peak of the model.
+        The amplitude :math:`A` of the model. It refers to the maximum peak of the model.
 
     See Also
     --------
@@ -532,9 +542,11 @@ class Gauss1D(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * exp(-4 * log(2) * (x - pos)^2 / fwhm^2)
+    .. math::
+
+        f(x) = A * e^{-4 * \log 2 * \frac{(x - pos)^2}{fwhm^2}}
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -603,7 +615,7 @@ class Gauss1D(RegriddableModel1D):
 
 
 class Log(RegriddableModel1D):
-    """One-dimensional natural logarithm function.
+    r"""One-dimensional natural logarithm function.
 
     Attributes
     ----------
@@ -612,7 +624,7 @@ class Log(RegriddableModel1D):
     coeff
         The scaling factor.
     ampl
-        The amplitude of the model.
+        The amplitude :math:`A` of the model.
 
     See Also
     --------
@@ -620,9 +632,11 @@ class Log(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * log (coeff * (x - offset))
+    .. math::
+
+        f(x) = A * \log (coeff * (x - offset))
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -642,7 +656,7 @@ class Log(RegriddableModel1D):
 
 
 class Log10(RegriddableModel1D):
-    """One-dimensional logarithm function, base 10.
+    r"""One-dimensional logarithm function, base 10.
 
     Attributes
     ----------
@@ -651,7 +665,7 @@ class Log10(RegriddableModel1D):
     coeff
         The scaling factor.
     ampl
-        The amplitude of the model.
+        The amplitude :math:`A` of the model.
 
     See Also
     --------
@@ -659,9 +673,11 @@ class Log10(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * log_10 (coeff * (x - offset))
+    .. math::
+
+        f(x) = A * \log_{10} (coeff * (x - offset))
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -681,7 +697,7 @@ class Log10(RegriddableModel1D):
 
 
 class LogParabola(RegriddableModel1D):
-    """One-dimensional log-parabolic function.
+    r"""One-dimensional log-parabolic function.
 
     Attributes
     ----------
@@ -692,7 +708,7 @@ class LogParabola(RegriddableModel1D):
     c2
         The curvature of the parabola (beta).
     ampl
-        The amplitude of the model.
+        The amplitude :math:`A` of the model.
 
     See Also
     --------
@@ -700,11 +716,13 @@ class LogParabola(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * (x / ref) ^ (-c1 - c2 * log_10 (x / ref))
+    .. math::
 
-    The grid version is evaluated by numerically intgerating the
+        f(x) = A * (x / ref)^{-c1 - c2 * \log_{10} (x / ref)}
+
+    The grid version is evaluated by numerically integrating the
     function over each bin using a non-adaptive Gauss-Kronrod scheme
     suited for smooth functions [1]_, falling over to a simple
     trapezoid scheme if this fails.
@@ -734,17 +752,17 @@ _gfactor = numpy.sqrt(numpy.pi / (4 * numpy.log(2)))
 
 
 class NormGauss1D(RegriddableModel1D):
-    """One-dimensional normalised gaussian function.
+    r"""One-dimensional normalised gaussian function.
 
     Attributes
     ----------
     fwhm
         The Full-Width Half Maximum of the gaussian. It is related to
-        the sigma value by: FWHM = sqrt(8 * log(2)) * sigma.
+        the sigma value by: :math:`FWHM = \sqrt{8 \log 2} * \sigma`.
     pos
         The center of the gaussian.
     ampl
-        The amplitude refers to the integral of the model over the
+        The amplitude :math:`A` of the model. It refers to the integral of the model over the
         range -infinity to infinity.
 
 
@@ -754,13 +772,12 @@ class NormGauss1D(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = num(x) / denom(x)
+    .. math::
 
-        num(x) = ampl * exp(-4 * log(2) * (x - pos)^2 / fwhm^2)
+        f(x) = \frac{A * e^{-4 * \log 2 * \frac{(x - pos)^2}{fwhm^2}}}{\sqrt{\pi / (4 * \log 2)} * fwhm}
 
-        denom(x) = sqrt(pi / (4 * log(2))) * fwhm
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -799,7 +816,7 @@ class NormGauss1D(RegriddableModel1D):
 
 
 class Poisson(RegriddableModel1D):
-    """One-dimensional Poisson function.
+    r"""One-dimensional Poisson function.
 
     A model expressing the ratio of two Poisson distributions of mean
     mu, one for which the random variable is x, and the other for
@@ -808,15 +825,17 @@ class Poisson(RegriddableModel1D):
     Attributes
     ----------
     mean
-        The mean of the first distribution.
+        The mean :math:`\mu` of the first distribution.
     ampl
-        The amplitude of the model.
+        The amplitude :math:`A` of the model.
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * mean! exp((x - mean) * log(mean)) / x!
+    .. math::
+
+        f(x) = A \frac{\mu!}{x!} e^{(x - \mu) * log(\mu)}
 
     The grid version is evaluated by numerically intgerating the
     function over each bin using a non-adaptive Gauss-Kronrod scheme
@@ -848,7 +867,7 @@ class Poisson(RegriddableModel1D):
 
 
 class Polynom1D(RegriddableModel1D):
-    """One-dimensional polynomial function of order 8.
+    r"""One-dimensional polynomial function of order 8.
 
     The maximum order of the polynomial is 8. The default setting has
     all parameters frozen except for ``c0``, which means that the
@@ -885,9 +904,11 @@ class Polynom1D(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = sum_(i=0)^(i=8) c_i * (x - offset)^i
+    .. math::
+
+        f(x) = \sum_{i=0}^{8} c_i * (x - offset)^i
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -964,7 +985,7 @@ class Polynom1D(RegriddableModel1D):
 
 
 class PowLaw1D(RegriddableModel1D):
-    """One-dimensional power-law function.
+    r"""One-dimensional power-law function.
 
     It is assumed that the independent axis is positive at all points.
 
@@ -977,7 +998,7 @@ class PowLaw1D(RegriddableModel1D):
         ``alwaysfrozen`` attribute of the reference point is set so
         that it can not be varied during a fit.
     ampl
-        The amplitude of the model.
+        The amplitude :math:`A` of the model.
 
     See Also
     --------
@@ -985,9 +1006,11 @@ class PowLaw1D(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * (x / ref)^(-gamma)
+    .. math::
+
+        f(x) = A * (x / ref)^{-\gamma}
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -1038,13 +1061,13 @@ class Scale1D(Const1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl
+        f(x) = c_0
 
-    and for an integrated grid it is::
+    and for an integrated grid it is:
 
-        f(xlo,xhi) = ampl * (xhi - xlo)
+        f(xlo,xhi) = c_0 * (xhi - xlo)
 
     This later case will only be used if the ``integrate``
     attribute is set to ``True``.
@@ -1057,16 +1080,16 @@ class Scale1D(Const1D):
 
 
 class Sin(RegriddableModel1D):
-    """One-dimensional sine function.
+    r"""One-dimensional sine function.
 
     Attributes
     ----------
     period
-        The period of the sine, in units of the independent axis.
+        The period :math:`P` of the sine, in units of the independent axis.
     offset
         The offset (related to the phase) of the sine.
     ampl
-        The amplitude of the sine.
+        The amplitude :math:`A` of the sine.
 
     See Also
     --------
@@ -1074,9 +1097,11 @@ class Sin(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * sin (2 * pi * (x - offset) / period)
+    .. math::
+
+        f(x) = A * \sin(\frac{2 \pi * (x - offset)}{P})
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -1100,14 +1125,14 @@ class Sin(RegriddableModel1D):
 
 
 class Sqrt(RegriddableModel1D):
-    """One-dimensional square root function.
+    r"""One-dimensional square root function.
 
     Attributes
     ----------
     offset
         The offset of the model.
     ampl
-        The amplitude of the model.
+        The amplitude :math:`A` of the model.
 
     See Also
     --------
@@ -1115,9 +1140,11 @@ class Sqrt(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * sqrt (x - offset)
+    .. math::
+
+        f(x) = A * \sqrt{x - offset}
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -1235,16 +1262,16 @@ class StepLo1D(RegriddableModel1D):
 
 
 class Tan(RegriddableModel1D):
-    """One-dimensional tan function.
+    r"""One-dimensional tan function.
 
     Attributes
     ----------
     period
-        The period of the tangent, in units of the independent axis.
+        The period :math:`P` of the tangent, in units of the independent axis.
     offset
         The offset (related to the phase) of the tangent.
     ampl
-        The amplitude of the tangent.
+        The amplitude :math:`A` of the tangent.
 
     See Also
     --------
@@ -1252,9 +1279,11 @@ class Tan(RegriddableModel1D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x) = ampl * tan (2 * pi * (x - offset) / period)
+    .. math::
+
+        f(x) = A * \tan(\frac{2 \pi * (x - offset)}{P})
 
     and for an integrated grid it is the integral of this over
     the bin.
@@ -1482,25 +1511,25 @@ class Delta2D(RegriddableModel2D):
 
 
 class Gauss2D(RegriddableModel2D):
-    """Two-dimensional gaussian function.
+    r"""Two-dimensional gaussian function.
 
     Attributes
     ----------
     fwhm
         The Full-Width Half Maximum of the gaussian along the major
         axis. It is related to the sigma value by:
-        FWHM = sqrt(8 * log(2)) * sigma.
+        :math:`FWHM = \sqrt{8 \log 2} * \sigma`.
     xpos
         The center of the gaussian on the x0 axis.
     ypos
         The center of the gaussian on the x1 axis.
     ellip
-        The ellipticity of the gaussian.
+        The ellipticity :math:`\epsilon` of the gaussian.
     theta
         The angle of the major axis. It is in radians, measured
         counter-clockwise from the X0 axis (i.e. the line X1=0).
     ampl
-        The amplitude refers to the maximum peak of the model.
+        The amplitude :math:`A` of the gaussian. It refers to the maximum peak of the model.
 
     See Also
     --------
@@ -1508,17 +1537,17 @@ class Gauss2D(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x0,x1) = ampl * exp(-4 * log(2) * r(x0,x1)^2)
+    .. math::
 
-        r(x0,x1)^2 = num(x0,x1) / (fwhm^2 * (1-ellip)^2)
+        f(x_0,x_1) =& A * e^{-4 \log(2) * r(x_0,x_1)^2}
 
-        num(x0,x1) = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
+        r(x_0,x_1)^2 =& \frac{\Delta x^2 * (1-\epsilon)^2 + \Delta y^2}{fwhm^2 * (1-\epsilon)^2}
 
-        xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+        \Delta x =& (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
 
-        yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+        \Delta y =& (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
@@ -1573,7 +1602,7 @@ class Gauss2D(RegriddableModel2D):
 
 
 class SigmaGauss2D(Gauss2D):
-    """Two-dimensional gaussian function (varying sigma).
+    r"""Two-dimensional gaussian function (varying sigma).
 
     Attributes
     ----------
@@ -1589,7 +1618,7 @@ class SigmaGauss2D(Gauss2D):
         The angle of the major axis. It is in radians, measured
         counter-clockwise from the X0 axis (i.e. the line X1=0).
     ampl
-        The amplitude refers to the maximum peak of the model.
+        The amplitude :math:`A` refers to the maximum peak of the model.
 
     See Also
     --------
@@ -1597,17 +1626,17 @@ class SigmaGauss2D(Gauss2D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points (x0, x1) is:
 
-        f(x0,x1) = ampl * exp(-r(x0,x1)^2 / 2)
+    .. math::
 
-        r(x0,x1)^2 = xoff(x0,x1)^2 + yoff(x0,x1)^2
-                     -------------   -------------
-                       sigma_a^2       sigma_b^2
+        f(x_0,x_1) =& A * e^{-\frac{1}{2}r(x_0,x_1)^2}
 
-        xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
+        r(x_0,x_1)^2 =& \frac{\Delta x^2}{\sigma_a^2} + \frac{\Delta y^2}{\sigma_b^2}
 
-        yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+        \Delta x =& (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
+
+        \Delta y =& (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
@@ -1655,25 +1684,25 @@ class SigmaGauss2D(Gauss2D):
 
 
 class NormGauss2D(RegriddableModel2D):
-    """Two-dimensional normalised gaussian function.
+    r"""Two-dimensional normalised gaussian function.
 
     Attributes
     ----------
     fwhm
         The Full-Width Half Maximum of the gaussian along the major
         axis. It is related to the sigma value by:
-        FWHM = sqrt(8 * log(2)) * sigma.
+        :math:`\mathrm{FWHM} = \sqrt{8 \log 2} \sigma`.
     xpos
         The center of the gaussian on the x0 axis.
     ypos
         The center of the gaussian on the x1 axis.
     ellip
-        The ellipticity of the gaussian.
+        The ellipticity :math:`\epsilon` of the gaussian.
     theta
         The angle of the major axis. It is in radians, measured
         counter-clockwise from the X0 axis (i.e. the line X1=0).
     ampl
-        The amplitude refers to the integral of the model over the
+        The amplitude :math:`A` refers to the integral of the model over the
         range -infinity to infinity for both axes.
 
     See Also
@@ -1682,21 +1711,17 @@ class NormGauss2D(RegriddableModel2D):
 
     Notes
     -----
-    The functional form of the model for points is::
+    The functional form of the model for points is:
 
-        f(x0,x1) = num(x0,x1) / denom(x0,x1)
+    .. math::
 
-        num(x0,x1) = 4 * log(2) * ampl * exp(-4 * log(2) * r(x0,x1)^2)
+        f(x_0,x_1) =& \frac{4 log(2) * A * e^{-4 * log(2) * r(x_0,x_1)^2}}{\pi * fwhm^2 * \sqrt{1 - \epsilon^2}}
 
-        denom(x0,x1) = pi * fwhm * fwhm * sqrt(1 - ellip * ellip)
+        r(x_0,x_1)^2 =& \frac{\Delta x^2 * (1-\epsilon)^2 + \Delta y^2}{fwhm^2 * (1-\epsilon)^2}
 
-        r(x0,x1)^2 = rnum(x0,x1) / (fwhm^2 * (1-ellip)^2)
+        \Delta x =& (x_0 - xpos) * \cos(\theta) + (x_1 - ypos) * \sin(\theta)
 
-        rnum(x0,x1) = xoff(x0,x1)^2 * (1-ellip)^2 + yoff(x0,x1)^2
-
-        xoff(x0,x1) = (x0 - xpos) * cos(theta) + (x1 - ypos) * sin(theta)
-
-        yoff(x0,x1) = (x1 - ypos) * cos(theta) - (x0 - xpos) * sin(theta)
+        \Delta y =& (x_1 - ypos) * \cos(\theta) - (x_0 - xpos) * \sin(\theta)
 
     The grid version is evaluated by adaptive multidimensional
     integration scheme on hypercubes using cubature rules, based
