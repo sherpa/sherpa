@@ -177,7 +177,7 @@ Conda can be used to install all the dependencies for Sherpa, including
 ::
 
     conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge ds9 ciao
-    conda install -n sherpaciao --only-deps -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge sherpa ninja meson meson-python
+    conda install -n sherpaciao --only-deps -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge sherpa meson-python
     conda activate sherpaciao
     pip install astropy
 
@@ -232,7 +232,7 @@ line of::
       -Csetup-args=-Dwcssubs-prefix=$CONDA_PREFIX \
       -Csetup-args=-Dxspec-prefix=$CONDA_PREFIX
 
-The ``scripts/make_build_args_ciao`` script can simplify this:
+The ``scripts/make_build_args_ciao`` script can simplify this::
 
     pip install . $(scripts/make_build_args_ciao)
 
@@ -246,7 +246,7 @@ are imported. That means two things:
 1. You can edit the source code and then re-run the tests without having to re-install Sherpa manually.
 2. By default `pip` creates an isolated build environment and installs any missing dependencies
    (e.g. `ninja` which is used my meson) there. When re-building it will look for a
-   temporary directory that no longer exists. Instead, install mason/ninja in the conda environment and then use the `--no-build-isolation` option to `pip`:
+   temporary directory that no longer exists. Instead, install mason/ninja in the conda environment and then use the `--no-build-isolation` option to `pip`::
 
     pip install -e . --no-build-isolation $(scripts/make_build_args_ciao)
 
