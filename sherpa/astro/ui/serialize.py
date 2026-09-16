@@ -1195,44 +1195,40 @@ def _save_source(out: OutType,
     # source model is different from whole model.
     # If not, do nothing.
     #
-    with suppress(Exception):
-        try:
-            the_source = state.get_source(id)
-        except Exception:
-            the_source = None
+    try:
+        the_source = state.get_source(id)
+    except Exception:
+        the_source = None
 
-        try:
-            the_full_model = state.get_model(id)
-        except Exception:
-            the_full_model = None
+    try:
+        the_full_model = state.get_model(id)
+    except Exception:
+        the_full_model = None
 
-        have_source = the_source is not None
-        have_full_model = the_full_model is not None
+    if the_source is None and the_full_model is None:
+        return
 
-        if have_source:
-            if have_full_model:
-                # for now assume that set_full_model is only
-                # used by PHA data sets.
-                try:
-                    is_pha = isinstance(state.get_data(id), DataPHA)
-                except Exception:
-                    is_pha = False
+    if the_source is not None:
+        if the_full_model is not None:
+            # For now assume that set_full_model is only used by PHA
+            # data sets.
+            try:
+                is_pha = isinstance(state.get_data(id), DataPHA)
+            except Exception:
+                is_pha = False
 
-                if is_pha and repr(the_source) == repr(the_full_model):
-                    cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
-                else:
-                    cmd = f"set_source({cmd_id}, {the_source.name})"
+            if is_pha and repr(the_source) == repr(the_full_model):
+                cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
             else:
                 cmd = f"set_source({cmd_id}, {the_source.name})"
-
-        elif have_full_model:
-            cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
-
         else:
-            return
+            cmd = f"set_source({cmd_id}, {the_source.name})"
 
-        _output(out, cmd)
-        _output_nl(out)
+    else:
+        cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
+
+    _output(out, cmd)
+    _output_nl(out)
 
 
 def _save_bkg_source(out: OutType,
