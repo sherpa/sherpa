@@ -1,7 +1,8 @@
 #ifdef testMinim
 
 //
-//  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2020, 2021, 2026
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -61,11 +62,7 @@ void tstminim( Init init, Fct fct, int npar, sherpa::Array1D<double>& par,
     else
       nm = new sherpa::MinimNoReflect<Fct, const sherpa::Bounds<double>&, double>( fct, bounds );
 
-#if (__cplusplus < 201103L)
-    std::auto_ptr< sherpa::Minim<Fct, const sherpa::Bounds<double>&, double> > mynm(nm);
-#else
     std::unique_ptr< sherpa::Minim<Fct, const sherpa::Bounds<double>&, double> > mynm(nm);
-#endif
 
     int verbose=0, maxnfev=npar*npar*maxfev, nfev=0;
     double fmin;

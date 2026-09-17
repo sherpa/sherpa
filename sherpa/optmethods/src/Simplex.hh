@@ -2,7 +2,8 @@
 #define Simplex_hh
 
 //
-//  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2021, 2026
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -38,7 +39,7 @@ namespace sherpa {
     ParVal(int m, int n, T* arg) : Array1D<T>(m) {
       std::copy(&arg[0], &arg[0] + n, &this->vec[0]);
     }
-  
+
     ParVal(const ParVal<T> &p) : Array1D<T>(p) {}
 
     ParVal<T> &operator=(const ParVal<T> &rhs) {
@@ -46,6 +47,13 @@ namespace sherpa {
         this->Array1D<T>::operator=(rhs);
       return *this;
     }
+
+    // We overload the parent operator with a different signature.
+    // The parent class uses the last element of this->vec for
+    // the comparison but here the last element or rhs is
+    // used.
+    //
+    using Array1D<T>::operator<;
 
     bool operator<(const ParVal<T> &rhs) const {
       int n = rhs.size() - 1;
@@ -116,7 +124,7 @@ namespace sherpa {
     std::ostream &print(std::ostream &) const;
 
     void sort();
-    
+
   protected:
     void check_step(int npar, const Array1D<double> &step,
                     Array1D<double> &mystep);

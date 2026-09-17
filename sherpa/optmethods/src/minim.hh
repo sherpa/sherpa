@@ -16,6 +16,8 @@ namespace sherpa {
 
     Minim( Func func, Data xdata ) : usr_func(func), usr_data(xdata) { }
 
+    virtual ~Minim() {};
+
     int operator( )( int iprint, int maxfev, real tol, int npar,
                      int initsimplex, const std::vector<int>& finalsimplex,
                      const sherpa::Bounds<real>& bounds,
@@ -829,8 +831,8 @@ namespace sherpa {
 
     virtual void check_limits( sherpa::Array2D<sherpa::Array1D<real>, real>& G,
                                int I, int IROW,
-                               const std::vector<real>& lb,
-                               const std::vector<real>& ub ) {
+                               const sherpa::Array1D<real>& lb,
+                               const sherpa::Array1D<real>& ub ) {
       G[IROW-1][I-1] = std::max(lb[I-1], std::min(G[IROW-1][I-1], ub[I-1]));
       return;
     }

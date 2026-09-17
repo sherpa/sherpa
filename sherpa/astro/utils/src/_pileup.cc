@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2021, 2025
+//  Copyright (C) 2009, 2021, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -20,8 +20,9 @@
 
 
 #include <sherpa/extension.hh>
+
 #include <memory>
-#include <iostream>
+
 #include "pileup.hh"
 #include "PyWrapper.hh"
 
@@ -120,13 +121,8 @@ static PyObject* _apply_pileup( PyObject* self, PyObject* args )
     return NULL;
   }
 
-#if (__cplusplus < 201103L)
-  std::auto_ptr< sherpa::PyWrapper >
-    wrapper( new sherpa::PyWrapper( py_function ) );
-#else
   std::unique_ptr< sherpa::PyWrapper >
     wrapper( new sherpa::PyWrapper( py_function ) );
-#endif
 
   DoubleArray results;
   if ( EXIT_SUCCESS != results.create( arf_source.get_ndim(),

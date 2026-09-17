@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2015-2016, 2018-2019, 2025
+//  Copyright (C) 2007, 2015-2016, 2018-2019, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -18,16 +18,19 @@
 //  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 
+// Ensure Python.h is included first:
+// https://docs.python.org/3/c-api/intro.html#include-files
+//
+#include "sherpa/extension.hh"
+#include "sherpa/utils.hh"
+#include "sherpa/fcmp.hh"
+#include "Faddeeva.hh"
+
 #include <cmath>
 #include <vector>
 #include <limits>
 #include <iostream>
 #include <sstream>
-
-#include "sherpa/extension.hh"
-#include "sherpa/utils.hh"
-#include "sherpa/fcmp.hh"
-#include "Faddeeva.hh"
 
 extern "C" {
 

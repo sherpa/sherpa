@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2016-2017, 2020, 2022-2023, 2025
+//  Copyright (C) 2007, 2016-2017, 2020, 2022-2023, 2025-2026
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -21,9 +21,12 @@
 #ifndef __sherpa_extension_hh__
 #define __sherpa_extension_hh__
 
-#include <complex>
-
+// Ensure python.h is included first:
+// https://docs.python.org/3/c-api/intro.html#include-files
+//
 #include <sherpa/array.hh>
+
+#include <complex>
 
 typedef unsigned int SherpaUInt;
 typedef sherpa::Array< unsigned int, NPY_UINT > SherpaUIntArray;
