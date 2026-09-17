@@ -348,9 +348,9 @@ class BPL1D(RegriddableModel1D):
 
     .. math::
 
-        f(x) = A * (\frac{x}{ref})^{-\gamma_1}   \,\mathrm{ for} \, x <= eb
+        f(x) = A * (\frac{x}{ref})^{-\gamma_1}   \,\mathrm{for} \, x <= eb
 
-             = A' * (\frac{x}{ref})^{-\gamma_2}  \,\mathrm{ otherwise }
+             = A' * (\frac{x}{ref})^{-\gamma_2}  \,\mathrm{otherwise}
 
         \mathrm{with}\ A' = A (\frac{eb}{ref})^{\gamma_2 - \gamma_1}
 
@@ -427,7 +427,7 @@ class Dered(RegriddableModel1D):
     of total to selective extinction, :math:`R_V`, is initially set to 3.1, the
     standard value for the diffuse ISM. The final model form is:
 
-    .. math::`
+    .. math::
 
         I(\lambda) = I(0) e^{-\frac{nh_\mathrm{gal} * (a * R_V + b)}{58.0 * 1.086}}
 
