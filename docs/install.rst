@@ -35,6 +35,7 @@ Sherpa has the following requirements:
 
 * Python 3.11 to 3.14 (there is no support for free-threaded Python)
 * NumPy
+* `pkg-config` (used to find the FFTW3 library and headers, see next line)
 * `FFTW <https://www.fftw.org/>`_
 * a C compiler supporting the C11 standard and a C++ compiler
   supporting the C++20 standard
