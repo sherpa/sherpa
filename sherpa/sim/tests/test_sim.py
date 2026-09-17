@@ -375,7 +375,6 @@ def check_ratio(setup,
     delta2 = got[:, 1:-1] - pvals
     ratio = delta2 / delta1
 
-    ncols = len(pvals)
     expected = np.full((setup.num, pvals.size), scale)
     assert ratio == pytest.approx(expected, rel=1e-4)
 
