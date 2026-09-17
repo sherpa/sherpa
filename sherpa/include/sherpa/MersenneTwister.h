@@ -74,13 +74,13 @@ class MTRand {
   // Data
  public:
   typedef unsigned long uint32;  // unsigned integer type, at least 32 bits
-	
-  enum { N = 624 };       // length of state vector
-  enum { SAVE = N + 1 };  // length of array for save()
+
+  static constexpr int N = 624;        // length of state vector
+  static constexpr int SAVE = N + 1 ;  // length of array for save()
 
  protected:
-  enum { M = 397 };  // period parameter
-	
+  static constexpr int M = 397;  // period parameter
+
   uint32 state[N];   // internal state
   uint32 *pNext;     // next value to get from state
   int left;          // number of values left before reload needed
@@ -188,15 +188,15 @@ inline void MTRand::reload()
 {
   // Generate N new values in state
   // Made clearer and faster by Matthew Bellew (matthew.bellew@home.com)
-  static const int MmN = int(M) - int(N);  // in case enums are unsigned
+  static constexpr int MmN = M - N;
   uint32 *p = state;
   int i;
-  for( i = int(N) - int(M); i--; ++p )
+  for( i = N - M; i--; ++p )
     *p = twist( p[M], p[0], p[1] );
   for( i = M; --i; ++p )
     *p = twist( p[MmN], p[0], p[1] );
   *p = twist( p[MmN], p[0], state[0] );
-	
+
   left = N, pNext = state;
 }
 
