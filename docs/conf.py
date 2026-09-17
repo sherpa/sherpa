@@ -57,14 +57,17 @@ class XSPECMock(Mock):
         "Presumably XSPEC will never reach this"
         return "999.999.999"
 
-for mod_name in [
-                 'sherpa.image.DS9',
-                ]:
-    sys.modules[mod_name] = Mock()
+class DS9Mock(Mock):
+    """What do we need to mock DS9?"""
+
+    class DS9Win:
+        def __init__(self, template, doOpen):
+            pass
 
 # Specialized mocks
 #
 sys.modules['sherpa.astro.xspec._xspec'] = XSPECMock()
+sys.modules['sherpa.image.DS9'] = DS9Mock()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

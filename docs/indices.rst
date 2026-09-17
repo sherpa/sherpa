@@ -51,7 +51,8 @@ Glossary
        gridded data sets (2D and 3D). Is is used by Sherpa to display
        image data, and is available from https://ds9.si.edu/. It uses
        the :term:`XPA` messaging system to communicate with external
-       processes.
+       processes. The minimum suggested version of DS9 for use in
+       Sherpa is 8.7.
 
    FITS
        The `Flexible Image Transport System

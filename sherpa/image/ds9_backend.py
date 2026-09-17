@@ -26,7 +26,7 @@
 
 """
 
-from os import access, R_OK
+import os
 import time
 
 import numpy as np
@@ -38,6 +38,7 @@ from . import DS9
 
 
 imager = DS9.DS9Win(template=DS9._DefTemplate, doOpen=False)
+"""The DS9 window, or None"""
 
 
 # The except blocks would ideally catch explicit errors; the present
@@ -253,7 +254,7 @@ def set_region(reg: str, coord: str) -> None:
         raise DS9Err('open')
     try:
         # Assume a region file defines everything correctly
-        if access(reg, R_OK):
+        if os.access(reg, os.R_OK):
             imager.xpaset(f"regions load '{reg}'")
         else:
             # Assume region string has to be in CIAO format
