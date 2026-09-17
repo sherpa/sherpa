@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2021, 2023-2025
+#  Copyright (C) 2016-2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -32,9 +32,25 @@ import pytest
 import numpy as np
 
 from sherpa.models.basic import Const1D
-from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
+from sherpa.models.parameter import Parameter
+from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.utils.err import ArgumentErr, ParameterErr
 
+from sherpa.astro.utils.xspec import get_version
+
+# All these tests requre XSPEC so do the check once rather than
+# requiring each test to be labelled with @requires_xspec. Do not use
+# the pytest.importorskip routine as it changed behaviour during the
+# pytest 8.2 to 9.1 period relating to how import errors are handled.
+#
+try:
+    from sherpa.astro import xspec
+except ImportError:
+    pytest.skip("could not import 'sherpa.astro.xspec'",
+                allow_module_level=True)
+
+
+xspec_version = get_version(xspec.get_xsversion())
 
 # It is hard to test many of the state routines, since it requires
 # a full understanding of how they are implemented; the simplest
@@ -84,7 +100,6 @@ ELEMENT_NAMES = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
 NELEM = len(ELEMENT_NAMES)
 
 
-@requires_xspec
 def test_chatter_default():
     """Check the expected default setting for chatter.
 
@@ -93,20 +108,15 @@ def test_chatter_default():
 
     """
 
-    from sherpa.astro import xspec
-
     oval = xspec.get_xschatter()
     assert oval == DEFAULT_CHATTER
 
 
-@requires_xspec
 def test_version():
     """Can we get at the XSPEC version?
 
     There is limited testing of the return value.
     """
-
-    from sherpa.astro import xspec
 
     v = xspec.get_xsversion()
     assert isinstance(v, (str, ))
@@ -116,11 +126,8 @@ def test_version():
     # now.
 
 
-@requires_xspec
 def test_expected_elements():
     """If this fails then something is wrong!"""
-
-    from sherpa.astro import xspec
 
     # At the moment this just checks I can repeat the information in
     # two places, but the aim is to change the interface to access
@@ -132,27 +139,21 @@ def test_expected_elements():
         assert xselems[elem] == idx
 
 
-@requires_xspec
 def test_abund_angr_doc():
     """Check the doc string for angr.
 
     This is assumed to be constant.
     """
 
-    from sherpa.astro import xspec
-
     doc = xspec.get_xsabund_doc("angr")
     assert doc == "Anders E. & Grevesse N. Geochimica et Cosmochimica Acta 53, 197 (1989)"
 
 
-@requires_xspec
 def test_abund_selected_doc():
     """Check the doc string for the selected table.
 
     This is assumed to be constant.
     """
-
-    from sherpa.astro import xspec
 
     oval = xspec.get_xsabund()
     try:
@@ -165,7 +166,6 @@ def test_abund_selected_doc():
     assert doc == "Lodders, K. ApJ 591, 1220 (2003)"
 
 
-@requires_xspec
 def test_abund_default():
     """Check the expected default setting for the abundance.
 
@@ -173,24 +173,18 @@ def test_abund_default():
     tests of XSPEC are made (i.e. any XSPEC code is called).
     """
 
-    from sherpa.astro import xspec
-
     oval = xspec.get_xsabund()
     assert oval in DEFAULT_ABUND
 
 
-@requires_xspec
 def test_get_xsabundances_path():
     """Minimal test of get_xsabundances_path"""
-
-    from sherpa.astro import xspec
 
     # We assume the file must exist if we have got this far
     path = xspec.get_xsabundances_path()
     assert path.is_file()
 
 
-@requires_xspec
 def test_xset_default():
     """Check the expected default setting for the xset setting.
 
@@ -203,8 +197,6 @@ def test_xset_default():
     by the model code).
     """
 
-    from sherpa.astro import xspec
-
     # The test is case insensitive, but this test doesn't really
     # test this out.
     #
@@ -213,7 +205,6 @@ def test_xset_default():
         xspec.get_xsxset(name)
 
 
-@requires_xspec
 def test_xsect_default():
     """Check the expected default setting for the xsect setting.
 
@@ -221,21 +212,16 @@ def test_xsect_default():
     tests of XSPEC are made (i.e. any XSPEC code is called).
     """
 
-    from sherpa.astro import xspec
-
     oval = xspec.get_xsxsect()
     assert oval in DEFAULT_XSECT
 
 
-@requires_xspec
 def test_manager_path_default():
     """Check the expected default setting for the manager path.
 
     Ideally this test would be run before any other
     tests of XSPEC are made (i.e. any XSPEC code is called).
     """
-
-    from sherpa.astro import xspec
 
     oval = Path(xspec.get_xspath_manager()).resolve()
     got = str(oval)
@@ -254,15 +240,12 @@ def test_manager_path_default():
     assert got in [str(heasarc_path), str(ciao_path)]
 
 
-@requires_xspec
 def test_model_path_default():
     """Check the expected default setting for the model data path.
 
     Ideally this test would be run before any other
     tests of XSPEC are made (i.e. any XSPEC code is called).
     """
-
-    from sherpa.astro import xspec
 
     # Normalize the paths to remove double / - e.g. if HEADAS is
     # set to /a/b/c/ rather than /a/b/c.
@@ -289,15 +272,12 @@ def test_model_path_default():
     assert got in [str(heasarc_path), str(ciao_path)]
 
 
-@requires_xspec
 def test_cosmo_default():
     """Check the expected default setting for the cosmology settings.
 
     Ideally this test would be run before any other
     tests of XSPEC are made (i.e. any XSPEC code is called).
     """
-
-    from sherpa.astro import xspec
 
     oval = xspec.get_xscosmo()
 
@@ -328,12 +308,9 @@ def check_abundances(h, he, si, ar, k, fe):
     assert fe == pytest.approx(2.69e-05)
 
 
-@requires_xspec
 def test_abund_element():
     """Can we access the elemental settings?
     """
-
-    from sherpa.astro import xspec
 
     oval = xspec.get_xsabund()
     try:
@@ -351,11 +328,8 @@ def test_abund_element():
     check_abundances(h, he, si, ar, k, fe)
 
 
-@requires_xspec
 def test_abund_get_invalid_element(caplog):
     """Check what happens if sent the wrong element name"""
-
-    from sherpa.astro import xspec
 
     # TODO: TypeError is not the best error type here.
     with pytest.raises(TypeError,
@@ -365,7 +339,6 @@ def test_abund_get_invalid_element(caplog):
     assert len(caplog.records) == 0
 
 
-@requires_xspec
 @pytest.mark.parametrize("element,table,emsg",
                          [("O3", "angr",
                            "could not find element 'O3' in table 'angr'"),
@@ -396,14 +369,11 @@ def test_abund_get_invalid_element_table(element, table, emsg, caplog):
     assert len(caplog.records) == 0
 
 
-@requires_xspec
 def test_abund_set_invalid_name(caplog):
     """Check what happens if sent an unknown table
 
     It is unlikely that the name "foo-foo" will become valid.
     """
-
-    from sherpa.astro import xspec
 
     with pytest.raises(ValueError,
                        match="^Cannot read file 'foo-foo'.  It may not exist or contains invalid data$"):
@@ -412,14 +382,11 @@ def test_abund_set_invalid_name(caplog):
     assert len(caplog.records) == 0
 
 
-@requires_xspec
 def test_xsect_set_invalid_name(caplog):
     """Check what happens if sent an unknown table
 
     It is unlikely that the name "foo-foo" will become valid.
     """
-
-    from sherpa.astro import xspec
 
     with pytest.raises(ValueError,
                        match="^could not set XSPEC photoelectric cross-section to 'foo-foo'$"):
@@ -428,14 +395,11 @@ def test_xsect_set_invalid_name(caplog):
     assert len(caplog.records) == 0
 
 
-@requires_xspec
 def test_abund_get_dict():
     """Can we access the elemental settings?
 
     Make the same checks as test_abund_element
     """
-
-    from sherpa.astro import xspec
 
     oval = xspec.get_xsabund()
     assert oval != 'wilm'
@@ -454,15 +418,12 @@ def test_abund_get_dict():
                      abunds['Fe'])
 
 
-@requires_xspec
 def test_abund_set_dict():
     """Can we set a dict of abundances?
 
     We only set a sub-set of elements, with the rest being set to 0.
 
     """
-
-    from sherpa.astro import xspec
 
     oval = xspec.get_xsabund()
 
@@ -502,11 +463,8 @@ def test_abund_set_dict():
     assert xspec.get_xsabund() == oval
 
 
-@requires_xspec
 def test_abund_set_dict_invalid_key():
     """What happens if the key is not a number?"""
-
-    from sherpa.astro import xspec
 
     ovals = xspec.get_xsabundances()
 
@@ -523,11 +481,8 @@ def test_abund_set_dict_invalid_key():
     assert nvals == ovals
 
 
-@requires_xspec
 def test_abund_set_dict_invalid_value():
     """What happens if the value is not a number?"""
-
-    from sherpa.astro import xspec
 
     ovals = xspec.get_xsabundances()
 
@@ -603,8 +558,6 @@ def validate_xspec_state_setting(key, newval, altval):
         changed things).
     """
 
-    from sherpa.astro import xspec
-
     ostate = xspec.get_xsstate()
 
     def getfunc():
@@ -620,18 +573,14 @@ def validate_xspec_state_setting(key, newval, altval):
     assert xspec.get_xsstate() == ostate
 
 
-@requires_xspec
 def test_chatter_change():
     """Can we change the chatter setting."""
-
-    from sherpa.astro import xspec
 
     validate_xspec_setting(xspec.get_xschatter,
                            xspec.set_xschatter,
                            25, 35)
 
 
-@requires_xspec
 def test_abund_change_string():
     """Can we change the abundance setting: string
 
@@ -639,22 +588,17 @@ def test_abund_change_string():
     abundance names. It does not check the file I/O.
     """
 
-    from sherpa.astro import xspec
-
     validate_xspec_setting(xspec.get_xsabund,
                            xspec.set_xsabund,
                            'grsa', 'wilm')
 
 
-@requires_xspec
 def test_abund_change_file(tmp_path):
     """Can we change the abundance setting: file
 
     This test hard-codes the number of elements expected in the
     file.
     """
-
-    from sherpa.astro import xspec
 
     elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)}
 
@@ -684,11 +628,8 @@ def test_abund_change_file(tmp_path):
     assert out2 == out
 
 
-@requires_xspec
 def test_abund_change_file_subset(tmp_path):
     """What happens if send in too-few elements?"""
-
-    from sherpa.astro import xspec
 
     elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)
              if i < 10}
@@ -720,11 +661,8 @@ def test_abund_change_file_subset(tmp_path):
     assert out2 == out
 
 
-@requires_xspec
 def test_get_xsabundances_table_name():
     """Check we can get a different abundance table to the default."""
-
-    from sherpa.astro import xspec
 
     oval = xspec.get_xsabund()
     assert oval != "wilm"  # just in case
@@ -743,7 +681,6 @@ def test_get_xsabundances_table_name():
                      elems2["Fe"])
 
 
-@requires_xspec
 def test_get_xsabundances_table_name_file():
     """Check we can get a different abundance table to the default.
 
@@ -751,8 +688,6 @@ def test_get_xsabundances_table_name_file():
     so we can definitely check they are being used.
 
     """
-
-    from sherpa.astro import xspec
 
     orig = xspec.get_xsabund()
     oelems = xspec.get_xsabundances()
@@ -780,7 +715,6 @@ def test_get_xsabundances_table_name_file():
             assert v == pytest.approx(0.0)
 
 
-@requires_xspec
 def test_get_xsabundances_table_name_unknown():
     """Check we error out if the table name is unknown.
 
@@ -790,21 +724,16 @@ def test_get_xsabundances_table_name_unknown():
 
     """
 
-    from sherpa.astro import xspec
-
     tbl = "not-an-abundance-table"
     with pytest.raises(ValueError,
                        match=f"^Unknown abundance table '{tbl}'$"):
         xspec.get_xsabundances(tbl)
 
 
-@requires_xspec
 def test_xset_change():
 
     """Can we change the xset setting.
     """
-
-    from sherpa.astro import xspec
 
     with pytest.raises(KeyError):
         xspec.get_xsxset(DEFAULT_XSET_NAME)
@@ -820,7 +749,6 @@ def test_xset_change():
         xspec.get_xsxset(DEFAULT_XSET_NAME)
 
 
-@requires_xspec
 def test_xsect_change():
     """Can we change the xsect setting: string
 
@@ -828,19 +756,14 @@ def test_xsect_change():
     abundance names. It does not check the file I/O.
     """
 
-    from sherpa.astro import xspec
-
     validate_xspec_setting(xspec.get_xsxsect,
                            xspec.set_xsxsect,
                            'obcm', 'vern')
 
 
-@requires_xspec
 def test_cosmo_change():
     """Can we change the cosmology settings.
     """
-
-    from sherpa.astro import xspec
 
     old_h0, old_q0, old_l0 = xspec.get_xscosmo()
 
@@ -866,12 +789,9 @@ def test_cosmo_change():
     assert nval_l0 == pytest.approx(new_l0)
 
 
-@requires_xspec
 def test_path_manager_change(tmp_path):
     """Can we change the manager-path setting?
     """
-
-    from sherpa.astro import xspec
 
     validate_xspec_setting(xspec.get_xspath_manager,
                            xspec.set_xspath_manager,
@@ -885,7 +805,6 @@ def test_path_manager_change(tmp_path):
 # are very basic.
 #
 
-@requires_xspec
 @pytest.mark.parametrize("arg", [{}, True])
 def test_set_xsstate_no_op(arg):
     """Just check we can sent in a "useless" argument.
@@ -895,12 +814,9 @@ def test_set_xsstate_no_op(arg):
 
     """
 
-    from sherpa.astro import xspec
-
     xspec.set_xsstate(arg)
 
 
-@requires_xspec
 def test_get_xsstate_keys():
     """Check get_xsstate returns the expected keys.
 
@@ -908,8 +824,6 @@ def test_get_xsstate_keys():
     the state in the requires_xspec decorator or essentially
     replicate the implementation of get_xsstate.
     """
-
-    from sherpa.astro import xspec
 
     ostate = xspec.get_xsstate()
     assert isinstance(ostate, dict)
@@ -919,7 +833,6 @@ def test_get_xsstate_keys():
         assert key in ostate
 
 
-@requires_xspec
 @pytest.mark.parametrize("miss_key",
                          ["abund", "chatter", "cosmo", "xsect",
                           "modelstrings", "paths"])
@@ -927,8 +840,6 @@ def test_set_xsstate_missing_key(miss_key):
     """Check set_xsstate handles a missing key.
 
     """
-
-    from sherpa.astro import xspec
 
     ostate = xspec.get_xsstate()
     assert miss_key in ostate
@@ -994,7 +905,6 @@ def test_set_xsstate_missing_key(miss_key):
     assert xspec.get_xsabund() != 'file'
 
 
-@requires_xspec
 def test_set_xsstate_abund():
     """Check set_xsstate works for abundance.
     """
@@ -1002,7 +912,6 @@ def test_set_xsstate_abund():
     validate_xspec_state_setting('abund', 'lodd', 'wilm')
 
 
-@requires_xspec
 def test_set_xsstate_xsect():
     """Check set_xsstate works for cross sections.
     """
@@ -1010,7 +919,6 @@ def test_set_xsstate_xsect():
     validate_xspec_state_setting('xsect', 'vern', 'obcm')
 
 
-@requires_xspec
 def test_set_xsstate_chatter():
     """Check set_xsstate works for chatter.
     """
@@ -1018,12 +926,9 @@ def test_set_xsstate_chatter():
     validate_xspec_state_setting('chatter', 5, 15)
 
 
-@requires_xspec
 def test_set_xsstate_xset():
     """Check set_xsstate works for an xset command.
     """
-
-    from sherpa.astro import xspec
 
     ostate = xspec.get_xsstate()
 
@@ -1058,12 +963,9 @@ def test_set_xsstate_xset():
     assert xspec.get_xsstate() == ostate
 
 
-@requires_xspec
 def test_set_xsstate_path_manager():
     """Check set_xsstate works for the manager path
     """
-
-    from sherpa.astro import xspec
 
     ostate = xspec.get_xsstate()
     opath = xspec.get_xspath_manager()
@@ -1104,12 +1006,9 @@ def test_set_xsstate_path_manager():
     # should really clear out xspec.xsstate["paths"]
 
 
-@requires_xspec
 def test_set_xsstate_abundances():
     """Check we can restore manually-created abundances.
     """
-
-    from sherpa.astro import xspec
 
     oabund = xspec.get_xsabund()
     assert oabund != "file"
@@ -1139,7 +1038,6 @@ def test_set_xsstate_abundances():
 
 @requires_data
 @requires_fits
-@requires_xspec
 @pytest.mark.parametrize("usepath", [True, False])
 def test_read_xstable_model(usepath, make_data_path):
     """Limited test (only one file).
@@ -1147,8 +1045,6 @@ def test_read_xstable_model(usepath, make_data_path):
     Evaluation tests using this model are in
     sherpa.astro.xspec.tests.test_xspec.
     """
-
-    from sherpa.astro import xspec
 
     path = make_data_path('xspec-tablemodel-RCS.mod')
     filename = Path(path) if usepath else path
@@ -1179,7 +1075,6 @@ def test_read_xstable_model(usepath, make_data_path):
         assert not(p.frozen)
 
 
-@requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
 def test_xspec_model_requires_bins(clsname, xsmodel):
     """Ensure you can not call with a single grid for the energies.
@@ -1194,7 +1089,6 @@ def test_xspec_model_requires_bins(clsname, xsmodel):
         mdl([0.1, 0.2, 0.3, 0.4])
 
 
-@requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
 def test_xspec_model_requires_bins_low_level(clsname, xsmodel):
     """Ensure you can not call with a single grid for the energies (calc).
@@ -1209,7 +1103,6 @@ def test_xspec_model_requires_bins_low_level(clsname, xsmodel):
         mdl.calc([p.val for p in mdl.pars], [0.1, 0.2, 0.3, 0.4])
 
 
-@requires_xspec
 @pytest.mark.parametrize("clsname,hasnorm",
                          [("powerlaw", True),
                           ("wabs", False)]
@@ -1253,14 +1146,11 @@ def test_xspec_model_requires_bins_very_low_level(clsname, hasnorm, xsmodel):
 
 @requires_fits
 @requires_data
-@requires_xspec
 def test_xspec_tablemodel_requires_bin_edges(make_data_path):
     """Check we can not call a table model with a single grid.
 
     This used to be supported in Sherpa 4.13 and before.
     """
-
-    from sherpa.astro import xspec
 
     path = make_data_path('xspec-tablemodel-RCS.mod')
     tbl = xspec.read_xstable_model('bar', path)
@@ -1272,14 +1162,11 @@ def test_xspec_tablemodel_requires_bin_edges(make_data_path):
 
 @requires_fits
 @requires_data
-@requires_xspec
 def test_xspec_tablemodel_requires_bin_edges_low_level(make_data_path):
     """Check we can not call a table model with a single grid (calc).
 
     This used to be supported in Sherpa 4.13 and before.
     """
-
-    from sherpa.astro import xspec
 
     path = make_data_path('xspec-tablemodel-RCS.mod')
     tbl = xspec.read_xstable_model('bar', path)
@@ -1289,7 +1176,6 @@ def test_xspec_tablemodel_requires_bin_edges_low_level(make_data_path):
         tbl.calc([p.val for p in tbl.pars], [0.1, 0.2, 0.3, 0.4])
 
 
-@requires_xspec
 def test_xspec_convolutionmodel_requires_bin_edges():
     """Check we can not call a convolution model with a single grid.
 
@@ -1312,7 +1198,6 @@ def test_xspec_convolutionmodel_requires_bin_edges():
             mdl([0.1, 0.2, 0.3, 0.4])
 
 
-@requires_xspec
 def test_xspec_convolutionmodel_requires_bin_edges_low_level():
     """Check we can not call a convolution model with a single grid (calc).
 
@@ -1337,11 +1222,8 @@ def test_xspec_convolutionmodel_requires_bin_edges_low_level():
 
 @requires_data
 @requires_fits
-@requires_xspec
 def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
     """Can we extend an additive table model beyond its grid?"""
-
-    from sherpa.astro import xspec
 
     path = make_data_path('xspec-tablemodel-RCS.mod')
     tbl = xspec.read_xstable_model('bar', path)
@@ -1367,12 +1249,9 @@ def test_evaluate_xspec_additive_model_beyond_grid(make_data_path):
 
 @requires_data
 @requires_fits
-@requires_xspec
 def test_create_xspec_multiplicative_model(make_data_path):
     """Can we load multiplicative table models?
     """
-
-    from sherpa.astro import xspec
 
     path = make_data_path('testpcfabs.mod')
     tbl = xspec.read_xstable_model('bar', path)
@@ -1403,7 +1282,6 @@ def test_create_xspec_multiplicative_model(make_data_path):
 
 @requires_data
 @requires_fits
-@requires_xspec
 def test_evaluate_xspec_multiplicative_model(make_data_path):
     """Can we evaluate multiplicative table models?
 
@@ -1412,8 +1290,6 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
     table models (and other XSPEC models) - as it is assumed that
     this logic has been tested.
     """
-
-    from sherpa.astro import xspec
 
     path = make_data_path('testpcfabs.mod')
     tbl = xspec.read_xstable_model('bar', path)
@@ -1467,7 +1343,6 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
         assert y[-1] == pytest.approx(1.0)
 
 
-@requires_xspec
 def test_ismabs_parameter_name_clashes():
     """Check the work around for the ismabs XSPEC 12.9.1 name clashes.
 
@@ -1489,8 +1364,6 @@ def test_ismabs_parameter_name_clashes():
     they work too.
 
     """
-
-    from sherpa.astro import xspec
 
     mdl = xspec.XSismabs()
     assert len(mdl.pars) == 31
@@ -1545,7 +1418,6 @@ def test_ismabs_parameter_name_clashes():
 
 @requires_data
 @requires_fits
-@requires_xspec
 def test_xstbl_link_parameter_evaluation(make_data_path):
     """See also sherpa/models/test_parameter::test_link_parameter_setting
 
@@ -1557,8 +1429,6 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
     DJB has checked that this code causes a segfault on linux without
     a fix for #742.
     """
-
-    from sherpa.astro import xspec
 
     path = make_data_path('xspec-tablemodel-RCS.mod')
     tbl = xspec.read_xstable_model('bar', path)
@@ -1593,7 +1463,6 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
         tbl(glo, ghi)
 
 
-@requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
 def test_integrate_setting(clsname, xsmodel):
     """Can we change the integrate setting?
@@ -1630,7 +1499,6 @@ def test_integrate_setting(clsname, xsmodel):
     assert y2 == pytest.approx(y1)
 
 
-@requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
 def test_integrate_setting_con(clsname, xsmodel):
     """Can we change the integrate setting of convolution models.
@@ -1682,7 +1550,6 @@ def test_integrate_setting_con(clsname, xsmodel):
     assert y2 == pytest.approx(y1)
 
 
-@requires_xspec
 @pytest.mark.parametrize("val", [1.5, 7.5])
 def test_xsparameter_within_limit(val):
     """What happens if we pass outside soft but within hard range?
@@ -1699,7 +1566,6 @@ def test_xsparameter_within_limit(val):
     assert not p.frozen
 
 
-@requires_xspec
 @pytest.mark.parametrize("val", [1, 8])
 def test_xsparameter_at_limit(val):
     """What happens if we pass outside soft but at hard limit?
@@ -1715,7 +1581,6 @@ def test_xsparameter_at_limit(val):
     assert not p.frozen
 
 
-@requires_xspec
 @pytest.mark.parametrize("base", [False, True])
 @pytest.mark.parametrize("val", [0, 10])
 def test_xsparameter_exceed_limit(base, val):
@@ -1736,7 +1601,6 @@ def test_xsparameter_exceed_limit(base, val):
     assert not p.frozen
 
 
-@requires_xspec
 @pytest.mark.parametrize("val", [0, 10])
 def test_xsparameter_change_limit_larger(val, caplog):
     """Can we change the hard limits to increase the range?
@@ -1757,7 +1621,6 @@ def test_xsparameter_change_limit_larger(val, caplog):
     assert not p.frozen
 
 
-@requires_xspec
 @pytest.mark.parametrize("label,limit", [("min", 3), ("max", 6)])
 def test_xsparameter_change_limit_smaller(label, limit, caplog):
     """Can we change the hard limits to decrease the range?
@@ -1781,7 +1644,6 @@ def test_xsparameter_change_limit_smaller(label, limit, caplog):
     assert getattr(p, f'{label}') == pytest.approx(limit)
 
 
-@requires_xspec
 @pytest.mark.parametrize("label,limit", [("min", 6), ("max", 4)])
 def test_xsparameter_change_limit_smaller_warning(label, limit, caplog):
     """Can we change the hard limits to decrease the range?
@@ -1820,7 +1682,6 @@ def test_xsparameter_change_limit_smaller_warning(label, limit, caplog):
     assert msg == expected
 
 
-@requires_xspec
 @pytest.mark.parametrize("val", [0, 10])
 def test_xsparameter_set(val, caplog):
     """Can we use set?"""
@@ -1839,7 +1700,6 @@ def test_xsparameter_set(val, caplog):
     assert len(caplog.records) == 0
 
 
-@requires_xspec
 @pytest.mark.parametrize("label,limit", [("min", 6), ("max", 4)])
 def test_xsparameter_set_change_val(label, limit, caplog):
     """Can we use set?"""
@@ -1880,7 +1740,6 @@ def test_xsparameter_set_change_val(label, limit, caplog):
     assert msg == expected
 
 
-@requires_xspec
 @pytest.mark.parametrize("base", [True, False])
 def test_xsparameter_limits(base):
     """Do we record the limits correctly?"""
@@ -1902,7 +1761,6 @@ def test_xsparameter_limits(base):
     assert p.hard_max == pytest.approx(8)
 
 
-@requires_xspec
 @pytest.mark.parametrize("clsname", ["XSpowerlaw", "XSphabs"])
 def test_model_can_send_spectrumnumber_indiv(clsname):
     """Check we can send spectrumNumber to individual models.
@@ -1912,22 +1770,17 @@ def test_model_can_send_spectrumnumber_indiv(clsname):
     the spectrumNumber argument.
     """
 
-    from sherpa.astro import xspec
-
     mdl = getattr(xspec, clsname)("tmp")
     egrid = np.arange(0.3, 0.4, 0.01)
     # This fails
     mdl(egrid[:-1], egrid[1:], spectrumNumber=2)
 
 
-@requires_xspec
 def test_model_can_send_spectrumnumber_indiv_con():
     """Check we can send spectrumNumber to individual models: convolution
 
     All we do is check that the model can be called.
     """
-
-    from sherpa.astro import xspec
 
     base = xspec.XSpowerlaw("tmp")
     con = xspec.XScflux("tmp2")
@@ -1940,7 +1793,6 @@ def test_model_can_send_spectrumnumber_indiv_con():
     mdl(egrid[:-1], egrid[1:], spectrumNumber=2)
 
 
-@requires_xspec
 def test_model_can_send_spectrumnumber_combine():
     """Check the spectrumNumber is sent through.
 
@@ -1952,9 +1804,6 @@ def test_model_can_send_spectrumnumber_combine():
     imported at the top-level) this is not a unit test as we test
     a number of features.
     """
-
-    from sherpa.astro import xspec
-    from sherpa.models import Parameter
 
     # We use the first parameter to identify what model is being
     # called (relying on the test to change the index value of the
@@ -1971,6 +1820,8 @@ def test_model_can_send_spectrumnumber_combine():
         return fluxes + pars[1]
 
     class TestSpectrumNumber(xspec.XSAdditiveModel):
+
+        _module = None
         _calc = test
 
         def __init__(self, name="test"):
@@ -1979,6 +1830,8 @@ def test_model_can_send_spectrumnumber_combine():
             super().__init__(name, (self.index, self.norm))
 
     class TestConvSpectrumNumber(xspec.XSConvolutionKernel):
+
+        _module = None
         _calc = testcon
 
         def __init__(self, name="test"):
@@ -2056,15 +1909,12 @@ def test_model_can_send_spectrumnumber_combine():
     assert args[2][1] == "con"
 
 
-@requires_xspec
 def test_model_can_send_spectrumnumber_combine_non_xspec():
     """Check the spectrumNumber is sent through with non-XSPEC models.
 
     An extension of test_model_can_send_spectrumnumber_combine()
     """
 
-    from sherpa.astro import xspec
-    from sherpa.models import Parameter
     from sherpa.models.basic import Scale1D
 
     args = []
@@ -2074,6 +1924,8 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
         return np.ones_like(lo)
 
     class TestSpectrumNumber2(xspec.XSAdditiveModel):
+
+        _module = None
         _calc = test
 
         def __init__(self, name="test"):
@@ -2116,7 +1968,6 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
     assert y12 == pytest.approx([2, 2, 2])
 
 
-@requires_xspec
 def test_xspec_model_kwarg_cached_not_needed():
     """Does the cache recognize when a kwarg has changed?
 
@@ -2136,8 +1987,6 @@ def test_xspec_model_kwarg_cached_not_needed():
     spectrumNumber argument will be added to model calls.
 
     """
-
-    from sherpa.astro import xspec
 
     mdl = xspec.XSpowerlaw()
 
@@ -2166,7 +2015,6 @@ def test_xspec_model_kwarg_cached_not_needed():
     assert y3 == pytest.approx(y1)
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("addmodel", [0, 1])
@@ -2180,8 +2028,6 @@ def test_table_mod_negative_delta_1850(addmodel, redshift, escale, make_data_pat
     the same time (to avoid having to read things in multiple times).
 
     """
-
-    from sherpa.astro import xspec
 
     name = f"smod{addmodel}{redshift}{escale}.tmod"
     infile = make_data_path(f"xspec_table_models/{name}")
@@ -2216,15 +2062,12 @@ def test_table_mod_negative_delta_1850(addmodel, redshift, escale, make_data_pat
     assert len(parnames) == idx
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_table_mod_add(make_data_path):
     """Check the additive model is behaving as expected. No z/escale
 
     """
-
-    from sherpa.astro import xspec
 
     name = "smod100.tmod"
     infile = make_data_path(f"xspec_table_models/{name}")
@@ -2235,11 +2078,21 @@ def test_table_mod_add(make_data_path):
     elo = egrid[:-1]
     ehi = egrid[1:]
 
-    expected = [0, 0, 22.5, 6, 54, 56, 39.5, 0]
+    # The "invalid parameter range" value depents on the XSPEC
+    # version. The table model uses 0 for low and 5 for hi
+    # (LOELIMIT, HIELIMIT keywords).
+    #
+    # Why this is not scaled by the bin width is unclear as other
+    # cases it is.
+    #
+    null_lo = 0
+    null_hi = 0 if xspec_version < (13, 0, 0) else 5
+
+    expected = [null_lo, null_lo, 22.5, 6, 54, 56, 39.5, null_hi]
     assert tbl(elo, ehi) == pytest.approx(expected)
 
     tbl.lscale = 0
-    expected = [0, 0, 15, 12, 52, 48, 15, 0]
+    expected = [null_lo, null_lo, 15, 12, 52, 48, 15, null_hi]
     assert tbl(elo, ehi) == pytest.approx(expected)
 
 
@@ -2254,21 +2107,27 @@ def test_table_mod_add(make_data_path):
 # Note that this gives photon/cm^2/s/keV and model evaluation
 # gives photon/cm^2/s.
 #
-ADD_TABLE_BASIC = [0, 0, 0, 75, 150] + [15] * 4 + [100] * 4 + \
-    [140] * 5 + [375, 20, 0, 0, 0, 0]
-ADD_TABLE_Z1 = [0, 82.5, 15, 57.5, 100, 120, 140, 140, 197.5] + [0] * 15
-ADD_TABLE_E2 = [0] * 8 + [37.5] * 2 + [75] * 2 + [7.5] * 8 + [50] * 4
+# IN XSPEC 13.0.0, additive table models now use LOELIMIT/HIELIMIT
+# instead of 0 for out-of-band values. For the smodxxx tables
+# the lo limit is 0 and 5 for the hi limit.
+#
+ADD_NULL_LO = 0
+ADD_NULL_HI = 0 if xspec_version < (13, 0, 0) else 5
+
+ADD_TABLE_BASIC = [ADD_NULL_LO] * 3 + [75, 150] + [15] * 4 + [100] * 4 + \
+    [140] * 5 + [375, 20] + [ADD_NULL_HI / 0.1] * 4
+ADD_TABLE_Z1 = [ADD_NULL_LO] + [82.5, 15, 57.5, 100, 120, 140, 140, 197.5] + \
+    [ADD_NULL_HI / 0.1] * 15
+ADD_TABLE_E2 = [ADD_NULL_LO] * 8 + [37.5] * 2 + [75] * 2 + [7.5] * 8 + \
+    [50] * 4  # note: these "hi" values do not depend on XSPEC version
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_table_mod_add_redshift(make_data_path):
     """Check the additive model is behaving as expected with redshift. No escale.
 
     """
-
-    from sherpa.astro import xspec
 
     name = "smod110.tmod"
     infile = make_data_path(f"xspec_table_models/{name}")
@@ -2288,15 +2147,12 @@ def test_table_mod_add_redshift(make_data_path):
     assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_Z1, rel=2e-6)
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_table_mod_add_escale(make_data_path):
     """Check the additive model is behaving as expected with escale. No z.
 
     """
-
-    from sherpa.astro import xspec
 
     name = "smod101.tmod"
     infile = make_data_path(f"xspec_table_models/{name}")
@@ -2316,7 +2172,6 @@ def test_table_mod_add_escale(make_data_path):
     assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_E2, rel=2e-6)
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_table_mod_add_escale_redshift(make_data_path):
@@ -2326,8 +2181,6 @@ def test_table_mod_add_escale_redshift(make_data_path):
     parameters the wrong way round.
 
     """
-
-    from sherpa.astro import xspec
 
     name = "smod111.tmod"
     infile = make_data_path(f"xspec_table_models/{name}")
@@ -2352,15 +2205,12 @@ def test_table_mod_add_escale_redshift(make_data_path):
     assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_E2, rel=2e-6)
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_table_mod_mul(make_data_path):
     """Check the multiplicative model is behaving as expected. No z/escale
 
     """
-
-    from sherpa.astro import xspec
 
     name = "smod000.tmod"
     infile = make_data_path(f"xspec_table_models/{name}")
@@ -2396,15 +2246,12 @@ MUL_TABLE_Z1 = [0, 13.2, 6, 23, 40, 50 + 10/3, 70, 70, 19.75] + [5] * 15
 MUL_TABLE_E2 = [0] * 8 + [7.5] * 2 + [15] * 2 + [6] * 8 + [40] * 4
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_table_mod_mul_redshift(make_data_path):
     """Check the multiplicative model is behaving as expected with redshift. No escale.
 
     """
-
-    from sherpa.astro import xspec
 
     name = "smod010.tmod"
     infile = make_data_path(f"xspec_table_models/{name}")
@@ -2423,15 +2270,12 @@ def test_table_mod_mul_redshift(make_data_path):
     assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_Z1, rel=2e-6)
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_table_mod_mul_escale(make_data_path):
     """Check the multiplicative model is behaving as expected with escale. No z.
 
     """
-
-    from sherpa.astro import xspec
 
     name = "smod001.tmod"
     infile = make_data_path(f"xspec_table_models/{name}")
@@ -2450,7 +2294,6 @@ def test_table_mod_mul_escale(make_data_path):
     assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_E2, rel=2e-6)
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_table_mod_mul_escale_redshift(make_data_path):
@@ -2460,8 +2303,6 @@ def test_table_mod_mul_escale_redshift(make_data_path):
     parameters the wrong way round.
 
     """
-
-    from sherpa.astro import xspec
 
     name = "smod011.tmod"
     infile = make_data_path(f"xspec_table_models/{name}")

@@ -323,10 +323,11 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.15.1, 12.15.0, 12.14.1, 12.14.0, 12.13.1, and 12.13.0.
-It may build against newer versions, but if it does it will not provide
-access to any new models in the release. The following sections of the
-`XSPEC manual
+:term:`XSPEC` versions 13.0.0, 12.15.1, 12.15.0, 12.14.1, 12.14.0, 12.13.1, and 12.13.0.
+It should build against newer versions, but if it does it will not provide
+access to any new models in the release and if the function used to
+evaluate a model has changed then that model will be unusable.
+The following sections of the `XSPEC manual
 <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
 should be reviewed: `Appendix F: Using the XSPEC Models Library in
 Other Programs
@@ -335,57 +336,45 @@ and `Appendix C: Adding Models to XSPEC
 <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html>`_.
 
 The ``spectral/manager/model.dat`` file provided by XSPEC - normally
-in the parent directory of the ``HEADAS`` environment variable - defines
-the interface for the models. The Sherpa module could be automatically
-generated from this file but it would not be as informative as
-manual generation (in particular the documentation), although this
-could be changed (see the discussion at
-`issue #52 <https://github.com/sherpa/sherpa/issues/52>`_).
+in the parent directory of the ``HEADAS`` environment variable -
+defines the interface for the models. It is used to automatically
+generate the code needed to interface to the models that is used by
+the extension module ``sherpa.astro.xspec._xspec``. It is not used to
+generate the `sherpa.astro.xspec` Python module (see the discussion
+at `issue #52 <https://github.com/sherpa/sherpa/issues/52>`_).
+
+.. note::
+
+   The interface to the XSPEC models has changed in 4.19.0, with the
+   creation of the code needed to call the models now automatically
+   generated, rather than requiring manually creating it with the
+   help of the ``scripts/update_xspec_functions.py`` script. The names
+   of the symbols used to call a model has been changed from the
+   function name to the model name (e.g. ``C_agauss`` to ``agauss``),
+   which has caused how the :py:class:`~sherpa.astro.xspec.XSModel`
+   class identifies the correct routine, via the use of the
+   :py:class:`~sherpa.astro.xspec.utils.ModelMeta` class.
 
 Checking against a previous XSPEC version
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you have a version of Sherpa compiled with a previous XSPEC
-version then you can use four helper scripts:
+version then you can use three helper scripts:
 
 #. ``scripts/check_xspec_update.py``
 
    This will compare the supported XSPEC model classes to those
    from a ``model.dat`` file, and report on the needed changes.
 
-#. ``scripts/update_xspec_functions.py``
-
-   This will report the text needed to go between the::
-
-      // Start model definitions
-      ...
-      // End model definitions
-
-   lines of the ``sherpa/astro/xspec/src/_xspec.cc`` file. This
-   information is replicated in the output of ``add_xspec_model.py``
-   so it depends on how many models need to be added or changed as
-   to which to use.
-
-   It is strongly suggested that the ordering from this routine
-   is used, as it makes it easier to validate changes over time.
-
-   The script uses the existing ``_xspec.cc`` file to identify
-   the list of symbols that depend on the XSPEC version. There
-   is an attempt to merge any new symbols in with existing ones,
-   but there may be times when an extra ``#ifdef`` line is added
-   which could have been avoided (it is not worth the complexity
-   in the script to avoid this).
-
 #. ``scripts/add_xspec_model.py``
 
-   This will report the basic code needed to be added to both
-   the compiled code (``sherpa/astro/xspec/src/_xspec.cc``) and
-   Python (``sherpa/astro/xspec/__init__.py``). The Python code
-   lacks documentation and some values either need adding (e.g.
-   the Sherpa version) or links checked and possibly updated (due
-   to the way that XSPEC models are documented). The compiled code
-   can likely be ignored since `update_xspec_functions.py` should
-   be all that is needed, but it is displayed as a safety check.
+   This will report the basic code needed to be added to both the
+   compiled code (only needed for external XSPEC user models) and
+   Python (``sherpa/astro/xspec/__init__.py``). The Python code lacks
+   documentation and some values either need adding (e.g.  the Sherpa
+   version) or links checked and possibly updated (due to the way that
+   XSPEC models are documented). The compiled code is displayed as a
+   safety check.
 
 #. ``scripts/update_xspec_docs.py``
 
@@ -416,27 +405,6 @@ Sherpa and XSPEC versions)::
    The screen output may differ slightly from that shown above, such
    as including the interface used by the model (e.g. C, C++,
    FORTRAN).
-
-The list of function definitions, needed in ``_xspec.cc``, can be
-generated::
-
-  % ./scripts/update_xspec_functions.py 12.13.0 ~/local/heasoft-6.31/spectral/manager/model.dat
-    // Start model definitions
-
-    XSPECMODELFCT_C(C_agauss, 3),                    // XSagauss
-    XSPECMODELFCT(agnsed, 16),                       // XSagnsed
-    XSPECMODELFCT(agnslim, 15),                      // XSagnslim
-    XSPECMODELFCT_C(C_apec, 4),                      // XSapec
-    ...
-    XSPECMODELFCT_CON(C_zashift, 1),                 // XSzashift
-    XSPECMODELFCT_CON(C_zmshift, 1),                 // XSzmshift
-
-    XSPECMODELFCT_C(beckerwolff, 13),                // XSbwcycl
-
-    // Emd model definitions
-
-Please note that this output needs to be reviewed as it relies on the
-existing ``_xspec.cc`` file to determine the version-specific models.
 
 Although the ``wdem`` model is included in the XSPEC models, here is
 how the ``add_xspec_model.py`` script can be used for those models
@@ -474,7 +442,7 @@ noted as not being supported::
   // Wrapper
 
   static PyMethodDef Wrappers[] = {
-    XSPECMODELFCT_C_NORM(C_wDem, 7),
+    XSPECMODELFCT_C(wdem, C_wDem, 7),
     { NULL, NULL, 0, NULL }
   };
 
@@ -524,7 +492,7 @@ noted as not being supported::
 
       """
 
-      __function__ = "C_wDem"
+      _xspec_name = 'wdem'
 
       def __init__(self, name='wdem'):
           self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
@@ -541,7 +509,6 @@ noted as not being supported::
 
 
 This code then can then be added to
-``sherpa/astro/xspec/src/_xspec.cc`` and
 ``sherpa/astro/xspec/__init__.py`` and then refined so that the tests
 pass.
 
@@ -563,6 +530,7 @@ available.
 
    Update the :py:attr:`~sherpa.astro.utils.xspec.SUPPORTED_VERSIONS` list
    to include the latest version as a triple (e.g. ``(12, 15, 1)``).
+
    Note that ``scripts/xspec.py`` is automatically copied to
    ``sherpa/astro/utils/xspec.py`` by the build system (this is to
    avoid a code mis-match while still allowing the code to be used to
@@ -588,8 +556,7 @@ available.
 #. Identify changes in the XSPEC models.
 
    .. note::
-      The ``scripts/check_xspec_update.py``,
-      ``scripts/update_xspec_functions.py``, and
+      The ``scripts/check_xspec_update.py`` and
       ``scripts/add_xspec_model.py`` scripts can be used to automate
       some - but unfortunately not all - of this.
 
@@ -633,7 +600,7 @@ available.
    which give the XSPEC model name (first parameter), number of
    parameters (second parameter), two numbers which we ignore, the
    name of the function that evaluates the model, the type
-   (e.g. ``add``), and then 1 or more values which we ignore. Then
+   (e.g. ``add``), and a number of optional arguments. Then
    there are lines which define the model parameters (the number match
    the second argument of the first line), and then one or more blank
    lines. In the output above we see that the XSPEC ``agauss`` model
@@ -665,55 +632,59 @@ available.
 
       Current version: `sherpa/astro/xspec/src/_xspec.cc <https://github.com/sherpa/sherpa/blob/main/sherpa/astro/xspec/src/_xspec.cc>`_.
 
-      New functions are added to the ``XspecMethods`` array, using
-      macros defined in
-      ``sherpa/include/sherpa/astro/xspec_extension.hh``, and should
-      be surrounded by a pre-processor check for the version symbol
-      added to ``helpers/xspec_config.py``.
+      The code to interface to the XSPEC models is defined in the
+      ``sherpa/include/sherpa/astro/xspec_extension.hh`` include
+      file, as the macros beginning with ``XSPECMODELFCT``. This
+      code is automatically generated during the build by the
+      ``scripts/make_xspec_model_include`` script, and is included
+      into ``_xspec.cc`` with the line::
 
-      As an example::
+        #include "_xspec.hh"
 
-        #ifdef XSPEC_12_12_0
-	  XSPECMODELFCT_C(C_wDem, 7),                      // XSwdem
-        #endif
+      This script can be run manually to review the output::
 
-      adds support for the ``C_wDem`` function, but only for XSPEC
-      12.12.0 and later. Note that the symbol name used here is
-      **not** the XSPEC model name (the first argument of the model
-      definition from ``model.dat``), but the function name (the fifth
-      argument of the model definition)::
+        % ./scripts/make_xspec_model_include $CONDA_PREFIX/spectral/manager/model.dat temp
+        % head -6 temp
+        #ifndef _XSPEC_MODEL_DEFINES
+        #define _XSPEC_MODEL_DEFINES
+          XSPECMODELFCT_C(agauss, C_agauss, 2, "LineE Sigma"), // XSagauss
+          XSPECMODELFCT(agnsed, agnsed, 15, "mass dist logmdot astar cosi kTe_hot kTe_warm Gamma_hot Gamma_warm R_hot R_warm logrout Htmax reprocess redshift"), // XSagnsed
+          XSPECMODELFCT(agnslim, agnslim, 14, "mass dist logmdot astar cosi kTe_hot kTe_warm Gamma_hot Gamma_warm R_hot R_warm logrout rin redshift"), // XSagnslim
+          XSPECMODELFCT_C(apec, C_apec, 3, "kT Abundanc Redshift"), // XSapec
+
+      Note that the symbol name used here **is** the XSPEC model
+      name (the first argument of the model definition from
+      ``model.dat``), and internally it calls the function name
+      (the fifth argument of the and the second argument to the
+      macro)::
 
         % grep C_wDem $HEADAS/../spectral/manager/model.dat
         wdem          7  0.         1.e20           C_wDem   add  0
 
-      Some models have changed the name of the function over time, so
-      the pre-processor directive may need to be more complex, such as
-      the following (although now we no-longer support XSPEC 12.10.0
-      this particular example has been removed from the code)::
-
-        #ifdef XSPEC_12_10_0
-          XSPECMODELFCT_C(C_nsmaxg, 5),                    // XSnsmaxg
-        #else
-          XSPECMODELFCT(nsmaxg, 5),                        // XSnsmaxg
-        #endif
-
       The remaining pieces are the choice of macro
-      (e.g. ``XSPECMODELFCT`` or ``XSPECMODELFCT_C``) and
-      the value for the second argument.  The macro depends on the
-      model type and the name of the function (which defines the
-      interface that XSPEC provides for the model, such as single- or
-      double- precision, and Fortran- or C- style linking). Additive
-      models use the suffix ``_NORM`` and convolution models use the
-      suffix ``_CON``. Model functions which begin with ``C_`` use the
-      ``_C`` variant, while those which begin with ``c_`` currently
-      require treating them as if they have no prefix.
+      (e.g. ``XSPECMODELFCT`` or ``XSPECMODELFCT_C``) and the values
+      for the arguments.  The macro depends on the model type,
+      the name of the model, the name of the function (which defines
+      the interface that XSPEC provides for the model, such as single-
+      or double- precision, and Fortran- or C- style
+      linking). Convolution models use the suffix ``_CON``. Model
+      functions which begin with ``C_`` use the ``_C`` variant, while
+      those which begin with ``c_`` currently require treating them as
+      if they have no prefix.
 
       The numeric argument to the template defines the number of
       parameters supported by the model once in Sherpa, and should
-      equal the value given in the ``model.dat`` file for all supported
-      models.
+      equal the value given in the ``model.dat`` file for all
+      supported models. The last argument is a string listing the
+      order of the parameter names and is used to create the docstring
+      for the symbol.
 
        .. note::
+
+          Prior to Sherpa 4.19.0 the models were stored using the
+          function name rather than the model name, which made it
+          complicated to handle new XSPEC versions where the function
+          name could change.
 
 	  Prior to Sherpa 4.18.0 the additive models needed to be sent
 	  an extra value to represent the normalization, and used a
@@ -725,23 +696,11 @@ available.
         phabs          1  0.03       1.e20           xsphab    mul  0
         gsmooth        2  0.         1.e20           C_gsmooth    con  0
 
-      are encoded as (ignoring any pre-processor directives)::
+      are encoded as::
 
-        XSPECMODELFCT_C(C_apec, 3),                      // XSapec
-        XSPECMODELFCT(xsphab, 1),                        // XSphabs
-        XSPECMODELFCT_CON(C_gsmooth, 2),                 // XSgsmooth
-
-      The ``scripts/update_xspec_functions.py`` script will create a
-      list of all the supported models for the supplied ``model.dat``
-      file, and can be used to fill up the text between the::
-
-        // Start model definitions
-	...
-	// End model definitions
-
-      markers. The existing ``_xspec.cc`` file is used to identify
-      version contraints on each symbol, but the output should be
-      reviewed.
+        XSPECMODELFCT_C(apec, C_apec, 3, "kT Abundanc Redshift"), // XSapec
+        XSPECMODELFCT(phabs, xsphab, 1, "nH"),           // XSphabs
+        XSPECMODELFCT_CON(gsmooth, C_gsmooth, 2, "Sig_6keV Index"), // XSgsmooth
 
       Those models that do not use the ``_C`` version of the macro (or,
       for convolution-style models, have to use
@@ -756,10 +715,6 @@ available.
       version should be declared as::
 
         xsccCall func;
-
-      If you are unsure, do not add a declaration and then try to
-      build Sherpa: the compiler should fail with an indication of
-      what symbol names are missing.
 
    b. ``sherpa/astro/xspec/__init__.py``
 
@@ -793,16 +748,21 @@ available.
 	a model name (e.g. ``Apec`` covers the ``vapec``, ``vvapec``,
 	``bapec``, ... variants)..
 
-      * Models that are not in older versions of XSPEC should be marked with
-	the ``version_at_least`` decorator (giving it the minimum supported
-	XSPEC version as a string), and the function (added to ``_xspec.cc``)
-	is specified as a string using the ``__function__`` attribute. The
-	:py:class:`sherpa.astro.xspec.utils.ModelMeta` metaclass performs
-	a runtime check to ensure that the model can be used.
+      * Models that are not in older versions of XSPEC should be
+	marked with the ``version_at_least`` decorator (giving it the
+	minimum supported XSPEC version as a string). The
+	:py:class:`~sherpa.astro.xspec.utils.ModelMeta` metaclass
+	performs a runtime check to ensure that the model can be used
+	by looking for the model name (using the ``xspec_name`` attribute
+	of the model class) from the extension module (the ``_module``
+	attribute).
 
-        For example (from when XSPEC 12.9.0 was still supported)::
+        .. note::
 
-            __function__ = "C_apec" if equal_or_greater_than("12.9.1") else "xsaped"
+           Prior to Sherpa 4.19.0 the mapping from model name to function
+           name needed to be added to the model classes via lines like::
+
+             __function__ = "C_apec" if equal_or_greater_than("12.9.1") else "xsaped"
 
    c. ``sherpa/astro/xspec/tests/test_xspec.py``
 

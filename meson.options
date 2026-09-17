@@ -34,7 +34,7 @@ option('xspec-prefix', type: 'string', value: '',
        'the XSPEC model library. This is expected to be set to $HEADAS. ' +
        'Leave as the empty string to build without XSPEC support.')
 option('xspec-libraries', type: 'array',
-       value: ['XSFunctions', 'XSUtil', 'XS'],
+       value: [],
        description: 'The XSPEC libraries that should be linked to. ' +
        'The value depends on the version of the XSPEC library and ' +
        'how it was built.')

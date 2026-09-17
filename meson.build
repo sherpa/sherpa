@@ -158,6 +158,15 @@ if xspec_prefix != ''
   xspec_incdir = include_directories(xspec_prefix / 'include')
   xspec_libdir = xspec_prefix / 'lib'
 
+  xspec_models = xspec_prefix / 'spectral' / 'manager' / 'model.dat'
+  if not fs.exists(xspec_models)
+    xspec_models = xspec_prefix / '..' / 'spectral' / 'manager' / 'model.dat'
+    if not fs.exists(xspec_models)
+      error('Unable to find XSPEC model dat file within:', xspec_prefix)
+    endif
+  endif
+  message('XSPEC model file:', xspec_models)
+
   # Find the XSPEC version. There is the possibility that a user
   # wants to specify the version, rather than pick it up directly,
   # but for now do not support this usage.
@@ -176,8 +185,24 @@ if xspec_prefix != ''
 
   message('XSPEC macros:', xspec_macros)
 
-  # Find the libraries
+  # Find the libraries. This depends on the XSPEC version:
+  # - prior to 13.0.0 the default is
+  #   ['XSFunctions', 'XSUtil', 'XS']
+  # - for 13.0.0 and later it is assumed to be
+  #   ['XSFunctions', 'XSUtil']
+  # The xspec-librarties option lets a user over-ride these
+  # choices.
+  #
   xspec_libs = get_option('xspec-libraries')
+  if xspec_libs.length() == 0
+    # Use the defaults
+    if xspec_version.startswith('12')
+      xspec_libs = ['XSFunctions', 'XSUtil', 'XS']
+    else
+      xspec_libs = ['XSFunctions', 'XSUtil']
+    endif
+  endif
+
   xspec_lib_deps = []
   foreach xlib : xspec_libs
     xlib_dep = cc.find_library(
