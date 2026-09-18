@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019-2021, 2023, 2025
+#  Copyright (C) 2011, 2015, 2016, 2019-2021, 2023, 2025-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,8 +18,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections.abc import Sequence
 import logging
-from typing import Literal
+from typing import Literal, SupportsIndex
 
 import numpy as np
 
@@ -28,7 +29,7 @@ from sherpa.fit import Fit
 from sherpa.utils import NoNewAttributesAfterInit, random
 from sherpa.utils.err import EstErr
 from sherpa.utils.parallel import parallel_map
-from sherpa.utils.types import ArrayType
+from sherpa.utils.types import ArrayType, PrefsType
 
 warning = logging.getLogger("sherpa").warning
 
@@ -48,7 +49,7 @@ __all__ = ('multivariate_t', 'multivariate_cauchy',
 def multivariate_t(mean: ArrayType,
                    cov: np.ndarray,
                    df: int,
-                   size: tuple[int, ...] | None = None,
+                   size: SupportsIndex | Sequence[SupportsIndex] | None = None,
                    rng: random.RandomType | None = None
                    ) -> np.ndarray:
     """Draw random deviates from a multivariate Student's T distribution.
@@ -110,7 +111,7 @@ def multivariate_t(mean: ArrayType,
 #
 def multivariate_cauchy(mean: ArrayType,
                         cov: np.ndarray,
-                        size: tuple[int, ...] | None = None,
+                        size: SupportsIndex | Sequence[SupportsIndex] | None = None,
                         rng: random.RandomType | None = None
                         ) -> np.ndarray:
     """
@@ -136,9 +137,13 @@ class ParameterScale(NoNewAttributesAfterInit):
 
     def get_scales(self,
                    fit: Fit,
-                   myscales: np.ndarray | None = None
+                   myscales: np.ndarray | None = None,
+                   est_method_args: PrefsType | None = None
                    ) -> np.ndarray:
         """Return the samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts the est_method_args parameter.
 
         Parameters
         ----------
@@ -149,6 +154,8 @@ class ParameterScale(NoNewAttributesAfterInit):
         myscales : numpy array or None, optional
             The scales to use. If None then they are
             calculated from the fit.
+        est_method_args
+            Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -167,9 +174,13 @@ class ParameterScaleVector(ParameterScale):
 
     def get_scales(self,
                    fit: Fit,
-                   myscales: np.ndarray | None = None
+                   myscales: np.ndarray | None = None,
+                   est_method_args: PrefsType | None = None
                    ) -> np.ndarray:
         """Return the samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts the est_method_args parameter.
 
         Parameters
         ----------
@@ -183,6 +194,8 @@ class ParameterScaleVector(ParameterScale):
             between the parameters). If None then they are calculated
             from the fit, using the object's sigma attribute to scale
             the results.
+        est_method_args
+            Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -205,6 +218,9 @@ class ParameterScaleVector(ParameterScale):
 
             covar = Covariance()
             covar.config['sigma'] = self.sigma
+            if est_method_args is not None:
+                covar.config.update(est_method_args)
+
             fit.estmethod = covar
 
             try:
@@ -222,6 +238,9 @@ class ParameterScaleVector(ParameterScale):
 
                     conf = Confidence()
                     conf.config['sigma'] = self.sigma
+                    if est_method_args is not None:
+                        conf.config.update(est_method_args)
+
                     fit.estmethod = conf
                     try:
                         t = fit.est_errors(parlist=(par,))
@@ -279,9 +298,13 @@ class ParameterScaleMatrix(ParameterScale):
 
     def get_scales(self,
                    fit: Fit,
-                   myscales: np.ndarray | None = None
+                   myscales: np.ndarray | None = None,
+                   est_method_args: PrefsType | None = None
                    ) -> np.ndarray:
         """Return the samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts the est_method_args parameter.
 
         Parameters
         ----------
@@ -294,6 +317,8 @@ class ParameterScaleMatrix(ParameterScale):
             for the parameters.  If None then they are calculated from
             the fit, using the object's sigma attribute to scale the
             results.
+        est_method_args
+            Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -310,6 +335,9 @@ class ParameterScaleMatrix(ParameterScale):
             oldestmethod = fit.estmethod
             covar = Covariance()
             covar.config['sigma'] = self.sigma
+            if est_method_args is not None:
+                covar.config.update(est_method_args)
+
             fit.estmethod = covar
 
             try:
@@ -325,7 +353,8 @@ class ParameterScaleMatrix(ParameterScale):
             # sigma value (which is expected to be 1, although it
             # can be changed).
             #
-            cov = self.sigma**2 * cov
+            sigma = covar.config['sigma']
+            cov = sigma**2 * cov
 
         else:
             # NOTE: the self.sigma value is not used when the scales
@@ -355,7 +384,7 @@ class ParameterScaleMatrix(ParameterScale):
         return cov
 
 
-ClipValue = Literal["none"] | Literal["hard"] | Literal["soft"]
+ClipValue = Literal["none", "hard", "soft"]
 
 
 class ParameterSample(NoNewAttributesAfterInit):
@@ -367,9 +396,14 @@ class ParameterSample(NoNewAttributesAfterInit):
                    fit: Fit,
                    *,
                    num: int = 1,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   est_method_args: PrefsType | None = None,
+                   **kwargs
                    ) -> np.ndarray:
         """Return the samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts est_method_args and kwargs.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -386,6 +420,8 @@ class ParameterSample(NoNewAttributesAfterInit):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        est_method_args
+            Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -486,9 +522,14 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
                    *,
                    factor: float = 4,
                    num: int = 1,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   est_method_args: PrefsType | None = None,
+                   **kwargs
                    ) -> np.ndarray:
         """Return the parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts est_method_args and kwargs.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -508,6 +549,8 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        est_method_args
+            Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -517,7 +560,7 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
         """
         vals = np.array(fit.model.thawedpars)
-        scales = self.scale.get_scales(fit)
+        scales = self.scale.get_scales(fit, est_method_args=est_method_args)
         size = int(num)
         samples = [random.uniform(rng,
                                   val - factor * abs(scale),
@@ -542,9 +585,14 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
                    *,
                    myscales: np.ndarray | None = None,
                    num: int = 1,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   est_method_args: PrefsType | None = None,
+                   **kwargs
                    ) -> np.ndarray:
         """Return the parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts est_method_args and kwargs.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -565,6 +613,8 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        est_method_args
+            Any extra configuration for the error estimation class.
 
         Returns
         -------
@@ -574,7 +624,8 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
         """
         vals = np.array(fit.model.thawedpars)
-        scales = self.scale.get_scales(fit, myscales=myscales)
+        scales = self.scale.get_scales(fit, myscales=myscales,
+                                       est_method_args=est_method_args)
         size = int(num)
 
         samples = [random.normal(rng, loc=val, scale=scale, size=size)
@@ -597,9 +648,14 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
                    *,
                    mycov: np.ndarray | None = None,
                    num: int = 1,
-                   rng: random.RandomType | None = None
+                   rng: random.RandomType | None = None,
+                   est_method_args: PrefsType | None = None,
+                   **kwargs
                    ) -> np.ndarray:
         """Return the parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts est_method_args and kwargs.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -629,7 +685,8 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
         """
         vals = np.array(fit.model.thawedpars)
-        cov = self.scale.get_scales(fit, myscales=mycov)
+        cov = self.scale.get_scales(fit, myscales=mycov,
+                                    est_method_args=est_method_args)
         return random.multivariate_normal(rng, mean=vals, cov=cov,
                                           size=int(num))
 
@@ -650,8 +707,13 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
                    dof: int,
                    num: int = 1,
                    rng: random.RandomType | None = None,
+                   est_method_args: PrefsType | None = None,
+                   **kwargs
                    ) -> np.ndarray:
         """Return the parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts est_method_args and kwargs.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
@@ -679,7 +741,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
         """
         vals = np.array(fit.model.thawedpars)
-        cov = self.scale.get_scales(fit)
+        cov = self.scale.get_scales(fit, est_method_args=est_method_args)
         return multivariate_t(vals, cov=cov, df=dof, size=int(num),
                               rng=rng)
 
@@ -778,9 +840,14 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
                    num: int = 1,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "none"
+                   est_method_args: PrefsType | None = None,
+                   clip: ClipValue = "none",
+                   **kwargs
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts est_method_args and kwargs.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
@@ -805,6 +872,8 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        est_method_args
+            Any extra configuration for the error estimation class.
         clip : {'hard', 'soft', 'none'}, optional
            What clipping strategy should be applied to the sampled
            parameters. The default ('none') applies no clipping,
@@ -823,7 +892,9 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
         """
 
         # Knowledge of whether a row has been clipped is dropped
-        samples = super().get_sample(fit, num=num, rng=rng)
+        samples = super().get_sample(fit, num=num, rng=rng,
+                                     est_method_args=est_method_args,
+                                     **kwargs)
         clipped = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, clipped, numcores=numcores)
 
@@ -844,9 +915,14 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
                    num: int = 1,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "none"
+                   est_method_args: PrefsType | None = None,
+                   clip: ClipValue = "none",
+                   **kwargs
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts est_method_args and kwargs.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
@@ -871,6 +947,8 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        est_method_args
+            Any extra configuration for the error estimation class.
         clip : {'hard', 'soft', 'none'}, optional
            What clipping strategy should be applied to the sampled
            parameters. The default ('none') applies no clipping,
@@ -889,7 +967,9 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
         """
 
         # Knowledge of whether a row has been clipped is dropped
-        samples = super().get_sample(fit, num=num, rng=rng)
+        samples = super().get_sample(fit, num=num, rng=rng,
+                                     est_method_args=est_method_args,
+                                     **kwargs)
         clipped = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, clipped, numcores=numcores)
 
@@ -909,9 +989,14 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
                    factor: float = 4,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "none"
+                   est_method_args: PrefsType | None = None,
+                   clip: ClipValue = "none",
+                   **kwargs
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts est_method_args and kwargs.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
@@ -939,6 +1024,8 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        est_method_args
+            Any extra configuration for the error estimation class.
         clip : {'hard', 'soft', 'none'}, optional
            What clipping strategy should be applied to the sampled
            parameters. The default ('none') applies no clipping,
@@ -956,7 +1043,9 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
 
         """
         samples = super().get_sample(fit, factor=factor, num=num,
-                                     rng=rng)
+                                     rng=rng,
+                                     est_method_args=est_method_args,
+                                     **kwargs)
         clipped = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, clipped, numcores=numcores)
 
@@ -978,9 +1067,14 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
                    dof: int = 2,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "none"
+                   est_method_args: PrefsType | None = None,
+                   clip: ClipValue = "none",
+                   **kwargs
                    ) -> np.ndarray:
         """Return the statistic and parameter samples.
+
+        .. versionchanged:: 4.19.0
+           The routine now accepts est_method_args and kwargs.
 
         .. versionchanged:: 4.18.0
            The clip argument has been added, and the return value now
@@ -1007,6 +1101,8 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
            Determines how random numbers are created. If set to None
            then the routines from `numpy.random` are used, and so can
            be controlled by calling `numpy.random.seed`.
+        est_method_args
+            Any extra configuration for the error estimation class.
         clip : {'hard', 'soft', 'none'}, optional
            What clipping strategy should be applied to the sampled
            parameters. The default ('none') applies no clipping,
@@ -1023,7 +1119,9 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
            indicates whether any parameters were clipped.
 
         """
-        samples = super().get_sample(fit, dof=dof, num=num, rng=rng)
+        samples = super().get_sample(fit, dof=dof, num=num, rng=rng,
+                                     est_method_args=est_method_args,
+                                     **kwargs)
         clipped = self.clip(fit, samples, clip=clip)
         return _sample_stat(fit, samples, clipped, numcores=numcores)
 
@@ -1035,7 +1133,8 @@ def normal_sample(fit: Fit,
                   correlate: bool = True,
                   numcores: int | None = None,
                   rng: random.RandomType | None = None,
-                  clip: ClipValue = "none"
+                  clip: ClipValue = "none",
+                  est_method_args: PrefsType | None = None
                   ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values
     from a normal distribution.
@@ -1043,6 +1142,9 @@ def normal_sample(fit: Fit,
     For each iteration (sample), change the thawed parameters by
     drawing values from a uni- or multi-variate normal (Gaussian)
     distribution, and calculate the fit statistic.
+
+    .. versionchanged:: 4.19.0
+        The routine now accepts the est_method_args optional argument.
 
     .. versionchanged:: 4.18.0
        The sigma parameter has been renamed to scale, and the code has
@@ -1078,6 +1180,8 @@ def normal_sample(fit: Fit,
        What clipping strategy should be applied to the sampled
        parameters. The default ('none') applies no clipping, 'hard'
        uses the hard parameter limits, and 'soft' the soft limits.
+    est_method_args
+       Any extra configuration for the error estimation class.
 
     Returns
     -------
@@ -1112,7 +1216,8 @@ def normal_sample(fit: Fit,
 
     sampler.scale.sigma = scale
     return sampler.get_sample(fit, num=num, numcores=numcores,
-                              rng=rng, clip=clip)
+                              rng=rng, clip=clip,
+                              est_method_args=est_method_args)
 
 
 def uniform_sample(fit: Fit,
@@ -1120,7 +1225,8 @@ def uniform_sample(fit: Fit,
                    factor: float = 4,
                    numcores: int | None = None,
                    rng: random.RandomType | None = None,
-                   clip: ClipValue = "none"
+                   clip: ClipValue = "none",
+                   est_method_args: PrefsType | None = None
                    ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values
     from an uniform distribution.
@@ -1128,6 +1234,9 @@ def uniform_sample(fit: Fit,
     For each iteration (sample), change the thawed parameters by
     drawing values from a uniform distribution, and calculate the
     fit statistic.
+
+    .. versionchanged:: 4.19.0
+        The routine now accepts the est_method_args optional argument.
 
     .. versionchanged:: 4.18.0
        The sigma parameter has been renamed to scale, and the code has
@@ -1158,6 +1267,8 @@ def uniform_sample(fit: Fit,
        What clipping strategy should be applied to the sampled
        parameters. The default ('none') applies no clipping, 'hard'
        uses the hard parameter limits, and 'soft' the soft limits.
+    est_method_args
+       Any extra configuration for the error estimation class.
 
     Returns
     -------
@@ -1178,6 +1289,7 @@ def uniform_sample(fit: Fit,
     sampler.scale.sigma = 1
     return sampler.get_sample(fit, num=num, factor=factor,
                               numcores=numcores, rng=rng,
+                              est_method_args=est_method_args,
                               clip=clip)
 
 
@@ -1186,7 +1298,8 @@ def t_sample(fit: Fit,
              dof: int = 2,
              numcores: int | None = None,
              rng: random.RandomType | None = None,
-             clip: ClipValue = "none"
+             clip: ClipValue = "none",
+             est_method_args: PrefsType | None = None
              ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values from
     a Student's t-distribution.
@@ -1194,6 +1307,9 @@ def t_sample(fit: Fit,
     For each iteration (sample), change the thawed parameters
     by drawing values from a Student's t-distribution, and
     calculate the fit statistic.
+
+    .. versionchanged:: 4.19.0
+        The routine now accepts the est_method_args optional argument.
 
     .. versionchanged:: 4.18.0
        The sigma parameter has been renamed to scale, and the code has
@@ -1225,10 +1341,12 @@ def t_sample(fit: Fit,
        What clipping strategy should be applied to the sampled
        parameters. The default ('none') applies no clipping, 'hard'
        uses the hard parameter limits, and 'soft' the soft limits.
+    est_method_args
+       Any extra configuration for the error estimation class.
 
     Returns
     -------
-    samples :
+    samples
        A NumPy array table with the first column representing the
        statistic, the later columns the parameters used, and the last
        column indicating whether any parameter in the row was clipped.
@@ -1241,4 +1359,5 @@ def t_sample(fit: Fit,
     """
     sampler = StudentTSampleFromScaleMatrix()
     return sampler.get_sample(fit, num=num, dof=dof,
+                              est_method_args=est_method_args,
                               numcores=numcores, rng=rng, clip=clip)

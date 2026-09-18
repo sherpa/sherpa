@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020-2023, 2025
+#  Copyright (C) 2020-2023, 2025-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -2693,3 +2693,94 @@ def test_2337_linked_par_subset(setup, clean_astro_ui):
     assert res[:, 1] == pytest.approx([14.98264164, 18.13393656, 15.79721333, 15.80157972, 15.8858083 ])
     assert res[:, 2] == pytest.approx([5.99565486, 7.77280365, 4.44169833, 6.36608732, 6.36504029])
     assert res[:, 3] == pytest.approx([0] * 5)
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("meth", [ui.sample_photon_flux,
+                                  ui.sample_energy_flux])
+def test_sample_xxx_flux_est_method_args(meth, make_data_path, clean_astro_ui):
+    """Check we can pass arguments via est_method_args."""
+
+    niter = 10
+    token = 723454645
+    scale = 2.0
+
+    # Pick a range where the model parameters are well defined.
+    # Ignore background subtraction.
+    #
+    with SherpaVerbosity('ERROR'):
+        ui.load_pha(1, make_data_path("3c273.pi"))
+
+        ui.get_data(1).delete_background(1)
+        ui.ignore(hi=1)
+        ui.ignore(lo=7)
+
+        ui.set_source(1, ui.powlaw1d.pl)
+        pl.gamma = 1.9
+        pl.ampl = 1e-4
+        ui.fit()
+
+    mdl = ui.get_source(1)
+    pvals = np.asarray(mdl.thawedpars)
+
+    ui.set_rng(np.random.RandomState(token))
+    vals1 = meth(id=1, num=niter)
+
+
+    ui.set_rng(np.random.RandomState(token))
+    vals2 = meth(id=1, num=niter, est_method_args={"sigma": scale})
+
+    # Are the samples related as expected?
+    #
+    d1 = vals1[:, 1:3] - pvals
+    d2 = vals2[:, 1:3] - pvals
+    ratio = d2 / d1
+
+    expected = np.full((niter, 2), scale)
+    assert ratio == pytest.approx(expected, rel=1e-4)
+
+
+@requires_data
+@requires_fits
+def test_sample_flux_est_method_args(make_data_path, clean_astro_ui):
+    """Check we can pass arguments via est_method_args."""
+
+    niter = 10
+    token = 723454645
+    scale = 2.0
+
+    # Pick a range where the model parameters are well defined.
+    # Ignore background subtraction.
+    #
+    with SherpaVerbosity('ERROR'):
+        ui.load_pha(1, make_data_path("3c273.pi"))
+
+        ui.get_data(1).delete_background(1)
+        ui.ignore(hi=1)
+        ui.ignore(lo=7)
+
+        ui.set_source(1, ui.powlaw1d.pl)
+        pl.gamma = 1.9
+        pl.ampl = 1e-4
+        ui.fit()
+
+    mdl = ui.get_source(1)
+    pvals = np.asarray(mdl.thawedpars)
+
+    ui.set_rng(np.random.RandomState(token))
+    _, _, vals1 = ui.sample_flux(id=1, num=niter)
+
+
+    ui.set_rng(np.random.RandomState(token))
+    _, _, vals2 = ui.sample_flux(id=1, num=niter,
+                                 est_method_args={"sigma": scale})
+
+    # Are the samples related as expected?
+    #
+    d1 = vals1[:, 1:3] - pvals
+    d2 = vals2[:, 1:3] - pvals
+    ratio = d2 / d1
+
+    expected = np.full((niter + 1, 2), scale)
+    assert ratio == pytest.approx(expected, rel=1e-4)
