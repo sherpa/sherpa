@@ -41,11 +41,11 @@ References
 """
 
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass
 import logging
 import re
 import string
-from typing import Callable
 
 
 __all__ = ("SUPPORTED_VERSIONS", "MIN_VERSION", "MAX_VERSION",
@@ -66,7 +66,8 @@ Version = tuple[int, int, int]
 SUPPORTED_VERSIONS: list[Version] = [
     (12, 13, 0), (12, 13, 1),
     (12, 14, 0), (12, 14, 1),
-    (12, 15, 0), (12, 15, 1)
+    (12, 15, 0), (12, 15, 1),
+    (13, 0, 0), (13, 0, 1)
 ]
 """What versions of XSPEC are supported by Sherpa?
 
@@ -131,6 +132,10 @@ class XSPECcode:
 class ModelDefinition:
     """Represent the model definition from an XSPEC model file.
 
+    ..versionchanged:: 4.19.0
+      Added support for parsing the grad argument introduced in
+      XSPEC 13.
+
     Parameters
     ----------
     name : str
@@ -149,7 +154,11 @@ class ModelDefinition:
     pars : sequence of ParameterDefinition
        Any parameter values. It is expected this is not empty.
     initString : str or None, optional
-        The default string to send to the model.
+       The default string to send to the model.
+    grad : str or None, optional
+       The grad argument, which gives the analytic derivative routine,
+       or routines, for the component. This information is currently
+       unused by Sherpa.
 
     See Also
     --------
@@ -168,7 +177,9 @@ class ModelDefinition:
     def __init__(self, name: str, clname: str, funcname: str,
                  flags: list[int], elo: float, ehi: float,
                  pars: list["ParameterDefinition"],
-                 initString: str | None = None) -> None:
+                 initString: str | None = None,
+                 grad: str | None = None
+                 ) -> None:
         assert self.modeltype is not None, \
             "ModelDefinition should not be directly created."
         self.name = name
@@ -206,6 +217,7 @@ class ModelDefinition:
             initString = None
 
         self.initString = initString
+        self.grad = grad
 
     def __repr__(self) -> str:
         return f"<{self.modeltype}:{self.name}:{self.funcname}:{len(self.pars)} pars>"
@@ -393,7 +405,7 @@ class ScaleParameterDefinition(ParameterDefinition):
     def __str__(self) -> str:
         out = super().__str__()
         if self.units is not None:
-            out += " units={}".format(self.units)
+            out += f" units={self.units}"
         return out
 
 
@@ -475,6 +487,9 @@ def read_model_definition(fh,
     found in both the XSPEC model.dat file and in user models but may
     error out in cases that are supported by XSPEC.
 
+    .. versionchanged:: 4.19.0
+       The code now reads in XSPEC 13 "grad=xxx" arguments.
+
     .. versionchanged:: 4.18.0
        Additive models no-longer contain a norm parameter.
 
@@ -512,28 +527,74 @@ def read_model_definition(fh,
 
         hdrline = hdrline.strip()
 
+    # The header line, up to XSPEC 13.0.0, was
+    #
+    # modelname npars elo ehi funcname modeltype i1 [i2 [initString]]
+    #
+    # There is now a "grad=xxx" option added to the end of the line,
+    # and it is unclear whether the initString option is still
+    # supported. For now try to support all options.
+    #
     toks = hdrline.split()
     ntoks = len(toks)
-    if ntoks < 7 or ntoks > 9:
-        raise ValueError("Expected: modelname npars elo ehi funcname modeltype i1 [i2 [initString]] but sent:\n{}".format(hdrline))
+    if ntoks < 7 or ntoks > 10:
+        raise ValueError("Expected: modelname npars elo ehi funcname "
+                         "modeltype i1 [i2 [initString [grad=xxx]]] "
+                         f"but sent:\n{hdrline}")
 
     name = toks[0]
     clname = namefunc(name)
     npars = int(toks[1])
     if npars < 0:
-        raise ValueError("Number of parameters is {}:\n{}".format(npars, hdrline))
+        raise ValueError(f"Number of parameters is {npars}:\n{hdrline}")
 
     elo = float(toks[2])
     ehi = float(toks[3])
     funcname = toks[4]
     modeltype = toks[5]
 
-    if ntoks == 9:
-        initString = toks.pop()
-    else:
-        initString = None
+    # It is not clear how exactly the "optional" parts are handled, so try
+    # to be generic. If the first two arguments are numeric then assume
+    # they are the flags.
+    #
+    flags = []
+    grad = None
+    initString = None
 
-    flags = [int(t) for t in toks[6:]]
+    if toks[6] in ["0", "1"]:
+        flags.append(int(toks[6]))
+    else:
+        raise ValueError(f"Expected 0 or 1, found {toks[6]} in:\n{hdrline}")
+
+    if ntoks > 7:
+        if toks[7] in ["0", "1"]:
+            flags.append(int(toks[7]))
+        elif toks[7].startswith("grad="):
+            grad = toks[7][5:]
+        else:
+            initString = toks[7]
+
+    if ntoks > 8:
+        if toks[8].startswith("grad="):
+            if grad is not None:
+                raise ValueError(f"multiple grad= arguments in:\n{hdrline}")
+
+            grad = toks[8][5:]
+        elif initString is None:
+            initString = toks[8]
+        else:
+            raise ValueError(f"multiple initString arguments in:\n{hdrline}")
+
+    if ntoks > 9:
+        if toks[9].startswith("grad="):
+            if grad is not None:
+                raise ValueError(f"multiple grad= arguments in:\n{hdrline}")
+
+            grad = toks[9][5:]
+        elif initString is None:
+            initString = toks[9]
+        else:
+            raise ValueError(f"multiple initString arguments in:\n{hdrline}")
 
     pars: list[ParameterDefinition] = []
     while len(pars) < npars:
@@ -569,8 +630,7 @@ def read_model_definition(fh,
         factory = AmxModelDefinition
 
     else:
-        raise ValueError("Unexpected model type {} in:\n{}".format(modeltype,
-                                                                   hdrline))
+        raise ValueError(f"Unexpected model type {modeltype} in:\n{hdrline}")
 
     # Safety check on the parameter names. We do not make this an
     # error because the user can change the Python parameter names
@@ -584,7 +644,7 @@ def read_model_definition(fh,
         warning(f"model={name} re-uses parameter name {pname}")
 
     return factory(name, clname, funcname, flags, elo, ehi, pars,
-                   initString=initString)
+                   initString=initString, grad=grad)
 
 
 def mpop(array: list[str]) -> float | None:
@@ -635,14 +695,15 @@ def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
     """
 
     if pline.endswith("P"):
-        raise ValueError("Periodic parameters are unsupported; model={}:\n{}\n".format(model, pline))
+        raise ValueError("Periodic parameters are unsupported; "
+                         f"model={model}:\n{pline}\n")
 
     toks = pline.split()
     orig_parname = toks.pop(0)
 
     if orig_parname.startswith('<') and orig_parname.endswith('>'):
         name = orig_parname[1:-1] + "_ave"
-    elif orig_parname.startswith('$') or orig_parname.startswith('*'):
+    elif orig_parname.startswith(('$', '*')):
         name = orig_parname[1:]
     else:
         name = orig_parname
@@ -715,13 +776,11 @@ def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
             # Technically the value should be an int but you can see '1.'
             # in the XSPEC model.dat (HEASARC 6.28)
             # default = int(toks.pop())
-            val = toks.pop()
-            if val.endswith('.'):
-                val = val[:-1]
+            val = toks.pop().removesuffix('.')
             idefault = int(val)
             return SwitchParameterDefinition(name, idefault)
 
-        raise NotImplementedError("(switch) model={} pline=\n{}".format(model, pline))
+        raise NotImplementedError(f"(switch) model={model} pline=\n{pline}")
 
     # Handle units
     units: str | None = None
@@ -739,7 +798,8 @@ def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
                 try:
                     val = toks.pop(0)
                 except IndexError as exc:
-                    raise ValueError("Unable to parse units; model={}\n{}".format(model, pline)) from exc
+                    raise ValueError("Unable to parse units; "
+                                     f"model={model}\n{pline}") from exc
 
                 if val.endswith('"'):
                     val = val[:-1]
@@ -774,7 +834,8 @@ def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
                                         delta=s_delta)
 
     if len(toks) != 6:
-        raise ValueError("Expected 6 values after units; model={}\n{}".format(model, pline))
+        raise ValueError("Expected 6 values after units; "
+                         f"model={model}\n{pline}")
 
     default = pop(toks)
     hardmin = pop(toks)
@@ -1070,7 +1131,7 @@ def model_to_python(mdl: ModelDefinition,
         return convolution_wrap(mdl, internal=internal)
 
     else:
-        raise ValueError("No wrapper for model={} type={}".format(mdl.name, mdl.modeltype))
+        raise ValueError("No wrapper for model={mdl.name} type={mdl.modeltype}")
 
 
 def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2021, 2022, 2024
+#  Copyright (C) 2021, 2022, 2024, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -102,8 +102,20 @@ def compare_xspec_models(models: Sequence[ModelDefinition],
             print(f"Model {mdl.name} has switched to convolution\n")
             continue
 
-        if len(xs.pars) != len(mdl.pars):
-            print(f"Model {mdl.name} parameters: {len(xs.pars)} -> {len(mdl.pars)}\n")
+        # Additive models will have a .norm parameter at the end which mdl.pars
+        # does not have.
+        #
+        if mdl.modeltype == 'Add':
+            if xs.pars[-1].name != "norm":
+                print(f"Model {mdl.name} does not end with a norm parameter but {xs.pars[-1].name} - why?")
+                continue
+
+            ncheck = len(xs.pars) - 1
+        else:
+            ncheck = len(xs.pars)
+
+        if ncheck != len(mdl.pars):
+            print(f"Model {mdl.name} parameters: {ncheck} -> {len(mdl.pars)}\n")
             continue
 
         # The previous changes are deemed serious enough that we need
@@ -158,7 +170,6 @@ def compare_xspec_models(models: Sequence[ModelDefinition],
 
                 if xpar.frozen != frozen:
                     reports.append(f"par {xpar.name} frozen: {xpar.frozen} -> {frozen}")
-
 
                 # The actual soft limits should match the model.dat hard limits
                 # (and should also be reported in the _xspec_soft... checks).
