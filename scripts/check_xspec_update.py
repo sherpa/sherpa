@@ -107,18 +107,16 @@ def compare_xspec_models(models: Sequence[ModelDefinition],
         #
         if mdl.modeltype == 'Add':
             if xs.pars[-1].name != "norm":
-                print(f"Model {mdl.name} does not end with a norm parameter but {xs.pars[-1].norm} - why?")
+                print(f"Model {mdl.name} does not end with a norm parameter but {xs.pars[-1].name} - why?")
                 continue
 
-            if (len(xs.pars) -1) != len(mdl.pars):
-                print(f"Model {mdl.name} parameters: {len(xs.pars) - 1} -> {len(mdl.pars)}\n")
-                continue
-
-
+            ncheck = len(xs.pars) - 1
         else:
-            if len(xs.pars) != len(mdl.pars):
-                print(f"Model {mdl.name} parameters: {len(xs.pars)} -> {len(mdl.pars)}\n")
-                continue
+            ncheck = len(xs.pars)
+
+        if ncheck != len(mdl.pars):
+            print(f"Model {mdl.name} parameters: {ncheck} -> {len(mdl.pars)}\n")
+            continue
 
         # The previous changes are deemed serious enough that we need
         # to look at the whole model. Now we are concerned with

@@ -156,7 +156,9 @@ class ModelDefinition:
     initString : str or None, optional
        The default string to send to the model.
     grad : str or None, optional
-       The grad argument.
+       The grad argument, which gives the analytic derivative routine,
+       or routines, for the component. This information is currently
+       unused by Sherpa.
 
     See Also
     --------
@@ -526,9 +528,12 @@ def read_model_definition(fh,
         hdrline = hdrline.strip()
 
     # The header line, up to XSPEC 13.0.0, was
-    #   modelname npars elo ehi funcname modeltype i1 [i2 [initString]]
-    # There is now a (currently undocumented) "grad=xxx" option added
-    # to the end of the line, and it is unclear what is treated as optional.
+    #
+    # modelname npars elo ehi funcname modeltype i1 [i2 [initString]]
+    #
+    # There is now a "grad=xxx" option added to the end of the line,
+    # and it is unclear whether the initString option is still
+    # supported. For now try to support all options.
     #
     toks = hdrline.split()
     ntoks = len(toks)

@@ -37,7 +37,7 @@ from sherpa.models.parameter import Parameter
 from sherpa.utils.err import ArgumentErr, ParameterErr
 from sherpa.utils.testing import requires_data, requires_fits
 
-# All these tests requre XSPEC so do the check once rather than
+# All these tests require XSPEC so do the check once rather than
 # requiring each test to be labelled with @requires_xspec. Do not use
 # the pytest.importorskip routine as it changed behaviour during the
 # pytest 8.2 to 9.1 period relating to how import errors are handled.
@@ -2072,12 +2072,12 @@ def test_table_mod_add(make_data_path):
     elo = egrid[:-1]
     ehi = egrid[1:]
 
-    # The "invalid parameter range" value depents on the XSPEC
+    # The "invalid parameter range" value depends on the XSPEC
     # version. The table model uses 0 for low and 5 for hi
     # (LOELIMIT, HIELIMIT keywords).
     #
-    # Why this is not scaled by the bin width is unclear as other
-    # cases it is.
+    # Why this is not scaled by the bin width is unclear since it is
+    # in other cases.
     #
     null_lo = 0
     null_hi = 0 if xspec_version < (13, 0, 0) else 5
