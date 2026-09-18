@@ -92,6 +92,9 @@ def get_all_xspec_models() -> list:
     return out
 
 
+ALL_MODELS_CLS = get_all_xspec_models()
+
+
 # There is an argument to be made that these tests only need
 # to exercise a small number of models (e.g. one each of the
 # different templates used in xspec_extension.hh - so single
@@ -109,7 +112,7 @@ def get_all_xspec_models() -> list:
 def get_xspec_models() -> list:
     """What are the XSpec model names to test."""
 
-    model_names = [cls.__name__ for cls in get_all_xspec_models()]
+    model_names = [cls.__name__ for cls in ALL_MODELS_CLS]
     version = xs.get_xsversion()
 
     # the grbjet model with XSPEC 12.12.0 (and presumably 12.12.0.a) can
@@ -146,6 +149,9 @@ def get_xspec_models() -> list:
     # Only bother with those models we can run with the XSPEC
     # model library.
     return list(filter(lambda mod: mod.version_enabled, models))
+
+
+RUNNABLE_MODELS_CLS = get_xspec_models()
 
 
 def make_grid():
@@ -225,11 +231,11 @@ def assert_is_finite(vals, modelcls, label):
 
 def test_create_model_instances():
     """Do we know how many models we have?"""
-    count = len(get_all_xspec_models())
+    count = len(ALL_MODELS_CLS)
     assert count == XSPEC_MODELS_COUNT
 
 
-@pytest.mark.parametrize("modelcls", get_all_xspec_models())
+@pytest.mark.parametrize("modelcls", ALL_MODELS_CLS)
 def test_check_default_name(modelcls):
     """Check the names are correct"""
 
@@ -241,6 +247,18 @@ def test_check_default_name(modelcls):
     mdl = modelcls()
 
     assert mdl.name in [expected, expected[2:]]
+
+    # Is the xspec_name field set up correctly?
+    #
+    lname = mdl.xspec_name.lower()
+    if is_proper_subclass(modelcls, xs.XSConvolutionKernel):
+        # The convolution name is somewhat historical, so leave
+        # as is.
+        assert mdl.name in [lname, f"xs{lname}"]
+    else:
+        assert mdl.name == lname
+
+    assert mdl.xspec_name == modelcls.__name__[2:]
 
 
 def test_norm_works():
@@ -456,7 +474,7 @@ def test_convolution_model_cflux():
     # Use the cflux convolution model, since this gives
     # an easily-checked result.
     #
-    func = xs._xspec.C_cflux
+    func = xs._xspec.cflux
 
     # The energy grid should extend beyond the energy grid
     # used to evaluate the model, to avoid any edge effects.
@@ -532,7 +550,7 @@ def test_convolution_model_cpflux_noncontiguous():
     y1 = numpy.zeros(elo.size)
 
     emsg = "XSPEC convolution model requires a contiguous grid"
-    func = xs._xspec.C_cpflux
+    func = xs._xspec.cpflux
 
     with pytest.raises(ValueError,
                        match=f"^{emsg}$"):
@@ -581,7 +599,6 @@ def test_additive_single_norm_model():
     from sherpa.astro.xspec import XSAdditiveModel
 
     class XSNotAClassName(XSAdditiveModel):
-        __function__ = "foo"
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
@@ -601,7 +618,6 @@ def test_nonexistent_model():
 
     @include_if(False)
     class XSbtapec(XSAdditiveModel):
-        __function__ = "foo"
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
@@ -622,9 +638,9 @@ def test_not_compiled_model():
     from sherpa.astro.xspec.utils import include_if, ModelMeta
     from sherpa.astro.xspec import XSAdditiveModel
 
+    # This assumes there is never going to be a model routine called foo.
     @include_if(True)
     class XSfoo(XSAdditiveModel):
-        __function__ = "C_foo"
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
@@ -638,13 +654,24 @@ def test_not_compiled_model():
 
 
 def test_old_style_xspec_class():
-    """
-    We changed the way xspec models are declared, but just in case let's make sure old-style declarations still work.
+    """We changed the way xspec models are declared, but just in case
+    let's make sure old-style declarations still work. With the changes
+    in 4.19.0 it's not obvious this test makes much sense.
+
     """
     from sherpa.astro.xspec import XSzbabs, XSMultiplicativeModel, _xspec
 
     class XSfoo(XSMultiplicativeModel):
-        _calc = _xspec.xszbabs
+
+        # Use the calc routine from XSzbabs. With the changes in 4.19.0
+        # this is easiest done by over-loading calc.
+        #
+        _module = None
+
+        def calc(self, p, *args, **kwargs):
+            # Go straight to the actual routine to make sure it works
+            # and to avoid having to label this as @modelCacher1d
+            return _xspec.zbabs(p, *args, **kwargs)
 
         def __init__(self, name='zbabs'):
             self.nH = Parameter(name, 'nH', 1.e-4, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
@@ -660,7 +687,7 @@ def test_old_style_xspec_class():
     assert actual == pytest.approx(expected)
 
 
-@pytest.mark.parametrize("modelcls", get_xspec_models())
+@pytest.mark.parametrize("modelcls", RUNNABLE_MODELS_CLS)
 def test_evaluate_xspec_model(modelcls):
     """Can we call a model with its default parameters?
 
@@ -726,7 +753,7 @@ def test_evaluate_xspec_model(modelcls):
     assert evals == pytest.approx(evals_no_wrapper)
 
 
-@pytest.mark.parametrize("modelcls", get_xspec_models())
+@pytest.mark.parametrize("modelcls", RUNNABLE_MODELS_CLS)
 def test_evaluate_xspec_model_noncontiguous2(modelcls):
     """Can we evaluate an XSPEC model with a non-contiguous grid?
 

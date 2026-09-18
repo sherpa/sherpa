@@ -26,8 +26,13 @@ changes to the Sherpa code to support a new XSPEC release [3]_ or for
 writing a module for an XSPEC user model.
 
 .. versionchanged:: 4.19.0
-   Several symbols related to XSPEC versions have been added to this
-   module.
+   The interface to a particular model is now named after the model
+   name rather than the actual function name (e.g. the apec model is
+   now called "apec" rather than something like "C_apec"). This makes
+   it easier to identify which routine to call. The docstring for the
+   model includes the name of the function and the number of
+   parameters it requires. Several symbols related to XSPEC versions
+   have been added to this module.
 
 References
 ----------
@@ -41,11 +46,11 @@ References
 """
 
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass
 import logging
 import re
 import string
-from typing import Callable
 
 
 __all__ = ("SUPPORTED_VERSIONS", "MIN_VERSION", "MAX_VERSION",
@@ -393,7 +398,7 @@ class ScaleParameterDefinition(ParameterDefinition):
     def __str__(self) -> str:
         out = super().__str__()
         if self.units is not None:
-            out += " units={}".format(self.units)
+            out += f" units={self.units}"
         return out
 
 
@@ -515,13 +520,15 @@ def read_model_definition(fh,
     toks = hdrline.split()
     ntoks = len(toks)
     if ntoks < 7 or ntoks > 9:
-        raise ValueError("Expected: modelname npars elo ehi funcname modeltype i1 [i2 [initString]] but sent:\n{}".format(hdrline))
+        raise ValueError("Expected: modelname npars elo ehi funcname "
+                         "modeltype i1 [i2 [initString]] but sent:\n"
+                         f"{hdrline}")
 
     name = toks[0]
     clname = namefunc(name)
     npars = int(toks[1])
     if npars < 0:
-        raise ValueError("Number of parameters is {}:\n{}".format(npars, hdrline))
+        raise ValueError(f"Number of parameters is {npars}:\n{hdrline}")
 
     elo = float(toks[2])
     ehi = float(toks[3])
@@ -569,8 +576,7 @@ def read_model_definition(fh,
         factory = AmxModelDefinition
 
     else:
-        raise ValueError("Unexpected model type {} in:\n{}".format(modeltype,
-                                                                   hdrline))
+        raise ValueError(f"Unexpected model type {modeltype} in:\n{hdrline}")
 
     # Safety check on the parameter names. We do not make this an
     # error because the user can change the Python parameter names
@@ -635,14 +641,15 @@ def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
     """
 
     if pline.endswith("P"):
-        raise ValueError("Periodic parameters are unsupported; model={}:\n{}\n".format(model, pline))
+        raise ValueError("Periodic parameters are unsupported; "
+                         f"model={model}:\n{pline}\n")
 
     toks = pline.split()
     orig_parname = toks.pop(0)
 
     if orig_parname.startswith('<') and orig_parname.endswith('>'):
         name = orig_parname[1:-1] + "_ave"
-    elif orig_parname.startswith('$') or orig_parname.startswith('*'):
+    elif orig_parname.startswith(('$', '*')):
         name = orig_parname[1:]
     else:
         name = orig_parname
@@ -715,13 +722,11 @@ def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
             # Technically the value should be an int but you can see '1.'
             # in the XSPEC model.dat (HEASARC 6.28)
             # default = int(toks.pop())
-            val = toks.pop()
-            if val.endswith('.'):
-                val = val[:-1]
+            val = toks.pop().removesuffix('.')
             idefault = int(val)
             return SwitchParameterDefinition(name, idefault)
 
-        raise NotImplementedError("(switch) model={} pline=\n{}".format(model, pline))
+        raise NotImplementedError(f"(switch) model={model} pline=\n{pline}")
 
     # Handle units
     units: str | None = None
@@ -739,7 +744,8 @@ def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
                 try:
                     val = toks.pop(0)
                 except IndexError as exc:
-                    raise ValueError("Unable to parse units; model={}\n{}".format(model, pline)) from exc
+                    raise ValueError("Unable to parse units; model="
+                                     f"{model}\n{pline}") from exc
 
                 if val.endswith('"'):
                     val = val[:-1]
@@ -774,7 +780,8 @@ def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
                                         delta=s_delta)
 
     if len(toks) != 6:
-        raise ValueError("Expected 6 values after units; model={}\n{}".format(model, pline))
+        raise ValueError(f"Expected 6 values after units; model={model}"
+                         f"\n{pline}")
 
     default = pop(toks)
     hardmin = pop(toks)
@@ -948,17 +955,11 @@ def simple_wrap(modelname: str,
 
     out += f'\n{t1}"""\n\n'
 
-    if mdl.language == 'C++ style':
-        funcname = f"C_{mdl.funcname}"
-    else:
-        funcname = mdl.funcname
-
     if internal is None:
-        out += f"{t1}_calc = _models.{funcname}\n"
-    else:
-        out += f'{t1}__function__ = "{funcname}"\n'
+        out += f"{t1}_module = _models\n\n"
 
-    out += "\n"
+    out += f"{t1}_xspec_name = '{mdl.name}'\n\n"
+
     out += f"{t1}def __init__(self, name='{mdl.name}'):\n"
     parnames = []
     for par in mdl.pars:
@@ -1070,11 +1071,18 @@ def model_to_python(mdl: ModelDefinition,
         return convolution_wrap(mdl, internal=internal)
 
     else:
-        raise ValueError("No wrapper for model={} type={}".format(mdl.name, mdl.modeltype))
+        raise ValueError(f"No wrapper for model={mdl.name} "
+                         f"type={mdl.modeltype}")
 
 
 def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
     """Return a string representing the C++ code needed to build the module.
+
+    .. versionchanged:: 4.19.0
+       The wrapcode has been updated to include the model name as well
+       as the function name and number of parameters, as the library
+       routines are now named to match the model name rather than the
+       function name.
 
     Parameters
     ----------
@@ -1125,7 +1133,11 @@ def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
     if mdl.language == 'C++ style':
         funcname = f'C_{funcname}'
 
-    wrapcode += f'({funcname}, {len(mdl.pars)}),'
+    # Add in information about the parameters (the number and the
+    # names as a single string).
+    #
+    pnames = ' '.join([p.name for p in mdl.pars])
+    wrapcode += f'({mdl.name}, {funcname}, {len(mdl.pars)}, "{pnames}"),'
 
     # Do we need to define this model? Originally this was only
     # for FORTRAN routines but it may be worth just always
