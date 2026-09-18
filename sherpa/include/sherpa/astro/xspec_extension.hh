@@ -24,7 +24,27 @@
 // Have sherpa includes first so that Python.h is first, to avoid warning
 // messages about redefining _XOPEN_SOURCE
 #include <sherpa/extension.hh>
+
+// Disable unused constant macros
 #include <sherpa/constants.hh>
+#undef SMP_MIN
+#undef SMP_MAX
+#undef LOGTEN
+#undef PI
+#undef TWOPI
+#undef H_ERG
+#undef H_EV
+#undef H_KEV
+#undef C_KM
+#undef C_CM
+#undef C_ANG
+#undef K
+#undef TWO_H_OVER_C_SQUARED
+#undef H_OVER_K
+#undef GFACTOR
+#undef SQRT_GFACTOR
+#undef SQRT_PI
+
 #include <cfloat>
 #include <vector>
 #include <sstream>
