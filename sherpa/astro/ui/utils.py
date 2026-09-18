@@ -11163,27 +11163,27 @@ class Session(sherpa.ui.utils.Session):
 
         * Keywords for FITS tables
 
-            ncols: int, optional
+            ncols : int, optional
                 The number of columns to read in when colkeys is not
                 set (the first ncols columns are chosen).
-            colkeys: sequence of str or None, optional
+            colkeys : sequence of str or None, optional
                 If given, what columns from the table should be selected,
                 otherwise the backend selects. The default is `None`.
                 Names are compared using a case insensitive match.
-            make_copy: bool, optional
+            make_copy : bool, optional
                 If set then the returned NumPy arrays are explicitly copied,
                 rather than using a reference from the data structure
                 created by the backend. Backends are not required to
                 honor this setting. The default is `True`.
-            fix_type: bool, optional
+            fix_type : bool, optional
                 Should the returned arrays be converted to the
                 `sherpa.utils.numeric_types.SherpaFloat` type. The default
                 is `True`.
-            blockname: str or None, optional
+            blockname : str or None, optional
                 The name of the "block" (HDU) to read the column data (useful
                 for data structures containing multiple blocks/HDUs) or None.
                 Names are compared using a case insensitive match.
-            hdrkeys: sequence of str or None, optional
+            hdrkeys : sequence of str or None, optional
                 If set, the table structure must contain these keys, and the
                 values are returned.  Names are compared using a case
                 insensitive match.
