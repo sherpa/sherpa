@@ -759,17 +759,19 @@ def test_show_data(session, flag):
         assert toks[idx] == "Filter: -300.0000--50.0000 x"
         idx += 1
 
-    assert toks[idx] == "name      = "
+    assert toks[idx] == "name       = "
     idx += 1
-    assert toks[idx] == "xlo       = Int64[2]"
+    assert toks[idx] == "xlo        = Int64[2]"
     idx += 1
-    assert toks[idx] == "xhi       = Int64[2]"
+    assert toks[idx] == "xhi        = Int64[2]"
     idx += 1
-    assert toks[idx] == "y         = Int64[2]"
+    assert toks[idx] == "y          = Int64[2]"
     idx += 1
-    assert toks[idx] == "staterror = None"
+    assert toks[idx] == "staterror  = None"
     idx += 1
-    assert toks[idx] == "syserror  = None"
+    assert toks[idx] == "syserror   = None"
+    idx += 1
+    assert toks[idx] == "integrated = True"
     idx += 1
     assert toks[idx] == ""
     idx += 1
@@ -780,15 +782,17 @@ def test_show_data(session, flag):
         assert toks[idx] == "Filter: 1.0000-20.0000 x"
         idx += 1
 
-    assert toks[idx] == "name      = "
+    assert toks[idx] == "name       = "
     idx += 1
-    assert toks[idx] == "x         = Int64[4]"
+    assert toks[idx] == "x          = Int64[4]"
     idx += 1
-    assert toks[idx] == "y         = Int64[4]"
+    assert toks[idx] == "y          = Int64[4]"
     idx += 1
-    assert toks[idx] == "staterror = None"
+    assert toks[idx] == "staterror  = None"
     idx += 1
-    assert toks[idx] == "syserror  = None"
+    assert toks[idx] == "syserror   = None"
+    idx += 1
+    assert toks[idx] == "integrated = False"
     idx += 1
     assert toks[idx] == ""
     idx += 1
@@ -796,7 +800,7 @@ def test_show_data(session, flag):
     idx += 1
     assert toks[idx] == ""
 
-    n = 19 if flag else 17
+    n = 21 if flag else 19
     assert len(toks) == n
 
 
