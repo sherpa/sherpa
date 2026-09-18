@@ -49,7 +49,7 @@ def print_xspec_version() -> None:
 if __name__ == "__main__":
 
     if len(sys.argv) != 1:
-        sys.stderr.write("Usage: {sys.argv[0]}\n")
+        sys.stderr.write(f"Usage: {sys.argv[0]}\n")
         sys.exit(1)
 
     print_xspec_version()

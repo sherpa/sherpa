@@ -162,9 +162,18 @@ if xspec_prefix != ''
   # wants to specify the version, rather than pick it up directly,
   # but for now do not support this usage.
   #
+  # Do we need to set up (DY)LD_LIBRARY_PATH? Using append is a bit
+  # excessive as the environment hasn't been set. Would it be better
+  # to do this with meson.add_devenv?
+  #
+  xspec_env = environment()
+  xspec_env.append('LD_LIBRARY_PATH', xspec_libdir, separator: ':')
+  xspec_env.append('DYLD_LIBRARY_PATH', xspec_libdir, separator: ':')
+
   xspec_version = run_command(py,
     ['scripts/get_xspec_version'],
-    check: true
+    check: true,
+    env: xspec_env
   ).stdout().strip()
 
   message('Found XSPEC version:', xspec_version)
