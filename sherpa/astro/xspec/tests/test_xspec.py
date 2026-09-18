@@ -117,9 +117,9 @@ def get_xspec_models() -> list:
 
     # the grbjet model with XSPEC 12.12.0 (and presumably 12.12.0.a) can
     # occasionally evaluate to all 0's. This has been reported, but for now
-    # skip this model.
+    # skip this model. It has been seen with 12.15.1.
     #
-    # remove_item(model_names, 'XSgrbjet')  assume this has been fixed now
+    remove_item(model_names, 'XSgrbjet')
 
     # The bsedov model causes a crash with XSPEC 12.14.0 to 12.14.0e
     # (it should be fixed in 12.4.0f and later). The model is not
