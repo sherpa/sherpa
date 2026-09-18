@@ -19611,14 +19611,6 @@ class XSthcomp(XSConvolutionKernel):
 
     .. versionadded:: 4.12.2
 
-    .. note:: Parameter renames in XSPEC 12.11.1
-
-       In XSPEC 12.11.1 the parameters are now called ``Gamma_tau`` and
-       ``cov_frac`` rather than ``gamma_tau`` and ``FracSctr``. The case of
-       ``Gamma_tau`` does not matter for Sherpa, but the scattering-fraction
-       parameter has been renamed (with an alias in place for users used to
-       the XSPEC 12.11.0 names).
-
     Attributes
     ----------
     Gamma_tau
