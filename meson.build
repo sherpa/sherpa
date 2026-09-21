@@ -163,12 +163,16 @@ if xspec_prefix != ''
   # but for now do not support this usage.
   #
   # Do we need to set up (DY)LD_LIBRARY_PATH? Using append is a bit
-  # excessive as the environment hasn't been set. Would it be better
-  # to do this with meson.add_devenv?
+  # excessive as the environment hasn't been set.
   #
   xspec_env = environment()
-  xspec_env.append('LD_LIBRARY_PATH', xspec_libdir, separator: ':')
-  xspec_env.append('DYLD_LIBRARY_PATH', xspec_libdir, separator: ':')
+  if host_machine.system() == 'darwin'
+    xspec_path_name = 'DYLD_LIBRARY_PATH'
+  else
+    xspec_path_name = 'LD_LIBRARY_PATH'
+  endif
+  message('Appending to', xspec_path_name, 'for get_xspec_version')
+  xspec_env.append(xspec_path_name, xspec_libdir, separator: ':')
 
   xspec_version = run_command(py,
     ['scripts/get_xspec_version'],
