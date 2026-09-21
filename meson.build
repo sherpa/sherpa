@@ -162,9 +162,22 @@ if xspec_prefix != ''
   # wants to specify the version, rather than pick it up directly,
   # but for now do not support this usage.
   #
+  # Do we need to set up (DY)LD_LIBRARY_PATH? Using append is a bit
+  # excessive as the environment hasn't been set.
+  #
+  xspec_env = environment()
+  if host_machine.system() == 'darwin'
+    xspec_path_name = 'DYLD_LIBRARY_PATH'
+  else
+    xspec_path_name = 'LD_LIBRARY_PATH'
+  endif
+  message('Appending to', xspec_path_name, 'for get_xspec_version')
+  xspec_env.append(xspec_path_name, xspec_libdir, separator: ':')
+
   xspec_version = run_command(py,
     ['scripts/get_xspec_version'],
-    check: true
+    check: true,
+    env: xspec_env
   ).stdout().strip()
 
   message('Found XSPEC version:', xspec_version)
