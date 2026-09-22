@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015-2016, 2018-2021, 2023-2025
+#  Copyright (C) 2011, 2015-2016, 2018-2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -193,7 +193,6 @@ parameter::
 """
 from datetime import datetime
 import logging
-from typing import Optional
 
 import numpy as np
 
@@ -842,8 +841,8 @@ class ReSampleData(NoNewAttributesAfterInit):
 
     def __call__(self, niter=1000, seed=None, rng=None,
                  *,
-                 stat: Optional[Stat] = None,
-                 method: Optional[OptMethod] = None
+                 stat: Stat | None = None,
+                 method: OptMethod | None = None
                  ) -> dict[str, np.ndarray]:
         return self.call(niter, seed=seed, rng=rng, stat=stat,
                          method=method)
@@ -854,8 +853,8 @@ class ReSampleData(NoNewAttributesAfterInit):
              # interface and the interface is complicated enough it
              # is worth marking them keyword only.
              #
-             stat: Optional[Stat] = None,
-             method: Optional[OptMethod] = None
+             stat: Stat | None = None,
+             method: OptMethod | None = None
              ) -> dict[str, np.ndarray]:
         """Resample the data and fit the model to each iteration.
 
