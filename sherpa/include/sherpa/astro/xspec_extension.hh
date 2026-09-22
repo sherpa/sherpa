@@ -25,8 +25,8 @@
 // messages about redefining _XOPEN_SOURCE
 #include <sherpa/extension.hh>
 
-// Disable unused constant macros
 #include <sherpa/constants.hh>
+// Disable unused constant macros
 #undef SMP_MIN
 #undef SMP_MAX
 #undef LOGTEN
