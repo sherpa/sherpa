@@ -86,7 +86,7 @@ the `pytest-xdist <https://pypi.org/project/pytest-xdist>`_ module
 will autoselect the number of cores, an explicit number can also be given
 (``pytest -n 4``). Note that if you have :term:`DS9` and :term:`XPA`
 installed then it is possible that the DS9 tests may fail when running
-tests in parallel (since multiple tests can end up over-writing the
+tests in parallel (since multiple tests can end up overwriting the
 DS9 data before it can be checked).
 
 Test coverage can be included as part of the tests by installing the
@@ -142,7 +142,7 @@ That way, we do not need to clutter the example with long directory names, but t
 `sherpa-test-data` directory has to be present as a submodule to successfully pass all
 doctests.
 
-Re-build extension models during developmemt
+Re-build extension models during development
 --------------------------------------------
 
 When using editable builds the extension models will automatically be
@@ -235,7 +235,7 @@ are imported. That means two things:
 
 1. You can edit the source code and then re-run the tests without having to re-install Sherpa manually.
 2. By default `pip` creates an isolated build environment and installs any missing dependencies
-   (e.g. `ninja` which is used my meson) there. When re-building it will look for a
+   (e.g. `ninja` which is used by meson) there. When re-building it will look for a
    temporary directory that no longer exists. Instead, install mason/ninja in the conda environment and then use the `--no-build-isolation` option to `pip`::
 
     pip install -e . --no-build-isolation $(scripts/make_build_args_ciao)
@@ -1516,6 +1516,6 @@ systems. This has been changed so that the original independent axes
 are now stored in the object, in the ``_orig_indep_axis`` attribute,
 and this is now used whenever the coordinate system is changed. This
 does increase the memory size of a `~sherpa.astro.data.DataIMG` object, and makes it
-harder to load in picked files created with an old Sherpa version (the
+harder to load in pickled files created with an old Sherpa version (the
 code will do its best to create the necessary information but it is
 not guaranteed to work well in all cases).

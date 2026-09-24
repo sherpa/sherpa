@@ -270,7 +270,7 @@ FFTW
 
 Prior to Sherpa 4.19.0, Sherpa included a copy of the
 `fftw library <https://www.fftw.org/>`_ source
-code and would build it be default. This copy has now been removed
+code and would build it by default. This copy has now been removed
 and access is expected to be provided by ``pkg-config``.
 
 .. _build-xspec:
@@ -286,7 +286,7 @@ the link libraries for rare cases.
 
 As an example::
 
-    pip install . -Cxsetup-args=-Dxspec-prefix=$HEADAS
+    pip install . -Csetup-args=-Dxspec-prefix=$HEADAS
 
 In order for the XSPEC module to be used from Python, the
 ``HEADAS`` environment variable **must** be set before the
@@ -418,7 +418,7 @@ which used ``git`` to access the source code)::
     git submodule update
 
 When both the `DS9 image viewer <https://ds9.si.edu/>`_ and
-`XPA toolset <https://hea-www.harvard.edu/RD/xpa/>`_ are installed, the
+`XPA toolset <https://github.com/ericmandel/xpa/>`_ are installed, the
 test suite will include tests that check that DS9 can be used from
 Sherpa. This causes several copies of the DS9 viewer to be created,
 which can be distracting, as it can cause loss of mouse focus (depending
