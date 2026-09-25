@@ -25,9 +25,19 @@ can be useful to be able to read these files either to identify
 changes to the Sherpa code to support a new XSPEC release [3]_ or for
 writing a module for an XSPEC user model.
 
+.. versionchanged:: 4.19.1
+   The interface to a particular model is now named after the model
+   name rather than the actual function name (e.g. the apec model is
+   now called "apec" rather than something like "C_apec"). This makes
+   it easier to identify which routine to call. The docstring for the
+   model includes the name of the function and the number of
+   parameters it requires. Basic support for downloading data files
+   for models has been added.
+
 .. versionchanged:: 4.19.0
    Several symbols related to XSPEC versions have been added to this
-   module.
+   module. There is now support for handling model definitions
+   including the grad=xxx argument added in XSPEC 13.0.0.
 
 References
 ----------
@@ -41,19 +51,29 @@ References
 """
 
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from contextlib import suppress
 from dataclasses import dataclass
 import logging
+from pathlib import Path
 import re
 import string
+import time
 
 
 __all__ = ("SUPPORTED_VERSIONS", "MIN_VERSION", "MAX_VERSION",
-           "XSPECcode",
+           "XSPECcode", "XSPECDataRow",
            "parse_xspec_model_description",
-           "create_xspec_code", "get_version")
+           "create_xspec_code", "get_version",
+           "get_model_data_version_path",
+           "read_model_data_version_file",
+           "find_missing_model_data_files",
+           "download_missing_model_data_files"
+           )
 
 
+debug = logging.getLogger(__name__).debug
+info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
 # Represent the XSPEC version (without a patch level).
@@ -108,8 +128,9 @@ def get_version(version: str) -> Version:
 
     """
 
-    # XSPEC versions do not match PEP 440, so strip out the trailing
-    # text (which indicates the XSPEC patch level).
+    # Do not bother decoding the patch level. XSPEC seems to stop
+    # parsing as soon as a non-numeric character is hit, which this
+    # regexp also does.
     #
     matches = re.search(r'^(\d+)\.(\d+)\.(\d+)', version)
     if matches is None:
@@ -1004,17 +1025,11 @@ def simple_wrap(modelname: str,
 
     out += f'\n{t1}"""\n\n'
 
-    if mdl.language == 'C++ style':
-        funcname = f"C_{mdl.funcname}"
-    else:
-        funcname = mdl.funcname
-
     if internal is None:
-        out += f"{t1}_calc = _models.{funcname}\n"
-    else:
-        out += f'{t1}__function__ = "{funcname}"\n'
+        out += f"{t1}_module = _models\n\n"
 
-    out += "\n"
+    out += f"{t1}_xspec_name = '{mdl.name}'\n\n"
+
     out += f"{t1}def __init__(self, name='{mdl.name}'):\n"
     parnames = []
     for par in mdl.pars:
@@ -1126,11 +1141,18 @@ def model_to_python(mdl: ModelDefinition,
         return convolution_wrap(mdl, internal=internal)
 
     else:
-        raise ValueError("No wrapper for model={mdl.name} type={mdl.modeltype}")
+        raise ValueError(f"No wrapper for model={mdl.name} "
+                         f"type={mdl.modeltype}")
 
 
 def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
     """Return a string representing the C++ code needed to build the module.
+
+    .. versionchanged:: 4.19.1
+       The wrapcode has been updated to include the model name as well
+       as the function name and number of parameters, as the library
+       routines are now named to match the model name rather than the
+       function name.
 
     Parameters
     ----------
@@ -1181,7 +1203,11 @@ def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
     if mdl.language == 'C++ style':
         funcname = f'C_{funcname}'
 
-    wrapcode += f'({funcname}, {len(mdl.pars)}),'
+    # Add in information about the parameters (the number and the
+    # names as a single string).
+    #
+    pnames = ' '.join([p.name for p in mdl.pars])
+    wrapcode += f'({mdl.name}, {funcname}, {len(mdl.pars)}, "{pnames}"),'
 
     # Do we need to define this model? Originally this was only
     # for FORTRAN routines but it may be worth just always
@@ -1432,3 +1458,546 @@ def create_xspec_code(models: list[ModelDefinition],
     python += "\n\n".join([model_to_python(mdl, internal=internal) for mdl in mdls])
     compiled = models_to_compiled(mdls, name=name)
     return XSPECcode(python=python, compiled=compiled)
+
+
+def find_supported_xspec_models(enabled: bool = True
+                                ) -> list[str]:
+    """The names of the supported XSPEC models.
+
+    This routine requires that XSPEC support is enabled and the return
+    value depends on the version of the XSPEC library in use.
+
+    .. versionadded: 4.19.9
+
+    Parameters
+    ----------
+    enabled : bool, optional
+       Should the list be filtered to only those models that can be
+       run with the provided XSPEC library?
+
+    Returns
+    -------
+    models : list of str
+       The list of the supported model names. Note that the return
+       value matches the XSPEC model.dat (e.g. "TBabs" for the XSTBabs
+       model).
+
+    """
+
+    from sherpa.astro import xspec as xs
+
+    def is_proper_subclass(obj, cls):
+        if obj in cls:
+            return False
+        return issubclass(obj, cls)
+
+    valid_names: set[str] = set()
+    for clname in dir(xs):
+        if not clname.startswith("XS"):
+            continue
+
+        cls = getattr(xs, clname)
+        if is_proper_subclass(cls, (xs.XSAdditiveModel,
+                                    xs.XSMultiplicativeModel,
+                                    xs.XSConvolutionKernel)):
+            if enabled and not cls.version_enabled:
+                continue
+
+            valid_names.add(cls._xspec_name)
+
+    return sorted(valid_names)
+
+
+@dataclass
+class XSPECDataRow:
+    """A mapping from model to a data file it requires.
+
+    This is read from the modelDataFiles.csv used by XSPEC 13.0.0
+    and later, but split by model.
+
+    .. versionadded: 4.19.9
+
+    """
+
+    filename: str
+    """The name of the data file.
+
+    The data file is expected to be found in the location returned
+    by `sherpa.astro.xspec.get_xspath_model()`.
+    """
+
+    model: str | None
+    """The model that uses the file, if any.
+
+    This name matches that given in the file returned by
+    `get_model_data_version_path()`, and not that used by Sherpa
+    (e.g. "apec" rather than "XSapec" or "xsapec").
+    """
+
+    model_version: str | None
+    """The version of the data file."""
+
+    xspec_version_start: Version
+    """The start of the version range (this drops any patch level)."""
+
+    xspec_version_end: Version | None
+    """The end of the version range (this drops any patch level), af any.
+
+    A value of "Unknown" is converted to `None`.
+    """
+
+    release: str
+    """The release number (expected to be "1" for current and "0" otherwise)."""
+
+    checksum: str
+    """The checksum for the file."""
+
+    filesize: int
+    """The file size."""
+
+
+def get_model_data_version_path() -> Path | None:
+    """Return the location of the XSPEC model data version file.
+
+    This is only expected to return a value with XSPEC 13.0.0 or
+    later.
+
+    .. versionadded: 4.19.9
+
+    Returns
+    -------
+    path : Path or None
+       The location of the CSV file (if it exists) or None.
+
+    See Also
+    --------
+    read_model_data_version_file
+
+    """
+
+    from sherpa.astro import xspec
+
+    csvfile = Path(xspec.get_xspath_manager()) / "modelDataFiles.csv"
+    debug("CSV location: %s", csvfile)
+    if not csvfile.is_file():
+        return None
+
+    return csvfile
+
+
+def read_model_data_version_file(latest: bool = True,
+                                 version: str | None = None,
+                                 models: Sequence[str] | None = None
+                                 ) -> list[XSPECDataRow] | None:
+    """Return the XSPEC model data file information, if present.
+
+    This is only expected to return information with XSPEC 13.0.0
+    and later.
+
+    .. versionadded: 4.19.9
+
+    Parameters
+    ----------
+    latest : bool, optional
+       Should the search be restricted to the latest data files?
+    version : str or None, optional
+       What version filter should be applied? If None then all versions,
+       otherwise limit to just this version (which is expected to be
+       a value like '12.13.0' or '12.14.1e'). This parameter is only
+       used if latest=False.
+    models : sequence of str or None, optional
+       If not None, then this is a list of model names to restrict the
+       search to. Thes name use the values from the XSPEC `model.dat`
+       file (converted to lower case) and not the Sherpa name.
+
+    Returns
+    -------
+    rows : list of XSpecDataRow or None
+       The data rows, split up by model, so this differs from how the
+       data is stored in the CSV file, and it means that the same file
+       can appear in multiple rows. Only models supported by Sherpa
+       are included.
+
+    See Also
+    --------
+    get_model_data_version_path
+
+    Examples
+    --------
+
+    Find the rows that refer to the latest version of the data files:
+
+    >>> latest_rows = read_model_data_version_file()
+
+    What rows relate to the XSPEC apec model (note that this uses the
+    name from the `model.dat` file):
+
+    >>> apec_rows = read_model_data_version_file(models=["apec"])
+
+    Manually select the apec rows:
+
+    >>> latest_rows = read_model_data_version_file()
+    >>> apec_rows = [r for r in latest_rows if r.model == "apec"]
+
+    Find all rows:
+
+    >>> all_rows = read_model_data_version_file(latest=False)
+
+    Find the rows for XSPEC version 12.15.1:
+
+    >>> rows = read_model_data_version_file(latest=False, version='12.15.1')
+
+    """
+
+    import csv
+
+    csvfile = get_model_data_version_path()
+    if csvfile is None:
+        debug("no csv file found!")
+        return None
+
+    # Is a version check needed? This is allowed even if latest=True.
+    vcheck : Version | None
+    if version is None:
+        vcheck = None
+    else:
+        vcheck = get_version(version)
+
+    # What XSPEC model names do we need to care about? The check uses
+    # the lower-case version of the model name from model.dat.
+    #
+    valid_names = {m.lower() for m in find_supported_xspec_models()}
+
+    if models is None:
+        req_models = None
+    else:
+        req_models = [m.lower() for m in models]
+
+    def mk(rec: dict[str, str]) -> list[XSPECDataRow]:
+        """Create zero, one, or more values from the row."""
+
+        # If only the latest versions are being used then skip
+        # old models.
+        #
+        if latest and rec["release"] != "1":
+            debug(" - not the latest release")
+            return []
+
+        # Convert the input data to the arguments for XSPECDataRow
+        #
+        kwargs = {}
+
+        # Explicit version clean up.
+        # - convert Unknown to None
+        # - drop trailing patch level
+        #
+        vstart = rec['xspec_version_start']
+        v1 = get_version(vstart)
+        if vcheck is not None and v1 > vcheck:
+            debug("- too new %s", vstart)
+            return []
+
+        vend = rec['xspec_version_end']
+        if vend in ["", "Unknown"]:
+            v2 = None
+        else:
+            v2 = get_version(vend)
+
+        if vcheck is not None and v2 is not None and v2 < vcheck:
+            debug("- too old %s", vend)
+            return []
+
+        kwargs['xspec_version_start'] = v1
+        kwargs['xspec_version_end'] = v2
+        kwargs['filesize'] = int(rec['filesize'])
+
+        # Copy over the remaining arguments.
+        #
+        for name in ["filename", "release", "checksum"]:
+            kwargs[name] = rec[name]
+
+        for name in ["model_version"]:
+            kwargs[name] = rec[name] if rec[name] != '' else None
+
+        # models can be
+        # - empty
+        # - a single name
+        # - multiple models stored as "mdl1, ..., mdl"
+        #
+        rmodels = rec['models']
+        if rmodels == '':
+            # Should the unlabelled models be included or not?
+            if req_models is not None:
+                return []
+
+            mnames = [None]
+        else:
+            all_mnames = [m.strip() for m in rmodels.split(",")]
+            debug("models: %s", str(all_mnames))
+
+            # Filter by those models that Sherpa supports.
+            #
+            mnames = [m for m in all_mnames if m.lower() in valid_names]
+            nall = len(all_mnames)
+            nmdl = len(mnames)
+            if nmdl < nall:
+                debug("- removed %d unsupported models", nall - nmdl)
+
+            # Filter by requested user model
+            if req_models is not None:
+                mnames = [m for m in mnames if m.lower() in req_models]
+
+        return [XSPECDataRow(model=m, **kwargs) for m in mnames]
+
+    # Store those models that have missing data. The assumption is that
+    # the CSV has columns for
+    #    filename
+    #    models
+    #    model_version
+    #    xspec_version_start
+    #    xspec_version_end
+    #    release
+    #    checksum
+    #    filesize
+    #
+    # What does a version like "12.14.0x" mean (since there was no
+    # patch level x release for 12.14.0). It looks like ftgetmodeldata
+    # just skips the patch-level value so we will do that too.
+    #
+    out = []
+    with csvfile.open(mode='rt') as fh:
+        reader = csv.reader(fh)
+        header = None
+
+        for row in reader:
+            if header is None:
+                header = row
+                debug("header: %s", header)
+                continue
+
+            toks = dict(zip(header, row))
+            infile = toks['filename']
+            debug("file: %s", infile)
+
+            # Convert to zero to n records.
+            #
+            out.extend(mk(toks))
+
+    if len(out) == 0:
+        # This is not expected to happen, but just in case
+        debug("no data found in csv file!")
+        return None
+
+    return out
+
+
+def find_missing_model_data_files(rows: Sequence[XSPECDataRow]
+                                  ) -> list[XSPECDataRow] | None:
+    """What XSPEC models are missing data?
+
+    Filters the input list to remove those rows where the data
+    file exists and has the correct size.
+
+    .. versionadded:: 4.19.0
+
+    Parameters
+    ----------
+    rows : sequence of XSPECDataRow
+       The list of rows to check.
+
+    Returns
+    -------
+    missing : list of XSPECDataRow or None
+       The rows that represent missing data files, or None if no files
+       are missing. Only the first appearance of a missing file is
+       returned.
+
+    See Also
+    --------
+    read_model_data_version_file
+
+    Examples
+    --------
+
+    >>> latest_rows = read_model_data_version_file()
+    >>> missing_rows = find_missing_model_data_files(latest_rows)
+
+    """
+
+    from sherpa.astro.xspec import get_xspath_model
+
+    mpath = Path(get_xspath_model())
+    out = []
+    seen = set()
+    for row in rows:
+
+        # If we have seen this before (from another model) then
+        # skip.
+        #
+        if row.filename in seen:
+            continue
+
+        # Check that the model has the expected size.
+        modpath = mpath / row.filename
+        with suppress(OSError):
+            if modpath.stat().st_size == row.filesize:
+                seen.add(row.filename)
+                continue
+
+        out.append(row)
+
+    if len(out) == 0:
+        return None
+
+    return out
+
+
+def download_missing_model_data_files(rows: Sequence[XSPECDataRow],
+                                      remotedir: str | None = None
+                                      ) -> list[XSPECDataRow] | None:
+    """Download the data files for the XSPEC models.
+
+    This skips any row where the files are already downloaded. This
+    is similar to the `ftgetmodeldata
+    <https://heasarc.gsfc.nasa.gov/docs/software/lheasoft/help/ftgetmodeldata.html>`_
+    tool from HEASARC.
+
+    .. versionadded:: 4.19.0
+
+    Parameters
+    ----------
+    rows : sequence of XSPECDataRow
+       The list of rows to download.
+    remotedir : str or None, optional
+       The URL where the data files are stored. The default uses the
+       HEASARC location.
+
+    Returns
+    -------
+    failed : list of XSPECDataRow or None
+       If not None then this represents those files that could not
+       be downloaded.
+
+    See Also
+    --------
+    find_missing_model_data_files, read_model_data_version_file
+
+    Notes
+    -----
+    The data files are stored in the directory returned by
+    `sherpa.astro.xspec.get_xspath_model()`. There is no support for
+    partial downloads as existing files are over-written if they do
+    not have the expected file size.
+
+    Examples
+    --------
+
+    >>> latest_rows = read_model_data_version_file()
+    >>> download_missing_model_data_files(latest_rows)
+    ...
+
+    """
+
+    from http import client
+    from shutil import copyfileobj
+    from urllib.request import Request
+
+    from sherpa._version import short_version
+    from sherpa.astro.xspec import get_xspath_model
+
+    # Exit early if nothing to do.
+    if len(rows) == 0:
+        return
+
+    if remotedir is None:
+        base_url = "https://heasarc.gsfc.nasa.gov/FTP/software/xspec/spectral/modelData"
+    else:
+        # Assume this is a URL
+        base_url = remotedir
+
+    # It is likely to be https, but allow for http.
+    #
+    match Request(base_url).type:
+        case "http":
+            Connection = client.HTTPConnection
+
+        case "https":
+            Connection = client.HTTPSConnection
+
+        case _:
+            raise ValueError(f"Unexpected remotedir URL: {base_url}")
+
+    # Allow tracking of these requests
+    #
+    hdr = {"User-Agent": f"sherpa/{short_version} ftgetmodeldata equivalent"}
+
+    mpath = Path(get_xspath_model())
+    mpath_exists = mpath.is_dir()
+    info("Data directory: %s", str(mpath))
+    errs = []
+    seen = set()
+    for row in rows:
+
+        # If we have seen this before (from another model) then
+        # skip.
+        #
+        if row.filename in seen:
+            continue
+
+        # If the file exists and has the correct size then do nothing.
+        #
+        out = mpath / row.filename
+        debug("Checking %s", str(out))
+        with suppress(OSError):
+            got = out.stat().st_size
+            if got == row.filesize:
+                seen.add(row.filename)
+                continue
+
+            # If the unlink fails then it will raise an OSError which
+            # will be suppressed.
+            #
+            debug("- file size mis-match: %s vs %d", got, row.filesize)
+            out.unlink()
+
+        # Does the outtput directory exist? If this fails then bail out
+        # immediately.
+        #
+        if not mpath_exists:
+            debug("Creating output directory [%s]", str(mpath))
+            mpath.mkdir()
+            mpath_exists = True
+
+        # Use http.client rather than urllib.request to allow for
+        # streaming the response.
+        #
+        url = f"{base_url}/{row.filename}"
+        info("Downloading %s %d", url, row.filesize)
+        url_req = Request(url)
+
+        stime = time.localtime()
+        conn = Connection(url_req.host)
+        conn.request("GET", url_req.selector, headers=hdr)
+        resp = conn.getresponse()
+        with out.open('wb') as outfh:
+            debug("- copying %d bytes", row.filesize)
+            copyfileobj(resp, outfh)
+
+        etime = time.localtime()
+        debug("- download time %.1f s", time.mktime(etime) - time.mktime(stime))
+
+        # Check the download size.
+        #
+        with suppress(OSError):
+            got = out.stat().st_size
+            if got == row.filesize:
+                continue
+
+            debug("- file size mis-match: %d vs %d", got, row.filesize)
+
+        errs.append(row)
+
+    if len(errs) == 0:
+        return None
+
+    return errs
