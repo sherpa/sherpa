@@ -15321,12 +15321,13 @@ class XSzvagauss(XSAdditiveModel):
     Sigma
        The line width in km/s
     Redshift
+        The redshift of the line.
     norm
        The total photon/cm^2/s in the line.
 
     See Also
     --------
-    XSagauss, XSzagauss, XSzagauss
+    XSagauss, XSvagauss, XSzagauss
 
     References
     ----------
