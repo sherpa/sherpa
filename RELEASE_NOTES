@@ -1,5 +1,274 @@
 Release Notes
 
+Sherpa 4.19.0
+=============
+This release of Sherpa includes various enhancements, documentation updates,  bug fixes, and infrastructure changes. Key changes for this release include:
+
+* infrastructure
+    * Switch the build system from setuptools to meson (#2484)
+    * compiler warning cleanup (#2494)
+    * simplification of ds9 module  initialization (#2459)
+
+* enhancements
+    * add support for XSpec 12.15.1 including 13 new additive models (#2492)
+    * add support for math environment in docstrings (#2475)
+    * add support to build against XSpec 13
+
+* bug fixes
+    * fix issue with save_all not preserving radial flag for 1D PSFs (#2476)
+    * fix issue with image title name in subsequently displayed names (#2462) 
+    * fix issue with accessing plot data (#2514)
+
+* deprecations
+    * Removed get_axis method from data objects (#2414)
+    * Removed support for Python 3.10 (#2356)
+    * Removes support for arviz < 1.0.0 (#2547)
+
+
+Details
+
+#2356 - Update Python version support: drop 3.10 and add 3.14
+    Drop support for building with Python 3.10 and add support for building with
+    Python 3.14.
+
+#2386 - DOCS: update docstring for list_stats
+    Add both 'cstatnegativepenalty' and 'userstat' to the output of the
+    list_stats() call to match the current behavior.
+
+#2388 - TESTS: support no region/group/wcs builds - fix #2387
+    Update the tests to support builds where support for the region and wcs 
+    libraries are disabled. Fix #2387.
+
+#2397 - TESTS: support HEASARC XSPEC conda builds for XSPEC tests 
+    Fix test failures when using the HEASARC XSPEC conda installation. Fix #2396.
+
+#2401 - Bump conda workflow from macos-13 to macos-15-intel
+    Update the GitHub macOS workflows to reflect changes in the available macOS
+    options. There is no functional change.
+
+#2404 - Split TableModel into separate classes
+    Split the TableModel into two separate models: FixedTableModel for a model
+    where the number of bins is fixed to be the same number as the data values
+    and InterpolatedTableModel1D where a tabulated x/y table is interpolated
+    (and integrated if needed) to match the data values/bins.
+
+#2405 - Increase tolerance for a test that occasionally fails in CI
+    One of the scipy tests occasionally fails in CI, which is obviously due to
+    numerics, so this PR simply increases the numerical tolerance by a bit.
+
+#2409 - Update the quick-guide documentation
+    A minor refresh of the quick guide to Sherpa, pointing out some recent 
+    changes in the last few releases of Sherpa.
+
+#2414 - remove get_axes
+    Some data objects (and by extension the UI) have a get_axis method, but 
+    it's inconsistent, insufficiently documented and superfluous. The method 
+    has been removed.
+
+#2422 - Change channel location where XSPEC is found
+    Change channel location where XSPEC is found
+
+#2423 - Filter out new PytestDeprecationWarning
+    Deal with updates in the pytest that change the importorskip handling
+
+#2429 - Document the `to_plot` method
+    This adds an extensive docstring and also a section to the narrative 
+    documentation.
+
+#2431 - astro/ui/utils: add explicit Any import
+    Fix up a missing import (only noticeable when using type checkers) from 
+    #2377.
+
+#2433 - TEST: fix test that requires region support
+    Mark a test a requiring the region library. There is no functional change.
+
+#2435 - CI: bump checkout action from 4.1.1 to 6.0.2
+    Version 4 of the checkout action uses Node.js 20 which is now deprecated 
+    on GitHub, so switch to the latest version of the action.
+
+#2436 - TEST: update tolerance
+    Further relax the tolerance for the test of a SciPy optimizer (see #2405).
+    There is no functional change.
+
+#2437 - CI: update codecov action to v5
+    Updates the codecov action to v5
+
+#2439 - Correctly document model parameters in some XSPEC models
+    Correctly label some XSPEC model parameters in the documentation. This 
+    changes how the model parameters are displayed in the sphinx/read-the-docs
+    documentation. There is no functional change to the code.
+
+#2444 - Simplify the XSPEC tests to not require a particular ATOMDB version
+    Avoid requiring certain ATOMDB/NEI versions for the XSPEC tests. There is
+    no functional change.
+
+#2445 - TESTS: avoid creating an unused symbol
+    Remove an unused symbol in a test file. There is no change in behaviour.
+
+#2448 - Update the documentation to build with recent versions of Sphinx
+    Allow the documentation to be built with recent versions of Sphinx and 
+    update the Read-The-Docs configuration to match.
+
+#2449 - DOCS: fix a typo in an example
+    Fix an example in the documentation for load_bkg_rmf.
+
+#2451 - DOCS: simplify an example to improve testing
+    Avoid a test failure from the documentation on macOS/ARM.
+
+#2453 - BUILD: change location of DS9 artifacts
+    Update the DS9 used in the CI tests. There is no functional change.
+
+#2457 - Update arviz
+    Sherpa has a function to turn MCMC output into the format used by the arviz
+    package. This PR updates the API for compatability with arviz >=1.0.0
+
+#2458 - Minor clean-up of the image code
+    Improve test coverage of the DS9 code and improve the documentation and
+    typing statements.
+
+#2459 - Simplify the initialization of the DS9 module
+    Simplify the DS9 initialization code and make DS9 8.7 the minimum suggested
+    version.
+
+#2460 - Reorder test information
+    An internal re-organization of testing code. There is no functional change.
+
+#2461 - Tweak the error message when an xpaget or xpaset command fails
+    Tweak the error message created if an xpaget or xpaset call fails.
+
+#2462 - Reset the title field for new image displays
+    Ensure that the name/title of a DS9 image is reset in case subsequent 
+    displayed images do not have the OBJECT field set in their header. Ensure
+    that images with no WCS have an identity transform added when displayed 
+    in DS9 to fix #2468.
+
+#2463 - Image string serialization
+    Rework the image string code to use the same routine as the plot code. 
+    Documentation has been added to the WCS class.
+
+#2465 - Default to the local XPA communication protocol when talking to DS9
+    Communication with DS9 via xpaget and xpaset now defaults to 
+    XPA_METHOD=local unless the XPA_METHOD environment variable is set (this
+    is similar to how CIAO calls DS9). This fixes DS9 communication on macOS,
+    allowing for the CI tests to include DS9 on these systems.
+
+#2469 - utils: internal switch to Path API
+    The get_datadir/set_datadir routines now internally use the Path API but
+    still accept and return strings. The data directory is now normalized when
+    set.
+
+#2472 - Fix matplotlib 3.11 subplots compatibility
+    Resolves issue where matplotlib 3.11.0 behavior update broke tests. 
+    Closes #2471
+
+#2473 -  DOCS: point out we can also use bokeh for visualization
+    Update the Read-The-Docs installation page to mention bokeh as well as
+    matplotlib.
+
+#2474 - Fix links in sphinx documentation
+   Fix inconsistencies leading to broken markup in docstrings. Switch docstring
+   processing to numpydoc.
+
+#2475 - Turn equations into a math environment in docstrings
+    Update to use Latex based formatting blocks for mathematical 
+    equations/formulas when generating html docs
+
+#2476 - Ensure the radial setting of PSF models are written out by the save_all command 
+    Ensure that the radial setting of a PSF model and error-estimation options
+    are saved in the save_all output. The method options are now only written
+    out when explicitly set. Fix #2470. Fix #2506.
+
+#2482 - Extern directory updates to pick up changes through CIAO 4.19b1
+    This update pulls over changes that were made to the region and group
+    libraries in CIAO 4.18b2 and CIAO 4.19b1.
+
+#2484 -  Switch the build backend from setuptools to meson-python
+    Switch the build system from setuptools to meson.
+
+#2487 - cleanup extern components- autoreconf version 2.71 with minimum  python 3.10
+    Updated old references in the extern directory and ran autoreconf across
+    the various extern directories
+
+#2490 - ui: internal clean up
+    Internal clean up in the ui code. There should be no functional change.
+
+#2492 - XSPEC: add support for XSPEC 12.15.1
+    Allow Sherpa to build against XSPEC 12.15.1. Adds 13 new additive models:
+    XSbfekblor, XSfekblor, XSzfekblor, XSzbfekblor, XSbfeklor, XSzbfeklor,
+    XSrsapec, XSrsvapec, XSrsvvapec, XSrsgaussian, XSrsrnei, XSrsvrnei,
+    XSrsvvrnei. Fix #2392.
+
+#2494 - Clean up compiler warnings
+    Clean up compiler warnings. There should be no functional change. 
+    Fix #2513. Fix #2199. Fix #1542.
+
+#2497 - DOCS: update sphinx requirements
+    Update the documentation to correctly reflect the current Sphinx version
+    requirement for building the documentation.
+
+#2499 - Improve the typing of the utils module
+    Improve the typing of a number of routines, primarily from the 
+    sherpa.utils module. There is no functional change.
+
+#2507 - Allow the sample flux routines to pass arguments to the error-estimation code (CSC)
+    Add the est_method_args parameter to the sample_flux routine at the UI
+    layer (and related routines that it calls) so that the error estimation
+    configuration can be over-ridden by the caller. This is to support the
+    Chandra Source Catalog.
+
+#2508 - ui: fix typing statement of internal routine
+    Internal change to fix the typing of a routine. There is no functional
+    change.
+
+#2509 - PKG: Fix conda recipe for Meson build update
+    Update the conda packaging recipe to use Meson. Adds meson and meson-python
+    to the host build dep.
+
+#2510 - TESTS: tweak tolerances of a test
+    Tweak the tolerances used in a test. There is no functional change.
+
+#2514 - Address get plot data access issues
+    Change the routines to get the plot, contour, and image display objects so
+    that they are copied by default to address user confusion. Fix #2424.
+
+#2517 - BUILD: support clangxx 23.1
+    Ensure that clangxx 23.1 can be used to build Sherpa.
+
+#2518 - TESTS: add in a missing asymmetric test
+    Ensure a test of load_ascii is not ignored. There is no functional change
+    here.
+
+#2520 - Allow Sherpa to build against XSPEC 13
+    Provide support for building against XSPEC 13.
+
+#2521 - XSPEC: allow building against XSPEC 13.0.0
+    Fix an error seen when compiling the code against XSPEC version 13.
+
+#2524 - Improve developer docs after recent meson migration
+    Add additional instruction for developer builds in the new meson world.
+
+#2525 - Remove warning in docs
+    Remove note in docs that's no longer relevant
+
+#2527 - UI: improve docs/code related to #2514 fixes
+    A minor fix for the the documentation of the get_xxx_image calls.
+
+#2528 - Improve the XSPEC version check when building Sherpa
+    Ensure the library path is set when calling get_xspec_version during a build.
+
+#2530 - XSPEC: remove a doc note about a XSPEC 12.11.1 change
+    Remove a documentation note about a change made in XSPEC 12.11.1 as Sherpa
+    does no-longer supports this version.
+
+#2531 - docs: tweak the layout of a table
+    Tweak the docstring for load_table_model to make it easier to create an
+    ahelp version of it.
+
+#2533 - update docs to correct minor typos, and remove broken link to saord xpa
+    This minor documentation update cleans up a few typo's and replaces the
+    broken link to saord's xpa page
+
+
 Sherpa 4.18.0
 =============
 This release of Sherpa includes various enhancements, documentation updates,  bug fixes, and infrastructure changes. Key changes for this release include:
@@ -297,7 +566,7 @@ bug fixes, and infrastructure changes.
     * Models can now be combined using arbitrary ufuncs (#2248)
     * various updates to XSpec interface (#2281) and support for XSpec 12.15.0 
       including the additional of 17 new models (#2252)
-    * added interface to support ArviZ for analysis of Baysian models (#2286) 
+    * added interface to support ArviZ for analysis of Bayesian models (#2286) 
 * documentation changes:
     * provided option to install python packages needed to build sherpa 
       documentation 
@@ -2390,7 +2659,7 @@ This release of Sherpa includes various documentation updates,  bug fixes, and i
 
 * documentation changes:
     * updates to documentation for TableModel, Notice2D, cache support for evaluating models, and low level optimization code
-    * jupyter notebook uopdates 
+    * jupyter notebook updates 
 * Infrastructure Changes:
     * the master branch has been migrated from master to main
     * updates to support numpy 1.20
@@ -4078,7 +4347,7 @@ can be run using IPython's %run directive, by explicitly importing the
 
 #101: Fix handling of non-contiguous bins in Xspec - i.e. when a model is
 called with both xlo and xhi arguments but the bins do not fully cover the
-energy, or wavelenth, range. This fixes #62 (for XSPEC 12.8.2; switching to
+energy, or wavelength, range. This fixes #62 (for XSPEC 12.8.2; switching to
 XSPEC 12.9.0 should also fix it) and #56. It also fixes an (un-reported)
 problem with handling of non-contiguous grids when using a table model, where
 a crash was likely.  When an XSPEC model is called with both low and high
