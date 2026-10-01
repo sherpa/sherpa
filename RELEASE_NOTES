@@ -4,20 +4,20 @@ Sherpa 4.19.0
 =============
 This release of Sherpa includes various enhancements, documentation updates,  bug fixes, and infrastructure changes. Key changes for this release include:
 
+* enhancements
+    * add support for XSpec 12.15.1 including 13 new additive models (#2492)
+    * add support for math environment in docstrings (#2475)
+    * add support to build against XSpec 13 (#2520, #2521)
+
+* bug fixes
+    * fix issue with accessing plot data (#2514)
+    * fix issue with save_all not preserving radial flag for 1D PSFs (#2476)
+    * fix issue with image title name in subsequently displayed names (#2462) 
+
 * infrastructure
     * Switch the build system from setuptools to meson (#2484)
     * compiler warning cleanup (#2494)
     * simplification of ds9 module  initialization (#2459)
-
-* enhancements
-    * add support for XSpec 12.15.1 including 13 new additive models (#2492)
-    * add support for math environment in docstrings (#2475)
-    * add support to build against XSpec 13
-
-* bug fixes
-    * fix issue with save_all not preserving radial flag for 1D PSFs (#2476)
-    * fix issue with image title name in subsequently displayed names (#2462) 
-    * fix issue with accessing plot data (#2514)
 
 * deprecations
     * Removed get_axis method from data objects (#2414)
@@ -267,6 +267,10 @@ Details
 #2533 - update docs to correct minor typos, and remove broken link to saord xpa
     This minor documentation update cleans up a few typo's and replaces the
     broken link to saord's xpa page
+
+#2535 - DOCS: fix duplicate see-also
+    Correct the docstring for the XSzvagauss model to address a missing 
+    attribute description and duplicated see also. Fix #2532.
 
 
 Sherpa 4.18.0
