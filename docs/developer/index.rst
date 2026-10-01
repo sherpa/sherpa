@@ -325,8 +325,7 @@ Update the XSPEC bindings?
 The :py:mod:`sherpa.astro.xspec` module currently supports
 :term:`XSPEC` versions 13.0.1, 13.0.0, 12.15.1, 12.15.0, 12.14.1, 12.14.0, 12.13.1, and 12.13.0.
 It should build against newer versions, but if it does it will not provide
-access to any new models in the release and if the function used to
-evaluate a model has changhed then the model will be unusable.
+access to any new models in the release.
 The following sections of the `XSPEC manual
 <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
 should be reviewed: `Appendix F: Using the XSPEC Models Library in
@@ -351,7 +350,7 @@ at `issue #52 <https://github.com/sherpa/sherpa/issues/52>`_).
    of the ``scripts/update_xspec_functions.py`` script. In 4.19.1 the
    names of the symbols used to call a model has been changed from the
    function name to the model name (e.g. ``C_agauss`` to ``agauss``),
-   which has caused how the :py:class:`~sherpa.astro.xspec.XSModel`
+   which has changed how the :py:class:`~sherpa.astro.xspec.XSModel`
    class identifies the correct routine, via the use of the
    :py:class:`~sherpa.astro.xspec.utils.ModelMeta` class.
 
@@ -371,7 +370,7 @@ version then you can use three helper scripts:
    This will report the basic code needed to be added to both the
    compiled code (only needed for external XSPEC user models) and
    Python (``sherpa/astro/xspec/__init__.py``). The Python code lacks
-   documentation and some values either need adding (e.g.  the Sherpa
+   documentation and some values either need adding (e.g. the Sherpa
    version) or links checked and possibly updated (due to the way that
    XSPEC models are documented). The compiled code is displayed as a
    safety check.
