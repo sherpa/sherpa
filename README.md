@@ -96,7 +96,7 @@ Using Conda
 --------------
 
 Sherpa is provided for both Linux and macOS operating systems running
-Python 3.11 to 3.14. It can be installed with the `conda` package
+Python 3.11 to 3.13. It can be installed with the `conda` package
 manager by saying
 
     $ conda install -c https://cxc.cfa.harvard.edu/conda/sherpa -c conda-forge sherpa
@@ -133,6 +133,9 @@ extend (whether to other areas of Astronomy or in other domains).
 
 Release History
 ---------------
+4.19.0 (or latest): 08 October 2026 [![DOI](https://zenodo.org/badge/18777006.svg)](https://doi.org/10.5281/zenodo.593753)
+
+4.18.0: 07 October 2025 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17288983.svg)](https://doi.org/10.5281/zenodo.17288983)
 
 4.17.1: 13 May 2025 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15397764.svg)](https://doi.org/10.5281/zenodo.15397764)
 
