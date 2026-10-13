@@ -72,12 +72,12 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         submodules: 'True'
 
     - name: Pip Testing Setup - Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -162,7 +162,7 @@ jobs:
         pytest --cov=sherpa --cov-report=xml:${{ github.workspace }}/coverage.xml
 
     - name: upload coverage
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v7
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ${{ github.workspace }}/coverage.xml
