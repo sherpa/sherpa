@@ -28,17 +28,23 @@ for signal outside the data range - and then be regridded to
 match the desired grid.
 """
 
+from __future__ import annotations
+
 from abc import ABCMeta, abstractmethod
+from collections.abc import Callable
 import itertools
 import logging
+from typing import cast, overload
 import warnings
 
 import numpy as np
+
 from sherpa.utils._utils import rebin  # type: ignore
 from sherpa.utils.akima import akima
 
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.utils.err import DataErr, ModelErr
+from sherpa.utils.types import ArrayType
 
 warning = logging.getLogger(__name__).warning
 
@@ -46,14 +52,24 @@ warning = logging.getLogger(__name__).warning
 PIXEL_RATIO_THRESHOLD = 0.1
 
 
-def _to_readable_array(x):
+@overload
+def _to_readable_array(x: None) -> None:
+    ...
+
+@overload
+def _to_readable_array(x: ArrayType) -> np.ndarray:
+    ...
+
+def _to_readable_array(x: ArrayType | None) -> np.ndarray | None:
     """Convert x into a ndarray that can not be edited (or is None)."""
 
     if x is None:
         return None
 
     x = np.asarray(x).copy()
-    if not np.iterable(x):
+    try:
+        len(x)
+    except TypeError:
         raise DataErr("notanarray")
 
     if x.ndim != 1:
@@ -67,10 +83,10 @@ class Axis(metaclass=ABCMeta):
     """Represent an axis of a N-D object."""
 
     # This is set when the data is set
-    _is_ascending = None
+    _is_ascending: bool | None = None
 
     @property
-    def is_empty(self):
+    def is_empty(self) -> bool:
         """Is the axis empty?
 
         An empty axis is either set to `None` or a zero-element
@@ -80,12 +96,12 @@ class Axis(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def is_integrated(self):
+    def is_integrated(self) -> bool:
         """Is the axis integrated?"""
         pass
 
     @property
-    def is_ascending(self):
+    def is_ascending(self) -> bool:
         """Is the axis ascending?
 
         The axis is ascending if the elements in `lo` are sorted in
@@ -93,19 +109,22 @@ class Axis(metaclass=ABCMeta):
         checked, and it is assumed that the elements are sorted.
         """
         if self.is_empty:
-            raise DataErr("Axis is empty or has a size of 0")
+            raise DataErr("emptyaxis")
 
-        return self._is_ascending
+        # We know _is_ascending is not None but the code does not.
+        return cast(bool, self._is_ascending)
 
+    # What should happen when the axis is empty?
     @property
     @abstractmethod
-    def start(self):
+    def start(self) -> float:
         """The starting point (lowest value) of the data axis."""
         pass
 
+    # What should happen when the axis is empty?
     @property
     @abstractmethod
-    def end(self):
+    def end(self) -> float:
         """The ending point of the data axis
 
         If the data axis is ascending the end boundary is the last
@@ -119,11 +138,11 @@ class Axis(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def size(self):
+    def size(self) -> int:
         """The size of the axis."""
         pass
 
-    def overlaps(self, other):
+    def overlaps(self, other: Axis) -> bool:
         """Check if this axis overlaps with another.
 
         Parameters
@@ -160,7 +179,7 @@ class PointAxis(Axis):
 
     """
 
-    def __init__(self, x):
+    def __init__(self, x: ArrayType | None) -> None:
         self._x = _to_readable_array(x)
         if self._x is None:
             return
@@ -170,29 +189,37 @@ class PointAxis(Axis):
             self._is_ascending = self._x[-1] > self._x[0]
 
     @property
-    def x(self):
+    def x(self) -> np.ndarray | None:
         return self._x
 
     @property
-    def is_integrated(self):
+    def is_integrated(self) -> bool:
         return False
 
     @property
-    def start(self):
-        if self.is_ascending:
-            return self.x[0]
+    def start(self) -> float:
+        if self.is_empty:
+            raise DataErr("emptyaxis")
 
-        return self.x[-1]
+        x = cast(np.ndarray, self.x)
+        if self.is_ascending:
+            return x[0]
+
+        return x[-1]
 
     @property
-    def end(self):
-        if self.is_ascending:
-            return self.x[-1]
+    def end(self) -> float:
+        if self.is_empty:
+            raise DataErr("emptyaxis")
 
-        return self.x[0]
+        x = cast(np.ndarray, self.x)
+        if self.is_ascending:
+            return x[-1]
+
+        return x[0]
 
     @property
-    def size(self):
+    def size(self) -> int:
         if self.x is None:
             return 0
 
@@ -216,10 +243,13 @@ class IntegratedAxis(Axis):
 
     """
 
-    _lo = None
-    _hi = None
+    _lo: np.ndarray | None = None
+    _hi: np.ndarray | None = None
 
-    def __init__(self, lo, hi):
+    def __init__(self,
+                 lo: ArrayType | None,
+                 hi: ArrayType | None
+                 ) -> None:
         self._lo = _to_readable_array(lo)
         self._hi = _to_readable_array(hi)
 
@@ -229,52 +259,62 @@ class IntegratedAxis(Axis):
 
             raise DataErr("mismatchn", "lo", "hi", "None", len(self._hi))
 
-        nlo = len(self._lo)
+        lovals = cast(np.ndarray, self._lo)
+        nlo = len(lovals)
         if self._hi is None:
             raise DataErr("mismatchn", "lo", "hi", nlo, "None")
 
-        nhi = len(self._hi)
+        hivals = cast(np.ndarray, self._hi)
+        nhi = len(hivals)
         if nlo != nhi:
             raise DataErr("mismatchn", "lo", "hi", nlo, nhi)
 
         if nlo > 0:
-            self._is_ascending = lo[-1] > lo[0]
+            self._is_ascending = lovals[-1] > lovals[0]
 
     @property
-    def lo(self):
+    def lo(self) -> np.ndarray | None:
         return self._lo
 
     @property
-    def hi(self):
+    def hi(self) -> np.ndarray | None:
         return self._hi
 
     @property
-    def is_integrated(self):
+    def is_integrated(self) -> bool:
         return True
 
     @property
-    def start(self):
-        if self.is_ascending:
-            return self.lo[0]
+    def start(self) -> float:
+        if self.is_empty:
+            raise DataErr("emptyaxis")
 
-        return self.lo[-1]
+        lo = cast(np.ndarray, self.lo)
+        if self.is_ascending:
+            return lo[0]
+
+        return lo[-1]
 
     @property
-    def end(self):
-        if self.is_ascending:
-            return self.hi[-1]
+    def end(self) -> float:
+        if self.is_empty:
+            raise DataErr("emptyaxis")
 
-        return self.hi[0]
+        hi = cast(np.ndarray, self.hi)
+        if self.is_ascending:
+            return hi[-1]
+
+        return hi[0]
 
     @property
-    def size(self):
+    def size(self) -> int:
         if self.lo is None:
             return 0
 
         return self.lo.size
 
 
-class EvaluationSpace1D():
+class EvaluationSpace1D:
     """Class for 1D Evaluation Spaces.
 
     An Evaluation Space is a set of data axes representing the data
@@ -288,30 +328,40 @@ class EvaluationSpace1D():
     xhi : array_like or None, optional
         The high end of the data bins for integrated datasets.
     """
-    def __init__(self, x=None, xhi=None):
+
+    def __init__(self,
+                 x: ArrayType | None = None,
+                 xhi: ArrayType | None = None
+                 ) -> None:
         """The input arrays are used to instantiate a single axis."""
+
+        self.x_axis: PointAxis | IntegratedAxis
         if xhi is None:
             self.x_axis = PointAxis(x)
         else:
+            # IntegratedAxis checks x and xhi match
             self.x_axis = IntegratedAxis(x, xhi)
 
     @property
-    def is_empty(self):
+    def is_empty(self) -> bool:
         """Is the space empty (the x axis has no elements)?"""
         return self.x_axis.is_empty
 
     @property
-    def is_integrated(self):
+    def is_integrated(self) -> bool:
         """Is the space integrated?"""
         return self.x_axis.is_integrated
 
     @property
-    def is_ascending(self):
+    def is_ascending(self) -> bool:
         """Is the space ascending?"""
         return self.x_axis.is_ascending
 
+    # The return value could be more precise. Should this error out if
+    # the axis is empty?
+    #
     @property
-    def grid(self):
+    def grid(self) -> tuple[np.ndarray | None] | tuple[np.ndarray | None, np.ndarray | None]:
         """The grid representation of the space.
 
         Returns
@@ -320,23 +370,21 @@ class EvaluationSpace1D():
             A tuple representing the x axis. The tuple will contain
             two arrays if the dataset is integrated, one otherwise.
         """
-        # We can not just rely on the is_integrated setting since
-        # an integrated axis can have is_integrated set to False
-        #
-        # TODO: should we fix this? It only affects a few corner-case tests
-        #       so maybe it's something we can address upstream? Or work out
-        #       why we want is_integrated to be False when the axis size is 0?
-        #
-        if self.x_axis.is_integrated:
-            return self.x_axis.lo, self.x_axis.hi
 
         if isinstance(self.x_axis, IntegratedAxis):
+            if self.x_axis.is_integrated:
+                return self.x_axis.lo, self.x_axis.hi
+
+            # Note: at present it should not be possible to create an
+            # IntegratedAxis object that has is_integrated set to
+            # False. Leave this code in just in case this changes.
+            #
             return self.x_axis.lo,
 
         return self.x_axis.x,
 
     @property
-    def midpoint_grid(self):
+    def midpoint_grid(self) -> np.ndarray | None:
         """The mid-points of the space.
 
         For non-integrated spaces this returns the X axis.
@@ -348,22 +396,27 @@ class EvaluationSpace1D():
             for each bin, or the non-integrated x axis array.
 
         """
-        if self.x_axis.is_integrated:
-            return (self.x_axis.lo + self.x_axis.hi)/2
 
-        return self.x_axis.x
+        if self.x_axis.is_integrated:
+            iaxis = cast(IntegratedAxis, self.x_axis)
+            lo = cast(np.ndarray, iaxis.lo)
+            hi = cast(np.ndarray, iaxis.hi)
+            return (lo + hi) / 2
+
+        paxis = cast(PointAxis, self.x_axis)
+        return cast(np.ndarray, paxis.x)
 
     @property
-    def start(self):
+    def start(self) -> float:
         """The start (lowest value) of the space."""
         return self.x_axis.start
 
     @property
-    def end(self):
+    def end(self) -> float:
         """The end (highest value) of the space."""
         return self.x_axis.end
 
-    def zeros_like(self):
+    def zeros_like(self) -> np.ndarray:
         """Returns zeroes for each element of the space.
 
         Returns
@@ -373,7 +426,7 @@ class EvaluationSpace1D():
         """
         return np.zeros(self.x_axis.size)
 
-    def overlaps(self, other):
+    def overlaps(self, other: EvaluationSpace1D) -> bool:
         """Check if this evaluation space overlaps with another.
 
         Parameters
@@ -388,7 +441,7 @@ class EvaluationSpace1D():
         """
         return self.x_axis.overlaps(other.x_axis)
 
-    def __contains__(self, other):
+    def __contains__(self, other: EvaluationSpace1D) -> bool:
         """Are all elements of other within the range (start, end) of this space?
 
         Parameters
@@ -407,7 +460,7 @@ class EvaluationSpace1D():
         return self.start <= other.start and self.end >= other.end
 
 
-class EvaluationSpace2D():
+class EvaluationSpace2D:
     """Class for 2D Evaluation Spaces.
 
     An Evaluation Space is a set of data axes representing the data
@@ -423,7 +476,32 @@ class EvaluationSpace2D():
         The high end of the x and y data bins for integrated datasets.
     """
 
-    def __init__(self, x=None, y=None, xhi=None, yhi=None):
+    @overload
+    def __init__(self, x: None, y: None, xhi: None, yhi: None) -> None:
+        ...
+
+    @overload
+    def __init__(self,
+                 x: ArrayType,
+                 y: ArrayType,
+                 xhi: None,
+                 yhi: None) -> None:
+        ...
+
+    @overload
+    def __init__(self,
+                 x: ArrayType,
+                 y: ArrayType,
+                 xhi: ArrayType,
+                 yhi: ArrayType) -> None:
+        ...
+
+    def __init__(self,
+                 x: ArrayType | None = None,
+                 y: ArrayType | None = None,
+                 xhi: ArrayType | None = None,
+                 yhi: ArrayType | None = None
+                 ) -> None:
         # In the 2D case the arrays are redundant, as they are flattened from a meshgrid.
         # We need to clean them up first to have proper axes.
         # This may happen when an EvaluationSpace2D is instantiated using the arrays passed to
@@ -444,30 +522,40 @@ class EvaluationSpace2D():
     def _clean_arrays(self, x, y, xhi, yhi):
         return self._clean(x), self._clean(y), self._clean(xhi), self._clean(yhi)
 
+    @overload
     @staticmethod
-    def _clean(array):
+    def _clean(array: None) -> None:
+        ...
+
+    @overload
+    @staticmethod
+    def _clean(array: np.ndarray) -> np.ndarray:
+        ...
+
+    @staticmethod
+    def _clean(array: np.ndarray | None) -> np.ndarray | None:
         if array is None:
             return None
 
-        # We need to take extra care not to change the order of the arrays, hence
-        # the additional complexity
+        # We need to take extra care not to change the order of the
+        # arrays, hence the additional complexity
         array_unique, indexes = np.unique(array, return_index=True)
         return array_unique[indexes.argsort()]
 
     @property
-    def is_empty(self):
+    def is_empty(self) -> bool:
         """Is the space empty (the x axis has no elements)?"""
         return self.x_axis.is_empty or self.y_axis.is_empty
 
     @property
-    def is_integrated(self):
+    def is_integrated(self) -> bool:
         """Is the space integrated?"""
         return (not self.is_empty) \
             and self.x_axis.is_integrated \
             and self.y_axis.is_integrated
 
     @property
-    def is_ascending(self):
+    def is_ascending(self) -> tuple[bool, bool]:
         """Is the space ascending?
 
         Returns
@@ -479,7 +567,7 @@ class EvaluationSpace2D():
         return self.x_axis.is_ascending, self.y_axis.is_ascending
 
     @property
-    def start(self):
+    def start(self) -> tuple[float, float]:
         """The start (lowest value) of the space.
 
         Returns
@@ -490,7 +578,7 @@ class EvaluationSpace2D():
         return self.x_axis.start, self.y_axis.start
 
     @property
-    def end(self):
+    def end(self) -> tuple[float, float]:
         """The end (highest value) of the space.
 
         Returns
@@ -501,11 +589,11 @@ class EvaluationSpace2D():
         return self.x_axis.end, self.y_axis.end
 
     @property
-    def shape(self):
+    def shape(self) -> tuple[int, int]:
         """The sizes of the x and y axes."""
         return self.x_axis.size, self.y_axis.size
 
-    def overlaps(self, other):
+    def overlaps(self, other: EvaluationSpace2D) -> bool:
         """Check if this evaluation space overlaps with another.
 
         Note that this is more stringent for 2D, as the boundaries
@@ -527,7 +615,7 @@ class EvaluationSpace2D():
                     and self.y_axis.end == other.y_axis.end)
 
     @property
-    def grid(self):
+    def grid(self) -> tuple[np.ndarray, np.ndarray] | tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """The grid representation of the space.
 
         The x and y arrays in the grid are one-dimensional
@@ -541,13 +629,17 @@ class EvaluationSpace2D():
 
         """
         if self.x_axis.is_integrated:
-            x, y = reshape_2d_arrays(self.x_axis.lo, self.y_axis.lo)
-            xhi, yhi = reshape_2d_arrays(self.x_axis.hi, self.y_axis.hi)
+            xiaxis = cast(IntegratedAxis, self.x_axis)
+            yiaxis = cast(IntegratedAxis, self.y_axis)
+            x, y = reshape_2d_arrays(xiaxis.lo, yiaxis.lo)
+            xhi, yhi = reshape_2d_arrays(xiaxis.hi, yiaxis.hi)
             return x, y, xhi, yhi
 
-        return reshape_2d_arrays(self.x_axis.x, self.y_axis.x)
+        xpaxis = cast(PointAxis, self.x_axis)
+        ypaxis = cast(PointAxis, self.y_axis)
+        return reshape_2d_arrays(xpaxis.x, ypaxis.x)
 
-    def zeros_like(self):
+    def zeros_like(self) -> np.ndarray:
         """Returns zeroes for each element of the space.
 
         Returns
@@ -559,7 +651,7 @@ class EvaluationSpace2D():
         return np.zeros(size)
 
 
-class ModelDomainRegridder1D():
+class ModelDomainRegridder1D:
     """Allow 1D models to be evaluated on a different grid.
 
     This class is not used directly in a model expression;
@@ -598,15 +690,21 @@ class ModelDomainRegridder1D():
 
     """
 
-    def __init__(self, evaluation_space=None, name='regrid1d', **kwargs):
+    def __init__(self,
+                 evaluation_space: EvaluationSpace1D | None = None,
+                 name: str = 'regrid1d',
+                 **kwargs) -> None:
         self.name = name
         self.integrate = True
-        self.evaluation_space = evaluation_space if evaluation_space is not None else EvaluationSpace1D()
+        if evaluation_space is None:
+            self.evaluation_space = EvaluationSpace1D()
+        else:
+            self.evaluation_space = evaluation_space
 
         self.method = kwargs.get("interp", akima)
 
     @property
-    def method(self):
+    def method(self) -> Callable:
         """Interpolate the data from the internal to requested grid.
 
         This is *only* used for point grids, as integrated grids use a
@@ -618,29 +716,30 @@ class ModelDomainRegridder1D():
         return self._method
 
     @method.setter
-    def method(self, method):
+    def method(self, method: Callable) -> None:
         if not callable(method):
             raise TypeError(f"method argument '{repr(method)}' is not callable")
         self._method = method
 
     @property
-    def grid(self):
+    def grid(self) -> tuple[np.ndarray | None] | tuple[np.ndarray | None, np.ndarray | None]:
         """The grid of the associated evaluation space."""
         return self.evaluation_space.grid
 
     @grid.setter
-    def grid(self, value):
+    def grid(self, value: np.ndarray | tuple[np.ndarray, ...]) -> None:
         try:  # value is an iterable (integrated models) to be unpacked
             self.evaluation_space = EvaluationSpace1D(*value)
         except TypeError:  # value is a single array (non-integrated models)
-            self.evaluation_space = EvaluationSpace1D(value)
+            v = cast(np.ndarray, value)
+            self.evaluation_space = EvaluationSpace1D(v)
 
     def apply_to(self, model):
         """Evaluate a model on a different grid."""
         from sherpa.models.model import RegridWrappedModel
-        return RegridWrappedModel(model, self)
+        return RegridWrappedModel(model, wrapper=self)
 
-    def calc(self, pars, modelfunc, *args, **kwargs):
+    def calc(self, pars, modelfunc, *args, **kwargs) -> np.ndarray:
         """Evaluate and regrid a model
 
         Evaluate the model on the internal grid and then convert it
@@ -681,7 +780,7 @@ class ModelDomainRegridder1D():
 
         return self._evaluate(requested_eval_space, pars, modelfunc, **kwargs)
 
-    def _make_and_validate_grid(self, args_array):
+    def _make_and_validate_grid(self, args_array)  -> EvaluationSpace1D:
         """Validate input grid and check whether it's point or integrated.
 
         Parameters
@@ -697,7 +796,13 @@ class ModelDomainRegridder1D():
         if nargs == 0:
             raise ModelErr('nogrid')
 
+        # This is a pre-requisite for calling this routine.
+        assert not self.evaluation_space.is_empty
+
         requested_eval_space = EvaluationSpace1D(*args_array)
+        if requested_eval_space.is_empty:
+            # This is slightly different to the 'nargs == 0' check.
+            raise ModelErr('nogrid')
 
         # Ensure the two grids match: integrated or non-integrated.
         if self.evaluation_space.is_integrated and not requested_eval_space.is_integrated:
@@ -707,8 +812,9 @@ class ModelDomainRegridder1D():
             raise ModelErr('needspoint')
 
         if self.evaluation_space.is_integrated and requested_eval_space.is_integrated:
-            lo = self.evaluation_space.grid[0]
-            hi = self.evaluation_space.grid[1]
+            # TODO: why does pyright think grid can only have a single element?
+            lo = cast(np.ndarray, self.evaluation_space.grid[0])
+            hi = cast(np.ndarray, self.evaluation_space.grid[1])
             if np.any(lo[1:] < hi[:-1]) or np.any(lo == hi):
                 raise ModelErr('needsint')
 
@@ -844,7 +950,7 @@ class ModelDomainRegridder1D():
                                         **kwargs)
 
 
-class ModelDomainRegridder2D():
+class ModelDomainRegridder2D:
     """Allow 2D models to be evaluated on a different grid.
 
     This class is not used directly in a model expression;
@@ -885,10 +991,15 @@ class ModelDomainRegridder2D():
 
     """
 
-    def __init__(self, evaluation_space=None, name='regrid2d'):
+    # Should this set the integrate flag?
+    def __init__(self,
+                 evaluation_space: EvaluationSpace2D | None = None,
+                 name: str = 'regrid2d') -> None:
         self.name = name
-        self.evaluation_space = evaluation_space\
-            if evaluation_space is not None else EvaluationSpace2D()
+        if evaluation_space is None:
+            self.evaluation_space = EvaluationSpace2D()
+        else:
+            self.evaluation_space = evaluation_space
 
     @property
     def grid(self):
@@ -901,9 +1012,9 @@ class ModelDomainRegridder2D():
     def apply_to(self, model):
         """Evaluate a model on a different grid."""
         from sherpa.models.model import RegridWrappedModel
-        return RegridWrappedModel(model, self)
+        return RegridWrappedModel(model, wrapper=self)
 
-    def calc(self, pars, modelfunc, *args, **kwargs):
+    def calc(self, pars, modelfunc, *args, **kwargs) -> np.ndarray:
         """Evaluate and regrid a model
 
         Evaluate the model on the internal grid and then
@@ -958,7 +1069,14 @@ class ModelDomainRegridder2D():
         if nargs == 0:
             raise ModelErr('nogrid')
 
+        # This is a pre-requisite for calling this routine.
+        assert not self.evaluation_space.is_empty
+
         requested_eval_space = EvaluationSpace2D(*args_array)
+        if requested_eval_space.is_empty:
+            # What is the best behaviour here?
+            assert False
+            raise ModelErr('nogrid')
 
         # Ensure the two grids match: integrated or non-integrated.
         if self.evaluation_space.is_integrated and not requested_eval_space.is_integrated:
@@ -1009,7 +1127,10 @@ def rebin_2d(y, from_space, to_space):
     return rebin_int(reshaped_scaled_y, int(round(scale_x)), int(round(scale_y)))
 
 
-def rebin_int(array, scale_x, scale_y):
+def rebin_int(array: np.ndarray,
+              scale_x: int,
+              scale_y: int
+              ) -> np.ndarray:
     """Rebin array by an integer scale on both x and y
 
     Parameters
@@ -1039,7 +1160,10 @@ def rebin_int(array, scale_x, scale_y):
     return image
 
 
-def rebin_no_int(array, dimensions=None, scale=None):
+def rebin_no_int(array: np.ndarray,
+                 dimensions=None,
+                 scale=None
+                 ) -> np.ndarray:
     """Rebin the array, conserving flux.
 
     Return the array ``array`` to the new ``dimensions`` conserving flux,
