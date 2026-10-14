@@ -3264,15 +3264,21 @@ def test_pha_group_ignore_bad_group(caplog, clean_astro_ui):
     assert ui.get_dep(filter=True) == pytest.approx([3.5, 4])
 
     ui.group_counts(3)
-    assert len(caplog.records) == 4
+    assert len(caplog.records) == 5
 
-    assert ui.get_dep(filter=False) == pytest.approx([5, 2, 4])
-    assert ui.get_dep(filter=True) == pytest.approx([5, 2, 4])
+    assert ui.get_dep(filter=False) == pytest.approx([5, 2, 3, 4, 55])
+    assert ui.get_dep(filter=True) == pytest.approx([5, 2, 3, 4, 55])
 
     r = caplog.records[3]
+    assert r.name == "sherpa.astro.data"
+    assert r.levelname == "WARNING"
+    assert r.getMessage() == "The ignore_bad() call has been removed as quality has changed"
+
+    r = caplog.records[4]
     assert r.name == "sherpa.ui.utils"
     assert r.levelname == "INFO"
     assert r.getMessage() == "dataset 1: 1:5 Channel (unchanged)"
+
 
 
 def test_pha_group_filter_ignore_bad_group(caplog, clean_astro_ui):
