@@ -40,10 +40,9 @@ def test_fail_invalid_namefunc(namefunc):
     # The contents shouldn't be checked
     model = '/dev/null'
 
-    with pytest.raises(ValueError) as ve:
+    emsg = 'namefunc must be a callable which takes and returns a string'
+    with pytest.raises(ValueError, match=f"^{emsg}$"):
         xspec.parse_xspec_model_description(model, namefunc)
-
-    assert str(ve.value) == 'namefunc must be a callable which takes and returns a string'
 
 
 def test_fail_invalid_model_line():
@@ -54,10 +53,9 @@ Abundanc " "    1.    0.      0.      5.        5.        -0.001
 
 """)
 
-    with pytest.raises(ValueError) as ve:
+    emsg = 'Expected: modelname npars '
+    with pytest.raises(ValueError, match=f"^{emsg}"):
         xspec.parse_xspec_model_description(model)
-
-    assert str(ve.value).startswith('Expected: modelname npars ')
 
 
 def test_fail_missing_parameters():
@@ -68,10 +66,9 @@ Abundanc " "    1.    0.      0.      5.        5.        -0.001
 
 """)
 
-    with pytest.raises(ValueError) as ve:
+    emsg = 'model=apec missing 2 parameters'
+    with pytest.raises(ValueError, match=f"^{emsg}$"):
         xspec.parse_xspec_model_description(model)
-
-    assert str(ve.value) == 'model=apec missing 2 parameters'
 
 
 def test_fail_toomany_parameters():
@@ -107,10 +104,9 @@ Abundanc " "    1.    0.      0.      5.        5.        -0.001
 
 """)
 
-    with pytest.raises(ValueError) as ve:
+    emsg = 'Unexpected model type sub in:\n'
+    with pytest.raises(ValueError, match=f"^{emsg}"):
         xspec.parse_xspec_model_description(model)
-
-    assert str(ve.value).startswith('Unexpected model type sub in:\n')
 
 
 def test_fail_invalid_basic_parameter():
@@ -124,10 +120,9 @@ Abundanc " "    1.
 
 """)
 
-    with pytest.raises(ValueError) as ve:
+    emsg = 'Expected 6 values after units; model=apec\n'
+    with pytest.raises(ValueError, match=f"^{emsg}"):
         xspec.parse_xspec_model_description(model)
-
-    assert str(ve.value).startswith('Expected 6 values after units; model=apec\n')
 
 
 def test_fail_periodic_parameter():
@@ -139,10 +134,9 @@ def test_fail_periodic_parameter():
 Abundanc " "    1.    0.      0.      5.        5.        -0.001 P
 """)
 
-    with pytest.raises(ValueError) as ve:
+    emsg = 'Periodic parameters are unsupported; model=apec:\n'
+    with pytest.raises(ValueError, match=f"^{emsg}"):
         xspec.parse_xspec_model_description(model)
-
-    assert str(ve.value).startswith('Periodic parameters are unsupported; model=apec:\n')
 
 
 def test_warn_parse_repeated_parname(caplog):
@@ -187,10 +181,9 @@ fred           0  0.         1.e20           C_foo     mul  0
     # As an extra benefit as we skip both models we can check the
     # 'no valid models' error.
     #
-    with pytest.raises(ValueError) as ve:
+    emsg = 'No supported models were found!'
+    with pytest.raises(ValueError, match=f"^{emsg}$"):
         xspec.create_xspec_code(parsed)
-
-    assert str(ve.value) == 'No supported models were found!'
 
     assert len(caplog.records) == 2
     lname, lvl, msg = caplog.record_tuples[0]
@@ -417,7 +410,9 @@ class XSapec(XSAdditiveModel):
 
     """
 
-    _calc = _models.C_apec
+    _module = _models
+
+    _xspec_name = 'apec'
 
     def __init__(self, name='apec'):
         self.kT = XSParameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')
@@ -448,7 +443,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C(C_apec, 1),
+  XSPECMODELFCT_C(apec, C_apec, 1, "kT"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -503,7 +498,7 @@ class XSonlynorm(XSAdditiveModel):
 
     """
 
-    __function__ = "C_fred"
+    _xspec_name = 'onlynorm'
 
     def __init__(self, name='onlynorm'):
 
@@ -533,7 +528,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C(C_fred, 0),
+  XSPECMODELFCT_C(onlynorm, C_fred, 0, ""),
   { NULL, NULL, 0, NULL }
 };
 
@@ -578,7 +573,9 @@ class XSabcd(XSMultiplicativeModel):
 
     """
 
-    _calc = _models.foos
+    _module = _models
+
+    _xspec_name = 'abcd'
 
     def __init__(self, name='abcd'):
         self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
@@ -599,7 +596,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT(foos, 1),
+  XSPECMODELFCT(abcd, foos, 1, "nH"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -655,7 +652,7 @@ class XSabcd(XSMultiplicativeModel):
 
     """
 
-    __function__ = "foos"
+    _xspec_name = 'abcd'
 
     def __init__(self, name='abcd'):
         self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
@@ -676,7 +673,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT(foos, 1),
+  XSPECMODELFCT(abcd, foos, 1, "nH"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -724,7 +721,9 @@ class XSrgsxsrc(XSConvolutionKernel):
 
     """
 
-    _calc = _models.rgsxsrc
+    _module = _models
+
+    _xspec_name = 'rgsxsrc'
 
     def __init__(self, name='rgsxsrc'):
         self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)
@@ -745,7 +744,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_CON_F77(rgsxsrc, 1),
+  XSPECMODELFCT_CON_F77(rgsxsrc, rgsxsrc, 1, "order"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -804,7 +803,7 @@ class XSrgsxsrc(XSConvolutionKernel):
 
     """
 
-    __function__ = "rgsxsrc"
+    _xspec_name = 'rgsxsrc'
 
     def __init__(self, name='rgsxsrc'):
         self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)
@@ -825,7 +824,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_CON_F77(rgsxsrc, 1),
+  XSPECMODELFCT_CON_F77(rgsxsrc, rgsxsrc, 1, "order"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -872,7 +871,9 @@ class XSabcd(XSAdditiveModel):
 
     """
 
-    _calc = _models.foos
+    _module = _models
+
+    _xspec_name = 'abcd'
 
     def __init__(self, name='abcd'):
         self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)
@@ -897,7 +898,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C(foos, 1),
+  XSPECMODELFCT_C(abcd, foos, 1, "xs"),
   { NULL, NULL, 0, NULL }
 };
 
@@ -947,7 +948,9 @@ class XSabcd(XSAdditiveModel):
 
     """
 
-    _calc = _models.C_foos
+    _module = _models
+
+    _xspec_name = 'abcd'
 
     def __init__(self, name='abcd'):
         self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)
@@ -979,7 +982,7 @@ extern "C" {
 // Wrapper
 
 static PyMethodDef Wrappers[] = {
-  XSPECMODELFCT_C(C_foos, 1),
+  XSPECMODELFCT_C(abcd, C_foos, 1, "xs"),
   { NULL, NULL, 0, NULL }
 };
 
