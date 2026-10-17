@@ -18,6 +18,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Basic support of the XSPEC models and related functionality.
+
+These tests, as the other XSPEC tests in Sherpa, assume that the data
+files exist for the models used. If the model files do not exist then
+the tests will either fail or can cause a crash.
+
+"""
+
 import numpy
 
 import pytest
@@ -38,6 +46,9 @@ except ImportError:
     pytest.skip("could not import 'sherpa.astro.xspec'",
                 allow_module_level=True)
 
+from sherpa.astro.utils.xspec import find_supported_xspec_models
+
+
 # How many models should there be?
 # This number includes all additive, multiplicative, and convolution models,
 # even the ones that would be disabled by a decoration from .utils.
@@ -55,14 +66,6 @@ XSPEC_MODELS_COUNT = 223 + 72 + 24
 _hc = 6.6260693e-27 * 2.99792458e+18 / 1.60217653e-9
 
 
-def is_proper_subclass(obj, cls):
-    if type(cls) is not tuple:
-        cls = (cls,)
-    if obj in cls:
-        return False
-    return issubclass(obj, cls)
-
-
 # Make it easier to run these tests on subsets of the XSPEC
 # model library, or in case model names get changed.
 #
@@ -74,25 +77,8 @@ def remove_item(xs, x):
         pass
 
 
-def get_all_xspec_models() -> list:
-    """What XSPEC models can we find?"""
-
-    out = []
-    for clname in dir(xs):
-        if not clname.startswith('XS'):
-            continue
-
-        cls = getattr(xs, clname)
-        if is_proper_subclass(cls, (xs.XSAdditiveModel,
-                                    xs.XSMultiplicativeModel,
-                                    xs.XSConvolutionKernel)):
-
-            out.append(cls)
-
-    return out
-
-
-ALL_MODELS_CLS = get_all_xspec_models()
+ALL_MODELS_NAMES = find_supported_xspec_models(enabled=False)
+ALL_MODELS_CLS = [getattr(xs, f"XS{name}") for name in ALL_MODELS_NAMES]
 
 
 # There is an argument to be made that these tests only need
@@ -112,14 +98,14 @@ ALL_MODELS_CLS = get_all_xspec_models()
 def get_xspec_models() -> list:
     """What are the XSpec model names to test."""
 
-    model_names = [cls.__name__ for cls in ALL_MODELS_CLS]
+    model_names = ALL_MODELS_NAMES[:]  # copy the list
     version = xs.get_xsversion()
 
     # the grbjet model with XSPEC 12.12.0 (and presumably 12.12.0.a) can
     # occasionally evaluate to all 0's. This has been reported, but for now
     # skip this model.
     #
-    # remove_item(model_names, 'XSgrbjet')  assume this has been fixed now
+    # remove_item(model_names, 'grbjet')  assume this has been fixed now
 
     # The bsedov model causes a crash with XSPEC 12.14.0 to 12.14.0e
     # (it should be fixed in 12.4.0f and later). The model is not
@@ -127,7 +113,7 @@ def get_xspec_models() -> list:
     #
     if version in ["12.14.0", "12.14.0a", "12.14.0b",
                    "12.14.0c", "12.14.0d", "12.14.0e"]:
-        remove_item(model_names, 'XSbsedov')
+        remove_item(model_names, 'bsedov')
 
     # The bvvnei model causes a crash with XSPEC 12.14.0 to 12.14.0h
     # (it should be fixed in 12.14.0i and later). The model is not
@@ -136,21 +122,24 @@ def get_xspec_models() -> list:
     if version in ["12.14.0", "12.14.0a", "12.14.0b",
                    "12.14.0c", "12.14.0d", "12.14.0e",
                    "12.14.0f", "12.14.0g", "12.14.0h"]:
-        remove_item(model_names, 'XSbvvnei')
+        remove_item(model_names, 'bvvnei')
 
     # Has been reported to XSPEC team.
     #
     if version == "12.14.1":
-        remove_item(model_names, 'XSismabs')
+        remove_item(model_names, 'ismabs')
 
     # Convert back to model classes.
-    models = [getattr(xs, model_name) for model_name in model_names]
+    models = [getattr(xs, f"XS{name}") for name in sorted(model_names)]
 
     # Only bother with those models we can run with the XSPEC
     # model library.
     return list(filter(lambda mod: mod.version_enabled, models))
 
 
+# The classes (and the names of the XSPEC models) for which the data
+# exists to that it can be run).
+#
 RUNNABLE_MODELS_CLS = get_xspec_models()
 
 
@@ -247,6 +236,18 @@ def test_check_default_name(modelcls):
     mdl = modelcls()
 
     assert mdl.name in [expected, expected[2:]]
+
+    # Is the xspec_name field set up correctly?
+    #
+    lname = mdl.xspec_name.lower()
+    if issubclass(modelcls, xs.XSConvolutionKernel):
+        # The convolution name is somewhat historical, so leave
+        # as is.
+        assert mdl.name in [lname, f"xs{lname}"]
+    else:
+        assert mdl.name == lname
+
+    assert mdl.xspec_name == modelcls.__name__[2:]
 
 
 def test_norm_works():
@@ -448,8 +449,6 @@ def test_xpec_tablemodel_outofbound(clean_astro_ui, make_data_path):
     elo = numpy.arange(1, 5)
     ehi = elo + 1
 
-    print(tmod)
-
     with pytest.raises(ParameterErr) as e:
         tmod.calc([0., .2, 1., 1.], elo, ehi)
 
@@ -462,7 +461,7 @@ def test_convolution_model_cflux():
     # Use the cflux convolution model, since this gives
     # an easily-checked result.
     #
-    func = xs._xspec.C_cflux
+    func = xs._xspec.cflux
 
     # The energy grid should extend beyond the energy grid
     # used to evaluate the model, to avoid any edge effects.
@@ -538,7 +537,7 @@ def test_convolution_model_cpflux_noncontiguous():
     y1 = numpy.zeros(elo.size)
 
     emsg = "XSPEC convolution model requires a contiguous grid"
-    func = xs._xspec.C_cpflux
+    func = xs._xspec.cpflux
 
     with pytest.raises(ValueError,
                        match=f"^{emsg}$"):
@@ -587,7 +586,6 @@ def test_additive_single_norm_model():
     from sherpa.astro.xspec import XSAdditiveModel
 
     class XSNotAClassName(XSAdditiveModel):
-        __function__ = "foo"
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
@@ -607,7 +605,6 @@ def test_nonexistent_model():
 
     @include_if(False)
     class XSbtapec(XSAdditiveModel):
-        __function__ = "foo"
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
@@ -628,9 +625,9 @@ def test_not_compiled_model():
     from sherpa.astro.xspec.utils import include_if, ModelMeta
     from sherpa.astro.xspec import XSAdditiveModel
 
+    # This assumes there is never going to be a model routine called foo.
     @include_if(True)
     class XSfoo(XSAdditiveModel):
-        __function__ = "C_foo"
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
@@ -644,13 +641,24 @@ def test_not_compiled_model():
 
 
 def test_old_style_xspec_class():
-    """
-    We changed the way xspec models are declared, but just in case let's make sure old-style declarations still work.
+    """We changed the way xspec models are declared, but just in case
+    let's make sure old-style declarations still work. With the changes
+    in 4.19.0 it's not obvious this test makes much sense.
+
     """
     from sherpa.astro.xspec import XSzbabs, XSMultiplicativeModel, _xspec
 
     class XSfoo(XSMultiplicativeModel):
-        _calc = _xspec.xszbabs
+
+        # Use the calc routine from XSzbabs. With the changes in 4.19.0
+        # this is easiest done by over-loading calc.
+        #
+        _module = None
+
+        def calc(self, p, *args, **kwargs):
+            # Go straight to the actual routine to make sure it works
+            # and to avoid having to label this as @modelCacher1d
+            return _xspec.zbabs(p, *args, **kwargs)
 
         def __init__(self, name='zbabs'):
             self.nH = Parameter(name, 'nH', 1.e-4, 0.0, 1.0e5, 0.0, 1.0e6, '10^22 atoms / cm^2')
