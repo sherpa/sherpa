@@ -91,11 +91,12 @@ axis, and then dependent axis:
     >>> from sherpa.data import Data1D
     >>> d = Data1D('example', x, y)
     >>> print(d)
-    name      = example
-    x         = Float64[200]
-    y         = Float64[200]
-    staterror = None
-    syserror  = None
+    name       = example
+    x          = Float64[200]
+    y          = Float64[200]
+    staterror  = None
+    syserror   = None
+    integrated = False
 
 At this point no errors are being used in the fit, so the ``staterror``
 and ``syserror`` fields are empty. They can be set either when the
@@ -477,11 +478,12 @@ the same, and equal to the true error:
     >>> dy = np.full(x.size, err_true)
     >>> de = Data1D('with-errors', x, y, staterror=dy)
     >>> print(de)
-    name      = with-errors
-    x         = Float64[200]
-    y         = Float64[200]
-    staterror = Float64[200]
-    syserror  = None
+    name       = with-errors
+    x          = Float64[200]
+    y          = Float64[200]
+    staterror  = Float64[200]
+    syserror   = None
+    integrated = False
 
 The statistic is changed from least squares to
 chi-square (:py:class:`~sherpa.stats.Chi2`), to take advantage
@@ -897,13 +899,14 @@ For example, the following code creates a
     >>> yaxis = y.ravel()
     >>> d2 = Data2D('img', x0axis, x1axis, yaxis, shape=(128, 128))
     >>> print(d2)
-    name      = img
-    x0        = Int64[16384]
-    x1        = Int64[16384]
-    y         = Float64[16384]
-    shape     = (128, 128)
-    staterror = None
-    syserror  = None
+    name       = img
+    x0         = Int64[16384]
+    x1         = Int64[16384]
+    y          = Float64[16384]
+    shape      = (128, 128)
+    staterror  = None
+    syserror   = None
+    integrated = False
 
 Define the model
 ----------------

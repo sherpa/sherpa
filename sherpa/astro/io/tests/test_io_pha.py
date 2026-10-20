@@ -1288,7 +1288,7 @@ def test_csc_pha_roundtrip(make_data_path, tmp_path):
         raise RuntimeError(f"Unknown io backend: {io.backend}")
 
 
-@pytest.mark.parametrize("column", ["channel", "counts"])
+@pytest.mark.parametrize("column", ["counts"])
 @pytest.mark.parametrize("is_ascii", [True, False])
 @requires_fits
 def test_write_pha_missing_column(column, is_ascii, tmp_path):

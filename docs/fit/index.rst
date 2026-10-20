@@ -119,11 +119,12 @@ unless explicitly over-riden with the ``stat`` and
     method    = LevMar
     estmethod = Covariance
     >>> print(f.data)
-    name      = fit example
-    x         = Int64[6]
-    y         = Float64[6]
-    staterror = Float64[6]
-    syserror  = None
+    name       = fit example
+    x          = Int64[6]
+    y          = Float64[6]
+    staterror  = Float64[6]
+    syserror   = None
+    integrated = False
     >>> print(f.model)
     polynom1d
        Param        Type          Value          Min          Max      Units
