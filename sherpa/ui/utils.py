@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Sequence
 from configparser import ConfigParser
+from contextlib import suppress
 from copy import deepcopy
 import copyreg as copy_reg
 from dataclasses import dataclass
@@ -6222,6 +6223,13 @@ class Session(NoNewAttributesAfterInit):
     def _add_model_types(self, module,
                          baselist=(sherpa.models.ArithmeticModel,)
                          ) -> None:
+        """Add the models from the given module.
+
+        .. versionchanged:: 4.19.0
+           Models with version_enabled set to False are ignored.
+
+        """
+
         if not isinstance(baselist, tuple):
             baselist = (baselist,)
 
@@ -6233,6 +6241,14 @@ class Session(NoNewAttributesAfterInit):
                     break
             else:
                 continue
+
+            # Drop if version_enabled is defined and set to False,
+            # which indicates the model is unsupported (this is used
+            # by XSPEC models).
+            #
+            with suppress(AttributeError):
+                if not cls.version_enabled:
+                    continue
 
             name = name.lower()
             self._model_types[name] = ModelWrapper(self, cls)
