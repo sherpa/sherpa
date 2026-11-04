@@ -57,7 +57,7 @@ def test_check_array_size(method, x0, x1):
                          [ (2, 2, 1),
                            (2, 1, 2),
                            (1, 2, 2),
-                           pytest.param(1, 1, 1, marks=pytest.mark.xfail),  # does not error out here as the arrays have the same length
+                           (1, 1, 1),
                            [2, 2, 0],
                            (2, 0, 2),
                            (0, 2, 2),
@@ -75,7 +75,7 @@ def test_check_wcs_size_mismatch(method, ncrpix, ncrval, ncdelt):
     crval = [10, 20][:ncrval]
     cdelt = [2, 1][:ncdelt]
     with pytest.raises(TypeError,
-                       match="^input array sizes do not match, cdelt: "):
+                       match="^crpix, crval, cdelt must be 2-element arrays$"):
         func("LINEAR", [1, 2], [2, 1], crpix, crval, cdelt, 0, 2000, 2000)
 
 
