@@ -111,6 +111,10 @@ static PyObject* pix2world( PyObject* self, PyObject* args )
 			     int(equinox),
 			     epoch
 			     );
+  if (!wcs) {
+    return PyErr_Format( PyExc_RuntimeError,
+			 (char*) "Unable to initialze the WCS structure" );
+  }
 
   if ( strcmp(ctype,"LINEAR") == 0 )
   {
@@ -227,6 +231,10 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
 			     int(equinox),
 			     epoch
 			     );
+  if (!wcs) {
+    return PyErr_Format( PyExc_RuntimeError,
+			 (char*) "Unable to initialze the WCS structure" );
+  }
 
   int scale;
   for (int ii = 0; ii < nsets; ii++)
