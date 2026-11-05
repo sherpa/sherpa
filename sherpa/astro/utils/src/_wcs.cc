@@ -187,6 +187,11 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
     strcpy(ct1, "LINEAR");
     strcpy(ct2, "LINEAR");
   }
+  else if ( strcmp(ctype,"TAN-P") == 0 )
+  {
+    strcpy(ct1, "LONG-TAN");
+    strcpy(ct2, "NPOL-TAN");
+  }
   else
   {
     strcpy(ct1, "RA---TAN");
@@ -213,6 +218,20 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
   if (!wcs) {
     return PyErr_Format( PyExc_RuntimeError,
 			 (char*) "Unable to initialze the WCS structure" );
+  }
+
+  // Copy from pix2world
+  if ( strcmp(ctype,"TAN-P") == 0 )
+  {
+    // LONGPOLE and LATPOLE should be populated from the header keywords
+    // LONP# and LATP#, where # is associated with the transform.
+    // Hardcode for now, but should modify to do better (add parameters?)
+    wcs->longpole = 270.;
+    wcs->latpole  =   0.;
+    if ( wcs->longpole != 0.0 )
+      wcs->cel.ref[2] = wcs->longpole;
+    if ( wcs->latpole != 0.0 )
+      wcs->cel.ref[3] = wcs->latpole;
   }
 
   int scale;

@@ -119,6 +119,7 @@ def setup_tanp():
         ctype = "TAN-P",
         x0 = np.asarray([128.5, 130, 120, 128.5]),
         x1 = np.asarray([128.5, 120, 40, 128.5]),
+        # It is not clear if these match DS9
         w0 = np.asarray([270.0, 280.0079798, 264.51384357, 270.0]),
         w1 = np.asarray([0.0, 0.03774769, 0.3888148, 0.0]),
         # looks like we want crval to be 0 and cdelt to be positive/equal
@@ -152,8 +153,7 @@ def test_pix2world_simple(setup):
     assert x1 == pytest.approx(w1)
 
 
-# XFAIL: world2pix isn't set up for TANP
-@pytest.mark.parametrize("setup", [setup_linear, setup_wcs, pytest.param(setup_tanp, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("setup", [setup_linear, setup_wcs, setup_tanp])
 def test_world2pix_simple(setup):
     """Simple check for world2pix"""
 
