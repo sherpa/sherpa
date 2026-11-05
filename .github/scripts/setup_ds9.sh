@@ -26,7 +26,7 @@ else
     sudo apt-get install -qq libx11-dev libsm-dev libxrender-dev
 
     # set os-specific variables
-    ds9_os=ubuntu24
+    ds9_os=ubuntu25
     ds9_platform=x86
 fi
 
