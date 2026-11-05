@@ -107,10 +107,10 @@ def test_bokeh_specific_option_scatter():
 
 @pytest.mark.parametrize("plotclass", [DataPlot, DataHistogramPlot])
 def test_warning_plot_unknown_keyword(plotclass):
-    """We get an error when we attempt to set a plotting parameter
-    that neither Sherpa nor the underlying plotting library understand.
-    """
+    """Unsupported kwargs are ignored once filtered against the actual Bokeh model."""
     bokehbackend = pytest.importorskip("sherpa.plot.bokeh_backend")
+    from bokeh.embed import file_html
+    from bokeh.resources import CDN
 
     data = Data1DInt('tst', np.asarray([1, 2, 3]), np.asarray([1, 2, 3]) + 1,
                      np.asarray([10, 12, 10.5]))
@@ -118,9 +118,10 @@ def test_warning_plot_unknown_keyword(plotclass):
     pl.prepare(data, stat=None)
     newback = bokehbackend.BokehBackend()
     with plot.TemporaryPlottingBackend(newback):
-        with pytest.raises(AttributeError,
-                           match="unexpected attribute 'keyword_makes_no_sense' to Scatter"):
-            pl.plot(keyword_makes_no_sense='mousey')
+        pl.plot(keyword_makes_no_sense='mousey')
+        html = file_html(plot.backend.current_fig, CDN, "my plot")
+
+    assert 'mousey' not in html
 
 
 @pytest.mark.parametrize("plottype", [DelchiPlot, RatioPlot, ResidPlot])
@@ -154,3 +155,144 @@ def test_ignore_ylog_prefs(plottype):
     assert '"line_dash_offset":3' in html
     assert '"x_scale":{"type":"object","name":"LogScale"' in html
     assert '"y_scale":{"type":"object","name":"LinearScale"' in html
+
+
+@pytest.mark.parametrize("plottype", [DataPlot])
+def test_legend(plottype):
+    """Is the legend label passed through to the bokeh backend?
+    """
+
+    bokehbackend = pytest.importorskip("sherpa.plot.bokeh_backend")
+    # previous line guarantees that bokeh is installed
+    from bokeh.embed import file_html
+    from bokeh.resources import CDN
+
+    data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
+
+    pl = plottype()
+    pl.prepare(data)
+
+    newback = bokehbackend.BokehBackend()
+    with plot.TemporaryPlottingBackend(newback):
+        pl.plot(tags=['foo', 10], line_dash_offset=3, linestyle="dashed", label="mylabel")
+        html = file_html(plot.backend.current_fig, CDN, "my plot")
+
+    assert '"tags":["foo",10]' in html
+    assert '"line_dash_offset":3' in html
+    assert 'mylabel' in html
+
+
+def test_bokeh_marker_style_kwargs_are_filtered():
+    """Marker-only plots should ignore matplotlib-style kwargs unsupported by Bokeh."""
+    bokehbackend = pytest.importorskip("sherpa.plot.bokeh_backend")
+    from bokeh.embed import file_html
+    from bokeh.resources import CDN
+
+    data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
+    pl = DataPlot()
+    pl.prepare(data)
+
+    newback = bokehbackend.BokehBackend()
+    with plot.TemporaryPlottingBackend(newback):
+        pl.plot(marker='o', markersize=10, color='red',
+                fillstyle='none', line_dash_offset=3)
+        html = file_html(plot.backend.current_fig, CDN, "my plot")
+
+    assert 'red' in html or 'marker' in html
+    assert 'fillstyle' not in html
+
+
+def test_legend_histo():
+    """Histogram labels are passed through as Bokeh legend labels."""
+    bokehbackend = pytest.importorskip("sherpa.plot.bokeh_backend")
+    from bokeh.embed import file_html
+    from bokeh.resources import CDN
+
+    newback = bokehbackend.BokehBackend()
+    with plot.TemporaryPlottingBackend(newback):
+        newback.histo(np.asarray([0.0, 1.0, 2.0]),
+                      np.asarray([1.0, 2.0, 3.0]),
+                      np.asarray([10.0, 14.0, 11.0]),
+                      linestyle='solid',
+                      label='hist-label')
+        html = file_html(plot.backend.current_fig, CDN, "my histogram")
+
+    assert 'hist-label' in html
+
+
+def test_legend_errorbars():
+    """Error-bar-only plots should not crash when a label is present."""
+    bokehbackend = pytest.importorskip("sherpa.plot.bokeh_backend")
+    from bokeh.embed import file_html
+    from bokeh.resources import CDN
+
+    data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
+    pl = DataPlot()
+    pl.prepare(data)
+
+    pl.xerr = np.asarray([0.5, 0.7, 0.8])
+
+    newback = bokehbackend.BokehBackend()
+    with plot.TemporaryPlottingBackend(newback):
+        pl.plot(label='error-label', xerrorbars=True)
+        html = file_html(plot.backend.current_fig, CDN, "my errorbars")
+
+    assert isinstance(html, str)
+
+
+def test_bokeh_none_defaults_are_translated():
+    """Sherpa None defaults are translated before Bokeh sees the kwargs."""
+    bokehbackend = pytest.importorskip("sherpa.plot.bokeh_backend")
+    from bokeh.embed import file_html
+    from bokeh.resources import CDN
+
+    data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
+    pl = DataPlot()
+    pl.prepare(data)
+
+    newback = bokehbackend.BokehBackend()
+    with plot.TemporaryPlottingBackend(newback):
+        pl.plot(label='no-line', linestyle='None', linewidth=None, marker='o')
+        html = file_html(plot.backend.current_fig, CDN, "my translated defaults")
+
+    assert isinstance(html, str)
+    assert 'no-line' in html
+
+
+def test_legend_line_and_marker_share_label():
+    """A single data series with a line and marker should contribute a single legend entry."""
+    bokehbackend = pytest.importorskip("sherpa.plot.bokeh_backend")
+
+    data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
+    pl = DataPlot()
+    pl.prepare(data)
+
+    newback = bokehbackend.BokehBackend()
+    with plot.TemporaryPlottingBackend(newback):
+        pl.plot(label='data', linestyle='solid', marker='o', markersize=10, color='red')
+
+        legend = plot.backend.current_axis.legend
+        assert len(legend) == 1
+        assert len(legend[0].items) == 1
+        assert legend[0].items[0].label.value == 'data'
+        assert len(legend[0].items[0].renderers) == 2
+
+
+def test_merged_legend_for_overplot():
+    """Overplotted series should share one legend, with each label condensed to a single item."""
+    bokehbackend = pytest.importorskip("sherpa.plot.bokeh_backend")
+
+    data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
+    pl = DataPlot()
+    pl.prepare(data)
+
+    newback = bokehbackend.BokehBackend()
+    with plot.TemporaryPlottingBackend(newback):
+        pl.plot(label='data', linestyle='solid', marker='o', markersize=10, color='red')
+        pl.plot(overplot=True, label='data2', linestyle='solid', marker='o', color='blue')
+
+        legend = plot.backend.current_axis.legend
+        assert len(legend) == 1
+        assert len(legend[0].items) == 2
+        assert {item.label.value for item in legend[0].items} == {'data', 'data2'}
+        assert all(len(item.renderers) == 2 for item in legend[0].items)

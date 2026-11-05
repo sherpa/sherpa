@@ -66,17 +66,23 @@ def translate_args(func):
     '''
     @functools.wraps(func)
     def inner(self, *args, **kwargs):
+        # This decorator rewrites the final keyword arguments before the
+        # backend-specific function body runs. The mutation is intentional:
+        # Sherpa uses ``None`` to mean "use the backend default", while Bokeh
+        # sometimes uses ``None`` as "suppress this property". Translate the
+        # values here so downstream glyph creation receives valid Bokeh values.
+        # pylint: disable=consider-using-dict-items
         for kw, val in kwargs.items():
             if kw in self.translate_dict:
                 transl = self.translate_dict[kw]
 
                 if callable(transl):
-                    # It's a function
+                    # The translation is a callable; apply it to the raw value.
                     kwargs[kw] = transl(val)
                 else:
-                    # It should be a dict
-                    # Let's check if val is one of those that need to
-                    # be translated
+                    # It should be a dict.
+                    # Translate only values explicitly listed in the mapping;
+                    # leave all other backend-independent values untouched.
                     if val in transl:
                         kwargs[kw] = transl[val]
         return func(self, *args, **kwargs)

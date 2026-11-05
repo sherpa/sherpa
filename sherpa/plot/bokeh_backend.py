@@ -32,8 +32,7 @@ import bokeh
 from bokeh.plotting import figure, show
 from bokeh.models.scales import LinearScale, LogScale
 from bokeh.models.annotations import Span
-from bokeh.models import Whisker, Scatter
-from bokeh.models import ColumnDataSource
+from bokeh.models import Whisker, Scatter, Line, Legend, LegendItem, ColumnDataSource
 from bokeh import embed
 from bokeh.layouts import gridplot
 from bokeh import palettes
@@ -71,6 +70,20 @@ solid line) or any other bokeh linestyle.'''],
 }
 
 kwargs_doc = ChainMap(updated_kwarg_docs, orig_kwargs_doc)
+
+
+class figure_with_color_cycle(figure):
+    """A bokeh figure with a color cycle.
+
+    This is a wrapper around the bokeh figure class that adds an attribute
+    `_color_cycle` that is an `itertools.cycle` object cycling through the
+    colors in the palette defined in the `palette` attribute of the BokehBackend
+    class.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._color_cycle = None  # type: ignore[assignment]
 
 
 class BokehBackend(BasicBackend):
@@ -127,6 +140,9 @@ class BokehBackend(BasicBackend):
         "ecolor": translate_colors,
         "markerfacecolor": translate_colors,
         "linecolor": translate_colors,
+        # Sherpa treats ``None`` as the "use the backend default" sentinel.  Bokeh
+        # interprets ``None`` as a real property value in some places, so we map the
+        # Sherpa default here before the glyph is constructed.
         "linestyle": {
             "None": "noline",
             None: "solid",
@@ -140,6 +156,7 @@ class BokehBackend(BasicBackend):
             "-.": "dotdash",
         },
         "linewidth": {
+            # ``None`` means "default width" in the Sherpa API, not "no line".
             None: 1,
         },
         "drawstyle": {
@@ -189,6 +206,18 @@ class BokehBackend(BasicBackend):
 
     palette = palettes.Category10[10]
 
+    current_axis : figure
+    """ This is a reference to a panel in the current figure.
+    
+    Plot and use commands will act on this panel. 
+    It is a tuple of (figure, row, col) where figure is a bokeh figure object
+    and row and col are the row and column indices in the grid of plots.
+
+    Bokeh also allows for a "spanning" plot that covers multiple rows and columns. 
+    In that case, the tuple is (figure, row, col, rowspan, colspan).
+    Sherpa currently does not support spanning plots.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.clear_window()
@@ -215,14 +244,44 @@ class BokehBackend(BasicBackend):
         """
         return f"$${txt}$$"
 
+    @staticmethod
+    def _filter_kwargs_for_model(model, kwargs):
+        """Return keyword arguments supported by the given Bokeh model.
+
+        This avoids a hand-curated list of accepted glyph attributes and works
+        with the actual property set of the Bokeh model class.
+        """
+        valid = set(model.properties())
+        return {k: v for k, v in kwargs.items() if k in valid}
+
+    @staticmethod
+    def _ensure_legend_for_renderer(axes, label, renderer):
+        """Attach a legend item to the current figure, reusing the same legend."""
+        if label is None:
+            return
+
+        if axes.legend and len(axes.legend) > 0:
+            legend = axes.legend[0]
+        else:
+            legend = Legend(items=[])
+            axes.add_layout(legend)
+
+        for item in legend.items:
+            if item.label.value == label:
+                if renderer not in item.renderers:
+                    item.renderers.append(renderer)
+                return
+
+        legend.items.append(LegendItem(label=label, renderers=[renderer]))
+
     def _figure(self):
         fig = figure()
-        fig._color_cycle = cycle(self.palette)
+        fig._color_cycle = cycle(self.palette)  # type: ignore[attr-defined]
         return fig
 
     def clear_window(self):
         fig = self._figure()
-        self.current_fig = gridplot([fig], ncols=1)
+        self.current_fig = gridplot([fig], ncols=1, toolbar_location="above")
         self.current_axis = fig
 
     def setup_axes(self, overplot, clearwindow):
@@ -328,6 +387,7 @@ class BokehBackend(BasicBackend):
                 drawstyle=drawstyle,
                 color=color, marker=None, alpha=alpha,
                 xaxis=False, ratioline=False,
+                label=label,
                 **kwargs)
 
         # Draw points and error bars at the mid-point of the bins.
@@ -355,6 +415,7 @@ class BokehBackend(BasicBackend):
                           color=color,
                           alpha=alpha,
                           linestyle='noline',
+                          label=label,
                           marker=marker,
                           markersize=markersize,
                           markerfacecolor=markerfacecolor,
@@ -482,7 +543,7 @@ class BokehBackend(BasicBackend):
 
 
         if color is None:
-            color = next(axes._color_cycle)
+            color = next(axes._color_cycle)  # type: ignore[attr-defined]
         if linecolor is not None:
             logger.warning("The linecolor attribute, set to {}, is unused.".format(linecolor))
         if markerfacecolor is None:
@@ -492,37 +553,56 @@ class BokehBackend(BasicBackend):
 
         objs = []
 
-        if label is not None:
-            kwargs['legend_label'] = label
-        if linestyle != 'noline':
+        # The generic "label" overrides the bokeh-specific "legend_label" parameter.
+        # But even if "label" is set, we still need to pop the "legend_label" parameter from kwargs first
+        # so it is not passed to the bokeh Glyphs that don't accept it.
+        legend_label = kwargs.pop('legend_label', None)
+        legend_label = label or legend_label
+
+        # Bokeh line, marker and whisker models accept different keyword sets.
+        # Filter each target by the actual property names supported by that model.
+        # Note: legend_label is handled explicitly below so it does not get
+        # passed to a glyph model that does not accept it.
+        line_kwargs = self._filter_kwargs_for_model(Line, kwargs)
+
+        # If both the line and the marker are shown for the same series, they
+        # should both contribute a legend entry with the same label.
+        has_line = linestyle != 'noline'
+        if has_line:
             if drawstyle == 'default':
-                objs.append(axes.line(x, y,
-                                      line_dash=linestyle,
-                                      line_color=color,
-                                      line_width=linewidth,
-                                      alpha=alpha,
-                                      **kwargs
-                                      ))
+                renderer = axes.line(x, y,
+                                    line_dash=linestyle,
+                                    line_color=color,
+                                    line_width=linewidth,
+                                    alpha=alpha,
+                                    **line_kwargs
+                                    )
             else:
-                objs.append(axes.steps(x, y,
-                                mode=drawstyle,
-                                line_dash=linestyle,
-                                line_color=color,
-                                alpha=alpha,
-                                **kwargs
-                                ))
+                renderer = axes.steps(x, y,
+                                    mode=drawstyle,
+                                    line_dash=linestyle,
+                                    line_color=color,
+                                    alpha=alpha,
+                                    **line_kwargs
+                                    )
+            if legend_label is not None:
+                self._ensure_legend_for_renderer(axes, legend_label, renderer)
+            objs.append(renderer)
         if marker not in ('None', ''):
             source = ColumnDataSource({'x': np.atleast_1d(x),
                                        'y': np.atleast_1d(y)})
+            scatter_kwargs = self._filter_kwargs_for_model(Scatter, kwargs)
             glyph = Scatter(marker=marker,
                             line_alpha=alpha,
                             fill_alpha=alpha,
                             line_color=markerfacecolor,
                             fill_color=markerfacecolor,
                             size=markersize,
-                            **kwargs
+                            **scatter_kwargs
                             )
-            axes.add_glyph(source, glyph)
+            renderer = axes.add_glyph(source, glyph)
+            if legend_label is not None:
+                self._ensure_legend_for_renderer(axes, legend_label, renderer)
             objs.append(glyph)
 
         if xerrorbars and xerr is not None:
@@ -531,17 +611,21 @@ class BokehBackend(BasicBackend):
                                        'lower': np.atleast_1d(x - xerr),
                                        'upper': np.atleast_1d(x + xerr),
                                        })
+            whisker_kwargs = self._filter_kwargs_for_model(Whisker, kwargs)
             xwhisker = Whisker(
                 source=source,
                 base='y', lower='lower', upper='upper',
-                               dimension='width',
-                               line_alpha=alpha,
-                               line_color=ecolor,
-                               *kwargs
-                               )
+                dimension='width',
+                line_alpha=alpha,
+                line_color=ecolor,
+                **whisker_kwargs
+            )
             xwhisker.upper_head.size=capsize
             xwhisker.lower_head.size=capsize
             axes.add_layout(xwhisker)
+            # Bokeh does not accept a Whisker as a legend renderer; only actual
+            # glyph renderers (e.g., line/scatter) can be used in a LegendItem.
+            # So, wisker-only plots skip the legend.
             objs.append(xwhisker)
 
         if yerrorbars and yerr is not None:
@@ -560,13 +644,14 @@ class BokehBackend(BasicBackend):
                                        'lower': ylo,
                                        'upper': yhi,
                                        })
+            whisker_kwargs = self._filter_kwargs_for_model(Whisker, kwargs)
             ywhisker = Whisker(
                 source=source,
                 base='x', lower='lower', upper='upper',
-                               dimension='height',
-                               line_alpha=alpha, line_color=ecolor,
-                               **kwargs
-                               )
+                dimension='height',
+                line_alpha=alpha, line_color=ecolor,
+                **whisker_kwargs
+            )
             ywhisker.upper_head.size=capsize
             ywhisker.lower_head.size=capsize
             axes.add_layout(ywhisker)
@@ -631,9 +716,12 @@ class BokehBackend(BasicBackend):
             # We try to pick something sensible, but not too complicated.
             levels = np.linspace(np.min(y), np.max(y), levels)[1: -1]
 
+        # As of 2026, bokeh does not support legends for contour plots, so we ignore any label
+        kwargs.pop('legend_label', None)
 
         axes.contour(x0, x1, y, levels, line_alpha=alpha,
                      line_color=colors, line_width=linewidths,
+                     line_dash=linestyles,
                      **kwargs)
 
     @add_kwargs_to_doc(kwargs_doc)
@@ -710,7 +798,7 @@ class BokehBackend(BasicBackend):
         index = self._index_axis(row, col)
         if index is not None and not clearaxes:
             # We found the right subplot, now make it the current one
-            self.current_axis = self.current_fig.children[index]
+            self.current_axis = self.current_fig.children[index][0]
             return
 
         # We found the subplot, but we want to replace it with a new one
@@ -720,6 +808,8 @@ class BokehBackend(BasicBackend):
         # At this stage, the subplot does not exist, so we make a new one
         # and add it to the grid.
         newf = self._figure()
+        # We have a toolbar for the entire grid, so we don't want a toolbar for each subplot.
+        newf.toolbar_location = None
         self.current_fig.children.append((newf, row, col))
         self.current_axis = newf
 
@@ -754,7 +844,7 @@ class BokehBackend(BasicBackend):
         # simpler.
         if create:
             figs = [self._figure() for n in range(nrows * ncols)]
-            self.current_fig = gridplot(figs, ncols=ncols)
+            self.current_fig = gridplot(figs, ncols=ncols, toolbar_location="above")
             self.current_axis = figs[row * ncols + col]
 
         # Space is dynamically allocated and lots of things can change the
