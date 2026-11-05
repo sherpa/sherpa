@@ -15,6 +15,7 @@ import sys
 # Local import (this is also copied to sherpa.astro.utils.xspec so it
 # can be used by Sherpa, but this code has to be usable without a
 # Sherpa installation).
+#
 import xspec
 
 
