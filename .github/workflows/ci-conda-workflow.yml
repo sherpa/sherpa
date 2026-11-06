@@ -44,7 +44,7 @@ jobs:
             skip-ds9: "true"
 
           - name: MacOS ARM Full Build (Python 3.12)
-            os: macos-14
+            os: macos-15
             python-version: "3.12"
             install-type: develop
             fits: astropy
