@@ -1002,7 +1002,11 @@ class Session(NoNewAttributesAfterInit):
         self._tbl_models: list[Model] = []
         self._psf_models: list[Model] = []
 
-        self._model_autoassign_func = _assign_model_to_main
+        # The autoassign function can be None, so bypass the
+        # NoNewAttributesAfterInit check (issue #2503).
+        #
+        object.__setattr__(self, "_model_autoassign_func",
+                           _assign_model_to_main)
         self._model_components: dict[str, Model] = {}
         self._models: dict[IdType, Model] = {}
         self._sources: dict[IdType, Model] = {}
@@ -1335,9 +1339,6 @@ class Session(NoNewAttributesAfterInit):
         # update current session with pickle
         self.__dict__.update(obj.__dict__)
 
-        # TODO: is it possible for _model_autoassign_func to be None,
-        # since NoNewAttributesAfterInit stops it from being set?
-        #
         if self._model_autoassign_func is not None:
             for name, cmpt in self._model_components.items():
                 self._model_autoassign_func(name, cmpt)
@@ -6305,7 +6306,7 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def get_model_autoassign_func(self
-                                  ) -> Callable[[str, Model], None]:
+                                  ) -> Callable[[str, Model], None] | None:
         """Return the method used to create model component identifiers.
 
         Provides access to the function which is used by
@@ -6315,7 +6316,9 @@ class Session(NoNewAttributesAfterInit):
         Returns
         -------
         func
-           The model function set by `set_model_autoassign_func`.
+           The model function set by `set_model_autoassign_func`. It
+           is None if the model components are not assigned to an
+           identifier.
 
         See Also
         --------
@@ -6326,9 +6329,6 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._model_autoassign_func
 
-    # DOC-TODO: what does func=None mean? If you try None then it
-    # fails with AttributeError: 'Session' object attribute
-    # '_model_autoassign_func' cannot be replaced with a non-callable attribute
     def set_model_autoassign_func(self,
                                   func: Callable[[str, Model], None] | None = None
                                   ) -> None:
@@ -6341,9 +6341,11 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        func : function reference
+        func : function reference or None, optional
            The function to use: this should accept two arguments, a
-           string (component name), and the model instance.
+           string (component name), and the model instance. If None
+           then the model components are not added to any namespace,
+           and can be accessed with `get_model_component`.
 
         See Also
         --------
@@ -6366,7 +6368,10 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentTypeErr('badarg', 'func',
                                   'a function or other callable object')
 
-        self._model_autoassign_func = func
+        # NoNewAttributesAfterInit does not allow a callable attribute
+        # to be replaced by None (or vice versa), so bypass it.
+        #
+        object.__setattr__(self, "_model_autoassign_func", func)
 
     def list_models(self, show: str = "all") -> list[str]:
         """List the available model types.
