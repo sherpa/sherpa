@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2023 - 2025
+#  Copyright (C) 2020, 2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,18 +18,31 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from contextlib import suppress
+
 import numpy as np
 from numpy.testing import assert_allclose
 
 import pytest
 
-from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.data import Data1DInt
 from sherpa.models.basic import Box1D, Const1D, PowLaw1D
 from sherpa.models.parameter import Parameter
 from sherpa.models.model import RegridWrappedModel
 
 from sherpa.astro import ui
+
+# All these tests require XSPEC so do the check once rather than
+# requiring each test to be labelled with @requires_xspec. Do not use
+# the pytest.importorskip routine as it changed behaviour during the
+# pytest 8.2 to 9.1 period relating to how import errors are handled.
+#
+try:
+    import sherpa.astro.xspec as xs
+except ImportError:
+    pytest.skip("could not import 'sherpa.astro.xspec'",
+                allow_module_level=True)
 
 # Unlike test_xspec.py which tries to evaluate all the additive and
 # multiplicative models, here we just try several ones for which
@@ -68,7 +81,6 @@ XSPEC_CON_MODELS = [('cflux', 1, 2),
                     ('zmshift', 0, 1)]
 
 
-@requires_xspec
 @pytest.mark.parametrize("name,nfree,nfrozen", XSPEC_CON_MODELS)
 def test_count_xspec_convolution_models(name, nfree, nfrozen):
     """Does the model exist and have the expected number of parameters?
@@ -99,7 +111,6 @@ def test_count_xspec_convolution_models(name, nfree, nfrozen):
     assert (npars - nfrozen_got) == nfree
 
 
-@requires_xspec
 def test_check_no_extra_xspec_convolution_models():
     """Are we missing any?
 
@@ -198,7 +209,6 @@ def _check_pars(label, mdl, parvals):
         assert par.units == vals[3], plbl + 'units'
 
 
-@requires_xspec
 def test_cflux_settings():
     """Do the expected things happen when a model is calculated?"""
 
@@ -351,7 +361,6 @@ def _test_cflux_calc(mdl, slope, ampl):
                     atol=0, rtol=1e-7)
 
 
-@requires_xspec
 def test_cflux_calc_xspec():
     """Test the CFLUX convolution model calculations (XSPEC model)
 
@@ -373,7 +382,6 @@ def test_cflux_calc_xspec():
     _test_cflux_calc(mdl, mdl.phoindex.val, mdl.norm.val)
 
 
-@requires_xspec
 def test_cflux_calc_sherpa():
     """Test the CFLUX convolution model calculations (sherpa model)
 
@@ -393,7 +401,6 @@ def test_cflux_calc_sherpa():
     _test_cflux_calc(mdl, mdl.gamma.val, mdl.ampl.val)
 
 
-@requires_xspec
 def test_cflux_nbins():
     """Check that the number of bins created by cflux is correct.
 
@@ -439,7 +446,6 @@ def test_cflux_nbins():
     check_bins('Convolved XSPEC', cflux(xpl))
 
 
-@requires_xspec
 def test_calc_xspec_regrid():
     """Test the CFLUX convolution model calculations (XSPEC model)
 
@@ -485,7 +491,6 @@ def test_calc_xspec_regrid():
         'can rebin an XSPEC powerlaw: max diff={}'.format(mdiff)
 
 
-@requires_xspec
 def test_calc_sherpa_regrid():
     """Test the CFLUX convolution model calculations (Sherpa model)
 
@@ -561,17 +566,30 @@ def test_calc_sherpa_regrid():
     assert ymax == 0.0, 'yregrid: > 6 keV max={}'.format(ymax)
 
 
-@requires_xspec
 def test_xspec_con_ui_registered():
     """Are the convolution models registered for use by the UI layer?"""
 
     mdls = set(ui.list_models('xspec'))
+    found = 0
     for n, _, _ in XSPEC_CON_MODELS:
-        xsname = "xs{}".format(n)
+        xsname = f"xs{n}"
+
+        # Is this model supported for the XSPEC version?
+        cls = getattr(xs, f"XS{n}")
+        with suppress(AttributeError):
+            if not cls.version_enabled:
+                assert xsname not in mdls, xsname
+                continue
+
         assert xsname in mdls, xsname
+        found += 1
+
+    # The exact number is hard to check, but we know some
+    # convolution models should be available in any XSPEC library
+    # Sherpa supports.
+    assert found > 0
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_xspec_con_ui_cflux(make_data_path, clean_astro_ui, restore_xspec_settings):
@@ -642,7 +660,6 @@ def test_xspec_con_ui_cflux(make_data_path, clean_astro_ui, restore_xspec_settin
     assert lcflux == pytest.approx(sflux.lg10Flux.val)
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_xspec_con_ui_shift(make_data_path, clean_astro_ui, restore_xspec_settings):
@@ -727,7 +744,6 @@ def test_xspec_con_ui_shift(make_data_path, clean_astro_ui, restore_xspec_settin
     assert mplot.y[idx3] == pytest.approx(0.6, rel=1e-5)
 
 
-@requires_xspec
 @requires_data
 @requires_fits
 def test_xspec_con_ui_shift_regrid(make_data_path, clean_astro_ui, restore_xspec_settings):
