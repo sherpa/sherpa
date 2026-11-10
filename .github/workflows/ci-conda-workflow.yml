@@ -60,9 +60,9 @@ jobs:
             install-type: develop
             test-data: none
 
-          - name: Linux Minimum Setup (Python 3.15)
+          - name: Linux Minimum Setup (Python 3.14)
             os: ubuntu-latest
-            python-version: "3.15"
+            python-version: "3.14"
             numpy-version: "2.5.4"
             install-type: develop
             test-data: none
