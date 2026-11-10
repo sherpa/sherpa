@@ -6225,8 +6225,8 @@ class Session(NoNewAttributesAfterInit):
                          ) -> None:
         """Add the models from the given module.
 
-        .. versionchanged:: 4.19.0
-           Models with version_enabled set to False are ignored.
+        .. versionchanged:: 4.19.1
+           Models with `version_enabled` set to False are ignored.
 
         """
 
