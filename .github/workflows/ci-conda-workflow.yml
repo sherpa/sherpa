@@ -32,40 +32,50 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: MacOS Intel Full Build (Python 3.12)
+          - name: MacOS Intel Full Build (Python 3.13)
             os: macos-15-intel
-            python-version: "3.12"
+            python-version: "3.13"
             install-type: develop
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
             bokeh-version: 3
-            xspec-version: 12.14.0k
+            xspec-version: 12.15.1
             skip-ds9: "true"
 
-          - name: MacOS ARM Full Build (Python 3.12)
-            os: macos-14
-            python-version: "3.12"
+          - name: MacOS ARM Full Build (Python 3.13)
+            os: macos-15
+            python-version: "3.13"
             install-type: develop
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
             bokeh-version: 3
-            xspec-version: 12.14.0k
-
-          - name: Linux Minimum Setup (Python 3.11)
-            os: ubuntu-latest
-            python-version: "3.11"
-            numpy-version: "2.3.2"
-            install-type: develop
-            test-data: none
+            xspec-version: 12.15.1
 
           - name: Linux Minimum Setup (Python 3.12)
             os: ubuntu-latest
             python-version: "3.12"
-            numpy-version: "2.3.2"
+            numpy-version: "2.5.4"
             install-type: develop
             test-data: none
+
+          - name: Linux Minimum Setup (Python 3.14)
+            os: ubuntu-latest
+            python-version: "3.14"
+            numpy-version: "2.5.4"
+            install-type: develop
+            test-data: none
+
+          - name: Linux Full Build (Python 3.14)
+            os: ubuntu-latest
+            python-version: "3.14"
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            bokeh-version: 3
+            xspec-version: 12.15.1
 
           - name: Linux Full Build (Python 3.13)
             os: ubuntu-latest
@@ -75,7 +85,7 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             bokeh-version: 3
-            xspec-version: 12.14.0k
+            xspec-version: 12.15.1
 
           - name: Linux Full Build (Python 3.12)
             os: ubuntu-latest
@@ -84,17 +94,7 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
-            bokeh-version: 3
-            xspec-version: 12.14.0k
-
-          - name: Linux Full Build (Python 3.11)
-            os: ubuntu-latest
-            python-version: "3.11"
-            install-type: develop
-            fits: astropy
-            test-data: submodule
-            matplotlib-version: 3
-            xspec-version: 12.14.0k
+            xspec-version: 12.15.1
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
@@ -106,14 +106,14 @@ jobs:
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
             python-version: "3.13"
-            numpy-version: "2.3.2"
+            numpy-version: "2.5.4"
             install-type: develop
             fits: astropy
             test-data: none
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         submodules: 'True'
 
@@ -258,7 +258,7 @@ jobs:
         sherpa_test --cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml
 
     - name: upload coverage
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v7
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ${{ github.workspace }}/coverage.xml
