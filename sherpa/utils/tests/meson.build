@@ -3,6 +3,7 @@
 sources = [
   'test_akima.py',
   'test_err.py',
+  'test_formatting.py',
   'test_integration.py',
   'test_logging.py',
   'test_parallel.py',

@@ -40,15 +40,45 @@ from sherpa.stats import Stat, Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
     LeastSq, Likelihood
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, list_to_open_interval, sao_fcmp, formatting
-from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
+from sherpa.utils.err import ConfidenceErr, DataErr, EstErr, FitErr, SherpaErr, ArgumentTypeErr
 from sherpa.utils.types import ArrayType, FitFunc, IdType, IdTypes, \
     OptReturn, StatFunc, StatResults
+from sherpa.utils.formatting import latex_val, latex_val_errors
 
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
-__all__ = ('FitResults', 'ErrorEstResults', 'Fit')
+__all__ = ('FitResults', 'ErrorEstResults', 'Fit', 'latexdicts', 'confres_to_latex')
+
+
+latexdicts = {
+    "AA": {
+        "tabletype": "table",
+        "header_start": r"\hline \hline",
+        "header_end": r"\hline",
+        "data_end": r"\hline",
+    },
+    "doublelines": {
+        "tabletype": "table",
+        "header_start": r"\hline \hline",
+        "header_end": r"\hline\hline",
+        "data_end": r"\hline\hline",
+    },
+    "template": {
+        "tabletype": "tabletype",
+        "caption": "caption",
+        "tablealign": "tablealign",
+        "col_align": "col_align",
+        "preamble": "preamble",
+        "header_start": "header_start",
+        "header_end": "header_end",
+        "data_start": "data_start",
+        "data_end": "data_end",
+        "tablefoot": "tablefoot",
+        "units": {"col1": "unit of col1", "col2": "unit of col2"},
+    },
+}
 
 
 def evaluates_model(func):
@@ -2137,3 +2167,274 @@ def html_statinfo(stats: StatInfoResults) -> str:
     ls = [formatting.html_section(meta, open_block=True,
                                   summary='Statistics summary')]
     return formatting.html_from_sections(stats, ls)
+
+
+def add_dictval_to_list(adict, key, alist):
+    """
+    Add a string or list of strings from a dictionary to a list.
+
+    Parameters
+    ----------
+    adict : dictionary
+    key : hashable
+    alist : list
+        List where value should be added
+    """
+    if key in adict:
+        if isinstance(adict[key], str):
+            alist.append(adict[key])
+        else:
+            alist.extend(adict[key])
+
+
+def latex_parameter(fullname : str,
+                    model : Model,
+                    confres : ErrorEstResults | None,
+                    include_frozen : bool=False,
+                    include_linked : bool=False,
+                    string_no_val : str = '---') -> str:
+    """Convert a parameter to LaTeX format.
+
+    Parameters
+    ----------
+    fullname : str
+        The full name of the parameter to convert.
+    model : sherpa.models.model.Model
+        The model containing the parameter.
+    confres : ErrorEstResults or None
+        The confidence results for the parameter.
+        If `None`, the parameter value will be used without uncertainties.
+    include_frozen : bool, optional
+        Whether to include frozen parameters in the output. Default is False, which excludes frozen parameters.
+    include_linked : bool, optional
+        Whether to include linked parameters in the output. Default is False, which excludes linked parameters.
+    string_no_val : str, optional
+        The string to return if the parameter is not par of the model. Default is '---'.
+    """
+
+    fullnames = [p.fullname for p in model.pars]
+    if not fullname in fullnames:
+        return string_no_val
+    p = model.pars[fullnames.index(fullname)]
+
+    if (p.hidden
+        or (p.link and not include_linked)
+        # If it's linked, we don't care if it's frozen or not,
+        # the decision if it's included is based on the previous line.
+        or (not p.link and p.frozen and not include_frozen)):
+        return string_no_val
+    if p.link:
+        return f"={p.link.fullname}"
+    if p.frozen:
+        return f"={p.val}"
+    if confres:
+        if fullname not in confres.parnames:
+            raise ConfidenceErr('thawed', fullname, 'FitResults object')
+        ind = confres.parnames.index(fullname)
+        return latex_val_errors(confres.parvals[ind], confres.parmaxes[ind], confres.parmins[ind])
+    return latex_val(p.val)
+
+
+def confres_to_latex(model : Model | list[Model],
+                     confres: ErrorEstResults | list[ErrorEstResults],
+                     fitres : FitResults | list[FitResults] | None=None,
+                     include_frozen:bool=False, include_linked:bool=False,
+                     direction='column',
+                     string_no_val : str = '---',
+                     latexdict: dict  = {}) -> list[str]:
+    r"""Convert confidence results to LaTeX format.
+
+    We often want ot include fitted values and their uncertainties into publications.
+    In astronomy and other fields, LaTeX is the standard for this. So, we goal of this
+    fuction is to format the confidence results close to publication quality.
+    There are a couple of options to customize the output, but it is impossible to
+    cover all possible cases.
+
+    One of the main challenges is to round numbers to the correct number of significant
+    digits. To do so, this function looks at the uncertainties from the confidence results.
+
+    The goal is formatting, not complete preservations of information. For example,
+    the resulting tables does not say for what level of conifdence the uncertainties
+    are calculated; the user will have to add this information in some other way.
+    (For example, publications sometimes say "All uncertainties are 1-sigma confidence
+    intervals for all numbers and all tables in this paper.")
+
+    The information is taken from model names and parameter properties. The LaTeX
+    can only be cas good as the information passed in, e.g. if a model parameter
+    has no units, then the LaTeX will not have units either.
+
+
+    Parameters
+    ----------
+    model : sherpa.models.model.Model
+        The model used in one or more fits. It is up to the user to ensure that
+        the models, conres, and fitres are consistent with each other.
+    confres : ErrorEstResults or list of ErrorEstResults
+        The confidence results for one or more fits.
+    fitres : FitResults, optional
+        The fit results from Sherpa, used to include fit statistics in the output.
+    include_frozen : bool, optional
+        Whether to include frozen parameters in the output. Default is False, which excludes frozen parameters.
+    include_linked : bool, optional
+        Whether to include linked parameters in the output. Default is False, which excludes linked parameters.
+    direction : str, optional
+        The direction of the output table. Can be 'row' or 'column'.
+        Both directions are commonly used in publications. If the number of parameters is large,
+        "row" will likely lead to table too wide to fit the page.
+    string_no_val : str, optional
+        The string to return if the parameter is not part of the model. Default is '---'.
+    latexdict : dict, optional
+        A dictionary containing LaTeX formatting options such as `d['caption']` or
+        `d['tablestyle']='table*'` to make a table reach of multiple columns.
+        See the included `sherpa.fit.latexdicts` for examples.
+        The format and options in this directory match `astropy.io.ascii.latex.Latex`.
+
+    Returns
+    -------
+    strlist : list of str
+        A list of strings where each string is one line of LaTeX code.
+
+    Examples
+    --------
+    In this example, we set a simple dataset with just four data points,
+    fit a constant model to it, and then calculate the confidence intervals.
+    More complex models work the same way, but for illustration, we keep it simple.
+
+    >>> from sherpa.models.basic import Const1D
+    >>> from sherpa.fit import Fit, confres_to_latex
+    >>> from sherpa.data import Data1D
+    >>> from sherpa.stats import Chi2
+    >>> d = Data1D("x", x=[-3, 5, 17, 22], y=[12, 3, 8, 5], staterror=[3, 2, 4, 1])
+    >>> m = Const1D()
+    >>> s = Chi2()
+    >>> f = Fit(d, m, stat=s)
+    >>> out = f.fit()
+    >>> confres = f.est_errors()
+    >>> latex_lines = confres_to_latex(m, confres)
+    >>> for line in latex_lines:
+    ...     print(line)
+    \begin{table}
+    \begin{tabular}{ccc}
+    component & parameter & value \\
+    const1d & c0 & $5.3^{+0.8}_{-0.8}$\\
+    \end{tabular}
+    \end{table}
+
+    We can include the goodness of fit results in the output:
+    >>> latex_lines = confres_to_latex(m, confres, fitres=out)
+    >>> for line in latex_lines:
+    ...     print(line)
+    \begin{table}
+    \begin{tabular}{ccc}
+    component & parameter & value \\
+    const1d & c0 & $5.3^{+0.8}_{-0.8}$\\
+    \hline
+    dof &  & 3 \\
+    red. statistic &  & 2.3 \\
+    \end{tabular}
+    \end{table}
+
+    In this particular example, we used a chi2-fit, but Sherpa supports other
+    statistics, so the output is listed in a general fashinon as "reduced statistic".
+    It might make sense to edit that by hand before submitting this table for a publication.
+
+    """
+    if not isinstance(model, list):
+        model = [model]
+    if not isinstance(confres, list):
+        confres = [confres]
+    if (fitres is not None) and not isinstance(fitres, list):
+        fitres = [fitres]
+    # The second condition filters out statistics like Cash that don't have a
+    # goodness-of-fit measure.
+    include_fitres = (fitres is not None) and all([f.rstat is not None for f in fitres])
+    if len(model) != len(confres):
+        raise ValueError(f"Mismatch between number of models ({len(model)}) and confidence results ({len(confres)})")
+    if include_fitres and len(model) != len(fitres):
+        raise ValueError(f"Mismatch between number of models ({len(model)}) and fit results ({len(fitres)})")
+
+    # Get all parameter names and units
+    units : dict[tuple[str, str], str] = {}
+    for mdl in model:
+        for p in mdl.pars:
+            if (p.hidden
+                or (p.link and not include_linked)
+                # If it's linked, we don't care if it's frozen or not,
+                # the decision if it's included is based on the previous line.
+                or (not p.link and p.frozen and not include_frozen)):
+                continue
+            units[(p.modelname, p.name)] = p.units
+
+    values : dict[str, list[str]] = {}
+    for (modelname, name), _ in units.items():
+        fullname = f"{modelname}.{name}"
+        values[fullname] = []
+        for mdl, confr in zip(model, confres):
+            values[fullname].append(latex_parameter(fullname, mdl, confr,
+                                                    include_frozen=include_frozen,
+                                                    include_linked=include_linked,
+                                                    string_no_val=string_no_val))
+
+    has_units = any(units.values())
+
+    align = f"[{latexdict['tablealign']}]" if "tablealign" in latexdict else ""
+
+    lines = [
+        r"\begin{"
+        + latexdict.get("tabletype", "table")
+        + r"}"
+        + align
+    ]
+    add_dictval_to_list(latexdict, "preamble", lines)
+    if "caption" in latexdict:
+        lines.append(r"\caption{" + latexdict["caption"] + "}")
+
+    match direction:
+        case 'row':
+            col_align = latexdict.get("col_align", "c" * (len(units) + 2 * include_fitres))
+            lines.append(r"\begin{tabular}{" + col_align + "}")
+            add_dictval_to_list(latexdict, "header_start", lines)
+            header_line = ' & '.join([name for name, _ in units.keys()])
+            if include_fitres:
+                header_line += " & dof & red. stat "
+            lines.append(header_line + r'\\')
+            lines.append(' & '.join([name for _, name in units.keys()]) + " & " * (2 * include_fitres) + r'\\')
+            if has_units:
+                lines.append(' & '.join(units.values()) + " & " * (2 * include_fitres) + r'\\')
+            add_dictval_to_list(latexdict, "header_end", lines)
+            add_dictval_to_list(latexdict, "data_start", lines)
+            for i in range(len(model)):
+                parval = [v[i] for v in values.values()]
+                if include_fitres:
+                    parval.append(f"{fitres[i].dof}")
+                    parval.append(f"{fitres[i].rstat:.1f}")
+                lines.append(' & '.join(parval) + r'\\')
+
+        case "column":
+            def _begin_line(pm, pn, pu):
+                if has_units:
+                    return f"{pm} & {pn} & {pu}"
+                else:
+                    return f"{pm} & {pn}"
+            col_align = latexdict.get("col_align", "c" * ( 2 + has_units + len(model)))
+            lines.append(r"\begin{tabular}{" + col_align + "}")
+            add_dictval_to_list(latexdict, "header_start", lines)
+            lines.append(f"{_begin_line('component', 'parameter', 'unit')} & value \\\\")
+            add_dictval_to_list(latexdict, "header_end", lines)
+            add_dictval_to_list(latexdict, "data_start", lines)
+            for (a, b), c, d in zip(units.keys(), units.values(), values.values()):
+                lines.append(f"{_begin_line(a, b, c)} & {' & '.join(d)}\\\\")
+            if include_fitres:
+                lines.append(r"\hline")
+                dof = [f"{f.dof}" if f.dof else string_no_val for f in fitres]
+                lines.append(f"{_begin_line('dof', '', '')} & {' & '.join(dof)} \\\\")
+                rstat = [f"{f.rstat:.1f}" if f.rstat else string_no_val for f in fitres]
+                lines.append(f"{_begin_line('red. statistic', '', '')} & {' & '.join(rstat)} \\\\")
+        case _:
+            raise ArgumentTypeErr('badarg', 'direction', '"row" or "column"')
+
+    add_dictval_to_list(latexdict, "data_end", lines)
+    lines.append(r"\end{tabular}")
+    add_dictval_to_list(latexdict, "tablefoot", lines)
+    lines.append(r"\end{" + latexdict.get("tabletype", "table") + r"}")
+    return lines
