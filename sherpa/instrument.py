@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2008, 2016, 2018-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -999,9 +999,9 @@ they do not match.
         # Don't do anything special
         if pixel_size_comparison == self.SAME_RESOLUTION:
             if self.ndim == 1:
-                self.data_space = EvaluationSpace1D(*indep)
+                self.data_space = EvaluationSpace1D(*indep, clean=False, flat=True)
             elif self.ndim == 2:
-                self.data_space = EvaluationSpace2D(*indep)
+                self.data_space = EvaluationSpace2D(*indep, clean=False, flat=True)
             else:
                 # leave in in case we support higher dimensions or one
                 # of the rare dimensionless models is in use.
