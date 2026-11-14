@@ -96,7 +96,7 @@ import numpy as np
 
 import pytest
 
-from sherpa.fit import Fit, StatInfoResults
+from sherpa.fit import Fit, StatInfoResults, latex_parameter, confres_to_latex, latexdicts
 from sherpa.data import Data1D, Data2D, DataSimulFit
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_delta_rmf
@@ -3466,3 +3466,139 @@ def test_change_stat_after_fit_object_creation():
     # While both converge, the statval is obviously different.
     assert res_ls.statval != res_chig.statval
     assert res_ls.statname != res_chig.statname
+
+
+def test_latex_parameter():
+    """Test the latex_parameter function."""
+
+    data = Data1D('data1', x=np.arange(5),
+                  y=[4,5,2,3,5],
+                  staterror=[0.1, 0.2, 0.14, 0.09, 0.1])
+    mdl = Polynom1D("poly")
+    fit = Fit(data, mdl, stat=Cash())
+    fit.fit()
+    confres = fit.est_errors()
+
+    # No linked parameters, so output shouldn't change.
+    for linked in [True, False]:
+        out = latex_parameter("poly.c0", mdl, confres, include_frozen=False, include_linked=linked)
+        assert out == '$3.8^{+0.9}_{-0.9}$'
+        out = latex_parameter("poly.c0", mdl, None, include_frozen=False, include_linked=linked)
+        assert out == '$3.8$'
+
+    out = latex_parameter("not_exisit", mdl, None)
+    assert out == '---'
+    out = latex_parameter("not_exisit", mdl, confres)
+    assert out == '---'
+
+    # A frozen or linked parameter should not be included in the output unless asked for
+    out = latex_parameter("poly.c1", mdl, None, include_linked=True)
+    assert out == '---'
+    out = latex_parameter("poly.c1", mdl, None, include_frozen=True)
+    assert out == '=0.0'
+
+    # Let's link something.
+    mdl.c1.link = mdl.c0
+    out = latex_parameter("poly.c1", mdl, None, include_linked=True)
+    assert out == '=poly.c0'
+    # Linked, but we're not outputting linked parameters
+    out = latex_parameter("poly.c1", mdl, None, string_no_val='NA')
+    assert out == 'NA'
+
+
+def test_confres_to_latex():
+    """Test the confres_to_latex function."""
+
+    data = Data1D('data1', x=np.arange(5),
+                  y=[4,5,2,3,5],
+                  staterror=[0.1, 0.2, 0.14, 0.09, 0.1])
+    mdl = Polynom1D("poly")
+    fit = Fit(data, mdl, stat=Cash())
+    fitres = fit.fit()
+    confres = fit.est_errors()
+
+    out = confres_to_latex(mdl, confres)
+    assert out == ['\\begin{table}',
+        '\\begin{tabular}{ccc}',
+        'component & parameter & value \\\\',
+        'poly & c0 & $3.8^{+0.9}_{-0.9}$\\\\',
+        '\\end{tabular}',
+        '\\end{table}']
+
+    for fres in [None, fitres]:
+        out  = confres_to_latex(mdl, confres, fitres=fres, direction='row',
+                                latexdict={'tabletype': 'table*', 'caption': 'My caption'})
+        assert out == ['\\begin{table*}',
+            '\\caption{My caption}',
+            '\\begin{tabular}{c}',
+            'poly\\\\',
+            'c0\\\\',
+            '$3.8^{+0.9}_{-0.9}$\\\\',
+            '\\end{tabular}',
+            '\\end{table*}']
+    # Now, let's take a statistics that has a goodness-of-fit
+    fit = Fit(data, mdl, stat=Chi2())
+    fitres = fit.fit()
+    confres = fit.est_errors()
+    out = confres_to_latex(mdl, confres, fitres=fitres, direction='row',
+                                latexdict={'header_end': '\\hline'})
+    assert out == ['\\begin{table}',
+        '\\begin{tabular}{ccc}',
+        'poly & dof & red. stat \\\\',
+        'c0 &  & \\\\',
+        '\\hline',
+        '$3.75^{+0.05}_{-0.05}$ & 4 & 106.8\\\\',
+        '\\end{tabular}',
+        '\\end{table}']
+
+    out = confres_to_latex(mdl, confres, fitres=fitres, direction='column',
+                                latexdict={'tablefoot': 'references here'})
+    assert out == ['\\begin{table}',
+        '\\begin{tabular}{ccc}',
+        'component & parameter & value \\\\',
+        'poly & c0 & $3.75^{+0.05}_{-0.05}$\\\\',
+        '\\hline',
+        'dof &  & 4 \\\\',
+        'red. statistic &  & 106.8 \\\\',
+        '\\end{tabular}',
+        'references here',
+        '\\end{table}']
+
+
+def test_confres_to_latex_multiple_fits():
+    """Test the confres_to_latex function with multiple fits."""
+
+    data = Data1D('data1', x=np.arange(5),
+                  y=[4,5,2,3,5],
+                  staterror=[0.1, 0.2, 0.14, 0.09, 0.1])
+    mdl = Polynom1D("poly")
+    fit = Fit(data, mdl, stat=Chi2())
+    fitres = fit.fit()
+    confres = fit.est_errors()
+
+    # Now let's do a second fit with a different model
+    mdl2 = Polynom1D("poly")
+    mdl2.c1.frozen = False
+    fit2 = Fit(data, mdl2, stat=Chi2())
+    fitres2 = fit2.fit()
+    confres2 = fit2.est_errors()
+
+    out = confres_to_latex([mdl, mdl2], [confres, confres2], direction='row')
+    assert out == ['\\begin{table}',
+        '\\begin{tabular}{cc}',
+        'poly & poly\\\\',
+        'c0 & c1\\\\',
+        '$3.75^{+0.05}_{-0.05}$ & ---\\\\',
+        '$3.56^{+0.09}_{-0.09}$ & $0.08^{+0.03}_{-0.03}$\\\\',
+        '\\end{tabular}',
+        '\\end{table}']
+
+    out = out = confres_to_latex([mdl, mdl2], [confres, confres2], [fitres, fitres2], direction='row')
+    assert out == ['\\begin{table}',
+        '\\begin{tabular}{cccc}',
+        'poly & poly & dof & red. stat \\\\',
+        'c0 & c1 &  & \\\\',
+        '$3.75^{+0.05}_{-0.05}$ & --- & 4 & 106.8\\\\',
+        '$3.56^{+0.09}_{-0.09}$ & $0.08^{+0.03}_{-0.03}$ & 3 & 140.3\\\\',
+        '\\end{tabular}',
+        '\\end{table}']

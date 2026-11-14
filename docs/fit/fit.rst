@@ -17,6 +17,20 @@ The sherpa.fit module
       StatInfoResults
       ErrorEstResults
 
+   .. rubric:: Functions
+   .. autosummary::
+      :toctree: api
+
+      confres_to_latex
+      latex_val
+      latex_val_errors
+
+   .. rubric:: Data
+   .. autosummary::
+      :toctree: api
+
+      latexdicts
+
 Class Inheritance Diagram
 =========================
 
