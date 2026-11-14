@@ -1820,6 +1820,8 @@ def test_model_can_send_spectrumnumber_combine():
         return fluxes + pars[1]
 
     class TestSpectrumNumber(xspec.XSAdditiveModel):
+
+        _module = None
         _calc = test
 
         def __init__(self, name="test"):
@@ -1828,6 +1830,8 @@ def test_model_can_send_spectrumnumber_combine():
             super().__init__(name, (self.index, self.norm))
 
     class TestConvSpectrumNumber(xspec.XSConvolutionKernel):
+
+        _module = None
         _calc = testcon
 
         def __init__(self, name="test"):
@@ -1920,6 +1924,8 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
         return np.ones_like(lo)
 
     class TestSpectrumNumber2(xspec.XSAdditiveModel):
+
+        _module = None
         _calc = test
 
         def __init__(self, name="test"):

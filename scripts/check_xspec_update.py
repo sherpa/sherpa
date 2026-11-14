@@ -126,17 +126,10 @@ def compare_xspec_models(models: Sequence[ModelDefinition],
         #
         reports = []
 
-        # parse_xspec_user_model has removed the "language-type" flags
-        # on the function name, so we need to restore them.
+        # Sanity check with the new system
         #
-        funcname = mdl.funcname
-        if mdl.language == 'C++ style':
-            funcname = f'C_{funcname}'
-        elif mdl.language == "Fortran - double precision":
-            funcname = f"F_{funcname}"
-
-        if xs._calc.__name__ != funcname:
-            reports.append(f"function name change: {xs._calc.__name__} to {funcname}")
+        if xs._calc.__name__ != mdl.name:
+            reports.append("function name not {mdl.name} but {xs._calc.__name__}")
 
         # VERY LIMITED CHECK OF PARAMETER VALUES
         #

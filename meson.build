@@ -158,6 +158,12 @@ if xspec_prefix != ''
   xspec_incdir = include_directories(xspec_prefix / 'include')
   xspec_libdir = xspec_prefix / 'lib'
 
+  xspec_models = xspec_prefix / 'spectral' / 'manager' / 'model.dat'
+  if not fs.exists(xspec_models)
+    error('Unable to find XSPEC model dat file within:', xspec_prefix)
+  endif
+  message('XSPEC model file:', xspec_models)
+
   # Find the XSPEC version. There is the possibility that a user
   # wants to specify the version, rather than pick it up directly,
   # but for now do not support this usage.
