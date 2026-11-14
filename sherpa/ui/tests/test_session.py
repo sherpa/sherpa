@@ -182,6 +182,56 @@ def test_models_all():
     assert all([type(m) == str for m in models])
 
 
+@pytest.mark.parametrize("args", [(), (None, )])
+def test_set_model_autoassign_func_none(args):
+    """Can the autoassign function be turned off? Issue #2503"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.set_model_autoassign_func(*args)
+    assert s.get_model_autoassign_func() is None
+
+    # The component is still created and registered with the session,
+    # but it is not added to the __main__ namespace.
+    #
+    name = "autoassign_issue_2503"
+    cpt = s.create_model_component("gauss1d", name)
+    assert s.get_model_component(name) is cpt
+    assert name not in sys.modules["__main__"].__dict__
+
+
+def test_set_model_autoassign_func_none_then_callable():
+    """Can a function be set after None is used? Issue #2503"""
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+    s.set_model_autoassign_func(None)
+
+    store = {}
+
+    def assign(name, cpt):
+        store[name] = cpt
+
+    s.set_model_autoassign_func(assign)
+    assert s.get_model_autoassign_func() is assign
+
+    cpt = s.create_model_component("const1d", "autoassign_c1")
+    assert store == {"autoassign_c1": cpt}
+
+
+def test_clean_after_model_autoassign_func_none():
+    """clean restores the default autoassign function. Issue #2503"""
+
+    s = Session()
+    default = s.get_model_autoassign_func()
+    assert default is not None
+
+    s.set_model_autoassign_func(None)
+    s.clean()
+    assert s.get_model_autoassign_func() is default
+
+
 # XSPEC is only needed for the xspec test but easiest to just
 # mark it for all cases
 #
