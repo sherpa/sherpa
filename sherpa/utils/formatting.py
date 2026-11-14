@@ -390,9 +390,15 @@ def latex_val_errors(val : float, up : float | None, down : float | None) -> str
         return '$?^{+\\infty}_{-\\infty}$'
     precision = smallest_significant_order(valid)
     fval = f'{np.round(val, -precision):g}'
-    fup = '+\\infty' if up is None else f'{np.round(up, -precision):+g}'
-    fdown = '-\\infty' if down is None else f'{np.round(down, -precision):+g}'
+    fup = '0' if up is None else f'{np.round(up, -precision):+g}'
+    fdown = '0' if down is None else f'{np.round(down, -precision):+g}'
     if (not 'e' in fval) and (not 'e' in fup) and (not 'e' in fdown):
+        # We need format g to see if any one switched to scientific notation,
+        # but we don't want to to drop trailing zeros.
+
+        fval = f'{np.round(val, -precision):.{max(-precision, 0)}f}'
+        fup = '+\\infty' if up is None else f'{np.round(up, -precision):+.{max(-precision, 0)}f}'
+        fdown = '-\\infty' if down is None else f'{np.round(down, -precision):+.{max(-precision, 0)}f}'
         return f'${fval}^{{{fup}}}_{{{fdown}}}$'
 
     fval = f'{val/10**precision:.0f}'

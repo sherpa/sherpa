@@ -60,7 +60,7 @@ def test_smallest_significant_order_array():
 def test_latex_val():
     """Test that the latex_val function works as expected."""
     assert latex_val(0.000123) == "$0.000123$"
-    assert latex_val(0.0000123) == '$1.23 \\times 10^{-05}$'
+    assert latex_val(0.0000123) == '$1.23 \\times 10^{-5}$'
 
 
 def test_latex_val_errors():
@@ -76,6 +76,12 @@ def test_latex_val_errors():
     down = -0.00003
     assert latex_val_errors(val, up, down) == '$12^{+1340}_{-3} \\times 10^{-5}$'
     assert latex_val_errors(val, up, -down) == '$12^{+1340}_{-3} \\times 10^{-5}$'
+
+
+def test_latex_val_errors_trailing_zeros():
+    """We want to keep trailing zeros so that the printed precision
+    matches the precision of the error bars."""
+    assert latex_val_errors(1., 0.001, -0.32451) == '$1.000^{+0.001}_{-0.325}$'
 
 
 def test_latex_val_errors_none():

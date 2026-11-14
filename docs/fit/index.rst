@@ -1023,8 +1023,9 @@ the fit results and the error estimates.
     \begin{table}
     \begin{tabular}{ccc}
     component & parameter & value \\
-    polynom1d & c0 & $-11^{+3}_{-3}$\\
-    polynom1d & c2 & $0.5^{+0.03}_{-0.03}$\\
+    polynom1d & c0 & $-9^{+3}_{-3}$\\
+    polynom1d & c1 & $-2.4^{+0.3}_{-0.3}$\\
+    polynom1d & c2 & $0.48^{+0.03}_{-0.03}$\\
     \hline
     dof &  & 4 \\
     red. statistic &  & 24.2 \\
@@ -1052,11 +1053,11 @@ all the available options.
     \caption{caption}
     \begin{tabular}{col_align}
     header_start
-    polynom1d & polynom1d & dof & red. stat \\
-    c0 & c2 &  & \\
+    polynom1d & polynom1d & polynom1d & dof & red. stat \\
+    c0 & c1 & c2 &  & \\
     header_end
     data_start
-    $-11^{+3}_{-3}$ & $0.5^{+0.03}_{-0.03}$ & 4 & 24.2\\
+    $-9^{+3}_{-3}$ & $-2.4^{+0.3}_{-0.3}$ & $0.48^{+0.03}_{-0.03}$ & 4 & 24.2\\
     data_end
     \end{tabular}
     tablefoot
