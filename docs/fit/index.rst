@@ -988,6 +988,86 @@ needs to be reshaped before it can be displayed:
     >>> _ = plt.ylabel(rproj.ylabel)
     >>> rproj.contour(overplot=True)
 
+Formatting results for publication
+----------------------------------
+The end result of many analyses is a formal scientific publication.
+In many fields, these are written in LaTeX. Sherpa thus provides
+a way to format the results of a fit in a LaTeX-friendly way.
+Using the uncertainties, it will determine the number of significant
+digits and format the results in LaTeX. There are some options
+to control the formatting, but it may often be necessary to edit
+the final result manually to achieve a particular look.
+
+The function :py:func:`sherpa.fit.confres_to_latex` takes
+
+ - a :py:class:`~sherpa.models.model.Model` (for the details about the model
+   parameters, such as their units)
+ - the :py:class:`~sherpa.fit.ErrorEstResults` object
+   (for the best-fit results and uncertainties)
+ - and, optionally, the :py:class:`~sherpa.fit.FitResults`
+   (if fit statistics should be added to the table)
+
+The user has to make sure that those models and results are consistent
+with each other, i.e. that the model is the one that was used to produce
+the fit results and the error estimates.
+
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> from sherpa.fit import confres_to_latex
+    >>> lines = confres_to_latex(mdl, coverrs, res)
+    >>> for line in lines:
+    ...     print(line)
+    \begin{table}
+    \begin{tabular}{ccc}
+    component & parameter & value \\
+    polynom1d & c0 & $-11^{+3}_{-3}$\\
+    polynom1d & c2 & $0.5^{+0.03}_{-0.03}$\\
+    \hline
+    dof &  & 4 \\
+    red. statistic &  & 24.2 \\
+    \end{tabular}
+    \end{table}
+
+The parameters of a model can be set along a column or a row. The function
+also takes a parameter `latexdict` which sets the formatting of the table,
+e.g. the add the horizontal lines common in astronomy journals.
+See :py:data:`sherpa.fit.latexdicts["template"]` for a list of
+all the available options.
+
+.. plot::
+    :include-source:
+    :context:
+    :nofigs:
+
+    >>> from sherpa.fit import latexdicts
+    >>> lines = confres_to_latex(mdl, coverrs, res, direction="row",
+    ...                          latexdict=latexdicts["template"])
+    >>> for line in lines:
+    ...     print(line)
+    \begin{tabletype}[tablealign]
+    preamble
+    \caption{caption}
+    \begin{tabular}{col_align}
+    header_start
+    polynom1d & polynom1d & dof & red. stat \\
+    c0 & c2 &  & \\
+    header_end
+    data_start
+    $-11^{+3}_{-3}$ & $0.5^{+0.03}_{-0.03}$ & 4 & 24.2\\
+    data_end
+    \end{tabular}
+    tablefoot
+    \end{tabletype}
+
+In both `direction="column"` and `direction="row"` the model, error estimate,
+and fit results can be a list of objects to create a table that compares
+multiple fits, either different models fo the same data or different datasets
+(e.g. the temperature evolution of a series of datasets observed a different
+times).
+
 
 More on fitting
 ===============

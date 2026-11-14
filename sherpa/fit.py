@@ -79,6 +79,14 @@ latexdicts = {
         "units": {"col1": "unit of col1", "col2": "unit of col2"},
     },
 }
+"""Dictionary of LaTeX formatting options for the `confres_to_latex` function.
+
+"AA" is the format used by Astronomy & Astrophysics and AAS journals
+such as ApJ and AJ.
+
+"template" fills out all the possible options to show which parts
+of the table can be controlled.
+"""
 
 
 def evaluates_model(func):
@@ -2170,8 +2178,11 @@ def html_statinfo(stats: StatInfoResults) -> str:
 
 
 def add_dictval_to_list(adict, key, alist):
-    """
-    Add a string or list of strings from a dictionary to a list.
+    """Add a string or list of strings from a dictionary to a list.
+
+    If the key is not in the dictionary, nothing is added to the list.
+
+   .. versionadded:: 4.19.1
 
     Parameters
     ----------
@@ -2194,6 +2205,8 @@ def latex_parameter(fullname : str,
                     include_linked : bool=False,
                     string_no_val : str = '---') -> str:
     """Convert a parameter to LaTeX format.
+
+   .. versionadded:: 4.19.1
 
     Parameters
     ----------
@@ -2244,9 +2257,9 @@ def confres_to_latex(model : Model | list[Model],
                      latexdict: dict  = {}) -> list[str]:
     r"""Convert confidence results to LaTeX format.
 
-    We often want ot include fitted values and their uncertainties into publications.
-    In astronomy and other fields, LaTeX is the standard for this. So, we goal of this
-    fuction is to format the confidence results close to publication quality.
+    We often want to include fitted values and their uncertainties into publications.
+    In astronomy and other fields, LaTeX is the standard for this. This function
+    can format the confidence results close to publication quality.
     There are a couple of options to customize the output, but it is impossible to
     cover all possible cases.
 
@@ -2254,35 +2267,41 @@ def confres_to_latex(model : Model | list[Model],
     digits. To do so, this function looks at the uncertainties from the confidence results.
 
     The goal is formatting, not complete preservations of information. For example,
-    the resulting tables does not say for what level of conifdence the uncertainties
+    the resulting tables do not say for what level of confidence the uncertainties
     are calculated; the user will have to add this information in some other way.
     (For example, publications sometimes say "All uncertainties are 1-sigma confidence
     intervals for all numbers and all tables in this paper.")
 
     The information is taken from model names and parameter properties. The LaTeX
-    can only be cas good as the information passed in, e.g. if a model parameter
-    has no units, then the LaTeX will not have units either.
+    can only be as good as the information passed in, e.g. if a model parameter
+    has no units, then the LaTeX will not show units either.
 
+    .. versionadded:: 4.19.1
 
     Parameters
     ----------
-    model : sherpa.models.model.Model
-        The model used in one or more fits. It is up to the user to ensure that
+    model : sherpa.models.model.Model or list
+        The model used in one or more fits. If a list of models is passed,
+        they are displayed in multiple rows/columns to compare the results.
+        It is up to the user to ensure that
         the models, conres, and fitres are consistent with each other.
-    confres : ErrorEstResults or list of ErrorEstResults
+    confres : ErrorEstResults or list
         The confidence results for one or more fits.
-    fitres : FitResults, optional
+    fitres : FitResults or list, optional
         The fit results from Sherpa, used to include fit statistics in the output.
     include_frozen : bool, optional
-        Whether to include frozen parameters in the output. Default is False, which excludes frozen parameters.
+        Whether to include frozen parameters in the output.
     include_linked : bool, optional
-        Whether to include linked parameters in the output. Default is False, which excludes linked parameters.
+        Whether to include linked parameters in the output.
     direction : str, optional
         The direction of the output table. Can be 'row' or 'column'.
         Both directions are commonly used in publications. If the number of parameters is large,
-        "row" will likely lead to table too wide to fit the page.
+        'row' will likely lead to table too wide to fit the page.
     string_no_val : str, optional
-        The string to return if the parameter is not part of the model. Default is '---'.
+        The string to return if a parameter is not part of the model,
+        for example if several different models with different parameters
+        are compared.
+        Default is '---'.
     latexdict : dict, optional
         A dictionary containing LaTeX formatting options such as `d['caption']` or
         `d['tablestyle']='table*'` to make a table reach of multiple columns.
