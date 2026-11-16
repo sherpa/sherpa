@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018, 2020-2021, 2023-2025
+#  Copyright (C) 2016-2018, 2020-2021, 2023-2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -39,18 +39,12 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 def test_mod_fits(make_data_path, clean_astro_ui, caplog):
     """Can we read in an XSPEC table model with load_table_model.
 
-    This is no longer supported.
+    This is no longer supported, so check it errors out.
     """
 
     from sherpa.astro import io
 
-    # The error message depends on the backend:
-    #
-    # - astropy raises a ModelErr with message "Unable to treat array
-    # as numeric: ..."  (this may depend on NumPy version)
-    #
-    # - crates raises an IOErr with message "file
-    # '.../xspec-table=model-RCS.mod' does not appear to be ASCII"
+    # The error message depends on the backend.
     #
     tablemodelfile = make_data_path("xspec-tablemodel-RCS.mod")
     if io.backend.name == "pyfits":
@@ -58,8 +52,8 @@ def test_mod_fits(make_data_path, clean_astro_ui, caplog):
         emsg = "^Unable to treat array as numeric:"
     elif io.backend.name == "crates":
         etype = IOErr
-        emsg = "^file '.*/xspec-tablemodel-RCS.mod' does not " + \
-            "appear to be ASCII$"
+        emsg = "^No column data found in .*xspec-tablemodel-RCS.mod " + \
+            "with supported file formats$"
     else:
         assert False, f"Unknown backend: {io.backend.name}"
 
