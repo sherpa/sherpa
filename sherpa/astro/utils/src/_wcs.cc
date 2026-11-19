@@ -20,9 +20,6 @@
 
 
 #include "sherpa/extension.hh"
-#include <sstream>
-#include <iostream>
-#include <cstring>
 
 extern "C" {
 #include "wcs.h"
@@ -50,33 +47,22 @@ static PyObject* pix2world( PyObject* self, PyObject* args )
 			  &epoch ) )
     return NULL;
 
-  if ( ( cdelt.get_size() != crpix.get_size() ) ||
-       ( crpix.get_size() != crval.get_size() ) ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "cdelt: " << cdelt.get_size()
-	<< " vs crpix: " << crpix.get_size()
-	<< " vs crval: " << crval.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
+  if (crpix.get_size() != 2 ||
+      crval.get_size() != 2 ||
+      cdelt.get_size() != 2) {
+    return PyErr_Format( PyExc_TypeError,
+			 (char*)"crpix, crval, cdelt must be 2-element arrays" );
   }
 
   if ( x0.get_size() != x1.get_size() ) {
-    PyErr_SetString( PyExc_TypeError,
-		     (char*)"input pixel arrays x0,x1 not of equal length" );
-    return NULL;
+    return PyErr_Format( PyExc_TypeError,
+			 (char*)"input pixel arrays x0,x1 not of equal length" );
   }
 
   long nsets = long(x0.get_size());
 
   char    ct1[80] = "";
   char    ct2[80] = "";
-
-  if ( !crpix || !crval || !cdelt ) {
-    PyErr_SetString( PyExc_TypeError,
-		     (char*)"WCS params failed" );
-    return NULL;
-  }
 
   if ( strcmp(ctype,"LINEAR") == 0 )
   {
@@ -111,7 +97,13 @@ static PyObject* pix2world( PyObject* self, PyObject* args )
 			     int(equinox),
 			     epoch
 			     );
+  if (!wcs) {
+    return PyErr_Format( PyExc_RuntimeError,
+			 (char*) "Unable to initialze the WCS structure" );
+  }
 
+  // ctype is expected to be one of: "WCS", "LINEAR", or "TAN-P".
+  //
   if ( strcmp(ctype,"LINEAR") == 0 )
   {
     // The above will initialize wcs->sysout to "FK5" which will then cause
@@ -171,21 +163,16 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
 			  &epoch ) )
     return NULL;
 
-  if ( ( cdelt.get_size() != crpix.get_size() ) ||
-       ( crpix.get_size() != crval.get_size() ) ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "cdelt: " << cdelt.get_size()
-	<< " vs crpix: " << crpix.get_size()
-	<< " vs crval: " << crval.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
+  if (crpix.get_size() != 2 ||
+      crval.get_size() != 2 ||
+      cdelt.get_size() != 2) {
+    return PyErr_Format( PyExc_TypeError,
+			 (char*)"crpix, crval, cdelt must be 2-element arrays" );
   }
 
   if ( x0.get_size() != x1.get_size() ) {
-    PyErr_SetString( PyExc_TypeError,
-		     (char*)"input pixel arrays x0,x1 not of equal length" );
-    return NULL;
+    return PyErr_Format( PyExc_TypeError,
+			 (char*)"input pixel arrays x0,x1 not of equal length" );
   }
 
   long nsets = long(x0.get_size());
@@ -193,16 +180,17 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
   char    ct1[80] = "";
   char    ct2[80] = "";
 
-  if ( !crpix || !crval || !cdelt ) {
-    PyErr_SetString( PyExc_TypeError,
-		     (char*)"WCS params failed" );
-    return NULL;
-  }
-
+  // ctype is expected to be one of: "WCS", "LINEAR", or "TAN-P".
+  //
   if ( strcmp(ctype,"LINEAR") == 0 )
   {
     strcpy(ct1, "LINEAR");
     strcpy(ct2, "LINEAR");
+  }
+  else if ( strcmp(ctype,"TAN-P") == 0 )
+  {
+    strcpy(ct1, "LONG-TAN");
+    strcpy(ct2, "NPOL-TAN");
   }
   else
   {
@@ -227,11 +215,30 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
 			     int(equinox),
 			     epoch
 			     );
+  if (!wcs) {
+    return PyErr_Format( PyExc_RuntimeError,
+			 (char*) "Unable to initialze the WCS structure" );
+  }
+
+  // Copy from pix2world
+  if ( strcmp(ctype,"TAN-P") == 0 )
+  {
+    // LONGPOLE and LATPOLE should be populated from the header keywords
+    // LONP# and LATP#, where # is associated with the transform.
+    // Hardcode for now, but should modify to do better (add parameters?)
+    wcs->longpole = 270.;
+    wcs->latpole  =   0.;
+    if ( wcs->longpole != 0.0 )
+      wcs->cel.ref[2] = wcs->longpole;
+    if ( wcs->latpole != 0.0 )
+      wcs->cel.ref[3] = wcs->latpole;
+  }
 
   int scale;
   for (int ii = 0; ii < nsets; ii++)
   {
-    // Convert to world coords
+    // Convert to world coords; do not report if scale is not 0 (i.e.
+    // the conversion is "out of bounds").
     wcs2pix(wcs, x0[ii], x1[ii], &x0[ii], &x1[ii], &scale);
   }
 
@@ -244,13 +251,85 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
 
 
 static PyMethodDef WcsFcts[] = {
-  { (char*)"pix2world", (PyCFunction)pix2world,
-    METH_VARARGS, (char*)"Pixel to World Coordinates" },
-  { (char*)"world2pix", (PyCFunction)world2pix,
-    METH_VARARGS, (char*)"World to Pixel Coordinates" },
+  FCTSPECDOC(pix2world, pix2world,
+	     "Pixel to World Coordinates\n\n"
+	     "Parameters\n----------\n"
+	     "ctype : {'LINEAR', 'WCS', 'WCS-P'}\n"
+	     "    The coordinate transformation ('WCS' is a tangent-plane\n"
+	     "    projection).\n"
+	     "x0, x1 : array\n"
+	     "    The coordinates to convert (each a 1D array of n points).\n"
+	     "crpix, crval, cdelt : array\n"
+	     "    These are 2-element arrays.\n"
+	     "crota : float\n"
+	     "equinox : int\n"
+	     "epoch : float\n\n"
+	     "Returns\n-------\n"
+	     "w0, w1 : ndarray\n\n"
+	     "Notes\n-----\n"
+	     "The x0 and x1 arrays will be updated to match w0, w1 if they\n"
+	     "are ndarrays of real numbers. This behaviour should not be relied on.\n\n"
+	     "Examples\n--------\n"
+	     ">>> x0 = [20.5, 5.2, 3.4]\n"
+	     ">>> x1 = [10.5, 7.0, 15.8]\n"
+	     ">>> ctype = 'LINEAR'\n"
+	     ">>> crpix = [20.5, 10.5]\n"
+	     ">>> crval = [400, -200]\n"
+	     ">>> cdelt = [-4.0, 2.0]\n"
+	     ">>> crota = 0    # unused with LINEAR\n"
+	     ">>> equinox = 0  # unused with LINEAR\n"
+	     ">>> epoch = 0    # unused with LINEAR\n"
+	     ">>> w0, w1 = pix2world(ctype, x0, x1, crpix, crval, cdelt, crota, equinox, epoch)\n"
+	     ">>> print(w0)\n"
+	     "[400.  461.2 468.4]\n"
+	     ">>> print(w1)\n"
+	     "[-200.  -207.  -189.4]\n"
+
+	     ),
+  FCTSPECDOC(world2pix, world2pix,
+	     "World to Pixel Coordinates\n\n"
+	     "Parameters\n----------\n"
+	     "ctype : {'LINEAR', 'WCS', 'WCS-P'}\n"
+	     "    The coordinate transformation ('WCS' is a tangent-plane\n"
+	     "    projection).\n"
+	     "w0, w1 : array\n"
+	     "    The coordinates to convert (each a 1D array of n points).\n"
+	     "crpix, crval, cdelt : array\n"
+	     "    These are 2-element arrays.\n"
+	     "crota : float\n"
+	     "equinox : int\n"
+	     "epoch : float\n\n"
+	     "Returns\n-------\n"
+	     "x0, x1 : ndarray\n\n"
+	     "Notes\n-----\n"
+	     "The w0 and w1 arrays will be updated to match w0, w1 if they\n"
+	     "are ndarrays of real numbers. This behaviour should not be relied on.\n\n"
+	     "Examples\n--------\n"
+	     ">>> w0 = [400.0, 461.2, 468.4]\n"
+	     ">>> w1 = [-200.0, -207, -189.4]\n"
+	     ">>> ctype = 'LINEAR'\n"
+	     ">>> crpix = [20.5, 10.5]\n"
+	     ">>> crval = [400, -200]\n"
+	     ">>> cdelt = [-4.0, 2.0]\n"
+	     ">>> crota = 0    # unused with LINEAR\n"
+	     ">>> equinox = 0  # unused with LINEAR\n"
+	     ">>> epoch = 0    # unused with LINEAR\n"
+	     ">>> x0, x1 = world2pix(ctype, w0, w1, crpix, crval, cdelt, crota, equinox, epoch)\n"
+	     ">>> print(x0)\n"
+	     "[20.5  5.2  3.4]\n"
+	     ">>> print(x1)\n"
+	     "[10.5  7.  15.8]\n"
+	     ),
 
   { NULL, NULL, 0, NULL }
 
 };
 
-SHERPAMOD(_wcs, WcsFcts)
+SHERPAMODDOC(_wcs, WcsFcts,
+	     "Low-level conversion between 2D Astronomical coordinate systems.\n\n"
+	     "This module is designed to support Chandra images and has limited\n"
+	     "support for other coordinate systems. These routines are not intended\n"
+	     "to be called directly, but indirectly via the sherpa.astro.io.wcs.WCS\n"
+	     "class.\n"
+
+	     )
