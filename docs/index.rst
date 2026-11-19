@@ -66,6 +66,7 @@ The last version of Sherpa compatible with Python 2.7 was the
    install
    quick
    ciao
+   whatsnew/index
 
 .. toctree::
    :maxdepth: 2
