@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017 - 2024
+#  Copyright (C) 2017-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1152,6 +1152,21 @@ def test_integratedaxis_is_integrated():
     assert IntegratedAxis([], []).is_integrated
 
 
+@pytest.mark.parametrize("axis", [PointAxis([1, 2]),
+                                  IntegratedAxis([10, 20], [15, 200])])
+def test_axis_is_integrated_is_fixed(axis):
+    """Regression test: is is_integrated fixed?
+
+    For now it is: it depends on the axis class.
+    """
+
+    # It is not worth checking the error message as this may change
+    # with the version of Python used.
+    #
+    with pytest.raises(AttributeError):
+        axis.is_integrated = False
+
+
 def test_pointaxis_size():
     """Pick a descending axis for fun"""
     assert PointAxis([4, 3, 2]).size == 3
@@ -1179,6 +1194,19 @@ def test_integratedaxis_start():
 def test_integratedaxis_end():
     """Pick a descending axis for fun"""
     assert IntegratedAxis([4, 3, 2], [4.5, 3.5, 3]).end == pytest.approx(4.5)
+
+
+@pytest.mark.parametrize("axis", [PointAxis(None),
+                                  IntegratedAxis(None, None)])
+@pytest.mark.parametrize("name", ["start", "end"])
+def test_axis_ends_when_unset(axis, name):
+    """What happens with .start/.end calls to an empty axis?"""
+
+    # The attribute is a property, so calling getattr will trigger the
+    # error.
+    with pytest.raises(DataErr,
+                       match="^Axis is empty or has a size of 0$"):
+        _ = getattr(axis, name)
 
 
 def test_evaluationspace1d_zeros_like_empty():
@@ -1601,3 +1629,62 @@ def test_evaluationspace_empty_contains(cls):
     espace2 = cls()
     with pytest.raises(DataErr, match="^Axis is empty or has a size of 0$"):
         _ = espace1 in espace2
+
+
+def test_evaluationspace1d_point_grid():
+    """Check what the grid is for PointAxis."""
+
+    espace = EvaluationSpace1D([2, 2.5, 5])
+
+    assert not espace.is_integrated
+    assert len(espace.grid) == 1
+    assert espace.grid[0] == pytest.approx([2, 2.5, 5])
+    assert isinstance(espace.grid[0], np.ndarray)
+
+
+def test_evaluationspace1d_integrated_grid():
+    """Check what the grid is for IntegratedAxis."""
+
+    espace = EvaluationSpace1D([1, 2, 3], [2, 2.5, 5])
+
+    assert espace.is_integrated
+    assert len(espace.grid) == 2
+    assert espace.grid[0] == pytest.approx([1, 2, 3])
+    assert espace.grid[1] == pytest.approx([2, 2.5, 5])
+    assert isinstance(espace.grid[0], np.ndarray)
+    assert isinstance(espace.grid[1], np.ndarray)
+
+
+@pytest.mark.parametrize("espace,expected",
+                         [(EvaluationSpace1D([1, 2, 4]),
+                           [1, 2, 4]),
+                          (EvaluationSpace1D([1, 2, 4], [2, 3, 6]),
+                           [1.5, 2.5, 5]),
+                          ])
+def test_evaluationspace1d_midpoint_grid(espace, expected):
+    """Regresion test of midpoint_grid"""
+
+    assert espace.midpoint_grid == pytest.approx(expected)
+    assert isinstance(espace.midpoint_grid, np.ndarray)
+
+
+@pytest.mark.parametrize("espace", [EvaluationSpace1D([]),
+                                    EvaluationSpace1D([], [])])
+def test_evaluationspace1d_midpoint_grid_empty(espace):
+    """Regresion test of midpoint_grid when empty"""
+
+    assert len(espace.midpoint_grid) == 0
+    assert isinstance(espace.midpoint_grid, np.ndarray)
+
+
+def test_evaluationspace1d_midpoint_grid_null():
+    """Regresion test of midpoint_grid when no data"""
+
+    # Note that
+    #   EvaluationSpace1D()
+    #   EvaluationSpace1D(None)
+    #   EvaluationSpace1D(None, None)
+    # are all the same, so no need for parametrization.
+    #
+    espace = EvaluationSpace1D()
+    assert espace.midpoint_grid is None
