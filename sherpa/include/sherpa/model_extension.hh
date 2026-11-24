@@ -97,7 +97,7 @@ namespace sherpa { namespace models {
   
   }
 
-  static int py_integrated_1d(const double xlo, const double xhi, double &val,
+  static inline int py_integrated_1d(const double xlo, const double xhi, double &val,
 		       FunctionWithParams<DoubleArray> *funcAndPars,
 		       int errflag, double epsabs, double epsrel,
 		       unsigned int maxeval, std::ostringstream& err)
